@@ -58,7 +58,7 @@ export default defineConfig({
       {
         test: {
           name: "unit",
-          include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
+          include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts"],
           exclude: ["src/**/*.api.test.ts"],
           environment: "node",
         },

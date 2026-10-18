@@ -286,9 +286,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/client/components/theme/ThemeProvider.test.tsx`: reads a saved theme, ignores an unknown value, falls back when storage throws, sets `data-theme`, saves changes, updates the `theme-color` meta.
-- [ ] `src/shared/themes.test.ts`: every non-default theme in `themes.ts` has a `:root[data-theme="<id>"]` block in `index.css`, **and** the inline script in `index.html` knows the same ids and hero colors (the script cannot import `themes.ts`, so this test stops the copies from drifting apart).
-- [ ] Run: `vp test theme`
+- [x] `src/client/components/theme/ThemeProvider.test.tsx`: reads a saved theme, ignores an unknown value, falls back when storage throws, sets `data-theme`, saves changes, updates the `theme-color` meta.
+- [x] `src/shared/themes.test.ts`: every non-default theme in `themes.ts` has a `:root[data-theme="<id>"]` block in `index.css`, **and** the inline script in `index.html` knows the same ids and hero colors (the script cannot import `themes.ts`, so this test stops the copies from drifting apart).
+- [x] Run: `vp test theme`
 
 ### Test Gate 1
 
