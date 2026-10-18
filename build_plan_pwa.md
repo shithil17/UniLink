@@ -326,10 +326,10 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — API & screens
 
-- [ ] `POST /api/auth/signup`, `/login`, `/logout`, `/change-password`, `GET /api/auth/me`.
-- [ ] Signup and login are rate-limited. A duplicate 7-digit key gets a generic "this ID is already registered, contact a mod" message.
-- [ ] `scripts/seed-admin.ts` (`vp run seed:admin`) creates the first admin from env vars.
-- [ ] Screens: sign up, log in, change password (forced redirect when the flag is set), log out in Settings.
+- [x] `POST /api/auth/signup`, `/login`, `/logout`, `/change-password`, `GET /api/auth/me`.
+- [x] Signup and login are rate-limited. A duplicate 7-digit key gets a generic "this ID is already registered, contact a mod" message.
+- [x] `scripts/seed-admin.ts` (`vp run seed:admin`) creates the first admin from env vars.
+- [x] Screens: sign up, log in, change password (forced redirect when the flag is set), log out in Settings.
 
 ### Checklist — Docs & QA (C, D)
 
@@ -338,9 +338,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/studentId.test.ts`: valid IDs with suffix 042 and 642, semester digit 1 to 3 only, wrong lengths, spaces and dashes, the split.
-- [ ] `src/server/features/auth/auth.api.test.ts`: a duplicate key is rejected, the cookie flags are set, only a hashed token is stored, a banned user is refused, a student calling a mod route gets 403, `must_change_password` blocks other routes, signup and login rate limits trigger, the cooldown blocks `canPost`.
-- [ ] Run: `vp test auth studentId`
+- [x] `src/shared/studentId.test.ts`: valid IDs with suffix 042 and 642, semester digit 1 to 3 only, wrong lengths, spaces and dashes, the split.
+- [x] `src/server/features/auth/auth.api.test.ts`: a duplicate key is rejected, the cookie flags are set, only a hashed token is stored, a banned user is refused, a student calling a mod route gets 403, `must_change_password` blocks other routes, signup and login rate limits trigger, the cooldown blocks `canPost`.
+- [x] Run: `vp test auth studentId`
 
 ### Test Gate 2
 

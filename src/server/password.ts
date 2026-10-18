@@ -1,5 +1,5 @@
-import { fromBase64, randomBytes, timingSafeEqual, toBase64 } from "./crypto";
-import { limits } from "./limits";
+import { fromBase64, randomBytes, timingSafeEqual, toBase64 } from "./crypto.ts";
+import { limits } from "./limits.ts";
 
 export const PBKDF2_SHA256 = "pbkdf2-sha256";
 const HASH_BITS = 256;

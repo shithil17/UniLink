@@ -27,6 +27,12 @@ export async function rateLimit(
   return { allowed: count <= limit, count, retryAfterMs: windowStart + windowMs - now };
 }
 
+/** The 429 answer for a key that is over its limit. */
+export function rateLimitedResponse(c: Context, result: RateLimitResult) {
+  c.header("Retry-After", String(Math.ceil(result.retryAfterMs / 1000)));
+  return c.json({ error: "rate_limited", message: "Too many attempts. Try again later." }, 429);
+}
+
 /** Route middleware around `rateLimit()`: answers 429 with Retry-After when the key is over its limit. */
 export function rateLimitBy(
   key: (c: Context<AppEnv>) => string,
@@ -35,10 +41,7 @@ export function rateLimitBy(
 ): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
     const result = await rateLimit(getDb(c.env.DB), key(c), limit, windowMs);
-    if (!result.allowed) {
-      c.header("Retry-After", String(Math.ceil(result.retryAfterMs / 1000)));
-      return c.json({ error: "rate_limited" }, 429);
-    }
+    if (!result.allowed) return rateLimitedResponse(c, result);
     await next();
   };
 }
