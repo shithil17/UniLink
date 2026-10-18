@@ -1,4 +1,3 @@
-import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 import {
   CircleCheckIcon,
@@ -9,11 +8,10 @@ import {
 } from "lucide-react";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
-
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      // Themes change colors only, and the toast reads our tokens through the shadcn aliases.
+      theme="light"
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4" />,

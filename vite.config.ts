@@ -100,8 +100,10 @@ export default defineConfig({
           // Remote-only bindings (AI) are opt-in for dev so a plain `vp dev` needs no login and costs nothing.
           cloudflare({ remoteBindings: process.env.CF_REMOTE_BINDINGS === "1" }),
           VitePWA({
-            registerType: "autoUpdate",
-            injectRegister: "auto",
+            // The app shows an "Update available" toast; the user decides when to reload.
+            registerType: "prompt",
+            // useRegisterSW (UpdatePrompt) registers the worker, so no injected script.
+            injectRegister: false,
             includeAssets: ["favicon.svg", "apple-touch-icon-180x180.png"],
             manifest: {
               name: "UniLink",
@@ -126,8 +128,22 @@ export default defineConfig({
               ],
             },
             workbox: {
-              // The service worker caches the app shell only; API data is always fetched live.
-              navigateFallbackDenylist: [/^\/api\//],
+              // Precache the hashed shell only. index.html is left out so it can be network-first.
+              globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
+              navigateFallback: null,
+              runtimeCaching: [
+                // API data is never cached.
+                {
+                  urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
+                  handler: "NetworkOnly",
+                },
+                {
+                  // index.html: fresh when online, last copy when the network is slow or down.
+                  urlPattern: ({ request }) => request.mode === "navigate",
+                  handler: "NetworkFirst",
+                  options: { cacheName: "html", networkTimeoutSeconds: 3 },
+                },
+              ],
             },
           }),
         ],

@@ -18,6 +18,17 @@ export class ApiError extends Error {
   }
 }
 
+/** The request never reached the server: no network (or the server is unreachable). */
+export class OfflineError extends Error {
+  constructor() {
+    super("You are offline");
+  }
+}
+
+export function isOffline(err: unknown): err is OfflineError {
+  return err instanceof OfflineError;
+}
+
 /** A message that is safe to show: the server's `message`, else a generic fallback. */
 export function errorMessage(err: unknown): string {
   if (err instanceof ApiError) {
@@ -34,14 +45,21 @@ async function request<T extends z.ZodType>(
   schema: T,
   body?: unknown,
 ): Promise<z.infer<T>> {
-  const res = await fetch(path, {
-    method,
-    headers: {
-      accept: "application/json",
-      ...(body === undefined ? {} : { "content-type": "application/json" }),
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      method,
+      headers: {
+        accept: "application/json",
+        ...(body === undefined ? {} : { "content-type": "application/json" }),
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+  } catch (err) {
+    // fetch rejects with a TypeError only when no response arrived at all.
+    if (err instanceof TypeError) throw new OfflineError();
+    throw err;
+  }
   const json: unknown = await res.json().catch(() => null);
   if (!res.ok) throw new ApiError(res.status, json);
   return schema.parse(json);
