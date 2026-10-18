@@ -16,7 +16,11 @@
       "Bash(cat .env*)",
       "Bash(cat .dev.vars*)",
       "Bash(source .env*)",
-      "Bash(source .dev.vars*)"
+      "Bash(source .dev.vars*)",
+      "Bash(git push:*)",
+      "Bash(git push)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)"
     ]
   }
 }
