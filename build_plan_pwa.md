@@ -369,13 +369,13 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Shell
 
-- [ ] Manifest: name, short_name, start_url, `display: standalone`, Ocean Teal `theme_color` and `background_color`, icons 192, 512 and maskable, `apple-touch-icon`. Placeholder icons until the app name and icons are decided.
-- [ ] Service worker config as locked above (precache the shell, network-first `index.html`, network-only `/api`).
-- [ ] Offline screen route/component and an `isOffline` check in the API fetcher.
-- [ ] Mount `<Toaster />` once in the app layout. Replace the `next-themes` `useTheme()` call in `ui/sonner.tsx` with a fixed `theme="light"` (themes change colors only, and the toast already uses our tokens through the shadcn aliases).
-- [ ] Update prompt with `useRegisterSW` from `virtual:pwa-register/react`, checked on launch.
-- [ ] iOS install hint, dismissible, with the dismissal remembered in `localStorage` (inside try/catch).
-- [ ] App layout shell (navigation, header, Home placeholder) per D's Figma, responsive.
+- [x] Manifest: name, short_name, start_url, `display: standalone`, Ocean Teal `theme_color` and `background_color`, icons 192, 512 and maskable, `apple-touch-icon`. Placeholder icons until the app name and icons are decided.
+- [x] Service worker config as locked above (precache the shell, network-first `index.html`, network-only `/api`).
+- [x] Offline screen route/component and an `isOffline` check in the API fetcher.
+- [x] Mount `<Toaster />` once in the app layout. Replace the `next-themes` `useTheme()` call in `ui/sonner.tsx` with a fixed `theme="light"` (themes change colors only, and the toast already uses our tokens through the shadcn aliases).
+- [x] Update prompt with `useRegisterSW` from `virtual:pwa-register/react`, checked on launch.
+- [x] iOS install hint, dismissible, with the dismissal remembered in `localStorage` (inside try/catch).
+- [x] App layout shell (navigation, header, Home placeholder) per D's Figma, responsive.
 
 ### Checklist — Docs & QA (C, D)
 
@@ -384,7 +384,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/client/lib/installHint.test.ts`: the hint shows only in iOS Safari when not standalone and not dismissed.
+- [x] `src/client/lib/installHint.test.ts`: the hint shows only in iOS Safari when not standalone and not dismissed.
 - [ ] Run: `vp test installHint && vp build` (then check `dist/` for hashed asset names)
 
 ### Test Gate 3
