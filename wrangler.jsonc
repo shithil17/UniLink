@@ -27,7 +27,7 @@
         {
           "binding": "DB",
           "database_name": "unilink-staging",
-          "database_id": "REPLACE_WITH_STAGING_DATABASE_ID",
+          "database_id": "1ecb692c-cee5-42ca-9212-fa97ba6c5c38",
           "migrations_dir": "drizzle",
         },
       ],
@@ -39,7 +39,7 @@
         {
           "binding": "DB",
           "database_name": "unilink-prod",
-          "database_id": "REPLACE_WITH_PRODUCTION_DATABASE_ID",
+          "database_id": "4bd5738d-8a1b-4664-84b5-6b6aeb481758",
           "migrations_dir": "drizzle",
         },
       ],
