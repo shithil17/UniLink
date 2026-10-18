@@ -2,6 +2,9 @@ import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 import { verifyPassword } from "../../password";
 import { seedAdminStatements } from "../../../../scripts/seed-admin";
+import { dhakaYear } from "../../../shared/time";
+
+const YY = String(dhakaYear() % 100);
 
 async function run(statements: string[]) {
   for (const sql of statements) await env.DB.prepare(sql).run();
@@ -57,11 +60,15 @@ describe("seed-admin", () => {
   });
 
   it("uses the real student key when an ID is given and rejects a bad one", async () => {
-    await run(await seedAdminStatements({ ...seed, studentId: "221 3456 642" }));
+    await run(await seedAdminStatements({ ...seed, studentId: `${YY}1 3456 642` }));
     const row = await env.DB.prepare(
       "SELECT student_key, student_suffix, admission_year FROM users",
     ).first();
-    expect(row).toEqual({ student_key: "2213456", student_suffix: "642", admission_year: 22 });
+    expect(row).toEqual({
+      student_key: `${YY}13456`,
+      student_suffix: "642",
+      admission_year: Number(YY),
+    });
     await expect(seedAdminStatements({ ...seed, studentId: "123" })).rejects.toThrow();
   });
 });

@@ -27,7 +27,7 @@ export const newPassword = z
 
 export const signupRequest = z.object({
   username,
-  studentId: z.string().refine(isValidStudentId, "Enter a valid NSU student ID"),
+  studentId: z.string().refine((value) => isValidStudentId(value), "Enter a valid NSU student ID"),
   password: newPassword,
 });
 

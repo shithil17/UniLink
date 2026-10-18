@@ -1,3 +1,5 @@
+import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
+
 // Every limit, cap, cooldown, expiry and threshold lives here. Feature code imports these, never inlines numbers.
 
 const SECOND = 1000;
@@ -6,6 +8,8 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 export const limits = {
+  /** Oldest admission year accepted at signup, in years before the current one. Defined in shared code for the client form. */
+  studentIdMaxAgeYears: STUDENT_ID_MAX_AGE_YEARS,
   /** Signups per client IP. Suggested defaults until the team decides. */
   signupPerIp: { limit: 5, windowMs: HOUR },
   /** Login attempts per username. */

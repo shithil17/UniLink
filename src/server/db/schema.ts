@@ -25,7 +25,7 @@ export const users = sqliteTable(
     username: text("username").notNull().unique(),
     // First 7 digits of the student ID: one account per student. Private, never in a response.
     studentKey: text("student_key").notNull().unique(),
-    // Last 3 digits of the student ID (042 or 642). Private.
+    // Last 3 digits of the student ID: verification digit (0 or 6) + program code. Private.
     studentSuffix: text("student_suffix").notNull(),
     // First 2 digits of the student ID (YY, e.g. 22). Selects the curriculum version.
     admissionYear: integer("admission_year").notNull(),

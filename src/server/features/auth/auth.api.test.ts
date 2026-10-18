@@ -8,16 +8,19 @@ import { canPost } from "../../middleware/canPost";
 import { hashPassword } from "../../password";
 import { SESSION_COOKIE, sessionLoader } from "../../middleware/session";
 import type { AppEnv } from "../../middleware/types";
+import { dhakaYear } from "../../../shared/time";
 import { authRoutes } from "./routes";
 
 const PASSWORD = "correct horse";
+// This year's admission year, so the IDs below stay valid as years pass.
+const YY = String(dhakaYear() % 100);
 let serial = 0;
 let ipSerial = 0;
 
 /** A valid, unique student ID (suffix 042). */
 function nextStudentId() {
   serial += 1;
-  return `2211${String(serial).padStart(3, "0")}042`;
+  return `${YY}11${String(serial).padStart(3, "0")}042`;
 }
 
 function cookieOf(res: Response): string | null {
@@ -77,7 +80,7 @@ describe("POST /api/auth/signup", () => {
     expect(await res.json()).toEqual({
       username: "alice_1",
       role: "student",
-      admissionYear: 22,
+      admissionYear: Number(YY),
       mustChangePassword: false,
     });
     const row = await env.DB.prepare("SELECT username, student_key FROM users").first<{
@@ -104,9 +107,9 @@ describe("POST /api/auth/signup", () => {
   });
 
   it("rejects a duplicate 7-digit key with the generic message, however the ID is written", async () => {
-    const first = await signup({ studentId: "221 1234 042" });
+    const first = await signup({ studentId: `${YY}1 1234 042` });
     expect(first.res.status).toBe(201);
-    for (const studentId of ["2211234042", "221-1234-642"]) {
+    for (const studentId of [`${YY}11234042`, `${YY}1-1234-642`]) {
       const { res } = await signup({ studentId });
       expect(res.status).toBe(409);
       expect(await res.json()).toEqual({
@@ -142,6 +145,9 @@ describe("POST /api/auth/signup", () => {
       { username: "ab" },
       { username: "has space" },
       { studentId: "1234567890" },
+      // Next year's admission year and an unknown program code.
+      { studentId: `${Number(YY) + 1}11234042` },
+      { studentId: `${YY}11234099` },
       { password: "short" },
     ]) {
       const { res } = await signup(bad);
@@ -246,7 +252,7 @@ describe("GET /api/auth/me", () => {
   });
 
   it("never contains the student ID, key or suffix", async () => {
-    const { token, body } = await signup({ studentId: "221 7654 642" });
+    const { token, body } = await signup({ studentId: `${YY}1 7654 642` });
     const res = await get("/api/auth/me", { token });
     expect(res.status).toBe(200);
     const text = await res.text();
@@ -256,7 +262,13 @@ describe("GET /api/auth/me", () => {
       "role",
       "username",
     ]);
-    for (const secret of ["2217654", "642", "student_key", "studentId", String(body.studentId)]) {
+    for (const secret of [
+      `${YY}17654`,
+      "642",
+      "student_key",
+      "studentId",
+      String(body.studentId),
+    ]) {
       expect(text).not.toContain(secret);
     }
   });
