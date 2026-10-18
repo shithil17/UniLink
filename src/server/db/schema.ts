@@ -41,8 +41,12 @@ export const users = sqliteTable(
     mustChangePassword: integer("must_change_password", { mode: "boolean" })
       .notNull()
       .default(false),
-    // Nullable so email verification can be added later without a migration.
-    email: text("email"),
+    // Full name as typed at signup. Private: never in a response other than the user's own.
+    // Nullable because the seeded admin has none.
+    fullName: text("full_name"),
+    // NSU student email (lowercase). Private contact detail, never in a feed. Not verified yet:
+    // `email_verified_at` stays null until verification is added. Unique: one account per email.
+    email: text("email").unique(),
     emailVerifiedAt: integer("email_verified_at"),
     createdAt: integer("created_at").notNull(),
   },

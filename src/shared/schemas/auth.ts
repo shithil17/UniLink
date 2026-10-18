@@ -9,6 +9,11 @@ export const PASSWORD_MIN_LENGTH = 8;
 // ceiling: caps the bytes PBKDF2 has to chew on per request. Revisit if people need longer passphrases.
 export const PASSWORD_MAX_LENGTH = 128;
 
+export const FULL_NAME_MIN_LENGTH = 2;
+export const FULL_NAME_MAX_LENGTH = 80;
+/** Student emails are on this domain. Subdomains and look-alikes are refused. */
+export const NSU_EMAIL_DOMAIN = "northsouth.edu";
+
 export const role = z.enum(["student", "mod", "admin"]);
 
 /** Trimmed and lowercased, so "Alice_1 " and "alice_1" are the same username. */
@@ -20,6 +25,32 @@ export const username = z
   .max(USERNAME_MAX_LENGTH, `Use at most ${USERNAME_MAX_LENGTH} characters`)
   .regex(/^[a-z0-9_]+$/, "Use letters, numbers and underscores only");
 
+/** Trimmed, with runs of spaces collapsed, so "  Rahim   Uddin " is stored as "Rahim Uddin". */
+export const fullName = z
+  .string()
+  .trim()
+  .transform((value) => value.replace(/\s+/g, " "))
+  .pipe(
+    z
+      .string()
+      .min(FULL_NAME_MIN_LENGTH, "Enter your full name")
+      .max(FULL_NAME_MAX_LENGTH, `Use at most ${FULL_NAME_MAX_LENGTH} characters`),
+  );
+
+/** An NSU student email, trimmed and lowercased. Only the domain is checked: the local part varies. */
+export const nsuEmail = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .pipe(
+    z
+      .email("Enter a valid email address")
+      .refine(
+        (value) => value.endsWith(`@${NSU_EMAIL_DOMAIN}`),
+        `Use your @${NSU_EMAIL_DOMAIN} email`,
+      ),
+  );
+
 export const newPassword = z
   .string()
   .min(PASSWORD_MIN_LENGTH, `Use at least ${PASSWORD_MIN_LENGTH} characters`)
@@ -27,6 +58,8 @@ export const newPassword = z
 
 export const signupRequest = z.object({
   username,
+  fullName,
+  email: nsuEmail,
   studentId: z.string().refine((value) => isValidStudentId(value), "Enter a valid NSU student ID"),
   password: newPassword,
 });

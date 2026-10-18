@@ -18,6 +18,10 @@ const ID_REGISTERED = {
   error: "student_id_registered",
   message: "This ID is already registered. Contact a mod.",
 } as const;
+const EMAIL_REGISTERED = {
+  error: "email_registered",
+  message: "This email is already registered. Contact a mod.",
+} as const;
 const USERNAME_TAKEN = { error: "username_taken", message: "That username is taken." } as const;
 const BAD_CREDENTIALS = {
   error: "invalid_credentials",
@@ -63,11 +67,14 @@ export const authRoutes = new Hono<AppEnv>()
       const users = usersRepo(getDb(c.env.DB));
 
       if (await users.studentKeyExists(parsed.key)) return c.json(ID_REGISTERED, 409);
+      if (await users.emailExists(body.email)) return c.json(EMAIL_REGISTERED, 409);
       if (await users.findByUsername(body.username)) return c.json(USERNAME_TAKEN, 409);
 
       const password = await hashPassword(body.password);
       const created = await users.createUnique({
         username: body.username,
+        fullName: body.fullName,
+        email: body.email,
         studentKey: parsed.key,
         studentSuffix: parsed.suffix,
         admissionYear: parsed.admissionYear,
@@ -79,7 +86,12 @@ export const authRoutes = new Hono<AppEnv>()
       });
       // Two signups racing past the checks above hit the unique constraints; same answers.
       if (!created.ok) {
-        return c.json(created.conflict === "student_key" ? ID_REGISTERED : USERNAME_TAKEN, 409);
+        const answers = {
+          student_key: ID_REGISTERED,
+          email: EMAIL_REGISTERED,
+          username: USERNAME_TAKEN,
+        };
+        return c.json(answers[created.conflict], 409);
       }
       await startSession(c, created.user.id);
       return c.json(toMe(created.user), 201);

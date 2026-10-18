@@ -9,6 +9,7 @@ import { errorMessage } from "@/lib/api";
 import { useSignup } from "@/lib/auth";
 import { meQuery } from "@/lib/queries";
 import {
+  NSU_EMAIL_DOMAIN,
   PASSWORD_MIN_LENGTH,
   signupRequest,
   USERNAME_MAX_LENGTH,
@@ -29,12 +30,15 @@ function SignupPage() {
   const signup = useSignup();
   const form = useForm<SignupRequest>({
     resolver: zodResolver(signupRequest),
-    defaultValues: { username: "", studentId: "", password: "" },
+    defaultValues: { username: "", fullName: "", email: "", studentId: "", password: "" },
   });
   const { errors } = form.formState;
 
   return (
-    <AuthScreen title="Sign up" intro="Use your NSU student ID. Only your username is ever shown.">
+    <AuthScreen
+      title="Sign up"
+      intro="Use your NSU details. Only your username is ever shown to others."
+    >
       <form onSubmit={form.handleSubmit((values) => signup.mutate(values))} noValidate>
         <FieldGroup>
           <Field data-invalid={Boolean(errors.username)}>
@@ -51,6 +55,33 @@ function SignupPage() {
               {USERNAME_MIN_LENGTH} to {USERNAME_MAX_LENGTH} letters, numbers or underscores.
             </FieldDescription>
             <FieldError errors={[errors.username]} />
+          </Field>
+          <Field data-invalid={Boolean(errors.fullName)}>
+            <FieldLabel htmlFor="fullName">Full name</FieldLabel>
+            <Input
+              id="fullName"
+              className="h-11"
+              autoComplete="name"
+              aria-invalid={Boolean(errors.fullName)}
+              {...form.register("fullName")}
+            />
+            <FieldDescription>Private. Never shown to other students.</FieldDescription>
+            <FieldError errors={[errors.fullName]} />
+          </Field>
+          <Field data-invalid={Boolean(errors.email)}>
+            <FieldLabel htmlFor="email">NSU email</FieldLabel>
+            <Input
+              id="email"
+              type="email"
+              className="h-11"
+              autoComplete="email"
+              autoCapitalize="none"
+              placeholder={`name@${NSU_EMAIL_DOMAIN}`}
+              aria-invalid={Boolean(errors.email)}
+              {...form.register("email")}
+            />
+            <FieldDescription>Private. Never shown to other students.</FieldDescription>
+            <FieldError errors={[errors.email]} />
           </Field>
           <Field data-invalid={Boolean(errors.studentId)}>
             <FieldLabel htmlFor="studentId">NSU student ID</FieldLabel>

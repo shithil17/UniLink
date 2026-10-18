@@ -54,6 +54,8 @@ async function signup(overrides: Record<string, unknown> = {}, opts?: Opts) {
   serial += 1;
   const body = {
     username: `student${serial}`,
+    fullName: `Student Number ${serial}`,
+    email: `student.${serial}@northsouth.edu`,
     studentId: nextStudentId(),
     password: PASSWORD,
     ...overrides,
@@ -89,6 +91,34 @@ describe("POST /api/auth/signup", () => {
     }>();
     expect(row?.username).toBe("alice_1");
     expect(row?.student_key).toBe(body.studentId.slice(0, 7));
+  });
+
+  it("stores the full name and NSU email, tidied, without returning them", async () => {
+    const { res } = await signup({
+      fullName: "  Rahim   Uddin ",
+      email: " Rahim.Uddin.242@NorthSouth.edu ",
+    });
+    expect(res.status).toBe(201);
+    expect(await res.text()).not.toMatch(/rahim/i);
+    const row = await env.DB.prepare(
+      "SELECT full_name, email, email_verified_at FROM users",
+    ).first();
+    expect(row).toEqual({
+      full_name: "Rahim Uddin",
+      email: "rahim.uddin.242@northsouth.edu",
+      email_verified_at: null,
+    });
+  });
+
+  it("rejects an email already registered, ignoring case", async () => {
+    await signup({ email: "taken@northsouth.edu" });
+    const { res } = await signup({ email: "Taken@NorthSouth.edu" });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({
+      error: "email_registered",
+      message: "This email is already registered. Contact a mod.",
+    });
+    expect(await count("users")).toBe(1);
   });
 
   it("sets an HttpOnly, Secure, SameSite=Lax cookie and stores only the token hash", async () => {
@@ -145,6 +175,12 @@ describe("POST /api/auth/signup", () => {
       { username: "ab" },
       { username: "has space" },
       { studentId: "1234567890" },
+      { fullName: " " },
+      { fullName: "x".repeat(81) },
+      { email: "someone@gmail.com" },
+      { email: "someone@northsouth.edu.evil.com" },
+      { email: "someone@cse.northsouth.edu" },
+      { email: "not-an-email" },
       // Next year's admission year and an unknown program code.
       { studentId: `${Number(YY) + 1}11234042` },
       { studentId: `${YY}11234099` },
@@ -251,7 +287,7 @@ describe("GET /api/auth/me", () => {
     expect((await get("/api/auth/me")).status).toBe(401);
   });
 
-  it("never contains the student ID, key or suffix", async () => {
+  it("never contains the student ID, key, suffix, full name or email", async () => {
     const { token, body } = await signup({ studentId: `${YY}1 7654 642` });
     const res = await get("/api/auth/me", { token });
     expect(res.status).toBe(200);
@@ -268,6 +304,8 @@ describe("GET /api/auth/me", () => {
       "student_key",
       "studentId",
       String(body.studentId),
+      body.fullName,
+      body.email,
     ]) {
       expect(text).not.toContain(secret);
     }

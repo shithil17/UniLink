@@ -6,9 +6,9 @@ import type { StoredPassword } from "../password";
 export type NewUser = typeof users.$inferInsert;
 export type UserRow = typeof users.$inferSelect;
 
-export type CreateUserResult =
-  | { ok: true; user: UserRow }
-  | { ok: false; conflict: "username" | "student_key" };
+export type CreateUserResult = { ok: true; user: UserRow } | { ok: false; conflict: UniqueColumn };
+
+type UniqueColumn = "username" | "student_key" | "email";
 
 function passwordColumns(p: StoredPassword) {
   return {
@@ -20,10 +20,10 @@ function passwordColumns(p: StoredPassword) {
 }
 
 /** D1 reports which column broke a UNIQUE constraint in the (possibly wrapped) error message. */
-function uniqueConflict(err: unknown): "username" | "student_key" | null {
+function uniqueConflict(err: unknown): UniqueColumn | null {
   for (let e: unknown = err; e instanceof Error; e = e.cause) {
-    if (/UNIQUE constraint failed: users\.student_key/i.test(e.message)) return "student_key";
-    if (/UNIQUE constraint failed: users\.username/i.test(e.message)) return "username";
+    const column = /UNIQUE constraint failed: users\.(student_key|username|email)/i.exec(e.message);
+    if (column) return column[1].toLowerCase() as UniqueColumn;
   }
   return null;
 }
@@ -56,6 +56,11 @@ export function usersRepo(db: Db) {
         .from(users)
         .where(eq(users.studentKey, studentKey))
         .get();
+      return row !== undefined;
+    },
+    /** `email` must already be lowercased: the stored value is lowercase. */
+    async emailExists(email: string): Promise<boolean> {
+      const row = await db.select({ id: users.id }).from(users).where(eq(users.email, email)).get();
       return row !== undefined;
     },
     /** Replaces the password hash, optionally clearing `must_change_password`. */
