@@ -6,7 +6,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 ## Status
 
-**Status (2026-10-18):** Planning done. No code yet. Work starts at **Phase 0**. Changes from `plan_pwa.md`:
+**Status (2026-10-18):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Changes from `plan_pwa.md`:
 
 - The two cut orders that disagreed are now one locked order (see Suggested Build Order).
 - Course "ticks" are graded attempts, so attempts are the only source of truth for done courses, credits and CGPA (Phase 4).
@@ -292,8 +292,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Test Gate 1
 
-- [ ] **Theme tests pass.**
-- [ ] **The hard-coded color search (Quick Reference) finds nothing in `src/client` outside `index.css`.**
+- [x] **Theme tests pass.**
+- [x] **The hard-coded color search (Quick Reference) finds nothing in `src/client` outside `index.css`.**
 - [ ] **(Manual) On the installed app, switching theme and restarting keeps the choice, with no flash of Ocean Teal, and the status bar color matches.**
 - [ ] **(Manual, D) Every palette passes the contrast check.**
 
