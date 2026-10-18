@@ -44,6 +44,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - Mobile-first and responsive. The same screens work on a phone and on desktop.
 - Components use theme token classes only (`bg-app`, `text-ink`, `border-line`, `bg-surface`, …). No hex values, no `bg-white`, no Tailwind palette colors outside `index.css`.
 - Build forms from the shadcn/ui form components + React Hook Form + the shared Zod schema.
+- Feedback has one place per kind (decided 2026-10-18). **Toast** (sonner): short results of an action that stays on the same screen ("Saved", "Report sent", "Copied", rate limit hit, network error). **Inline field errors** for form validation, always; a toast is never the only place an error shows. **`StatusNote`** for moderation states, because they persist. **Inbox** for anything the user must see later. Toasts never contain contact details, student IDs or AI text.
 
 **Process**
 
@@ -346,8 +347,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Test Gate 2
 
-- [ ] **All auth tests pass in CI.**
-- [ ] **On staging, sign up → log in → log out works on a phone, and the seeded admin is forced to change the password.**
+- [x] **All auth tests pass in CI.**
+- [x] **On staging, sign up → log in → log out works on a phone, and the seeded admin is forced to change the password.**
 
 ---
 
@@ -371,6 +372,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [ ] Manifest: name, short_name, start_url, `display: standalone`, Ocean Teal `theme_color` and `background_color`, icons 192, 512 and maskable, `apple-touch-icon`. Placeholder icons until the app name and icons are decided.
 - [ ] Service worker config as locked above (precache the shell, network-first `index.html`, network-only `/api`).
 - [ ] Offline screen route/component and an `isOffline` check in the API fetcher.
+- [ ] Mount `<Toaster />` once in the app layout. Replace the `next-themes` `useTheme()` call in `ui/sonner.tsx` with a fixed `theme="light"` (themes change colors only, and the toast already uses our tokens through the shadcn aliases).
 - [ ] Update prompt with `useRegisterSW` from `virtual:pwa-register/react`, checked on launch.
 - [ ] iOS install hint, dismissible, with the dismissal remembered in `localStorage` (inside try/catch).
 - [ ] App layout shell (navigation, header, Home placeholder) per D's Figma, responsive.
