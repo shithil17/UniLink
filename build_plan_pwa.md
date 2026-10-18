@@ -265,6 +265,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - Palettes: **Ocean Teal** (default), **Red Gradient**, **Cherry Blossom Bloom**, **Cherry Red**, ported from the tested mock site. A theme changes colors only, not layout. `ceiling:` no dark mode. Revisit only after launch if users ask.
 > - Tokens (CSS variables): app background, hero gradient start and end, primary, accent, ink, soft, faint, body, line, tint, chip, deep, hero sub-text, **surface**. The default is defined in Tailwind v4's `@theme`. Every other palette is a `:root[data-theme="<id>"]` block that overrides the same variables.
 > - shadcn's variables (`--background`, `--foreground`, `--primary`, `--card`, `--border`, `--ring`, …) are aliases of the tokens. Focus rings use the accent token.
+>   Note (2026-10-18): the accent token is named `brand` (`text-brand`, `border-brand`) because shadcn's `accent` is a subtle hover fill, which aliases `tint`.
 > - `ThemeProvider` at the root route sets `data-theme` on `<html>` and saves the choice in `localStorage` under `<appname>-theme`. If the saved value is missing or unknown, or storage throws (private mode), it falls back to Ocean Teal.
 > - An inline script in `index.html` applies the saved theme and sets `<meta name="theme-color">` to the theme's hero color before first paint. The manifest's `theme_color` and the icons stay static Ocean Teal.
 > - Picker: `ThemePickerTrigger` on Settings (the current palette's swatches and name), which opens a sheet with all palettes. It uses `role="radiogroup"` and `aria-checked` and works with the keyboard.
@@ -273,11 +274,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Tokens & provider
 
-- [ ] Tokens and the four palettes in `src/client/index.css`, with the shadcn aliases mapped.
-- [ ] `src/shared/themes.ts` with id, name, blurb and five swatch colors per theme.
-- [ ] `ThemeProvider` (read with try/catch, validate against `themes.ts`, set `data-theme`, save, update the `theme-color` meta).
-- [ ] Inline no-flash script in `index.html` (same key, same validation, same fallback).
-- [ ] Settings route with `ThemePickerTrigger` and the sheet. Decide the open item "mock `BottomSheet` vs shadcn Drawer" here and record it: `________`.
+- [x] Tokens and the four palettes in `src/client/index.css`, with the shadcn aliases mapped.
+- [x] `src/shared/themes.ts` with id, name, blurb and five swatch colors per theme.
+- [x] `ThemeProvider` (read with try/catch, validate against `themes.ts`, set `data-theme`, save, update the `theme-color` meta).
+- [x] Inline no-flash script in `index.html` (same key, same validation, same fallback).
+- [x] Settings route with `ThemePickerTrigger` and the sheet. Decide the open item "mock `BottomSheet` vs shadcn Drawer" here and record it: `shadcn Sheet with side="bottom"` (Base UI dialog: focus trap, Escape and a11y for free, no extra dependency; Drawer would add `vaul` for a drag gesture we do not need, and the hand-rolled `BottomSheet` is dropped).
 
 ### Checklist — Docs & QA (C, D)
 
@@ -1055,7 +1056,7 @@ Each row names the phase that needs the answer. When it is settled, move it into
 | Clef-flash: re-check price and allowance before launch (findings below)                       | P14, P17          | Dev A    |
 | DeepSeek prepaid budget and global daily cap (model and price below)                          | P13               | Dev A    |
 | App name, icon set, theme storage key                                                         | P1, P3            | All      |
-| Mock `BottomSheet` vs shadcn Drawer (one overlay system)                                      | P1                | Dev B    |
+| Mock `BottomSheet` vs shadcn Drawer: **decided**, shadcn `Sheet` (`side="bottom"`)            | P1                | Dev B    |
 | Confirm the four launch palettes                                                              | P1                | D        |
 | New-account cooldown length, signup and login rate limits                                     | P2                | Dev B    |
 | NSU term start dates and routine day letters                                                  | P4, P9            | D        |

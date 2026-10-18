@@ -4,7 +4,27 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#08443b" />
+    <script>
+      // No-flash theme: runs before first paint. Keep the key, ids and hero colors in step with
+      // src/shared/themes.ts (themes.test.ts checks this). Unknown or unreadable value = ocean.
+      (function () {
+        var heroes = {
+          ocean: "#08443b",
+          "red-gradient": "#641220",
+          "cherry-blossom": "#590d22",
+          "cherry-red": "#1a1a1a",
+        };
+        var id = "ocean";
+        try {
+          var saved = localStorage.getItem("unilink-theme");
+          if (saved && Object.prototype.hasOwnProperty.call(heroes, saved)) id = saved;
+        } catch (e) {}
+        document.documentElement.dataset.theme = id;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute("content", heroes[id]);
+      })();
+    </script>
     <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
     <title>UniLink</title>
   </head>
