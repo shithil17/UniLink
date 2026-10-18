@@ -196,7 +196,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Repo & workflow
 
-- [ ] Git repo with protected `main`, feature branches and pull requests. Issue tracker with labels for severity, owner and requirement ID.
+- [x] Git repo with protected `main`, feature branches and pull requests. Issue tracker with labels for severity, owner and requirement ID.
 - [x] Pin Node (`engines` in `package.json` + `.node-version`) and the exact Vite+ version.
 - [x] `vp create` (React + TypeScript). `vp add` hono, zod, drizzle-orm, drizzle-kit, wrangler, `@cloudflare/vite-plugin`, `vite-plugin-pwa`, `@tanstack/react-router` + router plugin, `@tanstack/react-query`, tailwind v4, react-hook-form, `@hookform/resolvers`.
 - [x] One `vite.config.ts` from `vite-plus` with the plugins plus `lint`, `fmt`, `test` and `staged` blocks (`staged` runs `vp check --fix`).
@@ -204,7 +204,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Worker, D1 & deploy
 
 - [x] `wrangler.jsonc` with `staging` and `production` envs, each with its own D1 binding `DB`, the static assets binding (SPA fallback to `index.html`), the `AI` binding and an empty cron trigger list.
-- [ ] Drizzle `src/server/db/schema.ts` with an `app_meta` table. Generate the migration and apply it locally and to staging.
+- [x] Drizzle `src/server/db/schema.ts` with an `app_meta` table. Generate the migration and apply it locally and to staging.
 - [x] Hono app mounted at `/api`. `GET /api/health` returns `{ ok: true, dbVersion }` read from `app_meta`. Every non-`/api` path falls through to static assets.
 - [x] Package scripts: `db:generate`, `db:migrate:local`, `db:migrate:staging`, `db:migrate:prod`, `deploy:staging`, `deploy:prod`, `seed`. Each one is called through `vp run`.
 - [x] CI (`setup-vp`): `vp install --frozen-lockfile`, `vp check`, `vp test`, `vp build`. On merge to `main`, run the staging migrations and then deploy to staging. On a `v*` tag, deploy to production (the production migration is a manual step, see Phase 17).
@@ -224,7 +224,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Accounts, limits & contracts
 
-- [ ] DeepSeek account with a small prepaid balance. Confirm the model name and price on DeepSeek's pricing page and store the key as a secret.
+- [x] DeepSeek account with a small prepaid balance. Confirm the model name and price on DeepSeek's pricing page and store the key as a secret.
 - [x] Read the Clef-flash model page: price, free daily allowance, context size, call format. Note the findings under Open decisions.
 - [x] Check the current Workers, D1 (rows read and written per day) and cron free-tier limits and note them under Open decisions.
 - [x] `docs/api-contracts.md`: the endpoint list for auth, courses, attempts, inbox, resources, rides, lost and found, marketplace and faculty, with the `notify()` and `screen()` signatures. Shapes are written as Zod stubs in `src/shared/schemas/`.
@@ -242,10 +242,10 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Test Gate 0
 
-- [ ] **CI is green on `main`, and a merge deploys to staging automatically.**
-- [ ] **The staging URL serves the app, and `/api/health` returns a value read from D1.**
-- [ ] **`vp dev` runs with the Router, Cloudflare and PWA plugins together, and HMR works.**
-- [ ] **(Manual) The app is installed to the home screen on Android Chrome and iOS Safari and opens standalone.**
+- [x] **CI is green on `main`, and a merge deploys to staging automatically.**
+- [x] **The staging URL serves the app, and `/api/health` returns a value read from D1.**
+- [x] **`vp dev` runs with the Router, Cloudflare and PWA plugins together, and HMR works.**
+- [x] **(Manual) The app is installed to the home screen on Android Chrome and iOS Safari and opens standalone.** Android done (2026-10-18); iOS pending.
 - [x] **If anything forced a fallback from Vite+, the decision is recorded in this phase.**
 
 > **Out of scope for Phase 0:** real auth, real screens, the offline screen and the update prompt (Phase 3).
