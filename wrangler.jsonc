@@ -1,0 +1,50 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "unilink",
+  "main": "src/server/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // Every non-/api path is served from the built PWA; unknown paths fall back to index.html.
+  "assets": {
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"],
+  },
+  // Top level = local dev and tests. Bindings are not inherited by envs, so each env repeats them.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "unilink-local",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "drizzle",
+    },
+  ],
+  "ai": { "binding": "AI" },
+  "triggers": { "crons": [] },
+  "env": {
+    "staging": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "unilink-staging",
+          "database_id": "1ecb692c-cee5-42ca-9212-fa97ba6c5c38",
+          "migrations_dir": "drizzle",
+        },
+      ],
+      "ai": { "binding": "AI" },
+      "triggers": { "crons": [] },
+    },
+    "production": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "unilink-prod",
+          "database_id": "4bd5738d-8a1b-4664-84b5-6b6aeb481758",
+          "migrations_dir": "drizzle",
+        },
+      ],
+      "ai": { "binding": "AI" },
+      "triggers": { "crons": [] },
+    },
+  },
+}

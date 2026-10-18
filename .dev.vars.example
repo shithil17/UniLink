@@ -1,0 +1,5 @@
+# Copy to .dev.vars (git-ignored) for local dev. Real values for staging/production are Worker secrets:
+#   vp exec wrangler secret put <NAME> --env staging
+DEEPSEEK_API_KEY=
+ADMIN_SEED_USERNAME=
+ADMIN_SEED_PASSWORD=
