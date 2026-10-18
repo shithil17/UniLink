@@ -45,4 +45,5 @@ export const contacts = z.object({
   messenger: z.string().optional(),
 });
 
-export const apiError = z.object({ error: z.string() });
+/** `error` is a stable code; `message` is safe to show the user when present. */
+export const apiError = z.object({ error: z.string(), message: z.string().optional() });

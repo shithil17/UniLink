@@ -6,7 +6,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 ## Status
 
-**Status (2026-10-18):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Changes from `plan_pwa.md`:
+**Status (2026-10-18):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Changes from `plan_pwa.md`:
 
 - The two cut orders that disagreed are now one locked order (see Suggested Build Order).
 - Course "ticks" are graded attempts, so attempts are the only source of truth for done courses, credits and CGPA (Phase 4).
@@ -308,6 +308,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > **Design decisions (locked in):**
 >
 > - **Student ID** format `YY S IIII SSS`, validated with `^\d{2}[123]\d{4}(042|642)$` after stripping spaces and dashes. The first 7 digits are the unique key (one account per student). The last 3 are stored separately. The first 2 digits (admission year) select the curriculum version. The ID is private, and only the username is public.
+>   Note (2026-10-18): hardened. The suffix is a verification digit (`0` = documents verified, `6` = not yet) plus a two-digit program code, so the pattern is now `^\d{2}[123]\d{4}[06]\d{2}$` and the code must be in the NSU program list in `src/shared/studentId.ts` (undergraduate and graduate). The admission year must not be after the current year in Asia/Dhaka, and not more than `STUDENT_ID_MAX_AGE_YEARS` (8) years before it. Both forms of one ID share the 7-digit key. This only rejects obviously fake IDs; ownership is still unchecked.
+>   Note (2026-10-18): signup also takes the full name and the NSU student email. The name is trimmed with spaces collapsed (2 to 80 characters). The email is lowercased and must end in `@northsouth.edu` (only the domain is checked, because the local part varies). Both are private, are never in a response, and the email is unique (`users.full_name` nullable for the seeded admin). The email is still not verified: `email_verified_at` stays null.
 > - **No email verification in the MVP** (accepted risk: the format is checked, ownership is not). `users.email` and `users.email_verified_at` exist and are nullable, so verification can be added later without a migration. Mitigations: the unique ID key, signup rate limits, the new-account cooldown before posting or submitting links, and the mod ID-conflict tool (Phase 7).
 > - **Passwords:** WebCrypto PBKDF2-SHA-256 with a random salt per user. Workers cap PBKDF2 at 100,000 iterations, so use that number. Store the algorithm and iteration count with the hash so it can change later.
 > - **Sessions:** a random 32-byte token in an HttpOnly, Secure, SameSite=Lax cookie. Only its SHA-256 hash is stored in `sessions`. Logout and password change delete the session rows.
@@ -318,18 +320,18 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Schema & helpers
 
-- [ ] Tables: `users` (username unique, `student_key` unique, `student_suffix`, admission year, password hash/salt/params, role, `banned_at`, `must_change_password`, `email` nullable, `email_verified_at` nullable, `created_at`), `sessions`, `audit_log`, `rate_limits`.
-- [ ] `src/shared/studentId.ts`: normalise, validate, split into key, suffix and admission year.
-- [ ] `src/server/audit.ts`: `audit({ actor, action, targetType, targetId, before, reason })`. Reversal comes in Phase 7.
-- [ ] `src/server/middleware/`: session loader, `requireUser`, `requireRole`, `rateLimit`, and a `canPost(user)` cooldown check for later phases.
-- [ ] `src/server/limits.ts` created with the auth values.
+- [x] Tables: `users` (username unique, `student_key` unique, `student_suffix`, admission year, password hash/salt/params, role, `banned_at`, `must_change_password`, `email` nullable, `email_verified_at` nullable, `created_at`), `sessions`, `audit_log`, `rate_limits`.
+- [x] `src/shared/studentId.ts`: normalise, validate, split into key, suffix and admission year.
+- [x] `src/server/audit.ts`: `audit({ actor, action, targetType, targetId, before, reason })`. Reversal comes in Phase 7.
+- [x] `src/server/middleware/`: session loader, `requireUser`, `requireRole`, `rateLimit`, and a `canPost(user)` cooldown check for later phases.
+- [x] `src/server/limits.ts` created with the auth values.
 
 ### Checklist — API & screens
 
-- [ ] `POST /api/auth/signup`, `/login`, `/logout`, `/change-password`, `GET /api/auth/me`.
-- [ ] Signup and login are rate-limited. A duplicate 7-digit key gets a generic "this ID is already registered, contact a mod" message.
-- [ ] `scripts/seed-admin.ts` (`vp run seed:admin`) creates the first admin from env vars.
-- [ ] Screens: sign up, log in, change password (forced redirect when the flag is set), log out in Settings.
+- [x] `POST /api/auth/signup`, `/login`, `/logout`, `/change-password`, `GET /api/auth/me`.
+- [x] Signup and login are rate-limited. A duplicate 7-digit key gets a generic "this ID is already registered, contact a mod" message.
+- [x] `scripts/seed-admin.ts` (`vp run seed:admin`) creates the first admin from env vars.
+- [x] Screens: sign up, log in, change password (forced redirect when the flag is set), log out in Settings.
 
 ### Checklist — Docs & QA (C, D)
 
@@ -338,9 +340,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/studentId.test.ts`: valid IDs with suffix 042 and 642, semester digit 1 to 3 only, wrong lengths, spaces and dashes, the split.
-- [ ] `src/server/features/auth/auth.api.test.ts`: a duplicate key is rejected, the cookie flags are set, only a hashed token is stored, a banned user is refused, a student calling a mod route gets 403, `must_change_password` blocks other routes, signup and login rate limits trigger, the cooldown blocks `canPost`.
-- [ ] Run: `vp test auth studentId`
+- [x] `src/shared/studentId.test.ts`: valid IDs with suffix 042 and 642, semester digit 1 to 3 only, wrong lengths, spaces and dashes, the split.
+- [x] `src/server/features/auth/auth.api.test.ts`: a duplicate key is rejected, the cookie flags are set, only a hashed token is stored, a banned user is refused, a student calling a mod route gets 403, `must_change_password` blocks other routes, signup and login rate limits trigger, the cooldown blocks `canPost`.
+- [x] Run: `vp test auth studentId`
 
 ### Test Gate 2
 
