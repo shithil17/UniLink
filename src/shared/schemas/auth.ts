@@ -1,12 +1,11 @@
 import { z } from "zod";
-
-// Stub. Student ID rules land in src/shared/studentId.ts.
+import { isValidStudentId } from "../studentId";
 
 export const role = z.enum(["student", "mod", "admin"]);
 
 export const signupRequest = z.object({
   username: z.string(),
-  studentId: z.string(),
+  studentId: z.string().refine(isValidStudentId, "Enter a valid NSU student ID"),
   password: z.string(),
 });
 

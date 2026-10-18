@@ -15,6 +15,13 @@
       "when": 1792326054532,
       "tag": "0001_seed_app_meta",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792342194141,
+      "tag": "0002_auth_tables",
+      "breakpoints": true
     }
   ]
 }

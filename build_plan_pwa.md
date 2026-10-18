@@ -318,11 +318,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Schema & helpers
 
-- [ ] Tables: `users` (username unique, `student_key` unique, `student_suffix`, admission year, password hash/salt/params, role, `banned_at`, `must_change_password`, `email` nullable, `email_verified_at` nullable, `created_at`), `sessions`, `audit_log`, `rate_limits`.
-- [ ] `src/shared/studentId.ts`: normalise, validate, split into key, suffix and admission year.
-- [ ] `src/server/audit.ts`: `audit({ actor, action, targetType, targetId, before, reason })`. Reversal comes in Phase 7.
-- [ ] `src/server/middleware/`: session loader, `requireUser`, `requireRole`, `rateLimit`, and a `canPost(user)` cooldown check for later phases.
-- [ ] `src/server/limits.ts` created with the auth values.
+- [x] Tables: `users` (username unique, `student_key` unique, `student_suffix`, admission year, password hash/salt/params, role, `banned_at`, `must_change_password`, `email` nullable, `email_verified_at` nullable, `created_at`), `sessions`, `audit_log`, `rate_limits`.
+- [x] `src/shared/studentId.ts`: normalise, validate, split into key, suffix and admission year.
+- [x] `src/server/audit.ts`: `audit({ actor, action, targetType, targetId, before, reason })`. Reversal comes in Phase 7.
+- [x] `src/server/middleware/`: session loader, `requireUser`, `requireRole`, `rateLimit`, and a `canPost(user)` cooldown check for later phases.
+- [x] `src/server/limits.ts` created with the auth values.
 
 ### Checklist — API & screens
 
