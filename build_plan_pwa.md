@@ -6,7 +6,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 ## Status
 
-**Status (2026-10-18):** Planning done. No code yet. Work starts at **Phase 0**. Changes from `plan_pwa.md`:
+**Status (2026-10-18):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Changes from `plan_pwa.md`:
 
 - The two cut orders that disagreed are now one locked order (see Suggested Build Order).
 - Course "ticks" are graded attempts, so attempts are the only source of truth for done courses, credits and CGPA (Phase 4).
@@ -265,6 +265,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - Palettes: **Ocean Teal** (default), **Red Gradient**, **Cherry Blossom Bloom**, **Cherry Red**, ported from the tested mock site. A theme changes colors only, not layout. `ceiling:` no dark mode. Revisit only after launch if users ask.
 > - Tokens (CSS variables): app background, hero gradient start and end, primary, accent, ink, soft, faint, body, line, tint, chip, deep, hero sub-text, **surface**. The default is defined in Tailwind v4's `@theme`. Every other palette is a `:root[data-theme="<id>"]` block that overrides the same variables.
 > - shadcn's variables (`--background`, `--foreground`, `--primary`, `--card`, `--border`, `--ring`, …) are aliases of the tokens. Focus rings use the accent token.
+>   Note (2026-10-18): the accent token is named `brand` (`text-brand`, `border-brand`) because shadcn's `accent` is a subtle hover fill, which aliases `tint`.
 > - `ThemeProvider` at the root route sets `data-theme` on `<html>` and saves the choice in `localStorage` under `<appname>-theme`. If the saved value is missing or unknown, or storage throws (private mode), it falls back to Ocean Teal.
 > - An inline script in `index.html` applies the saved theme and sets `<meta name="theme-color">` to the theme's hero color before first paint. The manifest's `theme_color` and the icons stay static Ocean Teal.
 > - Picker: `ThemePickerTrigger` on Settings (the current palette's swatches and name), which opens a sheet with all palettes. It uses `role="radiogroup"` and `aria-checked` and works with the keyboard.
@@ -273,11 +274,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Tokens & provider
 
-- [ ] Tokens and the four palettes in `src/client/index.css`, with the shadcn aliases mapped.
-- [ ] `src/shared/themes.ts` with id, name, blurb and five swatch colors per theme.
-- [ ] `ThemeProvider` (read with try/catch, validate against `themes.ts`, set `data-theme`, save, update the `theme-color` meta).
-- [ ] Inline no-flash script in `index.html` (same key, same validation, same fallback).
-- [ ] Settings route with `ThemePickerTrigger` and the sheet. Decide the open item "mock `BottomSheet` vs shadcn Drawer" here and record it: `________`.
+- [x] Tokens and the four palettes in `src/client/index.css`, with the shadcn aliases mapped.
+- [x] `src/shared/themes.ts` with id, name, blurb and five swatch colors per theme.
+- [x] `ThemeProvider` (read with try/catch, validate against `themes.ts`, set `data-theme`, save, update the `theme-color` meta).
+- [x] Inline no-flash script in `index.html` (same key, same validation, same fallback).
+- [x] Settings route with `ThemePickerTrigger` and the sheet. Decide the open item "mock `BottomSheet` vs shadcn Drawer" here and record it: `shadcn Sheet with side="bottom"` (Base UI dialog: focus trap, Escape and a11y for free, no extra dependency; Drawer would add `vaul` for a drag gesture we do not need, and the hand-rolled `BottomSheet` is dropped).
 
 ### Checklist — Docs & QA (C, D)
 
@@ -285,14 +286,14 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/client/components/theme/ThemeProvider.test.tsx`: reads a saved theme, ignores an unknown value, falls back when storage throws, sets `data-theme`, saves changes, updates the `theme-color` meta.
-- [ ] `src/shared/themes.test.ts`: every non-default theme in `themes.ts` has a `:root[data-theme="<id>"]` block in `index.css`, **and** the inline script in `index.html` knows the same ids and hero colors (the script cannot import `themes.ts`, so this test stops the copies from drifting apart).
-- [ ] Run: `vp test theme`
+- [x] `src/client/components/theme/ThemeProvider.test.tsx`: reads a saved theme, ignores an unknown value, falls back when storage throws, sets `data-theme`, saves changes, updates the `theme-color` meta.
+- [x] `src/shared/themes.test.ts`: every non-default theme in `themes.ts` has a `:root[data-theme="<id>"]` block in `index.css`, **and** the inline script in `index.html` knows the same ids and hero colors (the script cannot import `themes.ts`, so this test stops the copies from drifting apart).
+- [x] Run: `vp test theme`
 
 ### Test Gate 1
 
-- [ ] **Theme tests pass.**
-- [ ] **The hard-coded color search (Quick Reference) finds nothing in `src/client` outside `index.css`.**
+- [x] **Theme tests pass.**
+- [x] **The hard-coded color search (Quick Reference) finds nothing in `src/client` outside `index.css`.**
 - [ ] **(Manual) On the installed app, switching theme and restarting keeps the choice, with no flash of Ocean Teal, and the status bar color matches.**
 - [ ] **(Manual, D) Every palette passes the contrast check.**
 
@@ -1055,7 +1056,7 @@ Each row names the phase that needs the answer. When it is settled, move it into
 | Clef-flash: re-check price and allowance before launch (findings below)                       | P14, P17          | Dev A    |
 | DeepSeek prepaid budget and global daily cap (model and price below)                          | P13               | Dev A    |
 | App name, icon set, theme storage key                                                         | P1, P3            | All      |
-| Mock `BottomSheet` vs shadcn Drawer (one overlay system)                                      | P1                | Dev B    |
+| Mock `BottomSheet` vs shadcn Drawer: **decided**, shadcn `Sheet` (`side="bottom"`)            | P1                | Dev B    |
 | Confirm the four launch palettes                                                              | P1                | D        |
 | New-account cooldown length, signup and login rate limits                                     | P2                | Dev B    |
 | NSU term start dates and routine day letters                                                  | P4, P9            | D        |

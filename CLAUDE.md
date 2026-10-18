@@ -50,7 +50,10 @@ Before calling a checklist done: `vp check && vp test && vp build`.
 
 ## Commits
 
-- Never commit, and never ask to commit. When a checklist is completed, suggest a commit message.
+- Never push, open PRs or merge.
+- Inside `/phase`, the orchestrating session commits each reviewed checklist block on its feature branch. Sub-agents never commit.
+- Outside `/phase`, never commit and never ask to commit. When a checklist is completed, suggest a commit message.
+- Never put "phase" or a phase number in branch names or commit messages.
 - Conventional Commits: `type(scope): imperative summary`, concise, lowercase, no trailing period.
 - Never mention phases, `build_plan_pwa.md`, `plan_pwa.md` or `CLAUDE.md` in commit messages or code.
 - Never mention agents, skills, Claude or Codex in commit messages.
