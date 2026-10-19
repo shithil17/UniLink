@@ -492,6 +492,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - `ceiling:` four palettes. Each extra one adds a full contrast pass. Revisit after launch if users ask for more.
 > - **Palette names and roles (built 2026-10-20):** the ids are unchanged. Display names: Ocean Teal (kept), Red Gradient is now **Bordeaux** (id `red-gradient`), Cherry Blossom Bloom is now **Cherry Blossom** (id `cherry-blossom`), Cherry Red (kept). `bar` equals `app` in every palette, `primary` equals `brand`, and `deep` (unused) equals `ink`. The shadcn aliases are `--input` → `edge` and `--destructive` → `danger`. The picker previews each palette as its ground, ink ("Aa") and accent dot, using the colors in `themes.ts` so the preview never follows the active theme.
 > - **Font check (2026-10-20):** Bangla sample text (letters and digits ০–৯) renders in Noto Sans Bengali: every sample codepoint is in the font's Bengali subset, and in the browser both families load (Geist for Latin, Noto for U+0980–09FE through `unicode-range`). Geist's `tabular-nums` works: `1111` at 40px measures 56.6px proportional and 96px tabular (every digit 600 units wide in the font file).
+> - **Radii and floating layers (built 2026-10-20):** controls (buttons, inputs, selects, badges, checkboxes, menu items) use `rounded-control` = 6px (`--radius-control`); panels, sheets, dialogs and select popups use `rounded-panel` = 10px (`--radius-panel`). Panels are `bg-surface` with a `line` hairline and no shadow. Only floating layers (sheet, dialog, select popup, toast) get the one `shadow-float`, and none uses backdrop blur. Keyboard focus is one solid `brand` outline from `focusRing` in `components/ui/focus.ts`; a filled button's hover mixes toward `ink` instead of fading.
 
 ### Checklist — Palettes & tokens
 
@@ -502,11 +503,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Components & shell
 
-- [ ] shadcn components restyled to the language (button, input, select, sheet, tabs, badge, card, checkbox, radio-group, textarea, dialog, sonner, field): one control radius, `edge` borders, no resting shadows, no opacity hovers on filled buttons, focus ring in `brand`.
-- [ ] `SectionHeader` (sentence-case title, optional count and action, hairline below) and `StateMark` (filled, hollow, struck, half) as shared components.
-- [ ] `AppLayout`: wordmark bar, bottom tab bar on phones, top bar from `md` up, active tab by weight and ink.
-- [ ] Home: the summary panel (degree standing until Phase 9) and the "unlocked next" list, with loading, empty (no curriculum yet), signed-out and error states.
-- [ ] Courses header: the degree standing (credits done of the total and one short bar per category, all in `brand`).
+- [x] shadcn components restyled to the language (button, input, select, sheet, tabs, badge, card, checkbox, radio-group, textarea, dialog, sonner, field): one control radius, `edge` borders, no resting shadows, no opacity hovers on filled buttons, focus ring in `brand`.
+- [x] `SectionHeader` (sentence-case title, optional count and action, hairline below) and `StateMark` (filled, hollow, struck, half) as shared components.
+- [x] `AppLayout`: wordmark bar, bottom tab bar on phones, top bar from `md` up, active tab by weight and ink.
+- [x] Home: the summary panel (degree standing until Phase 9) and the "unlocked next" list, with loading, empty (no curriculum yet), signed-out and error states.
+- [x] Courses header: the degree standing (credits done of the total and one short bar per category, all in `brand`).
 
 ### Checklist — Restyle existing screens
 

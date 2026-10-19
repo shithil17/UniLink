@@ -1,7 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import type { CourseMap } from "../../../shared/schemas/courses";
-
-type Status = CourseMap["categories"][number]["slots"][number]["status"];
+import type { CourseStatus as Status } from "../../../shared/schemas/courses";
 
 const CHIPS: Record<Status, { label: string; variant: "default" | "secondary" | "outline" }> = {
   done: { label: "Done", variant: "default" },

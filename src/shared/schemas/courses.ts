@@ -210,6 +210,7 @@ export const courseMap = z.object({
   extras: z.array(courseMapStudentCourse),
 });
 
+export type CourseStatus = z.infer<typeof courseStatus>;
 export type CurriculumImport = z.infer<typeof curriculumImport>;
 export type CourseImportRow = z.infer<typeof courseImportRow>;
 export type ImportResult = z.infer<typeof importResult>;
