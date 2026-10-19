@@ -40,7 +40,7 @@ export function OptionSelect({
       </SelectTrigger>
       <SelectContent>
         {options.map((o) => (
-          <SelectItem key={o.value} value={o.value}>
+          <SelectItem key={o.value} value={o.value} className="min-h-11 px-3">
             {o.label}
           </SelectItem>
         ))}
