@@ -21,7 +21,7 @@ function applyTheme(id: ThemeId) {
     meta.name = "theme-color";
     document.head.appendChild(meta);
   }
-  meta.content = theme.hero;
+  meta.content = theme.bar;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {

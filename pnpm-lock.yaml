@@ -184,6 +184,9 @@ importers:
       '@fontsource-variable/geist':
         specifier: 5.3.0
         version: 5.3.0
+      '@fontsource-variable/noto-sans-bengali':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@hono/zod-validator':
         specifier: 0.9.1
         version: 0.9.1(hono@4.13.13)(zod@4.6.7)
@@ -1401,6 +1404,9 @@ packages:
 
   '@fontsource-variable/geist@5.3.0':
     resolution: {integrity: sha512-j0m+vLQuG5XAYoHtGCVu0spvlGreR3EzpECUVzkFmI1mTVnAO38l/NEPDCFgZ177JxzYJCLSmTQibIiYPilGrA==}
+
+  '@fontsource-variable/noto-sans-bengali@5.3.0':
+    resolution: {integrity: sha512-035m0mzOcsVC1GHFH1ioeXjIFqVhuflGvnn8Xvr6esaZlGErNe1d+Jx2sEN/2WGPhjrT+5wwKPPSO8rbBeQo3w==}
 
   '@hono/node-server@2.1.5':
     resolution: {integrity: sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==}
@@ -6139,6 +6145,8 @@ snapshots:
   '@floating-ui/utils@0.2.12': {}
 
   '@fontsource-variable/geist@5.3.0': {}
+
+  '@fontsource-variable/noto-sans-bengali@5.3.0': {}
 
   '@hono/node-server@2.1.5(hono@4.13.13)':
     dependencies:

@@ -490,13 +490,15 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - **App-screen rules** (from the taste skill's app-screen chapter): colors go on data, state and the one primary action, not on chrome. One filled primary per screen. Numbers are right-aligned in tabular figures. A real zero prints as `0` and a missing value as a grey dash. Loading shows the final layout with flat bars, and an error shows inside the block that failed, with a Retry.
 > - **Contrast floor** (unchanged from Phase 1): body text ≥ 4.5:1, large text and controls (including `edge` borders) ≥ 3:1 on every palette, including text on primary buttons and on `brand-soft`. A palette that fails is fixed before it ships.
 > - `ceiling:` four palettes. Each extra one adds a full contrast pass. Revisit after launch if users ask for more.
+> - **Palette names and roles (built 2026-10-20):** the ids are unchanged. Display names: Ocean Teal (kept), Red Gradient is now **Bordeaux** (id `red-gradient`), Cherry Blossom Bloom is now **Cherry Blossom** (id `cherry-blossom`), Cherry Red (kept). `bar` equals `app` in every palette, `primary` equals `brand`, and `deep` (unused) equals `ink`. The shadcn aliases are `--input` → `edge` and `--destructive` → `danger`. The picker previews each palette as its ground, ink ("Aa") and accent dot, using the colors in `themes.ts` so the preview never follows the active theme.
+> - **Font check (2026-10-20):** Bangla sample text (letters and digits ০–৯) renders in Noto Sans Bengali: every sample codepoint is in the font's Bengali subset, and in the browser both families load (Geist for Latin, Noto for U+0980–09FE through `unicode-range`). Geist's `tabular-nums` works: `1111` at 40px measures 56.6px proportional and 96px tabular (every digit 600 units wide in the font file).
 
 ### Checklist — Palettes & tokens
 
-- [ ] The four palettes in `src/client/index.css` reorganized into the roles above, with `edge`, `brand-soft`, `danger` and `bar` added and the shadcn aliases remapped (`--input` → `edge`, `--destructive` → `danger`). Remove `hero1`, `hero2` and `herosub`.
-- [ ] `src/shared/themes.ts` and the inline script in `index.html` move from `hero` to `bar`. The ids are unchanged, and an unknown id still falls back to Ocean Teal.
-- [ ] Noto Sans Bengali through Fontsource (`vp add @fontsource-variable/noto-sans-bengali`) as Geist's fallback. Check that Bangla sample text renders in it and that Geist's `tabular-nums` changes digit widths, and record the result.
-- [ ] Theme picker restyled: each palette previews as its ground, ink and accent.
+- [x] The four palettes in `src/client/index.css` reorganized into the roles above, with `edge`, `brand-soft`, `danger` and `bar` added and the shadcn aliases remapped (`--input` → `edge`, `--destructive` → `danger`). Remove `hero1`, `hero2` and `herosub`.
+- [x] `src/shared/themes.ts` and the inline script in `index.html` move from `hero` to `bar`. The ids are unchanged, and an unknown id still falls back to Ocean Teal.
+- [x] Noto Sans Bengali through Fontsource (`vp add @fontsource-variable/noto-sans-bengali`) as Geist's fallback. Check that Bangla sample text renders in it and that Geist's `tabular-nums` changes digit widths, and record the result.
+- [x] Theme picker restyled: each palette previews as its ground, ink and accent.
 
 ### Checklist — Components & shell
 
