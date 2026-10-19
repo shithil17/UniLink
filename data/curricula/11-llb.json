@@ -1,0 +1,536 @@
+{
+  "program": "11",
+  "name": "Bachelor of Laws (LL.B)",
+  "version": "New Curriculum",
+  "effectiveFromYear": 0,
+  "totalCredits": 130,
+  "source": "LLB-New-Curriculum.pdf",
+  "notes": [
+    "Version label taken from the file name (LLB-New-Curriculum.pdf); the document prints no version or effective year, so effectiveFromYear is 0.",
+    "Semesters numbered sequentially from Year 1 Term 1 = 1 to Year 4 Term 3 = 12 (three terms per year as printed).",
+    "Categories: the document prints totals for Core Courses (73), General Education (51) and Free Elective (6). Each course was assigned by subject: LAW courses and the four Law Elective slots = Core Courses (they sum to exactly 73), Open Elective 1 and 2 = Free Elective, all others = General Education (sum 51).",
+    "The science/social science choice 'PSY 101 or ENV 107 or PBH 101 or BIO 103 or PHY 107 or CHE 101' is printed three times at 4 credits each; modelled as three rows (PSY101, ENV107, PBH101) each listing all other options as alternatives. 4 credits is as printed even though PSY101 alone is usually 3 credits elsewhere (presumably the 4 counts a lab for the science options).",
+    "PHY107 and BIO103/CHE101 are printed only as 'Physics I', 'Biology I', 'Chemistry I' ('Biology | or Physics | or Chemistry |'); titles normalised to 'Biology I', 'Physics I', 'Chemistry I'.",
+    "Law electives are printed as 'LAW 422-27 Law Elective n (see attached list)'; the attached list is not included in the source, so they are elective slots (LAW422-LAW427).",
+    "ENV 205 is printed as the code for Introduction to Bangladesh Geography; other NSU maps list it as ENV203/GEO205. Kept ENV205 as printed.",
+    "No prerequisites are printed in the document; all prereq fields are null."
+  ],
+  "courses": [
+    {
+      "kind": "course",
+      "code": "ENG102",
+      "title": "Introduction to Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "SOC101",
+      "title": "Introduction to Sociology",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [
+        {
+          "code": "ENV205",
+          "title": "Introduction to Bangladesh Geography"
+        },
+        {
+          "code": "ANT101",
+          "title": "Introduction to Anthropology"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "HIS101",
+      "title": "Bangladesh History and Culture",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG103",
+      "title": "Intermediate Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MAT112",
+      "title": "College Algebra",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [
+        {
+          "code": "MAT116",
+          "title": "Precalculus"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "PHI101",
+      "title": "Introduction to Philosophy",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "OPEN-ELECT1",
+      "title": "Open Elective 1",
+      "credits": 3,
+      "category": "Free Elective",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG111",
+      "title": "Public Speaking",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "PSY101",
+      "title": "Introduction to Psychology",
+      "credits": 4,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [
+        {
+          "code": "ENV107",
+          "title": "Introduction to Environmental Science"
+        },
+        {
+          "code": "PBH101",
+          "title": "Introduction to Public Health"
+        },
+        {
+          "code": "BIO103",
+          "title": "Biology I"
+        },
+        {
+          "code": "PHY107",
+          "title": "Physics I"
+        },
+        {
+          "code": "CHE101",
+          "title": "Chemistry I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW101",
+      "title": "Introduction to the Legal System & Legal Process",
+      "credits": 3,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MIS105",
+      "title": "Introduction to Computers",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG115",
+      "title": "Literature",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW201",
+      "title": "The Constitutional Law of Bangladesh",
+      "credits": 4,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV107",
+      "title": "Introduction to Environmental Science",
+      "credits": 4,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [
+        {
+          "code": "PSY101",
+          "title": "Introduction to Psychology"
+        },
+        {
+          "code": "PBH101",
+          "title": "Introduction to Public Health"
+        },
+        {
+          "code": "BIO103",
+          "title": "Biology I"
+        },
+        {
+          "code": "PHY107",
+          "title": "Physics I"
+        },
+        {
+          "code": "CHE101",
+          "title": "Chemistry I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW211",
+      "title": "Family and Property Law",
+      "credits": 4,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW107",
+      "title": "The Law of Contract & Restitution",
+      "credits": 4,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "SIA172",
+      "title": "Introduction to Statistics",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "HIS102",
+      "title": "Introduction to World Civilization",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW213",
+      "title": "Law of crimes",
+      "credits": 4,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ECO101",
+      "title": "Introduction to Microeconomics",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [
+        {
+          "code": "ECO104",
+          "title": "Introduction to Macroeconomics"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW301",
+      "title": "Law of Evidence and Medical Jurisprudence",
+      "credits": 4,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW313",
+      "title": "Law of Criminal Procedure",
+      "credits": 4,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "PBH101",
+      "title": "Introduction to Public Health",
+      "credits": 4,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [
+        {
+          "code": "PSY101",
+          "title": "Introduction to Psychology"
+        },
+        {
+          "code": "ENV107",
+          "title": "Introduction to Environmental Science"
+        },
+        {
+          "code": "BIO103",
+          "title": "Biology I"
+        },
+        {
+          "code": "PHY107",
+          "title": "Physics I"
+        },
+        {
+          "code": "CHE101",
+          "title": "Chemistry I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "POL101",
+      "title": "Introduction to Political Science",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [
+        {
+          "code": "POL104",
+          "title": "Introduction to Governance"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW303",
+      "title": "Corporate Law",
+      "credits": 3,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW314",
+      "title": "Legal Ethics",
+      "credits": 3,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW305",
+      "title": "Law of Civil Procedure",
+      "credits": 4,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW306",
+      "title": "Alternative Dispute Resolution",
+      "credits": 3,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "LAW-ELECT1",
+      "title": "Law Elective 1 (LAW 422-427)",
+      "credits": 3,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW417",
+      "title": "Property Law and Transfers",
+      "credits": 4,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW418",
+      "title": "Legal Drafting (Civil and Criminal) and Conveyance",
+      "credits": 4,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "LAW-ELECT2",
+      "title": "Law Elective 2 (LAW 422-427)",
+      "credits": 3,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW419",
+      "title": "Fiscal & Taxation Law",
+      "credits": 3,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW420",
+      "title": "Clinical Legal Education and Community Legal Service",
+      "credits": 4,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "LAW-ELECT3",
+      "title": "Law Elective 3 (LAW 422-427)",
+      "credits": 3,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "OPEN-ELECT2",
+      "title": "Open Elective 2",
+      "credits": 3,
+      "category": "Free Elective",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW405",
+      "title": "Labor and Employment Law",
+      "credits": 3,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW421",
+      "title": "Public International Law",
+      "credits": 3,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "LAW-ELECT4",
+      "title": "Law Elective 4 (LAW 422-427)",
+      "credits": 3,
+      "category": "Core Courses",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": null
+    }
+  ]
+}

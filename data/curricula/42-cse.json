@@ -1,0 +1,601 @@
+{
+  "program": "42",
+  "name": "BS in Computer Science and Engineering",
+  "version": "Fall 2014",
+  "effectiveFromYear": 14,
+  "totalCredits": 130,
+  "source": "B.-S.-in-Computer-Science-and-Engineering-1.pdf",
+  "notes": [
+    "The document prints no category names; categories were inferred from its colour coding (green = General Education, purple = Math & Science, red = Major Core, bold brown = Capstone, orange = Electives).",
+    "CEE110 and EEE452 are coloured with the Math & Science group, so they are filed under Math & Science.",
+    "Semesters follow the 12-semester prerequisite table on page 2.",
+    "ENG103 prerequisite 'ENG102/Waiver' is stored as ENG102.",
+    "CSE499A requires '100 credits completed'; the sequence page adds 'and all core courses', which is not encoded in the rule.",
+    "'SOC101/ANT101/ENV203(GEO205)' is one slot; ENV203 and GEO205 appear to be the same course (Bangladesh Geography) under two codes, both listed as alternatives.",
+    "Lab suffixes (+CL, +IL) were dropped; credits are as printed (combined where the map prints them combined)."
+  ],
+  "courses": [
+    {
+      "kind": "course",
+      "code": "ENG102",
+      "title": "Introduction to Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MAT116",
+      "title": "Pre-Calculus",
+      "credits": 0,
+      "category": "Math & Science",
+      "nonCredit": true,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CEE110",
+      "title": "Engineering Drawing",
+      "credits": 1,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CSE115",
+      "title": "Programming Language I",
+      "credits": 4,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG103",
+      "title": "Intermediate Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": {
+        "course": "ENG102"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MAT120",
+      "title": "Calculus I",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT116"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MAT125",
+      "title": "Linear Algebra",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT116"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CSE173",
+      "title": "Discrete Mathematics",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": {
+        "course": "CSE115"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ENG111",
+      "title": "Public Speaking",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MAT130",
+      "title": "Calculus II",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT120"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "PHY107",
+      "title": "Physics I",
+      "credits": 4,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT120"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CSE215",
+      "title": "Programming Language II",
+      "credits": 4,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "CSE173"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "PHI104",
+      "title": "Introduction to Ethics",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MAT250",
+      "title": "Calculus III",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT130"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "PHY108",
+      "title": "Physics II",
+      "credits": 4,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "MAT130"
+          },
+          {
+            "course": "PHY107"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CSE225",
+      "title": "Data Structures and Algorithm",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "course": "CSE215"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ENG115",
+      "title": "Literature",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "course": "ENG103"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MAT350",
+      "title": "Engineering Mathematics",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT250"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "EEE141",
+      "title": "Electric Circuit I",
+      "credits": 4,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "PHY107"
+          },
+          {
+            "course": "MAT120"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CSE231",
+      "title": "Digital Logic Design",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "course": "CSE173"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "HIS101",
+      "title": "Bangladesh Culture and Heritage",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MAT361",
+      "title": "Probability and Statistics",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT250"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CSE299",
+      "title": "Junior Design",
+      "credits": 1,
+      "category": "Capstone",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "credits": 60
+      }
+    },
+    {
+      "kind": "course",
+      "code": "HIS102",
+      "title": "Introduction to World Civilization",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CHE101",
+      "title": "Chemistry I",
+      "credits": 4,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT350"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "EEE111",
+      "title": "Analog Electronics I",
+      "credits": 4,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "course": "EEE141"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CSE332",
+      "title": "Computer Organization and Architecture",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "course": "CSE231"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "POL101",
+      "title": "Introduction to Political Science",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [
+        {
+          "code": "POL104",
+          "title": "Governance"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CSE311",
+      "title": "Database Systems",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "course": "CSE225"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CSE323",
+      "title": "Operating Systems Design",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "course": "CSE332"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CSE373",
+      "title": "Design and Analysis of Algorithms",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "CSE225"
+          },
+          {
+            "course": "MAT361"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ECO101",
+      "title": "Introduction to Microeconomics",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [
+        {
+          "code": "ECO104",
+          "title": "Introduction to Macroeconomics"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO103",
+      "title": "Biology I",
+      "credits": 4,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CSE327",
+      "title": "Software Engineering",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "course": "CSE311"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CSE331",
+      "title": "Microprocessor Interfacing and Embedded System",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "course": "CSE323"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "SOC101",
+      "title": "Introduction to Sociology",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [
+        {
+          "code": "ANT101",
+          "title": "Introduction to Anthropology"
+        },
+        {
+          "code": "ENV203",
+          "title": "Bangladesh Geography"
+        },
+        {
+          "code": "GEO205",
+          "title": "Bangladesh Geography"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CSE425",
+      "title": "Concepts of Programming Language",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": {
+        "course": "CSE327"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "EEE452",
+      "title": "Engineering Economics",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "ELECT1",
+      "title": "Elective 1",
+      "credits": 3,
+      "category": "Electives",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "ELECT2",
+      "title": "Elective 2",
+      "credits": 3,
+      "category": "Electives",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CSE499A",
+      "title": "Senior Design I",
+      "credits": 1.5,
+      "category": "Capstone",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": {
+        "credits": 100
+      }
+    },
+    {
+      "kind": "elective",
+      "code": "ELECT3",
+      "title": "Elective 3",
+      "credits": 3,
+      "category": "Electives",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "OPEN-ELECT",
+      "title": "Open Elective",
+      "credits": 3,
+      "category": "Open Elective",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CSE499B",
+      "title": "Senior Design II",
+      "credits": 1.5,
+      "category": "Capstone",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": {
+        "course": "CSE499A"
+      }
+    }
+  ]
+}

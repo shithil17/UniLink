@@ -1,0 +1,811 @@
+{
+  "program": "20",
+  "name": "BS in Economics",
+  "version": "Spring 2019",
+  "effectiveFromYear": 19,
+  "totalCredits": 120,
+  "source": "BS in Economics Curriculum (from Spring 2019)-updated.pdf",
+  "notes": [
+    "Credit sum: General Education 36 (Languages 9, Humanities 9, Social Sciences 6, Sciences 12) + School Core 21 + Math Requirements 6 + Major Requirements 18 + Economics Electives 12 + Free Electives 27 = 120.",
+    "Courses marked * in the General Education and Major sections (BUS251, ECO101, ECO134, ECO172, MIS105) are counted only once, under School Core, as the document says.",
+    "Sciences: 'three courses from BIO103/CHE101/ENV107/PBH101/PHY107/PSY101 with one credit lab each' (12 Cr) are three 4-credit slots that each list the other five options. Prerequisites printed as 'Check relevant department', so null.",
+    "Social Sciences option 'ENV 203/GEO205' is listed as two alternatives with the same title.",
+    "Economics Electives: 12 credits = 4 courses chosen from the 10 listed (ECO317 ... ECO492); modelled as 4 slots each listing the other nine. Each slot's prereq is that of its own code; the alternatives' prerequisites are not modelled. The document does not say whether other ECO courses also count.",
+    "Free Electives 27 Cr = 12 Cr optional minor + 15 Cr from any area university-wide; modelled as 9 free elective placeholders of 3 credits.",
+    "Prerequisites follow the curriculum table. Where the course descriptions on pages 3-5 differ, the table was kept: ECO173 table '-' but description 'ECO172' (description used, since the table gives none); ECO204 description adds ECO101; ECO328 description adds ECO201; ECO349 table ECO328 vs description ECO101, ECO104 (description used, because ECO328 is an alternative of the same slot); ECO354 description adds ECO204; ECO406 description ECO201, ECO204; ECO414 description adds ECO101; ECO372 description 'ECO173, MAT250' vs table 'ECO173/BUS173 & ECO134/BUS135/MAT120'; ECO201 description omits the BUS135/MAT120 options.",
+    "ECO490 prerequisite '12 credits of ECO courses & ECO372' is stored as ECO372 only; the 12 ECO-credit condition cannot be expressed (a credits leaf counts all degree credits).",
+    "ENG102 is added as a non-credit row (0 credits, not counted in the 120) because the document requires it for ENG103 'if not waived'; students with a waiver skip it.",
+    "Prerequisite options dropped because those courses are not part of the Economics degree: BUS135 and MAT120 (printed as alternatives to ECO134 in 'ECO134/BUS135/MAT120' for ECO201, ECO204, ECO244, ECO301, ECO304, ECO372), so those rules now require ECO134; BUS173 (printed 'ECO173/BUS173' for ECO372), so ECO372 requires ECO173; MAT116 (printed prerequisite of MAT125), so MAT125 has no prerequisite.",
+    "The document gives no semester plan, so semester is null. Row order follows the document."
+  ],
+  "courses": [
+    {
+      "kind": "course",
+      "code": "ENG102",
+      "title": "Introduction to Composition",
+      "credits": 0,
+      "category": "General Education",
+      "nonCredit": true,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BEN205",
+      "title": "Bangla Language and Literature",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG103",
+      "title": "Intermediate Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "ENG102"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ENG105",
+      "title": "Advanced Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "ENG103"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "PHI101",
+      "title": "Introduction to Philosophy",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "HIS101",
+      "title": "Bangladesh History, Culture",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "HIS102",
+          "title": "World Civilization"
+        },
+        {
+          "code": "HIS202",
+          "title": "Indo-Bangla History"
+        },
+        {
+          "code": "HIS203",
+          "title": "Islamic History"
+        },
+        {
+          "code": "HIS205",
+          "title": "World History"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "HIS103",
+      "title": "Emergence of Bangladesh",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "PAD201",
+      "title": "Introduction to Public Administration",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "POL101",
+          "title": "Introduction to Political Science"
+        },
+        {
+          "code": "POL104",
+          "title": "Introduction to Governance"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ANT101",
+      "title": "Introduction to Anthropology",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "ENV203",
+          "title": "Introduction to Bangladesh Geography"
+        },
+        {
+          "code": "GEO205",
+          "title": "Introduction to Bangladesh Geography"
+        },
+        {
+          "code": "SOC101",
+          "title": "Introduction to Sociology"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO103",
+      "title": "Biology I",
+      "credits": 4,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "CHE101",
+          "title": "Chemistry I"
+        },
+        {
+          "code": "ENV107",
+          "title": "Introduction to Environmental Science"
+        },
+        {
+          "code": "PBH101",
+          "title": "Introduction to Public Health"
+        },
+        {
+          "code": "PHY107",
+          "title": "Physics I"
+        },
+        {
+          "code": "PSY101",
+          "title": "Introduction to Psychology"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CHE101",
+      "title": "Chemistry I",
+      "credits": 4,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "BIO103",
+          "title": "Biology I"
+        },
+        {
+          "code": "ENV107",
+          "title": "Introduction to Environmental Science"
+        },
+        {
+          "code": "PBH101",
+          "title": "Introduction to Public Health"
+        },
+        {
+          "code": "PHY107",
+          "title": "Physics I"
+        },
+        {
+          "code": "PSY101",
+          "title": "Introduction to Psychology"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV107",
+      "title": "Introduction to Environmental Science",
+      "credits": 4,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "BIO103",
+          "title": "Biology I"
+        },
+        {
+          "code": "CHE101",
+          "title": "Chemistry I"
+        },
+        {
+          "code": "PBH101",
+          "title": "Introduction to Public Health"
+        },
+        {
+          "code": "PHY107",
+          "title": "Physics I"
+        },
+        {
+          "code": "PSY101",
+          "title": "Introduction to Psychology"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BUS251",
+      "title": "Business Communication",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "ENG105"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ECO101",
+      "title": "Introduction to Microeconomics",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ECO104",
+      "title": "Introduction to Macroeconomics",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ECO134",
+      "title": "Applied Mathematics for Economics I",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "ECO101"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ECO172",
+      "title": "Introduction to Statistics",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ECO173",
+      "title": "Applied Statistics",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "ECO172"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIS105",
+      "title": "Computer Information Systems",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ECO244",
+      "title": "Applied Mathematics for Economics II",
+      "credits": 3,
+      "category": "Math Requirements",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "ECO101"
+          },
+          {
+            "course": "ECO104"
+          },
+          {
+            "course": "ECO134"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MAT125",
+      "title": "Introduction to Linear Algebra",
+      "credits": 3,
+      "category": "Math Requirements",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ECO201",
+      "title": "Intermediate Microeconomic Theory I",
+      "credits": 3,
+      "category": "Major Requirements",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "ECO101"
+          },
+          {
+            "course": "ECO134"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ECO204",
+      "title": "Intermediate Macroeconomic Theory I",
+      "credits": 3,
+      "category": "Major Requirements",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "ECO104"
+          },
+          {
+            "course": "ECO134"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ECO301",
+      "title": "Intermediate Microeconomic Theory II",
+      "credits": 3,
+      "category": "Major Requirements",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "ECO201"
+          },
+          {
+            "course": "ECO134"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ECO304",
+      "title": "Intermediate Macroeconomic Theory II",
+      "credits": 3,
+      "category": "Major Requirements",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "ECO204"
+          },
+          {
+            "course": "ECO134"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ECO372",
+      "title": "Introduction to Econometrics",
+      "credits": 3,
+      "category": "Major Requirements",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "ECO173"
+          },
+          {
+            "course": "ECO134"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ECO490",
+      "title": "Senior Seminar (Capstone)",
+      "credits": 3,
+      "category": "Major Requirements",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "ECO372"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ECO317",
+      "title": "Money, Banking and Financial Markets",
+      "credits": 3,
+      "category": "Economics Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "ECO328",
+          "title": "International Trade Theory and Policy"
+        },
+        {
+          "code": "ECO349",
+          "title": "Economy of Bangladesh"
+        },
+        {
+          "code": "ECO354",
+          "title": "Environmental and Natural Resources Economics"
+        },
+        {
+          "code": "ECO406",
+          "title": "History of Economic Thought"
+        },
+        {
+          "code": "ECO414",
+          "title": "Public Finance"
+        },
+        {
+          "code": "ECO415",
+          "title": "Economic Development"
+        },
+        {
+          "code": "ECO441",
+          "title": "Labor Economics"
+        },
+        {
+          "code": "ECO443",
+          "title": "Health Economics"
+        },
+        {
+          "code": "ECO492",
+          "title": "Special Topics in Economics"
+        }
+      ],
+      "prereq": {
+        "all": [
+          {
+            "course": "ECO101"
+          },
+          {
+            "course": "ECO104"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ECO328",
+      "title": "International Trade Theory and Policy",
+      "credits": 3,
+      "category": "Economics Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "ECO317",
+          "title": "Money, Banking and Financial Markets"
+        },
+        {
+          "code": "ECO349",
+          "title": "Economy of Bangladesh"
+        },
+        {
+          "code": "ECO354",
+          "title": "Environmental and Natural Resources Economics"
+        },
+        {
+          "code": "ECO406",
+          "title": "History of Economic Thought"
+        },
+        {
+          "code": "ECO414",
+          "title": "Public Finance"
+        },
+        {
+          "code": "ECO415",
+          "title": "Economic Development"
+        },
+        {
+          "code": "ECO441",
+          "title": "Labor Economics"
+        },
+        {
+          "code": "ECO443",
+          "title": "Health Economics"
+        },
+        {
+          "code": "ECO492",
+          "title": "Special Topics in Economics"
+        }
+      ],
+      "prereq": {
+        "all": [
+          {
+            "course": "ECO101"
+          },
+          {
+            "course": "ECO104"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ECO349",
+      "title": "Economy of Bangladesh",
+      "credits": 3,
+      "category": "Economics Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "ECO317",
+          "title": "Money, Banking and Financial Markets"
+        },
+        {
+          "code": "ECO328",
+          "title": "International Trade Theory and Policy"
+        },
+        {
+          "code": "ECO354",
+          "title": "Environmental and Natural Resources Economics"
+        },
+        {
+          "code": "ECO406",
+          "title": "History of Economic Thought"
+        },
+        {
+          "code": "ECO414",
+          "title": "Public Finance"
+        },
+        {
+          "code": "ECO415",
+          "title": "Economic Development"
+        },
+        {
+          "code": "ECO441",
+          "title": "Labor Economics"
+        },
+        {
+          "code": "ECO443",
+          "title": "Health Economics"
+        },
+        {
+          "code": "ECO492",
+          "title": "Special Topics in Economics"
+        }
+      ],
+      "prereq": {
+        "all": [
+          {
+            "course": "ECO101"
+          },
+          {
+            "course": "ECO104"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ECO354",
+      "title": "Environmental and Natural Resources Economics",
+      "credits": 3,
+      "category": "Economics Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "ECO317",
+          "title": "Money, Banking and Financial Markets"
+        },
+        {
+          "code": "ECO328",
+          "title": "International Trade Theory and Policy"
+        },
+        {
+          "code": "ECO349",
+          "title": "Economy of Bangladesh"
+        },
+        {
+          "code": "ECO406",
+          "title": "History of Economic Thought"
+        },
+        {
+          "code": "ECO414",
+          "title": "Public Finance"
+        },
+        {
+          "code": "ECO415",
+          "title": "Economic Development"
+        },
+        {
+          "code": "ECO441",
+          "title": "Labor Economics"
+        },
+        {
+          "code": "ECO443",
+          "title": "Health Economics"
+        },
+        {
+          "code": "ECO492",
+          "title": "Special Topics in Economics"
+        }
+      ],
+      "prereq": {
+        "course": "ECO201"
+      }
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT1",
+      "title": "Free Elective 1",
+      "credits": 3,
+      "category": "Free Electives",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT2",
+      "title": "Free Elective 2",
+      "credits": 3,
+      "category": "Free Electives",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT3",
+      "title": "Free Elective 3",
+      "credits": 3,
+      "category": "Free Electives",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT4",
+      "title": "Free Elective 4",
+      "credits": 3,
+      "category": "Free Electives",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT5",
+      "title": "Free Elective 5",
+      "credits": 3,
+      "category": "Free Electives",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT6",
+      "title": "Free Elective 6",
+      "credits": 3,
+      "category": "Free Electives",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT7",
+      "title": "Free Elective 7",
+      "credits": 3,
+      "category": "Free Electives",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT8",
+      "title": "Free Elective 8",
+      "credits": 3,
+      "category": "Free Electives",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT9",
+      "title": "Free Elective 9",
+      "credits": 3,
+      "category": "Free Electives",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    }
+  ]
+}

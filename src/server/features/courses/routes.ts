@@ -19,7 +19,7 @@ import { curriculaRepo, type CourseRow, type CurriculumRow } from "../../repos/c
 import { studentCoursesRepo, type StudentCourseRow } from "../../repos/studentCourses";
 import { usersRepo } from "../../repos/users";
 import { validateJson } from "../../validate";
-import { checkImportRows } from "./importRows";
+import { checkImportRows, toCurriculumHeader, toNewCourse } from "./importRows";
 import {
   allCurriculumCodes,
   buildCourseMap,
@@ -108,31 +108,8 @@ export const courseRoutes = new Hono<AppEnv>()
     const repo = curriculaRepo(db);
     const previous = await repo.findByProgramVersion(body.program, body.version);
     const previousCount = previous ? await repo.countCourses(previous.id) : 0;
-    const curriculum = await repo.upsert(
-      {
-        programCode: body.program,
-        name: body.name,
-        version: body.version,
-        effectiveFromYear: body.effectiveFromYear,
-        totalCredits: body.totalCredits,
-      },
-      Date.now(),
-    );
-    await repo.replaceCourses(
-      curriculum.id,
-      accepted.map(({ index, row }) => ({
-        position: index,
-        kind: row.kind,
-        code: row.code,
-        title: row.title,
-        credits: row.credits,
-        category: row.category,
-        nonCredit: row.nonCredit,
-        semester: row.semester,
-        alternatives: row.alternatives,
-        prereq: row.prereq,
-      })),
-    );
+    const curriculum = await repo.upsert(toCurriculumHeader(body), Date.now());
+    await repo.replaceCourses(curriculum.id, accepted.map(toNewCourse));
     await audit(db, {
       actor: userId(c),
       action: "curriculum.import",

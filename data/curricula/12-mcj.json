@@ -1,0 +1,277 @@
+{
+  "program": "12",
+  "name": "BS in Media, Communication and Journalism",
+  "version": "Suggested Course Map (12 semesters)",
+  "effectiveFromYear": 0,
+  "totalCredits": 69,
+  "source": "MCJ.pdf",
+  "notes": [
+    "The version label is shortened from the printed title. The source is a scanned one-page table 'Suggested MCJ Core & Recommended Elective Course Map (Up To 12th Semester)' with no year, so effectiveFromYear is 0. Read from the page image.",
+    "The map lists only MCJ courses: no credits, no degree total, no General Education, school core or free elective requirements, and no prerequisites (all prereq values are null). The program name is not printed and was inferred from the folder name.",
+    "Credits are not printed: every course is assumed 3 credits, including the '+Lab' courses (MCJ203, MCJ104, MCJ305, MCJ301, MCJ420, MCJ403, MCJ401) and MCJ407/MCJ406. Lab courses may really carry an extra lab credit.",
+    "totalCredits 69 is just the sum of the 23 transcribed slots, not the printed degree total (none is printed). The real degree total is higher once GED and other requirements are added; replace it when an official total is available.",
+    "Courses printed '(Recommended Elective)' (MCJ103, MCJ205, MCJ104, MCJ207, MCJ420, MCJ414) are kept as fixed course rows in category 'Recommended Elective', since the map names a specific course; students may in practice choose other MCJ electives.",
+    "Semester 12: 'MCJ407 Internship OR MCJ406 Research Monograph' is one slot MCJ407 with MCJ406 as alternative.",
+    "Titles were transcribed from cells that wrap words mid-word (e.g. 'Introducti/on', 'Organizationa/l'); joined back into whole words."
+  ],
+  "courses": [
+    {
+      "kind": "course",
+      "code": "MCJ101",
+      "title": "Introduction to Media and Communication",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ102",
+      "title": "Basic Journalism: Principles and Practices",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ203",
+      "title": "Video Production and Editing",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ201",
+      "title": "Theories in Media and Communication",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ103",
+      "title": "Interpersonal, Group and Organizational Communication",
+      "credits": 3,
+      "category": "Recommended Elective",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ202",
+      "title": "Media and Communication Research Methods",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ204",
+      "title": "Social Media and Contemporary Society",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ205",
+      "title": "Media History of Bangladesh",
+      "credits": 3,
+      "category": "Recommended Elective",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ303",
+      "title": "Critical Thinking and Public Speaking",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ304",
+      "title": "Strategic Communication",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ104",
+      "title": "Photojournalism",
+      "credits": 3,
+      "category": "Recommended Elective",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ302",
+      "title": "Media Law and Ethics",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ305",
+      "title": "Online Journalism",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ207",
+      "title": "Development Communication",
+      "credits": 3,
+      "category": "Recommended Elective",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ301",
+      "title": "TV Journalism and News Presentation",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ405",
+      "title": "Introduction to Film Studies",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ420",
+      "title": "Film and Television Production",
+      "credits": 3,
+      "category": "Recommended Elective",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ402",
+      "title": "News Reporting and Editing",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ403",
+      "title": "Radio Journalism and Podcasting",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ401",
+      "title": "Advertising and Consumer Culture",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ404",
+      "title": "Gender, Media and Communication",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ414",
+      "title": "Principles of Media and Public Relations",
+      "credits": 3,
+      "category": "Recommended Elective",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MCJ407",
+      "title": "Internship",
+      "credits": 3,
+      "category": "MCJ Core",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [
+        {
+          "code": "MCJ406",
+          "title": "Research Monograph"
+        }
+      ],
+      "prereq": null
+    }
+  ]
+}

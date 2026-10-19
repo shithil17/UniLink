@@ -1,7 +1,7 @@
 import { z } from "zod";
-import type { PrereqRule } from "../prereq";
-import { NSU_PROGRAM_CODES } from "../studentId";
-import { id } from "./common";
+import type { PrereqRule } from "../prereq.ts";
+import { NSU_PROGRAM_CODES } from "../studentId.ts";
+import { id } from "./common.ts";
 
 // Curriculum import, the course map, and the student's own courses. One shape for client and server.
 

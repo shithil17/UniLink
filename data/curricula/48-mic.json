@@ -1,0 +1,880 @@
+{
+  "program": "48",
+  "name": "BS in Microbiology",
+  "version": "Summer 2026",
+  "effectiveFromYear": 0,
+  "totalCredits": 120,
+  "source": "783515464_1386063117074072_3593752114933248350_n.jpg",
+  "notes": [
+    "Source choice: the two JPGs (both 'Department of Microbiology, BS in Microbiology (120 Credits), Updated: Summer 2026') are the most current; the semester map (783515464_...jpg) is the primary source and the requirements sheet (784798187_...jpg) was used for categories and cross-checking. bs-in-mic-course-map-3.pdf is an older 12-semester map from the Department of Biochemistry & Microbiology (BIO202/MIC101 alternative, HIS103 mandatory, different semester placement) and BS-in-Microbiology(1).pdf is an older 'proposed' plan with a different MIC numbering (MIC301-MIC309, MIC401-406 electives); both superseded and not used except for some titles.",
+    "Version 'Summer 2026' is the printed update date; no admission year it applies from is printed, so effectiveFromYear is 0.",
+    "Titles are not printed in the current sources. BIO103/BIO201 'Principles of Biology I/II', CHE101/CHE201 'General Chemistry I/II' and CHE202 'Organic Chemistry I' come from the older BS-in-Microbiology(1).pdf; other GED titles come from other NSU maps in the download set; lab titles are derived from their theory course. All MIC course titles, BIO202, BIO202L, BBT203, MIS107 and BUS172 are '(title not printed)' (old-document MIC titles were not reused because the numbering changed).",
+    "Per-course credits are not printed; inferred as theory 3, lab ('L') 1, MIC498 4. These reproduce every printed semester total (9, 11, 11, 12, 10, 12, 10, 11, 10, 7, 10, 7 = 120) and the requirements-sheet blocks: SHLS Core 25, MIC Core 49 (with MIC498 = 4), MIC Elective 9, Open Elective 9, University GED 28 (the map is the ENG102-waived variant: '31 credits with ENG102 / 28 without').",
+    "The requirements sheet lists a 12-credit language block (ENG102, ENG103, ENG105, ENG111, BEN205) when ENG102 is not waived, but the semester map has only three language slots (ENG102/ENG103, ENG103/105, BEN205/ENG111). Students taking ENG102 need 3 more credits than shown; totalCredits stays 120 as printed.",
+    "Electives: the map places six elective-list courses (MIC201 sem 3, MIC309 sem 5, MIC311 sem 8, MIC404 sem 10, MIC318 sem 11, MIC416 sem 12). Requirement is 9 MIC Elective credits (3 of MIC201, 309, 311, 318, 404, 416, 417, 418) and 9 Open Elective credits ('any three courses from NSU curriculum', MIC electives encouraged). Modelled as MIC Elective rows MIC201, MIC309, MIC311 (each listing the other seven as alternatives) at their map positions, and OPEN-ELECT1-3 at the positions of MIC404, MIC318, MIC416. Note MIC201 is effectively required: core MIC314 lists MIC201 as its prerequisite.",
+    "Prerequisites of elective alternatives are not representable: MIC318 needs MIC201+MIC203, MIC404 MIC316+MIC317, MIC416 MIC316, MIC417 MIC316+MIC317, MIC418 MIC416.",
+    "'ENG103/105' (sem 3) prerequisite printed as 'ENG102/ENG103' -> ENG103 with alternative ENG105; the prerequisite is not stored, because ENG103 cannot be its own prerequisite.",
+    "'BEN205/ENG111' slot prerequisite printed as ENG103 on the map; the requirements sheet shows that prerequisite only for ENG111 (BEN205 has none). Kept as printed on the slot.",
+    "The map prints 'HIS101/HIS103/PHY101' but the requirements sheet's Humanities block is 'HIS101/HIS103/PHI101'; PHY101 is treated as a typo for PHI101.",
+    "The map prints prerequisites BIO103 for BIO103L and CHE101 for CHE101L; the requirements sheet lists no prerequisite for them. Map values kept.",
+    "The requirements sheet says 'Ben205 and His103 are not mandatory' (they sit in choice slots here).",
+    "Categories are the requirements-sheet blocks: University GED, SHLS Core, MIC Core, MIC Elective, Open Elective. CHE101 and CHE101L are SHLS Core; BIO103 and BIO103L are the GED science block; MIC203 is SHLS Core."
+  ],
+  "courses": [
+    {
+      "kind": "course",
+      "code": "BIO103",
+      "title": "Principles of Biology I",
+      "credits": 3,
+      "category": "University GED",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CHE101",
+      "title": "General Chemistry I",
+      "credits": 3,
+      "category": "SHLS Core",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG102",
+      "title": "Introduction to Composition",
+      "credits": 3,
+      "category": "University GED",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [
+        {
+          "code": "ENG103",
+          "title": "Intermediate Composition"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MIS107",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "University GED",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO201",
+      "title": "Principles of Biology II",
+      "credits": 3,
+      "category": "SHLS Core",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": {
+        "course": "BIO103"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BIO202",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "SHLS Core",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": {
+        "course": "BIO103"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BIO103L",
+      "title": "Principles of Biology I Lab",
+      "credits": 1,
+      "category": "University GED",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": {
+        "course": "BIO103"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CHE101L",
+      "title": "General Chemistry I Lab",
+      "credits": 1,
+      "category": "SHLS Core",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": {
+        "course": "CHE101"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CHE201",
+      "title": "General Chemistry II",
+      "credits": 3,
+      "category": "SHLS Core",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "CHE101"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC201",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Elective",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [
+        {
+          "code": "MIC309",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC311",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC318",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC404",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC416",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC417",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC418",
+          "title": "(title not printed)"
+        }
+      ],
+      "prereq": {
+        "course": "BIO202"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ENG103",
+      "title": "Intermediate Composition",
+      "credits": 3,
+      "category": "University GED",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [
+        {
+          "code": "ENG105",
+          "title": "Advanced Composition"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO202L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "SHLS Core",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO103L"
+          },
+          {
+            "course": "BIO202"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BIO201L",
+      "title": "Principles of Biology II Lab",
+      "credits": 1,
+      "category": "SHLS Core",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "BIO103L"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BUS172",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "University GED",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CHE202",
+      "title": "Organic Chemistry I",
+      "credits": 3,
+      "category": "SHLS Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "course": "CHE101"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC202",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO103"
+          },
+          {
+            "course": "BIO202"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC203",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "SHLS Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO201"
+          },
+          {
+            "course": "BIO202"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MAT116",
+      "title": "Precalculus",
+      "credits": 3,
+      "category": "University GED",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MIC309",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Elective",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [
+        {
+          "code": "MIC201",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC311",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC318",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC404",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC416",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC417",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC418",
+          "title": "(title not printed)"
+        }
+      ],
+      "prereq": {
+        "course": "MIC203"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC307",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO201"
+          },
+          {
+            "course": "MIC202"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CHE202L",
+      "title": "Organic Chemistry I Lab",
+      "credits": 1,
+      "category": "SHLS Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "course": "CHE101L"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC314",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "course": "MIC201"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT203",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "SHLS Core",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO201"
+          },
+          {
+            "course": "BUS172"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC207",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "CHE202"
+          },
+          {
+            "course": "MIC203"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC315",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "MIC202"
+          },
+          {
+            "course": "MIC203"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC414",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "course": "MIC202"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC316",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "MIC207"
+          },
+          {
+            "course": "MIC307"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BEN205",
+      "title": "Bangla Language and Literature",
+      "credits": 3,
+      "category": "University GED",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [
+        {
+          "code": "ENG111",
+          "title": "Public Speaking"
+        }
+      ],
+      "prereq": {
+        "course": "ENG103"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC315L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO202L"
+          },
+          {
+            "course": "MIC315"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC311",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Elective",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [
+        {
+          "code": "MIC201",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC309",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC318",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC404",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC416",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC417",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "MIC418",
+          "title": "(title not printed)"
+        }
+      ],
+      "prereq": {
+        "course": "MIC316"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC317",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "MIC307"
+          },
+          {
+            "course": "MIC315"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "HIS101",
+      "title": "Bangladesh History and Culture",
+      "credits": 3,
+      "category": "University GED",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [
+        {
+          "code": "HIS103",
+          "title": "Emergence of Bangladesh"
+        },
+        {
+          "code": "PHI101",
+          "title": "Introduction to Philosophy"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MIC316L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO201L"
+          },
+          {
+            "course": "MIC316"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC414L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO202L"
+          },
+          {
+            "course": "MIC414"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC206",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "course": "MIC316"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC415",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "course": "MIC314"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC401",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "MIC316"
+          },
+          {
+            "course": "MIC317"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC317L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO202L"
+          },
+          {
+            "course": "MIC317"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "elective",
+      "code": "OPEN-ELECT1",
+      "title": "Open Elective 1",
+      "credits": 3,
+      "category": "Open Elective",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MIC413",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "MIC316"
+          },
+          {
+            "course": "MIC317"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC415L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO202L"
+          },
+          {
+            "course": "MIC415"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "elective",
+      "code": "OPEN-ELECT2",
+      "title": "Open Elective 2",
+      "credits": 3,
+      "category": "Open Elective",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MIC412",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "MIC316"
+          },
+          {
+            "course": "MIC317"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIC413L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO202L"
+          },
+          {
+            "course": "MIC413"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "POL101",
+      "title": "Introduction to Political Science",
+      "credits": 3,
+      "category": "University GED",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [
+        {
+          "code": "POL104",
+          "title": "Introduction to Governance"
+        },
+        {
+          "code": "ECO101",
+          "title": "Introduction to Microeconomics"
+        },
+        {
+          "code": "ECO104",
+          "title": "Introduction to Macroeconomics"
+        },
+        {
+          "code": "SOC101",
+          "title": "Introduction to Sociology"
+        },
+        {
+          "code": "ANT101",
+          "title": "Introduction to Anthropology"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "OPEN-ELECT3",
+      "title": "Open Elective 3",
+      "credits": 3,
+      "category": "Open Elective",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MIC498",
+      "title": "(title not printed)",
+      "credits": 4,
+      "category": "MIC Core",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO202L"
+          },
+          {
+            "course": "MIC315L"
+          },
+          {
+            "course": "MIC316L"
+          }
+        ]
+      }
+    }
+  ]
+}

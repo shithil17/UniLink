@@ -431,8 +431,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Curriculum data
 
-- [ ] `data/curricula/*.json`, one file per program, transcribed from the NSU course maps: Architecture, LLB, MCJ, Public Health, Economics, CEE, Environmental Management, BBA, CSE, EEE, Pharmacy, Biochemistry & Biotechnology, Microbiology.
-- [ ] A unit test validates every file against `curriculumImport` and checks that every prereq course leaf points at a code in the same file.
+- [x] `data/curricula/*.json`, one file per program, transcribed from the NSU course maps: Architecture, LLB, MCJ, Public Health, Economics, CEE, Environmental Management, BBA, CSE, EEE, Pharmacy, Biochemistry & Biotechnology, Microbiology.
+- [x] A unit test validates every file against `curriculumImport` and checks that every prereq course leaf points at a code in the same file.
 
 ### Checklist — Screens
 
@@ -448,7 +448,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 - [x] `src/shared/prereq.test.ts`: leaf, nested `all`/`any`, empty rule, a `credits` leaf, an F, I or W attempt does not satisfy a prereq, a passing attempt does.
 - [x] `src/server/features/courses/courses.api.test.ts`: the import rejects bad rows, only mods can import, the map reflects attempts, the user only sees their own attempts and student courses, the curriculum follows program code and admission year, student courses fill elective slots then show as extra, totals can exceed the degree total, an excluded course counts toward nothing.
-- [ ] `scripts/seed.ts` now seeds the curricula from `data/curricula/` and two fake students.
+- [x] `scripts/seed.ts` now seeds the curricula from `data/curricula/` and two fake students.
 - [ ] Run: `vp test prereq courses`
 
 ### Test Gate 4

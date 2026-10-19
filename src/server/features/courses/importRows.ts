@@ -1,5 +1,10 @@
-import { prereqCourseCodes } from "../../../shared/prereq";
-import { courseImportRow, type CourseImportRow } from "../../../shared/schemas/courses";
+import { prereqCourseCodes } from "../../../shared/prereq.ts";
+import {
+  courseImportRow,
+  type CourseImportRow,
+  type CurriculumImport,
+} from "../../../shared/schemas/courses.ts";
+import type { CurriculumHeader, NewCourse } from "../../repos/curricula.ts";
 
 export type AcceptedRow = { index: number; row: CourseImportRow };
 export type RejectedRow = { index: number; code: string | null; reason: string };
@@ -60,4 +65,36 @@ export function checkImportRows(rawRows: readonly unknown[]): {
 
   rejected.sort((a, b) => a.index - b.index);
   return { accepted, rejected };
+}
+
+/** The `courses` row for an accepted import row. Shared by the import route and the seed script. */
+export function toNewCourse({ index, row }: AcceptedRow): NewCourse {
+  return {
+    position: index,
+    kind: row.kind,
+    code: row.code,
+    title: row.title,
+    credits: row.credits,
+    category: row.category,
+    nonCredit: row.nonCredit,
+    semester: row.semester,
+    alternatives: row.alternatives,
+    prereq: row.prereq,
+  };
+}
+
+/** The `curricula` row for an import file's header. */
+export function toCurriculumHeader(
+  file: Pick<
+    CurriculumImport,
+    "program" | "name" | "version" | "effectiveFromYear" | "totalCredits"
+  >,
+): CurriculumHeader {
+  return {
+    programCode: file.program,
+    name: file.name,
+    version: file.version,
+    effectiveFromYear: file.effectiveFromYear,
+    totalCredits: file.totalCredits,
+  };
 }

@@ -1,0 +1,680 @@
+{
+  "program": "10",
+  "name": "Bachelor of Architecture",
+  "version": "Undated course map",
+  "effectiveFromYear": 0,
+  "totalCredits": 170,
+  "source": "Architecture.pdf",
+  "notes": [
+    "Scanned document with no text layer; transcribed from page images rendered at 220 dpi.",
+    "The document prints no program name, version or year. The name 'Bachelor of Architecture' is assumed.",
+    "No prerequisites are printed, so every prereq is null.",
+    "The document prints no category names; categories were inferred from the coloured side bars (red = Design Studio, mustard = Graphics, grey = General Education, purple = History & Theory, green = Environment & Building Systems, navy = Construction & Structures, blue = Urban Design & Planning, brown = Professional Practice, dotted = Optional / Elective).",
+    "ENG102* and MAT112* (semester 1) are greyed out with an asterisk. The semester 1 header (13.5 cr) counts them, but the first-year total (32.5) and the graduation total (170) only add up without them, so they are stored as nonCredit (0 credits). Likely remedial or waivable courses; the asterisk is not explained in the document.",
+    "LBA101, ENV107 and SOC101 are printed as '<course> or any other humanities course'; any humanities course can fill those slots. Only the named course is stored.",
+    "'Optional' slots list codes without per-code titles. Titles were assigned by printed order: Optional 1 'Sources in Architecture I or II' ARC131/ARC132; Optional 2 'Interior / Landscape / CAD' ARC310/ARC410/ARC293; Optional 3 'Profession / Business' ARC439/ARC474; Optional 4 'Independent Study / Seminar' ARC492/ARC598; Optional 5 'Settlement Planning' ARC453/ARC454/ARC456 (all titled 'Settlement Planning').",
+    "Elective 1 and 2 are printed as 'Non-departmental, Open elective'; Elective 3 and 4 as 'Departmental, Professional elective'."
+  ],
+  "courses": [
+    {
+      "kind": "course",
+      "code": "ARC111",
+      "title": "Foundation Design Studio I- Artistic Development",
+      "credits": 4.5,
+      "category": "Design Studio",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC121",
+      "title": "Graphics I- Basic Drawing",
+      "credits": 3,
+      "category": "Graphics",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG102",
+      "title": "Introduction to Composition",
+      "credits": 0,
+      "category": "General Education",
+      "nonCredit": true,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MAT112",
+      "title": "Basic Calculus",
+      "credits": 0,
+      "category": "General Education",
+      "nonCredit": true,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC112",
+      "title": "Foundation Design Studio II- Form and Composition",
+      "credits": 4.5,
+      "category": "Design Studio",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC122",
+      "title": "Graphics II- Rendering",
+      "credits": 3,
+      "category": "Graphics",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG103",
+      "title": "Intermediate Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC133",
+      "title": "Parameters in Design I- Aesthetic and Design",
+      "credits": 1.5,
+      "category": "History & Theory",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC123",
+      "title": "Graphics III- Digital Presentation",
+      "credits": 3,
+      "category": "Graphics",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC200",
+      "title": "Art, Craft and Design- Observation and Documentation",
+      "credits": 1,
+      "category": "History & Theory",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG105",
+      "title": "Advanced Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LBA101",
+      "title": "Bangladesh Heritage & Culture",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC131",
+      "title": "Sources in Architecture I",
+      "credits": 3,
+      "category": "Optional",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [
+        {
+          "code": "ARC132",
+          "title": "Sources in Architecture II"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC213",
+      "title": "Allied Design Studio- Dimension and Product",
+      "credits": 4.5,
+      "category": "Design Studio",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC261",
+      "title": "Environment and Building System I- Climate and Design",
+      "credits": 3,
+      "category": "Environment & Building Systems",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BSC201",
+      "title": "Basic Science Support II: Math and Physics",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC241",
+      "title": "Architectural Heritage I- World I",
+      "credits": 3,
+      "category": "History & Theory",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC214",
+      "title": "Architecture Design Studio I- Function and Analysis",
+      "credits": 4.5,
+      "category": "Design Studio",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC262",
+      "title": "Environment and Building System II- Building Physics",
+      "credits": 3,
+      "category": "Environment & Building Systems",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC271",
+      "title": "Construction I- Materials",
+      "credits": 3,
+      "category": "Construction & Structures",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC242",
+      "title": "Architectural Heritage II- World II",
+      "credits": 3,
+      "category": "History & Theory",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC215",
+      "title": "Architecture Design Studio II- Simple Function",
+      "credits": 4.5,
+      "category": "Design Studio",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC263",
+      "title": "Environment and Building System III- Building Services",
+      "credits": 3,
+      "category": "Environment & Building Systems",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC272",
+      "title": "Construction II- Technology",
+      "credits": 3,
+      "category": "Construction & Structures",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC251",
+      "title": "Introduction to Urban Design and Environmental Planning",
+      "credits": 3,
+      "category": "Urban Design & Planning",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC316",
+      "title": "Professional Studies Studio I- Form and Function",
+      "credits": 4.5,
+      "category": "Design Studio",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC264",
+      "title": "Environment and Building System IV- Design Integration",
+      "credits": 1,
+      "category": "Environment & Building Systems",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC273",
+      "title": "Construction III- Workshop",
+      "credits": 1,
+      "category": "Construction & Structures",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC281",
+      "title": "Building Structures I- Basic Principles",
+      "credits": 2,
+      "category": "Construction & Structures",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC343",
+      "title": "Architectural Heritage III- India",
+      "credits": 3,
+      "category": "History & Theory",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC317",
+      "title": "Professional Studies Studio II- Complex Function",
+      "credits": 6,
+      "category": "Design Studio",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC324",
+      "title": "Graphics IV- Working Details",
+      "credits": 3,
+      "category": "Graphics",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC282",
+      "title": "Building Structures II",
+      "credits": 2,
+      "category": "Construction & Structures",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC334",
+      "title": "Parameters in Design II- Theory and Methods",
+      "credits": 1.5,
+      "category": "History & Theory",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC318",
+      "title": "Professional Studies Studio III- Complex Function",
+      "credits": 6,
+      "category": "Design Studio",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC437",
+      "title": "Professional Practice, Ethics and Society",
+      "credits": 1.5,
+      "category": "Professional Practice",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC445",
+      "title": "Contemporary Design Precedents and Analyses",
+      "credits": 2,
+      "category": "History & Theory",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC283",
+      "title": "Building Structures III",
+      "credits": 2,
+      "category": "Construction & Structures",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC418",
+      "title": "Design and Allied Studies Studio I",
+      "credits": 6,
+      "category": "Design Studio",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC535",
+      "title": "Parameters in Design III- Pedagogy and Discourse",
+      "credits": 1.5,
+      "category": "History & Theory",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC384",
+      "title": "Building Structures IV",
+      "credits": 3,
+      "category": "Construction & Structures",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC344",
+      "title": "Architectural Heritage IV- Bengal",
+      "credits": 2,
+      "category": "History & Theory",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC419",
+      "title": "Design and Allied Studies Studio II",
+      "credits": 6,
+      "category": "Design Studio",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV107",
+      "title": "Introduction to Environmental Science",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "SOC101",
+      "title": "Introduction to Sociology",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC500",
+      "title": "Professional Internship (supervised training)",
+      "credits": 1,
+      "category": "Professional Practice",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC510",
+      "title": "Advanced Studies Studio I",
+      "credits": 4.5,
+      "category": "Design Studio",
+      "nonCredit": false,
+      "semester": 13,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC310",
+      "title": "Interior",
+      "credits": 3,
+      "category": "Optional",
+      "nonCredit": false,
+      "semester": 13,
+      "alternatives": [
+        {
+          "code": "ARC410",
+          "title": "Landscape"
+        },
+        {
+          "code": "ARC293",
+          "title": "CAD"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "ELECT1",
+      "title": "Elective 1 (Non-departmental)",
+      "credits": 3,
+      "category": "Open Elective",
+      "nonCredit": false,
+      "semester": 13,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC596",
+      "title": "Thesis Documentation- Research and Development",
+      "credits": 4.5,
+      "category": "Professional Practice",
+      "nonCredit": false,
+      "semester": 14,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC439",
+      "title": "Profession",
+      "credits": 3,
+      "category": "Optional",
+      "nonCredit": false,
+      "semester": 14,
+      "alternatives": [
+        {
+          "code": "ARC474",
+          "title": "Business"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC453",
+      "title": "Settlement Planning",
+      "credits": 3,
+      "category": "Optional",
+      "nonCredit": false,
+      "semester": 14,
+      "alternatives": [
+        {
+          "code": "ARC454",
+          "title": "Settlement Planning"
+        },
+        {
+          "code": "ARC456",
+          "title": "Settlement Planning"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "ELECT2",
+      "title": "Elective 2 (Non-departmental)",
+      "credits": 3,
+      "category": "Open Elective",
+      "nonCredit": false,
+      "semester": 14,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC519",
+      "title": "Advanced Studies Studio II- Thesis Project",
+      "credits": 4.5,
+      "category": "Design Studio",
+      "nonCredit": false,
+      "semester": 15,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ARC492",
+      "title": "Independent Study",
+      "credits": 1.5,
+      "category": "Optional",
+      "nonCredit": false,
+      "semester": 15,
+      "alternatives": [
+        {
+          "code": "ARC598",
+          "title": "Seminar"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "ELECT3",
+      "title": "Elective 3 (Departmental)",
+      "credits": 3,
+      "category": "Professional Elective",
+      "nonCredit": false,
+      "semester": 15,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "ELECT4",
+      "title": "Elective 4 (Departmental)",
+      "credits": 3,
+      "category": "Professional Elective",
+      "nonCredit": false,
+      "semester": 15,
+      "alternatives": [],
+      "prereq": null
+    }
+  ]
+}

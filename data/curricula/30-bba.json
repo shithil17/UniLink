@@ -1,0 +1,588 @@
+{
+  "program": "30",
+  "name": "Bachelor of Business Administration (BBA)",
+  "version": "143 and onwards",
+  "effectiveFromYear": 14,
+  "totalCredits": 126,
+  "source": "bba-143-curriculum-to-till-date.pdf",
+  "notes": [
+    "Primary source is the PDF 'NSU BBA Curriculum 143 and Onwards'. The two JPG course maps (student-made 'NSU Faculty Course & Grade Analysis' infographics) were used only as cross-checks; differences are listed below.",
+    "totalCredits 126 is the PDF's single-major credit limit, which includes ENG102 and BUS112 and excludes the internship. Sum: School Core 21 + BBA Core 36 + GED 36 + Major 18 + Free Elective 9 + ENG102/BUS112 6 = 126. Dual major is 135 credits (the 3 free electives are replaced by major courses and 3 more major courses are taken as extra); not modelled.",
+    "ENG102 and BUS112 are credit courses that can be waived based on the admission test; if waived they need not be taken (the second JPG says a waived course counts as non-credit). Kept as normal 3-credit courses.",
+    "GED item 3: BEN205 for batch 163 and onwards, ENG115 for batches 143-162. Modelled as one slot BEN205 with ENG115 as alternative. The second JPG also lists CHN101 as an option for this slot; not included.",
+    "GED science: 'choose any three of BIO103/ENV107/PBH101/PSY101/PHY107/CHE101' plus 3 one-credit labs for the chosen courses. Each of the three slots is 4 credits (3 + 1 lab) so GED totals 36. The second JPG also lists CSE101, CSE145 and CSE226 as science options and allows 'a 3-credit course from another department' in place of the labs; not included.",
+    "The second JPG differs in the history group ('any two of HIS101/HIS102/HIS103/HIS205') and adds LAW101 to the POL101/POL104/PAD201 group; the PDF version (HIS103 mandatory + one of HIS101/HIS102/HIS202/HIS205) was used.",
+    "Internship: the PDF prints '1 Course - 4 Credit, Non-Credit, Not-Countable', so it is nonCredit (credits 0). The code BUS498 and the alternative BUS499 (Research Project, requires CGPA 3.30) come from the second JPG; the PDF gives no code.",
+    "Major courses depend on the chosen major (Accounting, Economics, Entrepreneurship, Finance, HRM, International Business, Management, Marketing, MIS, SCM), so they are 4 Major Core + 2 Major Elective placeholders of 3 credits each.",
+    "The source prints no course titles; titles are from the NSU catalogue and the other NSU maps in this set. Less certain: MIS107, MIS207, PHI401, MGT314, HIS202, HIS205, GEO205, BUS112, BUS135.",
+    "The source prints no prerequisites and no semester plan, so prereq and semester are null for every row. Row order follows the PDF, with the waivable foundation courses first."
+  ],
+  "courses": [
+    {
+      "kind": "course",
+      "code": "ENG102",
+      "title": "Introduction to Composition",
+      "credits": 3,
+      "category": "Mandatory/Waived",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BUS112",
+      "title": "Introduction to Business Mathematics",
+      "credits": 3,
+      "category": "Mandatory/Waived",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ECO101",
+      "title": "Introduction to Microeconomics",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ECO104",
+      "title": "Introduction to Macroeconomics",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MIS107",
+      "title": "Computer Information Systems",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BUS251",
+      "title": "Business Communication",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BUS172",
+      "title": "Introduction to Statistics",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BUS173",
+      "title": "Applied Statistics",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BUS135",
+      "title": "Applied Business Mathematics",
+      "credits": 3,
+      "category": "School Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ACT201",
+      "title": "Introduction to Financial Accounting",
+      "credits": 3,
+      "category": "BBA Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ACT202",
+      "title": "Introduction to Managerial Accounting",
+      "credits": 3,
+      "category": "BBA Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "FIN254",
+      "title": "Introduction to Financial Management",
+      "credits": 3,
+      "category": "BBA Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "LAW200",
+      "title": "Legal Environment of Business",
+      "credits": 3,
+      "category": "BBA Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "INB372",
+      "title": "International Business",
+      "credits": 3,
+      "category": "BBA Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MKT202",
+      "title": "Introduction to Marketing",
+      "credits": 3,
+      "category": "BBA Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MIS207",
+      "title": "E-Business",
+      "credits": 3,
+      "category": "BBA Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MGT212",
+      "title": "Organizational Management",
+      "credits": 3,
+      "category": "BBA Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MGT351",
+      "title": "Human Resource Management",
+      "credits": 3,
+      "category": "BBA Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MGT314",
+      "title": "Production Management",
+      "credits": 3,
+      "category": "BBA Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MGT368",
+      "title": "Entrepreneurship",
+      "credits": 3,
+      "category": "BBA Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MGT489",
+      "title": "Strategic Management",
+      "credits": 3,
+      "category": "BBA Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG103",
+      "title": "Intermediate Composition",
+      "credits": 3,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG105",
+      "title": "Advanced Composition",
+      "credits": 3,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BEN205",
+      "title": "Bangla Language and Literature",
+      "credits": 3,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "ENG115",
+          "title": "Literature"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "PHI401",
+      "title": "Ethics or Morality",
+      "credits": 3,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "HIS103",
+      "title": "Emergence of Bangladesh",
+      "credits": 3,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "HIS101",
+      "title": "Bangladesh History and Culture",
+      "credits": 3,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "HIS102",
+          "title": "World Civilization"
+        },
+        {
+          "code": "HIS202",
+          "title": "Indo-Bangla History"
+        },
+        {
+          "code": "HIS205",
+          "title": "World History"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "POL101",
+      "title": "Introduction to Political Science",
+      "credits": 3,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "POL104",
+          "title": "Introduction to Governance"
+        },
+        {
+          "code": "PAD201",
+          "title": "Introduction to Public Administration"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "SOC101",
+      "title": "Introduction to Sociology",
+      "credits": 3,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "GEO205",
+          "title": "Introduction to Bangladesh Geography"
+        },
+        {
+          "code": "ANT101",
+          "title": "Introduction to Anthropology"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO103",
+      "title": "Biology I",
+      "credits": 4,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "ENV107",
+          "title": "Introduction to Environmental Science"
+        },
+        {
+          "code": "PBH101",
+          "title": "Introduction to Public Health"
+        },
+        {
+          "code": "PSY101",
+          "title": "Introduction to Psychology"
+        },
+        {
+          "code": "PHY107",
+          "title": "Physics I"
+        },
+        {
+          "code": "CHE101",
+          "title": "Chemistry I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV107",
+      "title": "Introduction to Environmental Science",
+      "credits": 4,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "BIO103",
+          "title": "Biology I"
+        },
+        {
+          "code": "PBH101",
+          "title": "Introduction to Public Health"
+        },
+        {
+          "code": "PSY101",
+          "title": "Introduction to Psychology"
+        },
+        {
+          "code": "PHY107",
+          "title": "Physics I"
+        },
+        {
+          "code": "CHE101",
+          "title": "Chemistry I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "PBH101",
+      "title": "Introduction to Public Health",
+      "credits": 4,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "BIO103",
+          "title": "Biology I"
+        },
+        {
+          "code": "ENV107",
+          "title": "Introduction to Environmental Science"
+        },
+        {
+          "code": "PSY101",
+          "title": "Introduction to Psychology"
+        },
+        {
+          "code": "PHY107",
+          "title": "Physics I"
+        },
+        {
+          "code": "CHE101",
+          "title": "Chemistry I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "MAJOR-CORE1",
+      "title": "Major Core 1 (by major)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "MAJOR-CORE2",
+      "title": "Major Core 2 (by major)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "MAJOR-CORE3",
+      "title": "Major Core 3 (by major)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "MAJOR-CORE4",
+      "title": "Major Core 4 (by major)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "MAJOR-ELECT1",
+      "title": "Major Elective 1 (by major)",
+      "credits": 3,
+      "category": "Major Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "MAJOR-ELECT2",
+      "title": "Major Elective 2 (by major)",
+      "credits": 3,
+      "category": "Major Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT1",
+      "title": "Free Elective 1",
+      "credits": 3,
+      "category": "Free Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT2",
+      "title": "Free Elective 2",
+      "credits": 3,
+      "category": "Free Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT3",
+      "title": "Free Elective 3",
+      "credits": 3,
+      "category": "Free Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BUS498",
+      "title": "Internship",
+      "credits": 0,
+      "category": "Internship",
+      "nonCredit": true,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "BUS499",
+          "title": "Research Project"
+        }
+      ],
+      "prereq": null
+    }
+  ]
+}

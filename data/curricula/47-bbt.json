@@ -1,0 +1,792 @@
+{
+  "program": "47",
+  "name": "BS in Biochemistry & Biotechnology",
+  "version": "Course Map",
+  "effectiveFromYear": 0,
+  "totalCredits": 120,
+  "source": "1.-bbt-coursemap.pdf",
+  "notes": [
+    "The course map prints only course codes, prerequisites, a category colour per course and per-semester credit totals (9, 11, 13, 10, 13, 12, 10, 10, 9, 10, '06/09', '07/04'). It prints no degree total, no version/effective year (version 'Course Map', effectiveFromYear 0), no course titles and no per-course credits.",
+    "totalCredits 120 is inferred, not printed: semesters 1-10 = 107, and the printed alternatives for semesters 11-12 ('06/09' and '07/04') both add 13 more, giving 120 either way.",
+    "Per-course credits are inferred from the semester totals: theory courses 3, lab ('L') courses 1, BBT422 4 (semester 12 drops from 7 to 4 when BBT426 is not taken, so BBT422 = 4 and BBT426 = 3). Every printed semester total matches.",
+    "Electives: the map places all seven elective/free elective courses (BBT418, 419, 421, 423, 425, 426, 427) in semesters 8-12; notes say at least 3 must be taken as electives and 3 free electives are encouraged from the same list. Modelled as 3 Elective rows at the map's first three elective positions (BBT423 sem 8, BBT419 sem 9, BBT418 sem 10), each listing the other six as alternatives, plus FREE-ELECT1-3 (two in sem 11, one in sem 12, matching the '06' and '07' totals). Prerequisites of the alternatives are not representable: BBT421 needs BBT316+BBT317, BBT425 needs BBT417, BBT427 needs BBT415, BBT426 needs CHE203+BBT335.",
+    "Categories are the printed colour legend: Univ. GED (green), SHLS/School Core (blue), Major Required (red), Elective/Free Elective (magenta).",
+    "English: 'ENG102/ENG103*' (sem 1) -> ENG102 with alternative ENG103; 'ENG103/ENG105*' (sem 2, prerequisite 'ENG102/ENG103') -> ENG103 with alternative ENG105; the printed prerequisite 'ENG102/ENG103' is not stored, because ENG103 cannot be its own prerequisite and the slot is already filled by either code. Map notes: ENG103 only if ENG102 is waived or completed; ENG103 & ENG105 are mandatory for all NSU UG students; batch 152-162 students waived in ENG102 must take ENG111.",
+    "BEN205 and HIS103 are marked mandatory from batch 163 onwards; batch 152-162 may take any of HIS101/HIS102/HIS103 instead.",
+    "'POL101/POL104/ECO101/ECO104/SOC101/ANT101/' is one slot (trailing slash as printed).",
+    "Titles are not printed. Titles were taken from other NSU sources in the same download set: BIO103/BIO201 'Principles of Biology I/II', CHE101/CHE201 'General Chemistry I/II', CHE202 'Organic Chemistry I', BBT230, BBT315, BBT318, BBT413, BBT418, BBT419 (older BS in Microbiology document, may be outdated), ENG/BEN/HIS/POL/ECO/SOC/ANT/MAT from other maps. Lab titles are derived from their theory course. Remaining titles are '(title not printed)'.",
+    "MAT116 counts 3 credits here (needed for the 11-credit semester 2)."
+  ],
+  "courses": [
+    {
+      "kind": "course",
+      "code": "ENG102",
+      "title": "Introduction to Composition",
+      "credits": 3,
+      "category": "Univ. GED",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [
+        {
+          "code": "ENG103",
+          "title": "Intermediate Composition"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO103",
+      "title": "Principles of Biology I",
+      "credits": 3,
+      "category": "Univ. GED",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CHE101",
+      "title": "General Chemistry I",
+      "credits": 3,
+      "category": "Univ. GED",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG103",
+      "title": "Intermediate Composition",
+      "credits": 3,
+      "category": "Univ. GED",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [
+        {
+          "code": "ENG105",
+          "title": "Advanced Composition"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MAT116",
+      "title": "Precalculus",
+      "credits": 3,
+      "category": "Univ. GED",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BEN205",
+      "title": "Bangla Language and Literature",
+      "credits": 3,
+      "category": "Univ. GED",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CHE101L",
+      "title": "General Chemistry I Lab",
+      "credits": 1,
+      "category": "Univ. GED",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO103L",
+      "title": "Principles of Biology I Lab",
+      "credits": 1,
+      "category": "Univ. GED",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CHE201",
+      "title": "General Chemistry II",
+      "credits": 3,
+      "category": "SHLS/School Core",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "CHE101"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BIO201",
+      "title": "Principles of Biology II",
+      "credits": 3,
+      "category": "SHLS/School Core",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "BIO103"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BIO201L",
+      "title": "Principles of Biology II Lab",
+      "credits": 1,
+      "category": "SHLS/School Core",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "BIO103L"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MIS107",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Univ. GED",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "POL101",
+      "title": "Introduction to Political Science",
+      "credits": 3,
+      "category": "Univ. GED",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [
+        {
+          "code": "POL104",
+          "title": "Introduction to Governance"
+        },
+        {
+          "code": "ECO101",
+          "title": "Introduction to Microeconomics"
+        },
+        {
+          "code": "ECO104",
+          "title": "Introduction to Macroeconomics"
+        },
+        {
+          "code": "SOC101",
+          "title": "Introduction to Sociology"
+        },
+        {
+          "code": "ANT101",
+          "title": "Introduction to Anthropology"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BUS172",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Univ. GED",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CHE202",
+      "title": "Organic Chemistry I",
+      "credits": 3,
+      "category": "SHLS/School Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "course": "CHE101"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CHE202L",
+      "title": "Organic Chemistry I Lab",
+      "credits": 1,
+      "category": "SHLS/School Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "course": "CHE101L"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "HIS103",
+      "title": "Emergence of Bangladesh",
+      "credits": 3,
+      "category": "Univ. GED",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO202",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "SHLS/School Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "course": "BIO103"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT221",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "course": "BIO201"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CHE203",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "SHLS/School Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO201"
+          },
+          {
+            "course": "CHE202"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CHE203L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "SHLS/School Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO201L"
+          },
+          {
+            "course": "CHE202L"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT230",
+      "title": "Statistics II (Biostatistics)",
+      "credits": 3,
+      "category": "SHLS/School Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BIO201"
+          },
+          {
+            "course": "BUS172"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT312",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "course": "CHE203"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT312L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "course": "CHE203L"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT314",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "CHE201"
+          },
+          {
+            "course": "CHE203"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT314L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "course": "CHE203L"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT315",
+      "title": "Metabolism",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "course": "CHE203"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BIO202L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "SHLS/School Core",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "course": "BIO103L"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT316",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BBT221"
+          },
+          {
+            "course": "BBT314"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT316L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "course": "BBT314L"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT317",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "course": "BBT312"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT335",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "course": "BBT315"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT318",
+      "title": "Cell Biology",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BBT221"
+          },
+          {
+            "course": "BBT312"
+          },
+          {
+            "course": "BBT315"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT413",
+      "title": "Plant Biochemistry & Biotechnology",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BBT312"
+          },
+          {
+            "course": "BBT315"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT413L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "course": "BBT312L"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT423",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Elective",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [
+        {
+          "code": "BBT418",
+          "title": "Pharmaceutical Biotechnology"
+        },
+        {
+          "code": "BBT419",
+          "title": "Clinical Biochemistry"
+        },
+        {
+          "code": "BBT421",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "BBT425",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "BBT426",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "BBT427",
+          "title": "(title not printed)"
+        }
+      ],
+      "prereq": {
+        "course": "BBT335"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT415",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "course": "BBT317"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT416",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BBT230"
+          },
+          {
+            "course": "BBT317"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT419",
+      "title": "Clinical Biochemistry",
+      "credits": 3,
+      "category": "Elective",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [
+        {
+          "code": "BBT418",
+          "title": "Pharmaceutical Biotechnology"
+        },
+        {
+          "code": "BBT421",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "BBT423",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "BBT425",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "BBT426",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "BBT427",
+          "title": "(title not printed)"
+        }
+      ],
+      "prereq": {
+        "course": "BBT335"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT415L",
+      "title": "(title not printed)",
+      "credits": 1,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BBT312L"
+          },
+          {
+            "course": "BBT314L"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT417",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": {
+        "course": "BBT318"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT418",
+      "title": "Pharmaceutical Biotechnology",
+      "credits": 3,
+      "category": "Elective",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [
+        {
+          "code": "BBT419",
+          "title": "Clinical Biochemistry"
+        },
+        {
+          "code": "BBT421",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "BBT423",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "BBT425",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "BBT426",
+          "title": "(title not printed)"
+        },
+        {
+          "code": "BBT427",
+          "title": "(title not printed)"
+        }
+      ],
+      "prereq": {
+        "course": "BBT415"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "BBT424",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BBT316"
+          },
+          {
+            "course": "BBT318"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT1",
+      "title": "Free Elective 1",
+      "credits": 3,
+      "category": "Free Elective",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT2",
+      "title": "Free Elective 2",
+      "credits": 3,
+      "category": "Free Elective",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT3",
+      "title": "Free Elective 3",
+      "credits": 3,
+      "category": "Free Elective",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BBT422",
+      "title": "(title not printed)",
+      "credits": 4,
+      "category": "Major Required",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "BBT335"
+          },
+          {
+            "course": "BBT415"
+          },
+          {
+            "course": "BBT416"
+          }
+        ]
+      }
+    }
+  ]
+}
