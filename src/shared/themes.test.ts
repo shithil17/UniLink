@@ -37,6 +37,15 @@ describe("resolveTheme", () => {
   });
 });
 
+/** Relative luminance of a #rrggbb color. */
+function lum(hex: string) {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+}
+
 describe("css and index.html stay in step with themes.ts", () => {
   const nonDefault = themes.filter((t) => t.id !== DEFAULT_THEME_ID);
 
@@ -96,6 +105,16 @@ describe("css and index.html stay in step with themes.ts", () => {
       expect(tk.get("brand"), `brand for ${t.id}`).toBe(t.accent);
       expect(tk.get("primary"), `primary for ${t.id}`).toBe(t.accent);
     }
+  });
+
+  it("marks the night palette as dark so native controls and scrollbars follow it", () => {
+    expect(blockFor("night")).toMatch(/color-scheme:\s*dark/);
+    expect(base).not.toMatch(/color-scheme/);
+    // The overlay behind sheets and dialogs is `deep`; it must stay darker than the ground.
+    const night = tokens(blockFor("night")!);
+    expect(lum(night.get("deep")!)).toBeLessThan(lum(night.get("app")!));
+    // The float shadow must use `deep` too: Tailwind inlines it, so a per-palette override is ignored.
+    expect(css).toMatch(/--shadow-float:[^;]*var\(--color-deep\)/);
   });
 
   it("points the shadcn aliases at edge and danger", () => {

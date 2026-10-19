@@ -3,7 +3,13 @@
  * `src/client/index.css`. The inline script in `index.html` keeps a copy of the ids and bar
  * colors (it cannot import this file); `themes.test.ts` stops the copies drifting apart.
  */
-export const THEME_IDS = ["ocean", "red-gradient", "cherry-blossom", "cherry-red"] as const;
+export const THEME_IDS = [
+  "ocean",
+  "red-gradient",
+  "cherry-blossom",
+  "cherry-red",
+  "night",
+] as const;
 
 export type ThemeId = (typeof THEME_IDS)[number];
 
@@ -58,6 +64,14 @@ export const themes: readonly ThemeMeta[] = [
     bar: "#f3f4f4",
     ink: "#1a1a1a",
     accent: "#d6001f",
+  },
+  {
+    id: "night",
+    name: "Night",
+    blurb: "Dark mode: mint teal on charcoal",
+    bar: "#121716",
+    ink: "#e6edeb",
+    accent: "#5cc4b4",
   },
 ];
 
