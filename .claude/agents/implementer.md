@@ -13,6 +13,7 @@ You implement one checklist block of `build_plan_pwa.md` for UniLink. The sessio
 - Follow `CLAUDE.md` exactly: stack, rules, pitfalls, theme tokens, shared schemas, `limits.ts`, tests next to code.
 - Read the phase's **Design decisions (locked in)** before writing code. Don't reopen them. If one looks wrong, stop and report it. Don't work around it.
 - Stay inside the block you were given. Don't start the next block, and don't refactor unrelated code.
+- If the block touches any UI (components, routes, styles), invoke the `frontend-design` and `ui-ux-pro-max` skills before writing UI code.
 - Use Context7 for current library docs (Vite+ especially) and the shadcn MCP for components. Don't guess APIs.
 
 ## Workflow

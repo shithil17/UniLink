@@ -1,0 +1,501 @@
+{
+  "program": "27",
+  "name": "BS in Environmental Management",
+  "version": "Proposed (120 credits)",
+  "effectiveFromYear": 0,
+  "totalCredits": 120,
+  "source": "BS-in-Environmental-Management-.pdf",
+  "notes": [
+    "The source is a one-page semester-by-semester major map marked 'Proposed (120 credits)' with no year, so effectiveFromYear is 0.",
+    "The map prints only course codes and per-semester credit totals: no titles, per-course credits, categories or prerequisites. All prereq values are null.",
+    "Per-course credits were inferred from the semester totals: 3 credits each, except ENV107 (semester 1), CHE101 (semester 2) and BIO101/BIO103 (semester 5) at 4 credits (assumed 3 + 1 lab) so semesters 1, 2 and 5 total 10.",
+    "The printed semester totals add up to 121, not 120: semester 9 prints 13 credits but has four courses (ENV313, ENV373, POL101/POL104, Major Elective). All four are kept at 3 credits (12), so the file sums to 120 and matches the header. If one of them is really 4 credits, the printed header 120 is wrong instead.",
+    "English slots are shifted by waiver: semester 1 ENG102/ENG103, semester 2 ENG103/ENG105, semester 3 ENG105/ENG111 (a student with ENG102 waived takes ENG103, ENG105, ENG111). Modelled as three slots ENG102, ENG103, ENG105 with the printed alternatives.",
+    "MAT112/MAT116 counts 3 credits here (semester 4 has four courses and totals 12), even though MAT116 is a 0-credit course in some NSU programs.",
+    "ENV498 is printed '(Non-credit)', so nonCredit with 0 credits; semester 12 total 3 is the free elective. Its title is not printed (possibly an internship).",
+    "Categories are not printed; grouped as General Education, Math & Science, Economics & Management, Major Core, Major Elective and Free Elective.",
+    "Titles taken from other NSU maps in this set: ENV203, ENV373, ENV455, ENG111, ENG115, HIS101, HIS102, HIS205, POL101, POL104, MIS105, MAT116, MAT120, STA172, CHE101, BIO103. Titles from the NSU catalogue (less certain): MAT112 College Algebra, MGT210 Principles of Management, MGT314 Production Management, MGT489 Strategic Management. Titles not known and left as 'Title not in source': ENV205, ENV207, ENV208, ENV260, ECO260, ENV313, ENV315, ENV316, ENV354, ENV375, ENV409, ENV410, ENV498, BIO101."
+  ],
+  "courses": [
+    {
+      "kind": "course",
+      "code": "ENG102",
+      "title": "Introduction to Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [
+        {
+          "code": "ENG103",
+          "title": "Intermediate Composition"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MIS105",
+      "title": "Computer Information Systems",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV107",
+      "title": "Introduction to Environmental Science",
+      "credits": 4,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CHE101",
+      "title": "Chemistry I",
+      "credits": 4,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG103",
+      "title": "Intermediate Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [
+        {
+          "code": "ENG105",
+          "title": "Advanced Composition"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV203",
+      "title": "Introduction to Bangladesh Geography",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ECO101",
+      "title": "Introduction to Microeconomics",
+      "credits": 3,
+      "category": "Economics & Management",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG105",
+      "title": "Advanced Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [
+        {
+          "code": "ENG111",
+          "title": "Public Speaking"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV205",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ECO104",
+      "title": "Introduction to Macroeconomics",
+      "credits": 3,
+      "category": "Economics & Management",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV208",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MAT112",
+      "title": "College Algebra",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [
+        {
+          "code": "MAT116",
+          "title": "Pre-Calculus"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "HIS101",
+      "title": "Bangladesh History and Culture",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO101",
+      "title": "(title not printed)",
+      "credits": 4,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [
+        {
+          "code": "BIO103",
+          "title": "Biology I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV207",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MAT120",
+      "title": "Calculus I",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "STA172",
+      "title": "Statistics I",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV260",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [
+        {
+          "code": "ECO260",
+          "title": "(title not printed)"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MGT210",
+      "title": "Principles of Management",
+      "credits": 3,
+      "category": "Economics & Management",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV316",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV375",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MGT314",
+      "title": "Production Management",
+      "credits": 3,
+      "category": "Economics & Management",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV315",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV354",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "MAJOR-ELECT1",
+      "title": "Major Elective 1",
+      "credits": 3,
+      "category": "Major Elective",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "HIS102",
+      "title": "World Civilization",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [
+        {
+          "code": "HIS205",
+          "title": "World History"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV313",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV373",
+      "title": "Environmental Impact Assessment",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "POL101",
+      "title": "Introduction to Political Science",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [
+        {
+          "code": "POL104",
+          "title": "Introduction to Governance"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "MAJOR-ELECT2",
+      "title": "Major Elective 2",
+      "credits": 3,
+      "category": "Major Elective",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG115",
+      "title": "Literature",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV409",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MGT489",
+      "title": "Strategic Management",
+      "credits": 3,
+      "category": "Economics & Management",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT1",
+      "title": "Free Elective 1",
+      "credits": 3,
+      "category": "Free Elective",
+      "nonCredit": false,
+      "semester": 10,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV410",
+      "title": "(title not printed)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV455",
+      "title": "Research Methodology",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "MAJOR-ELECT3",
+      "title": "Major Elective 3",
+      "credits": 3,
+      "category": "Major Elective",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT2",
+      "title": "Free Elective 2",
+      "credits": 3,
+      "category": "Free Elective",
+      "nonCredit": false,
+      "semester": 11,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV498",
+      "title": "(title not printed)",
+      "credits": 0,
+      "category": "Major Core",
+      "nonCredit": true,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "elective",
+      "code": "FREE-ELECT3",
+      "title": "Free Elective 3",
+      "credits": 3,
+      "category": "Free Elective",
+      "nonCredit": false,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": null
+    }
+  ]
+}

@@ -27,18 +27,22 @@ Rules that apply to every endpoint:
 | POST   | `/api/auth/change-password` | user   | `auth.ts` → `changePasswordRequest` |
 | GET    | `/api/auth/me`              | user   | `auth.ts` → `me`                    |
 
-## Courses and attempts
+## Courses, attempts and student courses
 
-| Method | Path                  | Auth | Schema                                     |
-| ------ | --------------------- | ---- | ------------------------------------------ |
-| GET    | `/api/courses/map`    | user | `courses.ts` → `courseMap`                 |
-| POST   | `/api/courses/import` | mod  | `courses.ts` → `courseImportRow[]`         |
-| GET    | `/api/attempts`       | user | `attempts.ts` → `attempt[]` (own only)     |
-| POST   | `/api/attempts`       | user | `attempts.ts` → `attemptInput` → `attempt` |
-| PATCH  | `/api/attempts/:id`   | user | `attempts.ts` → `attemptInput` → `attempt` |
-| DELETE | `/api/attempts/:id`   | user | –                                          |
+| Method | Path                       | Auth | Schema                                                                               |
+| ------ | -------------------------- | ---- | ------------------------------------------------------------------------------------ |
+| GET    | `/api/courses/map`         | user | `courses.ts` → `courseMap` (empty state: `curriculum: null`)                         |
+| POST   | `/api/courses/import`      | mod  | `courses.ts` → `curriculumImportEnvelope` (rows checked one by one) → `importResult` |
+| GET    | `/api/attempts`            | user | `attempts.ts` → `attempt[]` (own only)                                               |
+| POST   | `/api/attempts`            | user | `attempts.ts` → `attemptInput` → `attempt`                                           |
+| PATCH  | `/api/attempts/:id`        | user | `attempts.ts` → `attemptInput` → `attempt` (not built yet)                           |
+| DELETE | `/api/attempts/:id`        | user | – (not built yet)                                                                    |
+| GET    | `/api/student-courses`     | user | `courses.ts` → `studentCourse[]` (own only)                                          |
+| POST   | `/api/student-courses`     | user | `courses.ts` → `studentCourseInput` → `studentCourse`                                |
+| PATCH  | `/api/student-courses/:id` | user | `courses.ts` → `studentCourseUpdate` → `studentCourse` (code is fixed once added)    |
+| DELETE | `/api/student-courses/:id` | user | – (also deletes the course's attempts)                                               |
 
-Attempts are readable by their owner only, never by mods or admins (enforced in the repo layer).
+Attempts and student courses are readable by their owner only, never by mods or admins (enforced in the repo layer); another user's student course id is a 404. An attempt's course code must be in the user's curriculum (a slot code or an alternative) or one of their student courses (400 `unknown_course`). A student course code must not clash with the curriculum or their other courses (409 `code_taken`), its category must be one of the curriculum's categories (400 `unknown_category`), and adding past `limits.studentCoursesMax` is a 409 `student_course_limit`. The import keeps valid rows and lists the rest in `rejected`; a file with no valid row is a 422 and changes nothing.
 
 ## Inbox
 

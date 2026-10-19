@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { HouseIcon, SettingsIcon } from "lucide-react";
+import { BookOpenIcon, HouseIcon, SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { InstallHint } from "@/components/pwa/InstallHint";
 import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 const navItems = [
   { to: "/", label: "Home", icon: HouseIcon },
+  { to: "/courses", label: "Courses", icon: BookOpenIcon },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
@@ -15,7 +16,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh bg-app pb-[calc(4rem+env(safe-area-inset-bottom))] text-body md:pb-0">
       <header className="sticky top-0 z-10 border-b border-line bg-surface pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-4">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:px-6 lg:px-8">
           <Link to="/" className="text-lg font-semibold text-ink">
             UniLink
           </Link>
@@ -37,7 +38,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-4 py-6">
+      <main className="mx-auto max-w-6xl px-4 py-6 md:px-6 lg:px-8 lg:py-8">
         <InstallHint />
         {children}
       </main>

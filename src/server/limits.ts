@@ -24,4 +24,12 @@ export const limits = {
   passwordSaltBytes: 16,
   // ceiling: Workers throws on PBKDF2 above 100,000 iterations. Revisit if the platform raises the cap.
   pbkdf2Iterations: 100_000,
+  // ceiling: D1 allows 100 bound parameters per statement, so bulk inserts are chunked to fit. Revisit if the platform raises it.
+  d1MaxBoundParams: 100,
+  // ceiling: the largest NSU course map has well under 100 rows. Revisit if a map with many more slots arrives.
+  courseImportMaxRows: 300,
+  // ceiling: bounds D1 rows per user; a degree has around a dozen elective slots. Revisit if students report hitting it.
+  studentCoursesMax: 40,
+  // ceiling: a whole transcript entered in one sitting is roughly 50 attempts. Revisit if students hit it.
+  attemptWrites: { limit: 200, windowMs: HOUR },
 } as const;

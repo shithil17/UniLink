@@ -29,6 +29,13 @@
       "when": 1792344828463,
       "tag": "0003_signup_name_email",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792426252648,
+      "tag": "0004_course_map",
+      "breakpoints": true
     }
   ]
 }

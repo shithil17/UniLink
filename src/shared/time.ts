@@ -7,3 +7,9 @@ const DHAKA_OFFSET_MS = 6 * 60 * 60 * 1000;
 export function dhakaYear(now: number = Date.now()): number {
   return new Date(now + DHAKA_OFFSET_MS).getUTCFullYear();
 }
+
+/** Year, month (1 to 12) and day of month in Asia/Dhaka at the instant `now` (UTC epoch ms). */
+export function dhakaDate(now: number = Date.now()): { year: number; month: number; day: number } {
+  const d = new Date(now + DHAKA_OFFSET_MS);
+  return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
+}

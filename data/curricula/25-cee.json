@@ -1,0 +1,1131 @@
+{
+  "program": "25",
+  "name": "BS in Civil and Environmental Engineering",
+  "version": "Fall 2016",
+  "effectiveFromYear": 16,
+  "totalCredits": 149,
+  "source": "Course-Mapping.pdf",
+  "notes": [
+    "The document prints no version or year. Version 'Fall 2016' / effectiveFromYear 16 is inferred from note 5 ('BAN 205 and HIS 103 is compulsory for students admitted in Fall 2016 or later'); the map as printed includes BAN205 and HIS103.",
+    "Students admitted before Fall 2016 may instead take any two of ECO101, ECO104, SOC101, PSY210, POL210, LAW200, MGT210, PHI315 in place of BAN205 and HIS103 (note 5). Not encoded as alternatives.",
+    "The document prints no category names; categories were grouped by subject (General Education, Math & Science, Major Core, Major Elective, Capstone).",
+    "Semesters 1-9 follow the 'Semester credits' blocks (three per year). The senior (fourth) year page has no semester split, so senior-year rows have semester null.",
+    "The cover page says the senior year is 30 credits, but the senior-year page totals 35 credits and the overall total 149 = 33 + 40 + 41 + 35, so 35 was used.",
+    "CEE100, MAT116 and ENG102 are printed as NON CREDIT (ENG102 'exempted based on English score in admission test'). CEE498 Internship is printed as 0 credits and stored as nonCredit.",
+    "Major electives: 'Any four from these 15 courses, 4 x 3 cr. = 12 credits; student should have finished 120 credits to take any elective course'. Four rows (codes CEE410, CEE431, CEE433, CEE435), each listing the other 14 options as alternatives. Each row's prereq is 120 credits plus that code's own printed prerequisite; the options' own prerequisites are: CEE410 none, CEE431 CEE331, CEE433 CEE331, CEE435 CEE430, CEE437 CEE212, CEE439 CEE340, CEE465/467/473 CEE360, CEE475 'MAT 15 CR' (unclear, probably 15 credits of MAT courses; not encoded), CEE477 CEE260, CEE479/ENV309/ENV408 ENV209, CEE490 none.",
+    "Elective credits are 3 each as stated in the side note; CEE410 and CEE490 have no printed credit in their own rows.",
+    "CEE209/CEE209L are printed as '(or CEE 209)' alternatives to ENV209/ENV209L; the CEE370 and CEE370L prerequisites print 'CEE 209', which resolves to the ENV209 alternative.",
+    "Prerequisites printed on two lines or with commas (e.g. 'CEE 210, CEE 214') are read as all required.",
+    "CEE499 and ENV455 require '125 CR.'; CEE498 requires '135 CR.'.",
+    "Faculty initials column was not transcribed."
+  ],
+  "courses": [
+    {
+      "kind": "course",
+      "code": "CEE100",
+      "title": "Introduction to Civil and Environmental Engineering",
+      "credits": 0,
+      "category": "Major Core",
+      "nonCredit": true,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MAT116",
+      "title": "Pre-calculus",
+      "credits": 0,
+      "category": "Math & Science",
+      "nonCredit": true,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG102",
+      "title": "Introduction to Composition",
+      "credits": 0,
+      "category": "General Education",
+      "nonCredit": true,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CEE110",
+      "title": "Computer Aided Drawing (CAD) for Engineers",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BAN205",
+      "title": "Bangla Language",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "PHY107",
+      "title": "General Physics I",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "PHY107L",
+      "title": "General Physics I Lab",
+      "credits": 1,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CHE120",
+      "title": "Inorganic and Organic Chemistry",
+      "credits": 4,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG103",
+      "title": "Intermediate Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MAT120",
+      "title": "Calculus & Analytical Geometry I",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT116"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE210",
+      "title": "Engineering Mechanics",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT120"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MAT130",
+      "title": "Calculus & Analytical Geometry II",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT120"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "PHY108",
+      "title": "General Physics II",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "PHY107"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "PHY108L",
+      "title": "General Physics II Lab",
+      "credits": 1,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "PHY107"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ENV107",
+      "title": "Environmental Science",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENG105",
+      "title": "Advance Composition",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "course": "ENG103"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE213",
+      "title": "Surveying & Introduction to GIS",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE110"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE213L",
+      "title": "Surveying & Introduction to GIS Lab",
+      "credits": 1,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE110"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE214",
+      "title": "Engineering Materials (with lab)",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "course": "CHE120"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MAT260",
+      "title": "Differential Equations and Orthogonal Functions",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [
+        {
+          "code": "MAT350",
+          "title": "Engineering Mathematics"
+        }
+      ],
+      "prereq": {
+        "course": "MAT130"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "HIS103",
+      "title": "Emergence of Bangladesh",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "MAT230",
+      "title": "Linear and Vector Algebra for Engineers",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [
+        {
+          "code": "MAT125",
+          "title": "Linear Algebra"
+        }
+      ],
+      "prereq": {
+        "course": "MAT130"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE212",
+      "title": "Solid Mechanics",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "CEE210"
+          },
+          {
+            "course": "CEE214"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE212L",
+      "title": "Solid Mechanics Lab",
+      "credits": 1,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "CEE210"
+          },
+          {
+            "course": "CEE214"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE211",
+      "title": "Fluid Mechanics",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE210"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE211L",
+      "title": "Fluid Mechanics Lab",
+      "credits": 1,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE210"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE215",
+      "title": "Numerical Analysis & Computer Programming",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "MAT260"
+          },
+          {
+            "course": "MAT125"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "MAT140",
+      "title": "Probability and Statistics for Scientists and Engineers",
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [
+        {
+          "code": "MAT361",
+          "title": "Probability and Statistics"
+        }
+      ],
+      "prereq": {
+        "course": "MAT130"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ENV209",
+      "title": "Environmental Chemistry",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [
+        {
+          "code": "CEE209",
+          "title": "Environmental Chemistry"
+        }
+      ],
+      "prereq": {
+        "course": "ENV107"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ENV209L",
+      "title": "Environmental Chemistry Lab",
+      "credits": 1,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [
+        {
+          "code": "CEE209L",
+          "title": "Environmental Chemistry Lab"
+        }
+      ],
+      "prereq": {
+        "course": "ENV107"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE260",
+      "title": "Hydrology",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 6,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE211"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ENV311",
+      "title": "Geology and Geomorphology",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE214"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE310",
+      "title": "Quantity Survey and Cost Estimates",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "CEE110"
+          },
+          {
+            "course": "CEE214"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE240",
+      "title": "Introduction to Soil Mechanics and Foundation Engineering",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE212"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE240L",
+      "title": "Soil Mechanics Lab",
+      "credits": 1,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE212"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE250",
+      "title": "Introduction to Transportation Engineering",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "CEE210"
+          },
+          {
+            "course": "CEE214"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE250L",
+      "title": "Transportation Engineering Lab",
+      "credits": 1,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE250"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE330",
+      "title": "Structural Analysis and Design-I",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE212"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE370",
+      "title": "Water Supply and Treatment",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "CEE209"
+          },
+          {
+            "course": "CEE211"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE370L",
+      "title": "Water Supply and Treatment Lab",
+      "credits": 1,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "CEE209"
+          },
+          {
+            "course": "CEE211"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE350",
+      "title": "Traffic Analysis and Design",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE250"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE340",
+      "title": "Advance Foundation Engineering",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE240"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE360",
+      "title": "Open-Channel Hydraulics",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE260"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE360L",
+      "title": "Open-Channel Hydraulics Lab",
+      "credits": 1,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE260"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE335",
+      "title": "Reinforced Concrete Design-I",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE330"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE373",
+      "title": "Sanitation and Wastewater Engineering",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE370"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE373L",
+      "title": "Sanitation and Wastewater Engineering Lab",
+      "credits": 1,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE370"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ENV373",
+      "title": "Environmental Impact Assessment",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": {
+        "course": "ENV107"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE331",
+      "title": "Structural Analysis and Design-II",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE330"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE430",
+      "title": "Reinforced Concrete Design-II",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE335"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE335L",
+      "title": "Reinforced Concrete Design Lab",
+      "credits": 1,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE330"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE331L",
+      "title": "Structural Analysis and Design Lab",
+      "credits": 1,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE330"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE460",
+      "title": "Groundwater Hydraulics",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE360"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE470",
+      "title": "Solid and Hazardous Waste Engineering",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "ENV209"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE415",
+      "title": "Socio-economic Aspects of Development Projects",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "course": "CEE250"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE410",
+      "title": "Construction Engineering",
+      "credits": 3,
+      "category": "Major Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "CEE431",
+          "title": "Introduction to Structural Dynamics"
+        },
+        {
+          "code": "CEE433",
+          "title": "Finite Element Methods"
+        },
+        {
+          "code": "CEE435",
+          "title": "Prestressed Concrete"
+        },
+        {
+          "code": "CEE437",
+          "title": "Behavior and Design of Metal Structures"
+        },
+        {
+          "code": "CEE439",
+          "title": "Earthquake-resistant Design"
+        },
+        {
+          "code": "CEE465",
+          "title": "River Engineering"
+        },
+        {
+          "code": "CEE467",
+          "title": "Irrigation and Drainage Engineering"
+        },
+        {
+          "code": "CEE473",
+          "title": "Coastal and Estuarine Analysis"
+        },
+        {
+          "code": "CEE475",
+          "title": "Environmental Modeling"
+        },
+        {
+          "code": "CEE477",
+          "title": "Ecological Engineering"
+        },
+        {
+          "code": "CEE479",
+          "title": "Air Quality Engineering"
+        },
+        {
+          "code": "ENV309",
+          "title": "Environmental Toxicology"
+        },
+        {
+          "code": "ENV408",
+          "title": "Environmental Pollution Control"
+        },
+        {
+          "code": "CEE490",
+          "title": "Special Topic"
+        }
+      ],
+      "prereq": {
+        "credits": 120
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE431",
+      "title": "Introduction to Structural Dynamics",
+      "credits": 3,
+      "category": "Major Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "CEE410",
+          "title": "Construction Engineering"
+        },
+        {
+          "code": "CEE433",
+          "title": "Finite Element Methods"
+        },
+        {
+          "code": "CEE435",
+          "title": "Prestressed Concrete"
+        },
+        {
+          "code": "CEE437",
+          "title": "Behavior and Design of Metal Structures"
+        },
+        {
+          "code": "CEE439",
+          "title": "Earthquake-resistant Design"
+        },
+        {
+          "code": "CEE465",
+          "title": "River Engineering"
+        },
+        {
+          "code": "CEE467",
+          "title": "Irrigation and Drainage Engineering"
+        },
+        {
+          "code": "CEE473",
+          "title": "Coastal and Estuarine Analysis"
+        },
+        {
+          "code": "CEE475",
+          "title": "Environmental Modeling"
+        },
+        {
+          "code": "CEE477",
+          "title": "Ecological Engineering"
+        },
+        {
+          "code": "CEE479",
+          "title": "Air Quality Engineering"
+        },
+        {
+          "code": "ENV309",
+          "title": "Environmental Toxicology"
+        },
+        {
+          "code": "ENV408",
+          "title": "Environmental Pollution Control"
+        },
+        {
+          "code": "CEE490",
+          "title": "Special Topic"
+        }
+      ],
+      "prereq": {
+        "all": [
+          {
+            "credits": 120
+          },
+          {
+            "course": "CEE331"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE433",
+      "title": "Finite Element Methods",
+      "credits": 3,
+      "category": "Major Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "CEE410",
+          "title": "Construction Engineering"
+        },
+        {
+          "code": "CEE431",
+          "title": "Introduction to Structural Dynamics"
+        },
+        {
+          "code": "CEE435",
+          "title": "Prestressed Concrete"
+        },
+        {
+          "code": "CEE437",
+          "title": "Behavior and Design of Metal Structures"
+        },
+        {
+          "code": "CEE439",
+          "title": "Earthquake-resistant Design"
+        },
+        {
+          "code": "CEE465",
+          "title": "River Engineering"
+        },
+        {
+          "code": "CEE467",
+          "title": "Irrigation and Drainage Engineering"
+        },
+        {
+          "code": "CEE473",
+          "title": "Coastal and Estuarine Analysis"
+        },
+        {
+          "code": "CEE475",
+          "title": "Environmental Modeling"
+        },
+        {
+          "code": "CEE477",
+          "title": "Ecological Engineering"
+        },
+        {
+          "code": "CEE479",
+          "title": "Air Quality Engineering"
+        },
+        {
+          "code": "ENV309",
+          "title": "Environmental Toxicology"
+        },
+        {
+          "code": "ENV408",
+          "title": "Environmental Pollution Control"
+        },
+        {
+          "code": "CEE490",
+          "title": "Special Topic"
+        }
+      ],
+      "prereq": {
+        "all": [
+          {
+            "credits": 120
+          },
+          {
+            "course": "CEE331"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE435",
+      "title": "Prestressed Concrete",
+      "credits": 3,
+      "category": "Major Elective",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "CEE410",
+          "title": "Construction Engineering"
+        },
+        {
+          "code": "CEE431",
+          "title": "Introduction to Structural Dynamics"
+        },
+        {
+          "code": "CEE433",
+          "title": "Finite Element Methods"
+        },
+        {
+          "code": "CEE437",
+          "title": "Behavior and Design of Metal Structures"
+        },
+        {
+          "code": "CEE439",
+          "title": "Earthquake-resistant Design"
+        },
+        {
+          "code": "CEE465",
+          "title": "River Engineering"
+        },
+        {
+          "code": "CEE467",
+          "title": "Irrigation and Drainage Engineering"
+        },
+        {
+          "code": "CEE473",
+          "title": "Coastal and Estuarine Analysis"
+        },
+        {
+          "code": "CEE475",
+          "title": "Environmental Modeling"
+        },
+        {
+          "code": "CEE477",
+          "title": "Ecological Engineering"
+        },
+        {
+          "code": "CEE479",
+          "title": "Air Quality Engineering"
+        },
+        {
+          "code": "ENV309",
+          "title": "Environmental Toxicology"
+        },
+        {
+          "code": "ENV408",
+          "title": "Environmental Pollution Control"
+        },
+        {
+          "code": "CEE490",
+          "title": "Special Topic"
+        }
+      ],
+      "prereq": {
+        "all": [
+          {
+            "credits": 120
+          },
+          {
+            "course": "CEE430"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE499",
+      "title": "Engineering Project",
+      "credits": 3,
+      "category": "Capstone",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "credits": 125
+      }
+    },
+    {
+      "kind": "course",
+      "code": "ENV455",
+      "title": "Research Methodology",
+      "credits": 3,
+      "category": "Capstone",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "credits": 125
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CEE498",
+      "title": "Internship",
+      "credits": 0,
+      "category": "Capstone",
+      "nonCredit": true,
+      "semester": null,
+      "alternatives": [],
+      "prereq": {
+        "credits": 135
+      }
+    }
+  ]
+}

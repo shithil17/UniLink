@@ -1,29 +1,26 @@
 import { z } from "zod";
+import { ATTEMPT_GRADES } from "../grading";
 import { id, term } from "./common";
+import { courseCodeInput } from "./courses";
 
-// Stub. Grade points and the retake policy live in src/shared/grading.ts.
+// Quick attempt form: course, grade and an optional term. Faculty and the retake rules arrive with the full form.
 
-export const letterGrade = z.enum([
-  "A",
-  "A-",
-  "B+",
-  "B",
-  "B-",
-  "C+",
-  "C",
-  "C-",
-  "D+",
-  "D",
-  "F",
-  "I",
-  "W",
-]);
+/** A letter grade, or "WV" for a waived course. */
+export const letterGrade = z.enum(ATTEMPT_GRADES);
 
 export const attemptInput = z.object({
-  courseCode: z.string(),
+  courseCode: courseCodeInput,
   grade: letterGrade,
   term: term.nullable().optional(),
-  facultyId: id.nullable().optional(),
 });
 
-export const attempt = attemptInput.extend({ id, createdAt: z.number().int() });
+export const attempt = z.object({
+  id,
+  courseCode: z.string(),
+  grade: letterGrade,
+  term: term.nullable(),
+  createdAt: z.number().int(),
+});
+
+export type AttemptInput = z.infer<typeof attemptInput>;
+export type Attempt = z.infer<typeof attempt>;
