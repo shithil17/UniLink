@@ -14,7 +14,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - Signup rate limits and the new-account cooldown move from Sprint 4 to Phase 2, because they are the main defence while there is no email verification. They use one shared `rateLimit()` helper.
 - Week 0 now also proves D1 reads, an API test harness and the deploy pipeline.
 - All limits live in one config file, and all times use Asia/Dhaka.
-- (2026-10-19) Marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (Phase 16). Lost and found stays text-only.
+- (2026-10-19) Lost-and-found posts and marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (post photos kit, Phase 15). No photos in the "ID or card" category. Authors can delete their own posts (Phase 12).
 
 ---
 
@@ -22,7 +22,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 **Architecture**
 
-- One repo, one Cloudflare Worker, one D1 database and one private R2 bucket (marketplace photos) per environment. The Worker serves both `/api/*` (Hono) and the built PWA (Workers Static Assets), so everything is on one origin: no CORS and no second host.
+- One repo, one Cloudflare Worker, one D1 database and one private R2 bucket (post photos) per environment. The Worker serves both `/api/*` (Hono) and the built PWA (Workers Static Assets), so everything is on one origin: no CORS and no second host.
 - Request and response shapes are Zod schemas in `src/shared/schemas/`. The client forms (React Hook Form) and the Hono validators import the same schema, so nobody writes a shape twice.
 - Data access goes through the repository layer (`src/server/repos/`). Route handlers never build SQL.
 - Every external service (OpenAlex, ORCID, Crossref, DeepSeek, Clef) sits behind a small interface in `src/server/adapters/` with a fake next to it. Tests use the fakes and never touch the network.
@@ -87,7 +87,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 | API             | Hono on Cloudflare Workers, Zod validation                                                                              | Small, typed, built for Workers                                                     |
 | Hosting         | Workers Static Assets via `@cloudflare/vite-plugin`                                                                     | One deploy ships the API and the PWA together, so they also roll back together      |
 | Database        | Cloudflare D1 (SQLite)                                                                                                  | Same platform as the Worker, free tier                                              |
-| Object storage  | Cloudflare R2, private bucket bound to the Worker (`MARKET_IMAGES`). Marketplace photos only, WebP only                 | Same platform, no egress fees, free tier far above expected use                     |
+| Object storage  | Cloudflare R2, private bucket bound to the Worker (`POST_PHOTOS`). Lost-and-found and marketplace photos, WebP only     | Same platform, no egress fees, free tier far above expected use                     |
 | ORM             | Drizzle (`schema.ts`, `drizzle-kit` migrations)                                                                         | Typed queries, versioned migrations                                                 |
 | Auth            | Own `sessions` table, hashed tokens, HttpOnly + Secure + SameSite=Lax cookie, WebCrypto PBKDF2                          | No third-party auth. Works on Workers                                               |
 | Scheduled jobs  | Cloudflare Cron Triggers (same Worker)                                                                                  | No extra service                                                                    |
@@ -124,7 +124,7 @@ unilink/                         # repo name until the app name is chosen
 ├── .node-version                                                                       [P0]
 ├── vite.config.ts               # vite-plus config: plugins, lint, fmt, test, staged   [P0]
 ├── wrangler.jsonc               # staging + production envs, D1, assets, AI, crons     [P0]
-│                                # + R2 bucket MARKET_IMAGES                            [P16]
+│                                # + R2 bucket POST_PHOTOS                              [P15]
 ├── drizzle.config.ts                                                                   [P0]
 ├── index.html                   # inline no-flash theme script + theme-color meta      [P1]
 ├── drizzle/                     # generated migrations (committed)
@@ -145,7 +145,7 @@ unilink/                         # repo name until the app name is chosen
     │   ├── routine.ts           # overlap check                                         [P9]
     │   ├── urlAllowlist.ts      # sharing hosts                                         [P10]
     │   ├── contact.ts           # phone / wa.me / m.me / facebook.com rules            [P12]
-    │   └── webp.ts              # WebP header parser: magic, size, chunks              [P16]
+    │   └── webp.ts              # WebP header parser: magic, size, chunks              [P15]
     ├── server/
     │   ├── index.ts             # Hono app, /api router, scheduled() handler           [P0]
     │   ├── limits.ts            # every limit, cap, cooldown, expiry, threshold        [P2]
@@ -169,7 +169,7 @@ unilink/                         # repo name until the app name is chosen
         ├── components/ui/       # shadcn components
         ├── components/theme/    # ThemeProvider, ThemePicker, ThemePickerTrigger       [P1]
         ├── components/post/     # ContactInput, ExpiryBadge, ReportButton, StatusNote  [P12]
-        └── lib/                 # query client, api fetcher, imageEncode.ts (WebP) [P16]
+        └── lib/                 # query client, api fetcher, imageEncode.ts (WebP) [P15]
 ```
 
 Tests sit next to the code: `*.test.ts` for unit tests and `*.api.test.ts` for API tests that run against a local D1.
@@ -577,7 +577,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - **Audit:** every automatic decision writes an audit row with actor `automod`, the model name, the category, the scores and a text snapshot.
 > - A test-only flag forces `review`, so the queue can be exercised before Clef exists.
 > - The mod's decision overrides the model. The author gets a `notify()` message on approve or reject.
-> - **Images (added 2026-10-19, for marketplace photos in Phase 16):** `screen()` input takes optional `images` (WebP bytes). The rules step treats a bad image (not WebP, too large, wrong dimensions, EXIF or XMP chunk) as a clear rule violation. The model step receives the images with the text. The stub model step returns `review` whenever images are present, so photos are never published unscreened.
+> - **Images (added 2026-10-19, for post photos in Phases 15 and 16):** `screen()` input takes optional `images` (WebP bytes). The rules step treats a bad image (not WebP, too large, wrong dimensions, EXIF or XMP chunk) as a clear rule violation. The model step receives the images with the text. The stub model step returns `review` whenever images are present, so photos are never published unscreened.
 
 ### Checklist
 
@@ -740,6 +740,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - **Contacts:** at least one of phone (`^\+8801[3-9]\d{8}$`), WhatsApp (`https://wa.me/…`), Messenger or Facebook (`https://m.me/…`, `https://facebook.com/…`). Validated in `src/shared/contact.ts` and shown by a shared `ContactInput`. Contacts are returned only by `GET /api/<type>/:id/contact`, which needs a login and is rate-limited through `rateLimit()`.
 > - **Expiry and renewal:** one helper that computes `expires_at` and enforces each type's renewal rule. Feeds filter out expired rows in the query.
 > - **Cleanup:** one cron job per table, added to `cron.ts`.
+> - **Author delete (added 2026-10-19):** the author can delete their own ride, lost-and-found post or listing (`DELETE /api/<type>/:id`, behind a confirm dialog). It goes through `softDelete()` with the author as actor and reason `author`, so the post and its photos disappear for everyone at once and the usual audit row is written. The type's cron job hard-deletes the row and its photos after the author-delete purge window in `limits.ts` (start at 7 days), but skips a post with an open report until the report is resolved. Deleting at once would let a reported scam wipe its own evidence. Admin reversal does not apply to author deletes.
 > - **Reports and mod removal:** one new `target_type` per table. `softDelete()` and `reverse()` from Phase 7.
 > - **Screening:** `screen()` on create and edit. `visibleTo(user)` on every feed and detail query. `canPost()` cooldown on create.
 >
@@ -753,7 +754,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Build order
 
-- [ ] **Shared kit:** `contact.ts`, `ContactInput`, the contact reveal endpoint pattern, the expiry helper, `ReportButton`, `StatusNote` ("Waiting for a moderator" and rejection reason with "Ask a moderator to look").
+- [ ] **Shared kit:** `contact.ts`, `ContactInput`, the contact reveal endpoint pattern, the expiry helper, `ReportButton`, `StatusNote` ("Waiting for a moderator" and rejection reason with "Ask a moderator to look"), the author-delete endpoint pattern and `DeletePostButton`, the purge rule (window passed and no open report) used by every cron job.
 - [ ] **Step 1:** `rides` table, check constraints and indexes.
 - [ ] **Step 2:** create and edit API with contact validation and `screen()`. One-off rides first, then recurring.
 - [ ] **Step 3:** seat logic (single-statement update, auto `full` at 0).
@@ -770,7 +771,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Test Scripts & Smoke Tests
 
 - [ ] `src/shared/contact.test.ts`: valid and invalid phone numbers, wa.me, m.me and facebook.com links, at least one required.
-- [ ] `src/server/features/rides/rides.api.test.ts`: seats never go below 0 or above the total, auto `full` at 0, one-off vs recurring validation, the default end date, renewal, the feed hides expired and pending rides, the contact reveal needs a login and hits its rate limit, the feed response has no contact fields, report + removal + reversal, edits are screened again.
+- [ ] `src/server/features/rides/rides.api.test.ts`: seats never go below 0 or above the total, auto `full` at 0, one-off vs recurring validation, the default end date, renewal, the feed hides expired and pending rides, the contact reveal needs a login and hits its rate limit, the feed response has no contact fields, report + removal + reversal, edits are screened again, an author delete hides the ride at once, another user cannot delete it, the cron purges it after the window but not while a report is open.
 - [ ] Run: `vp test contact rides`
 
 ### Test Gate 12
@@ -833,7 +834,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - Two thresholds, both from calibration and never guessed: auto-reject needs a high score on a clear category, auto-approve needs a high score on "fine", and everything in between goes to a human. The target is a very low false-reject rate (the exact number is an Open decision). The review band is kept narrow so the mod queue stays manageable.
 > - Students write English, Bangla and Banglish. The calibration set (about 150 examples: allowed posts, each prohibited category, personal data, spam, Banglish) covers all three, and uncertain results go to humans.
 > - The model sees only post text, never usernames or IDs.
-> - **Photos (added 2026-10-19):** marketplace photos go to Clef-flash in the same call as the text, as image bytes (Clef does not accept URLs), never with filenames or metadata. Extra questions: does a photo show an ID card, a bank or payment card, a phone number or other personal data (→ personal data), nudity or violence (→ abuse), or a prohibited item (→ prohibited item). The same two thresholds apply. Cost: about 1,030 input tokens per photo (one token per 32×32 block, capped at 1,024, plus 3), so a 3-photo listing is about 11 Neurons.
+> - **Photos (added 2026-10-19):** post photos go to Clef-flash in the same call as the text, as image bytes (Clef does not accept URLs), never with filenames or metadata. Extra questions: does a photo show an ID card, a bank or payment card, a phone number or other personal data (→ personal data), nudity or violence (→ abuse), or a prohibited item (→ prohibited item). The same two thresholds apply. Cost: about 1,030 input tokens per photo (one token per 32×32 block, capped at 1,024, plus 3), so a 3-photo post is about 11 Neurons.
 > - **Finder gate:** cheap checks first (empty, over 500 characters, symbols only), then one Clef decision: relevant / too vague / off-topic / abusive or instruction attempt. Only "relevant" goes on to DeepSeek. The others get fixed server-written replies, and "too vague" has its own reply that suggests topics. Chips skip the gate. The gate sees only the message, never the faculty list. Gate limit: 30 per user per day. If Clef is down or capped, the message goes to the match step, where the normal limits apply. Only messages that pass the gate count toward the 10-per-day match limit. `note:` the gate saves money but is not a security boundary. The match call still treats the text as data.
 > - **Fallback (cut order step 4):** if Clef is not ready, the stub stays and posts publish straight away after the rules. The report flow covers the rest.
 
@@ -847,7 +848,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Docs & QA (C, D)
 
 - [ ] D: finish the calibration set early in Week 7 and run it with Dev A. Banglish samples in the manual test run.
-- [ ] D: about 30 labelled listing photos in the calibration set: ordinary items, ID cards, payment cards, screenshots with phone numbers, prohibited items.
+- [ ] D: about 30 labelled post photos in the calibration set: ordinary items, ID cards, payment cards, screenshots with phone numbers, prohibited items.
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -870,22 +871,43 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 > **Design decisions (locked in):**
 >
-> - Type `lost | found`. Title, category (ID or card, wallet, phone, laptop or charger, bag, keys, books or notes, other), description, place (free text), date, contacts (shared kit), status `open | resolved`. `ceiling:` text only, no photos: a photo of a found ID or card would show a student ID publicly. Revisit only after marketplace photos have run cleanly for a semester and Clef reliably catches ID cards in the calibration set.
+> - Type `lost | found`. Title, category (ID or card, wallet, phone, laptop or charger, bag, keys, books or notes, other), description, place (free text), date, contacts (shared kit), status `open | resolved`.
 > - Found posts have an optional private **verification detail** that only the poster can see. It is never included in any other user's response.
+> - **Photos (added 2026-10-19):** up to 3 per post through the post photos kit below, so owners can recognise their item. **Never in the "ID or card" category:** the server refuses photos there for lost and found posts alike, and the form hides the picker, because a photo of an ID or card shows a student ID or card number publicly. On found posts the form tells the finder to leave out what proves ownership (wallet contents, lock screens, serial numbers, name labels) and put it in the verification detail instead, or anyone could claim the item from the photo.
 > - Student IDs and card numbers are rejected by the Phase 8 rules. The form warns about it up front.
 > - Expires after 30 days, and the poster can renew once. Resolved or expired posts leave the feed and are hard-deleted 14 days later by cron.
 > - Feed filters: type, category, place text, date, keyword.
 > - **Possible match** (last item, first to cut): a new found post sends a `notify()` to the owners of open lost posts in the same category from the last 14 days. Nobody is told who else was notified.
 > - The ToS says the app does not hold items or verify ownership. The post screen points to the campus security or lost-property office.
+>
+> **Design decisions (locked in) — post photos kit (added 2026-10-19; built here, reused by the marketplace in Phase 16):**
+>
+> - Optional, at most 3 photos per post (multiple angles). The first is the cover shown in the feed. Only WebP is ever stored. Rides have no photos.
+> - **Encoding in the browser:** the client resizes each photo so its longest side is at most the max side in `limits.ts` (start at 1600px) and encodes WebP at quality 0.8. Re-encoding through a canvas drops EXIF, including GPS. If `canvas.toBlob(..., "image/webp")` returns a blob that is not WebP (some Safari versions fall back to PNG), the client uses a WASM WebP encoder (`@jsquash/webp`) instead. The server never converts images: Workers Free allows 10 ms CPU per request.
+> - **Server checks (never trust the client):** create and edit are one multipart request carrying the fields and the photos, so a photo never exists without its post. `src/shared/webp.ts` accepts only RIFF/WEBP files within the byte limit and dimension limits read from the header, with no `EXIF` or `XMP ` chunk. The client uses the same parser to check its own output. A bad file is a field error, returned before R2 or Clef is touched.
+> - **Screening:** photos go through `screen()` with the text (Phase 8 image hook, Phase 14 photo questions). Until Clef is live, a post with photos goes to `pending_review`. Edits that add, remove or reorder photos are screened again.
+> - **Storage:** private R2 bucket per environment, binding `POST_PHOTOS`. Keys are `<target_type>/<postId>/<random>.webp`. The post ID is generated in the Worker before the insert. Objects are written first, then the D1 rows. If the D1 write fails, the request deletes the objects it wrote. One `post_photos` table (target type, target ID, key, position, width, height, bytes), indexed on target type + target ID, holds the keys for every post type. Photos removed in an edit are deleted from R2 after the D1 update. `ceiling:` a Worker killed between the R2 write and the D1 write leaves an orphan object. The key prefix makes a later sweep possible. Revisit if the bucket size drifts from the sum of `bytes`.
+> - **Serving:** `GET /api/photos/:key` looks up the row, applies `visibleTo(user)` to its post and streams the object with `Cache-Control: private, max-age=<limits.ts>, immutable`. A key never gets new content, so long caching is safe. The bucket has no public access, no `r2.dev` URL and no custom domain, so photos of a hidden or deleted post stop loading for anyone who has not cached them. Mods see photos in the queue through the same endpoint. `ceiling:` every uncached photo is one Worker request against the 100,000/day free limit, and feeds load full-size covers (no thumbnails). Revisit if photo requests pass about 30% of daily requests or users report heavy data use.
+> - **Cleanup:** mod removal and author delete stay soft deletes. The objects stay until the purge, so a mod reversal restores the photos. Each type's cron job deletes a post's R2 objects through the kit (one batched `delete()` per run, at most 1,000 keys) before its rows, so a failed run retries next time instead of losing the keys.
+> - **Caps** in `limits.ts`: photos per post, bytes per photo, max side, a per-user daily upload cap (`rateLimit()`) and a global daily upload cap. Workers and D1 fail when over their free limits, but R2 bills the card, so these caps are the spending limit.
+
+### Checklist — Photo setup (one-time)
+
+- [ ] Enable R2 on the Cloudflare account (dashboard → R2 → "Add R2 subscription"). It needs a payment method. Nothing is charged within the free tier.
+- [ ] Turn on a usage-based billing notification in the dashboard so any R2 charge is noticed.
+- [ ] Add `r2:create:staging` and `r2:create:prod` scripts (`wrangler r2 bucket create unilink-photos-staging` / `unilink-photos-prod`) and run each once with `vp run`. Leave public access, the `r2.dev` URL and custom domains off.
+- [ ] `wrangler.jsonc`: `r2_buckets` with binding `POST_PHOTOS` at the top level (local dev and tests; Wrangler simulates it locally, so no real bucket) and in each env with its bucket name, since bindings are not inherited. Then `vp run cf:types`.
+- [ ] `vp add @jsquash/webp`. No secrets are needed: the binding is the credential.
 
 ### Checklist — Build order
 
+- [ ] **Photos kit:** `src/shared/webp.ts`, the photo caps in `limits.ts`, the `post_photos` table, `src/client/lib/imageEncode.ts` (resize, WebP encode, `blob.type` check with the WASM fallback), a shared `PhotoPicker` (add, remove, reorder, inline errors) and `PhotoGallery`, the multipart parsing and R2-then-D1 write helper with rollback, `screen()` with images, `GET /api/photos/:key`, the purge helper for cron jobs. Update `docs/api-contracts.md`.
 - [ ] **Step 1:** `lost_found_posts` table with check constraints and indexes on category, status and expiry.
-- [ ] **Step 2:** create, edit, resolve, renew (once), using the shared kit, `screen()` and `canPost()`.
+- [ ] **Step 2:** create, edit, resolve, renew (once), author delete, with photos, using the shared kit, the photos kit, `screen()` and `canPost()`. Photos refused for the "ID or card" category.
 - [ ] **Step 3:** confirm the ID and card rules fire for lost-and-found text, and add the form warning.
 - [ ] **Step 4:** feed, filters and search, excluding expired and resolved posts in the query.
-- [ ] **Step 5:** cleanup job in `cron.ts` (14 days after expiry or resolution).
-- [ ] **Step 6:** screens: post, edit, my posts, feed, detail with contact buttons, verification detail field, lost-property pointer.
+- [ ] **Step 5:** cleanup job in `cron.ts` (14 days after expiry or resolution, the author-delete window, photos before rows).
+- [ ] **Step 6:** screens: post, edit, my posts, feed with covers, detail with photos and contact buttons, verification detail field and the "leave out what proves ownership" hint, lost-property pointer.
 - [ ] **Step 7:** report, mod removal, reversal (`target_type` `lost_found`).
 - [ ] **Step 8:** possible-match notification.
 
@@ -893,22 +915,26 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 - [ ] C: update the SRS and diagrams.
 - [ ] D: screens (early Week 7), ID-number warning wording, test cases.
+- [ ] D: photo rules in the ToS and post forms (no IDs, cards, documents or people's faces; on found posts, nothing that proves ownership). Privacy note: location data is removed from photos.
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/server/features/lostfound/lostfound.api.test.ts`: an ID number in the text is rejected, the verification detail is never returned to a non-owner (feed, detail and contact endpoints), renewal allowed once, resolve hides the post, the cron timing, report + removal, the possible match notifies the right users and not the poster.
-- [ ] Run: `vp test lostfound`
+- [ ] `src/shared/webp.test.ts`: accepts a valid WebP, rejects PNG and JPEG bytes, a file over the byte limit, dimensions over the limit, and a WebP with an `EXIF` or `XMP ` chunk.
+- [ ] `src/server/features/photos/photos.api.test.ts` (local R2): a fourth photo is refused, a non-WebP upload never reaches R2 or the model step, photos with the stub give `pending_review`, a failed D1 write leaves no object, an edit that removes a photo deletes its object, a hidden, pending or author-deleted post's photo returns 404 to another student but loads for a mod, the upload caps apply, the purge deletes objects before rows.
+- [ ] `src/server/features/lostfound/lostfound.api.test.ts`: an ID number in the text is rejected, photos on an "ID or card" post are refused, the verification detail is never returned to a non-owner (feed, detail and contact endpoints), renewal allowed once, resolve hides the post, author delete, the cron timing, report + removal, the possible match notifies the right users and not the poster.
+- [ ] Run: `vp test lostfound photos webp`
 
 ### Test Gate 15
 
-- [ ] **Lost-and-found tests pass.**
+- [ ] **Lost-and-found and photo tests pass.**
 - [ ] **(Manual) A found post triggers a possible-match notification for a seeded lost post on staging.**
+- [ ] **(Manual) On staging, post with photos from an iPhone (Safari) and an Android phone. The stored objects are WebP, a downloaded photo has no location data, and the photos stop loading for another account after the author deletes the post.**
 
 ---
 
 ## Phase 16 — Marketplace
 
-**Owner:** Dev B (Dev A reviews) · **When:** Week 7 · **Depends on:** Phase 12
+**Owner:** Dev B (Dev A reviews) · **When:** Week 7 · **Depends on:** Phase 12, Phase 15 (post photos kit)
 
 **Goal:** Students list second-hand items with price, condition and contacts, filter the feed, and mark listings sold, within the 10-active-listing limit.
 
@@ -920,56 +946,32 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - Feed filters: category, price range, condition, keyword.
 > - Prohibited items (ToS and post form): weapons, drugs, alcohol, tobacco, exam papers or answers, pirated or copied material, university property, anything illegal in Bangladesh.
 > - The app does not handle payment, delivery or disputes. An in-app notice says to meet in public places on campus and inspect items before paying.
-> - **Photos (added 2026-10-19):** optional, at most 3 per listing. The first is the cover shown in the feed. Only WebP is ever stored.
-> - **Encoding in the browser:** the client resizes each photo so its longest side is at most the max side in `limits.ts` (start at 1600px) and encodes WebP at quality 0.8. Re-encoding through a canvas drops EXIF, including GPS. If `canvas.toBlob(..., "image/webp")` returns a blob that is not WebP (some Safari versions fall back to PNG), the client uses a WASM WebP encoder (`@jsquash/webp`) instead. The server never converts images: Workers Free allows 10 ms CPU per request.
-> - **Server checks (never trust the client):** create and edit are one multipart request carrying the fields and the photos, so a photo never exists without its listing. `src/shared/webp.ts` accepts only RIFF/WEBP files within the byte limit and dimension limits read from the header, with no `EXIF` or `XMP ` chunk. The client uses the same parser to check its own output. A bad file is a field error, returned before R2 or Clef is touched.
-> - **Screening:** photos go through `screen()` with the text (Phase 8 image hook, Phase 14 photo questions). Until Clef is live, a listing with photos goes to `pending_review`. Edits that add, remove or reorder photos are screened again.
-> - **Storage:** private R2 bucket per environment, binding `MARKET_IMAGES`. Keys are `market/<listingId>/<random>.webp`. The listing ID is generated in the Worker before the insert. Objects are written first, then the D1 rows. If the D1 write fails, the request deletes the objects it wrote. A `marketplace_images` table (listing ID, key, position, width, height, bytes), indexed on listing ID, holds the keys. Photos removed in an edit are deleted from R2 after the D1 update. `ceiling:` a Worker killed between the R2 write and the D1 write leaves an orphan object. The key prefix makes a later sweep possible. Revisit if the bucket size drifts from the sum of `bytes`.
-> - **Serving:** `GET /api/market/images/:key` looks up the row, applies `visibleTo(user)` to its listing and streams the object with `Cache-Control: private, max-age=<limits.ts>, immutable`. A key never gets new content, so long caching is safe. The bucket has no public access, no `r2.dev` URL and no custom domain, so a hidden listing's photos stop loading for anyone who has not cached them. Mods see photos in the queue through the same endpoint. `ceiling:` every uncached photo is one Worker request against the 100,000/day free limit, and the feed loads full-size covers (no thumbnails). Revisit if photo requests pass about 30% of daily requests or users report heavy data use.
-> - **Cleanup:** mod removal stays a soft delete. The objects stay until the purge, so a reversal restores the photos. The marketplace cron job deletes a listing's R2 objects (one batched `delete()` per run, at most 1,000 keys) before its rows, so a failed run retries next time instead of losing the keys.
-> - **Caps** in `limits.ts`: photos per listing, bytes per photo, max side, a per-user daily upload cap (`rateLimit()`) and a global daily upload cap. Workers and D1 fail when over their free limits, but R2 bills the card, so these caps are the spending limit.
-
-### Checklist — Photo setup (one-time)
-
-- [ ] Enable R2 on the Cloudflare account (dashboard → R2 → "Add R2 subscription"). It needs a payment method. Nothing is charged within the free tier.
-- [ ] Turn on a usage-based billing notification in the dashboard so any R2 charge is noticed.
-- [ ] Add `r2:create:staging` and `r2:create:prod` scripts (`wrangler r2 bucket create unilink-market-staging` / `unilink-market-prod`) and run each once with `vp run`. Leave public access, the `r2.dev` URL and custom domains off.
-- [ ] `wrangler.jsonc`: `r2_buckets` with binding `MARKET_IMAGES` at the top level (local dev and tests; Wrangler simulates it locally, so no real bucket) and in each env with its bucket name, since bindings are not inherited. Then `vp run cf:types`.
-- [ ] `vp add @jsquash/webp`. No secrets are needed: the binding is the credential.
+> - **Photos (added 2026-10-19):** up to 3 per listing through the post photos kit from Phase 15 (`target_type` `listing`). The cover shows in the feed.
 
 ### Checklist — Build order
 
 - [ ] **Step 1:** `marketplace_listings` table with check constraints on price and status, and indexes on category, status and expiry.
-- [ ] **Step 2:** create, edit, mark sold, renew, using the shared kit, `screen()`, `canPost()` and the active-listing limit.
+- [ ] **Step 2:** create, edit, mark sold, renew, author delete, with photos, using the shared kit, the photos kit, `screen()`, `canPost()` and the active-listing limit.
 - [ ] **Step 3:** feed and filters, excluding sold and expired listings in the query.
-- [ ] **Step 4:** cleanup job in `cron.ts` (30 days after sold or expiry).
-- [ ] **Step 5:** screens: post, edit, my listings, feed, detail with contact buttons, prohibited-items list, meet-in-public notice.
+- [ ] **Step 4:** cleanup job in `cron.ts` (30 days after sold or expiry, the author-delete window, photos before rows).
+- [ ] **Step 5:** screens: post, edit, my listings, feed with covers, detail with photos and contact buttons, prohibited-items list, meet-in-public notice.
 - [ ] **Step 6:** report, mod removal, reversal (`target_type` `listing`).
-- [ ] **Step 7:** `src/shared/webp.ts`, the photo caps in `limits.ts`, the `marketplace_images` table.
-- [ ] **Step 8:** `src/client/lib/imageEncode.ts`: resize, WebP encode, `blob.type` check with the WASM fallback. Photo picker in the post and edit forms (add, remove, reorder, inline errors).
-- [ ] **Step 9:** multipart create and edit: header checks, upload caps, R2-then-D1 write order with rollback, `screen()` with images, deleting removed photos.
-- [ ] **Step 10:** image endpoint with `visibleTo()`, cover in the feed, gallery on the detail screen, photos in the mod queue.
-- [ ] **Step 11:** extend the marketplace cron job to delete R2 objects before rows.
-- [ ] **Step 12:** update `docs/api-contracts.md` (multipart create and edit, image endpoint, `screen()` images).
 
 ### Checklist — Docs & QA (C, D)
 
 - [ ] C: update the SRS and diagrams.
 - [ ] D: screens, prohibited-items text, test cases.
-- [ ] D: photo rules in the ToS and post form (no IDs, cards, documents or people's faces). Privacy note: location data is removed from photos.
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/server/features/market/market.api.test.ts`: the 11th active listing is refused, price and condition validation, free listings, mark sold hides the listing, renew, the cron timing, report + removal + reversal.
-- [ ] `src/shared/webp.test.ts`: accepts a valid WebP, rejects PNG and JPEG bytes, a file over the byte limit, dimensions over the limit, and a WebP with an `EXIF` or `XMP ` chunk.
-- [ ] `src/server/features/market/images.api.test.ts` (local R2): a fourth photo is refused, a non-WebP upload never reaches R2 or the model step, photos with the stub give `pending_review`, a failed D1 write leaves no object, an edit that removes a photo deletes its object, a hidden or pending listing's photo returns 404 to another student but loads for a mod, the upload caps apply, the cron purge deletes objects and rows.
-- [ ] Run: `vp test market webp`
+- [ ] `src/server/features/market/market.api.test.ts`: the 11th active listing is refused, price and condition validation, free listings, mark sold hides the listing, renew, photos attach and show on the detail, author delete, the cron timing, report + removal + reversal.
+- [ ] Run: `vp test market`
 
 ### Test Gate 16
 
 - [ ] **Marketplace tests pass.**
 - [ ] **(Manual) Post, filter by price range, and mark sold on a phone on staging.**
-- [ ] **(Manual) On staging, post a listing with photos from an iPhone (Safari) and an Android phone. The stored objects are WebP, a downloaded photo has no location data, and the photos stop loading for another account after a mod removes the listing.**
+- [ ] **(Manual) On staging, post a listing with 3 photos, reorder them, and the photos stop loading for another account after a mod removes the listing.**
 
 ---
 
@@ -1052,7 +1054,7 @@ C / D:    Docs & QA subsections inside each phase ──────────
 - P8 (held-post notifications) needs P5's `notify()`. P5 is Dev A's first Sprint 2 task. Until it lands, Dev B codes against the signature in `docs/api-contracts.md`.
 - P10 (resources) needs P7 (reports) and P8 (`screen()`). P12 (rides) needs the same.
 - P14 needs D's calibration set (started in Sprint 3, finished early in Week 7) and P13's match endpoint for the gate.
-- P15 and P16 need P12's shared post kit.
+- P15 and P16 need P12's shared post kit. P16 also needs P15's post photos kit.
 
 **Parallelism:** the two dev tracks run in parallel throughout. `cron.ts`, `limits.ts` and `src/server/db/schema.ts` are shared files: add your own job, limit or table in its own block, and never edit another phase's block in the same pull request. Rebase often in Weeks 5 to 7.
 
@@ -1061,8 +1063,8 @@ C / D:    Docs & QA subsections inside each phase ──────────
 1. Stretch phases S1 to S3
 2. Lost-and-found possible-match notification (P15 step 8)
 3. Recurring-ride renewal (rides keep their default end date)
-4. Marketplace photos (P16 photo setup and steps 7 to 12). Listings stay text-only.
-5. The Clef step (P14). The rules, the stub and the human queue stay, and posts publish after the rules (listings with photos go to review).
+4. Post photos (P15 photo setup and photos kit, P16 photos). Posts stay text-only.
+5. The Clef step (P14). The rules, the stub and the human queue stay, and posts publish after the rules (posts with photos go to review).
 6. Marketplace (P16)
 7. AI matching (P13). Profiles and keyword search stay. If only the chat UI slips, ship the single interest box.
 8. Lost and found (P15)
@@ -1073,7 +1075,7 @@ Shrink Phase 17 hardening only as a last resort. **Never cut** moderation, audit
 
 - Native apps or app stores: the PWA covers every platform.
 - File hosting: links only, which avoids copyright and storage risk.
-- Photo uploads in lost and found: a found ID or card would show a student ID publicly. (Marketplace photos were un-parked on 2026-10-19, see Phase 16.)
+- Photos in the "ID or card" lost-and-found category, on rides and on profiles: they would show student IDs or faces for little gain. (Lost-and-found and marketplace photos were un-parked on 2026-10-19, see Phase 15.)
 - Dark mode: themes are colors only.
 - Offline editing or sync: data is always live.
 - Scraping Google Scholar, or letting the AI browse ORCID or Scholar: against the terms and gives messy data.
@@ -1088,29 +1090,29 @@ Shrink Phase 17 hardening only as a last resort. **Never cut** moderation, audit
 
 Each row names the phase that needs the answer. When it is settled, move it into that phase's locked block and delete the row.
 
-| Decision                                                                                      | Needed by         | Owner    |
-| --------------------------------------------------------------------------------------------- | ----------------- | -------- |
-| Project deadline, demo date, required SRS format or presentation                              | P0                | C        |
-| Clef-flash: re-check price and allowance before launch (findings below)                       | P14, P17          | Dev A    |
-| DeepSeek prepaid budget and global daily cap (model and price below)                          | P13               | Dev A    |
-| App name, icon set, theme storage key                                                         | P1, P3            | All      |
-| Mock `BottomSheet` vs shadcn Drawer: **decided**, shadcn `Sheet` (`side="bottom"`)            | P1                | Dev B    |
-| Confirm the four launch palettes                                                              | P1                | D        |
-| New-account cooldown length, signup and login rate limits                                     | P2                | Dev B    |
-| NSU term start dates and routine day letters                                                  | P4, P9            | D        |
-| URL allowlist of sharing hosts                                                                | P10               | Dev A, D |
-| Faculty list scope, and whether to tell the department before profiles go live                | P11               | All      |
-| How many faculty have an ORCID; name matching vs the manual list for the rest                 | P11               | D        |
-| OpenAlex access terms (free key?) and rate limits                                             | P11               | Dev A    |
-| Faculty summary refresh cadence (suggested: once a semester)                                  | P11               | Dev A    |
-| Recurring ride policy (60-day default end date + renewal)                                     | P12               | All      |
-| Exact course codes and names for CSE299, CSE499, CSE498R (ask a CSE advisor)                  | P13               | D        |
-| Target false-reject rate, number of mods, target review turnaround                            | P14               | All      |
-| Campus lost-property office or security desk to link                                          | P15               | D        |
-| Marketplace prohibited-items list and ToS wording                                             | P16               | All      |
-| Marketplace photo caps (bytes, max side, per-user and global daily uploads), cache lifetime   | P16               | Dev B    |
-| Stretch go/no-go                                                                              | Start of Sprint 4 | All      |
-| "Unofficial student-run app" wording; whether NSU name approval can wait until after the demo | P18               | All      |
+| Decision                                                                                                         | Needed by         | Owner    |
+| ---------------------------------------------------------------------------------------------------------------- | ----------------- | -------- |
+| Project deadline, demo date, required SRS format or presentation                                                 | P0                | C        |
+| Clef-flash: re-check price and allowance before launch (findings below)                                          | P14, P17          | Dev A    |
+| DeepSeek prepaid budget and global daily cap (model and price below)                                             | P13               | Dev A    |
+| App name, icon set, theme storage key                                                                            | P1, P3            | All      |
+| Mock `BottomSheet` vs shadcn Drawer: **decided**, shadcn `Sheet` (`side="bottom"`)                               | P1                | Dev B    |
+| Confirm the four launch palettes                                                                                 | P1                | D        |
+| New-account cooldown length, signup and login rate limits                                                        | P2                | Dev B    |
+| NSU term start dates and routine day letters                                                                     | P4, P9            | D        |
+| URL allowlist of sharing hosts                                                                                   | P10               | Dev A, D |
+| Faculty list scope, and whether to tell the department before profiles go live                                   | P11               | All      |
+| How many faculty have an ORCID; name matching vs the manual list for the rest                                    | P11               | D        |
+| OpenAlex access terms (free key?) and rate limits                                                                | P11               | Dev A    |
+| Faculty summary refresh cadence (suggested: once a semester)                                                     | P11               | Dev A    |
+| Recurring ride policy (60-day default end date + renewal)                                                        | P12               | All      |
+| Exact course codes and names for CSE299, CSE499, CSE498R (ask a CSE advisor)                                     | P13               | D        |
+| Target false-reject rate, number of mods, target review turnaround                                               | P14               | All      |
+| Campus lost-property office or security desk to link                                                             | P15               | D        |
+| Marketplace prohibited-items list and ToS wording                                                                | P16               | All      |
+| Post photo caps (bytes, max side, per-user and global daily uploads), cache lifetime, author-delete purge window | P12, P15          | Dev B    |
+| Stretch go/no-go                                                                                                 | Start of Sprint 4 | All      |
+| "Unofficial student-run app" wording; whether NSU name approval can wait until after the demo                    | P18               | All      |
 
 **Platform facts (checked 2026-10-18, re-check in P17):**
 
@@ -1138,7 +1140,7 @@ Seeded with the platform gotchas already known from `plan_pwa.md`. Add real ones
 | Hard-coded colors break non-default themes                                                   | Token classes only. Run the color search before every release                                  |
 | "Today" or expiry is wrong around midnight because the Worker runs in UTC                    | Compute day boundaries in Asia/Dhaka through the shared helper                                 |
 | A phone number in post text is flagged as a card number                                      | The card rule needs Luhn **and** excludes Bangladeshi phone formats (P8)                       |
-| Safari returns PNG from `canvas.toBlob(..., "image/webp")`                                   | Check `blob.type` and fall back to the WASM encoder (P16)                                      |
+| Safari returns PNG from `canvas.toBlob(..., "image/webp")`                                   | Check `blob.type` and fall back to the WASM encoder (P15)                                      |
 | OpenAlex abstracts look empty                                                                | They come as an inverted index. Rebuild them in the adapter (P11)                              |
 
 ---
