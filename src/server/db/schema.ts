@@ -4,10 +4,12 @@ import {
   index,
   integer,
   primaryKey,
+  real,
   sqliteTable,
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import type { PrereqRule } from "../../shared/prereq";
 
 // Key/value facts about the database itself (schema version and similar).
 export const appMeta = sqliteTable("app_meta", {
@@ -93,4 +95,92 @@ export const rateLimits = sqliteTable(
     count: integer("count").notNull(),
   },
   (t) => [primaryKey({ columns: [t.key, t.windowStart] })],
+);
+
+// An NSU course map for one program and version. A student's curriculum is picked by program code
+// and admission year (see the course map route).
+export const curricula = sqliteTable(
+  "curricula",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    // Last two digits of the student ID, a key of NSU_PROGRAM_CODES.
+    programCode: text("program_code").notNull(),
+    name: text("name").notNull(),
+    version: text("version").notNull(),
+    // Admission year (YY) the version applies from.
+    effectiveFromYear: integer("effective_from_year").notNull(),
+    // Degree total; earned credits may exceed it.
+    totalCredits: real("total_credits").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [uniqueIndex("curricula_program_version_idx").on(t.programCode, t.version)],
+);
+
+export type CourseAlternative = { code: string; title: string };
+
+// One slot of a curriculum: a fixed course (with optional alternatives) or an elective placeholder.
+export const courses = sqliteTable(
+  "courses",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    curriculumId: integer("curriculum_id")
+      .notNull()
+      .references(() => curricula.id, { onDelete: "cascade" }),
+    // Order in the import file; slots are filled in this order.
+    position: integer("position").notNull(),
+    kind: text("kind", { enum: ["course", "elective"] }).notNull(),
+    code: text("code").notNull(),
+    title: text("title").notNull(),
+    // Real: some courses carry 1.5 credits.
+    credits: real("credits").notNull(),
+    category: text("category").notNull(),
+    nonCredit: integer("non_credit", { mode: "boolean" }).notNull().default(false),
+    semester: integer("semester"),
+    // JSON array of { code, title }; empty for electives.
+    alternatives: text("alternatives", { mode: "json" }).$type<CourseAlternative[]>().notNull(),
+    // JSON prerequisite rule tree (src/shared/prereq.ts); null means none.
+    prereq: text("prereq", { mode: "json" }).$type<PrereqRule | null>(),
+  },
+  (t) => [
+    uniqueIndex("courses_curriculum_code_idx").on(t.curriculumId, t.code),
+    index("courses_curriculum_idx").on(t.curriculumId),
+  ],
+);
+
+// Graded attempts are the only source of truth for done courses. Owner only: never read for another user.
+export const attempts = sqliteTable(
+  "attempts",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // A curriculum slot code, an alternative code, or one of the user's student course codes.
+    courseCode: text("course_code").notNull(),
+    grade: text("grade").notNull(),
+    termYear: integer("term_year"),
+    termSeason: text("term_season", { enum: ["spring", "summer", "fall"] }),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("attempts_user_idx").on(t.userId)],
+);
+
+// A course a student adds themselves (an elective they took). Private to the owner.
+export const studentCourses = sqliteTable(
+  "student_courses",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    title: text("title").notNull(),
+    credits: real("credits").notNull(),
+    // One of the student's curriculum categories.
+    category: text("category").notNull(),
+    // Kept on the map but counted toward no total, prerequisite or CGPA.
+    excluded: integer("excluded", { mode: "boolean" }).notNull().default(false),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [uniqueIndex("student_courses_user_code_idx").on(t.userId, t.code)],
 );

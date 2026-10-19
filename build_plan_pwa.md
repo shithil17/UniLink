@@ -423,11 +423,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Data & API
 
-- [ ] Tables: `curricula` (program code, name, version, `effective_from_year`, total credits), `courses` (kind, alternatives and the prereq rule stored as JSON), `attempts` (user, course code, grade, term nullable, created_at), `student_courses` (user, code, title, credits, category, excluded, created_at). Faculty is added in Phase 6.
-- [ ] Import endpoint (mod only), validated by a Zod schema. It reports the rows it rejected and why. The import is logged with `audit()`.
-- [ ] `GET /api/courses/map` returns the student's curriculum with each slot's status for the current user (done, available, locked), their student courses filling elective slots and extras, plus category and degree credit totals (which may exceed the required total; excluded courses never count).
-- [ ] `POST /api/attempts` (quick form). Attempts are visible only to their owner and never to mods (enforced in the repo layer).
-- [ ] Student courses API: list, add, edit (including the excluded flag), delete. Owner only, capped by `limits.studentCoursesMax`.
+- [x] Tables: `curricula` (program code, name, version, `effective_from_year`, total credits), `courses` (kind, alternatives and the prereq rule stored as JSON), `attempts` (user, course code, grade, term nullable, created_at), `student_courses` (user, code, title, credits, category, excluded, created_at). Faculty is added in Phase 6.
+- [x] Import endpoint (mod only), validated by a Zod schema. It reports the rows it rejected and why. The import is logged with `audit()`.
+- [x] `GET /api/courses/map` returns the student's curriculum with each slot's status for the current user (done, available, locked), their student courses filling elective slots and extras, plus category and degree credit totals (which may exceed the required total; excluded courses never count).
+- [x] `POST /api/attempts` (quick form). Attempts are visible only to their owner and never to mods (enforced in the repo layer).
+- [x] Student courses API: list, add, edit (including the excluded flag), delete. Owner only, capped by `limits.studentCoursesMax`.
 
 ### Checklist — Curriculum data
 
@@ -446,8 +446,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/prereq.test.ts`: leaf, nested `all`/`any`, empty rule, a `credits` leaf, an F, I or W attempt does not satisfy a prereq, a passing attempt does.
-- [ ] `src/server/features/courses/courses.api.test.ts`: the import rejects bad rows, only mods can import, the map reflects attempts, the user only sees their own attempts and student courses, the curriculum follows program code and admission year, student courses fill elective slots then show as extra, totals can exceed the degree total, an excluded course counts toward nothing.
+- [x] `src/shared/prereq.test.ts`: leaf, nested `all`/`any`, empty rule, a `credits` leaf, an F, I or W attempt does not satisfy a prereq, a passing attempt does.
+- [x] `src/server/features/courses/courses.api.test.ts`: the import rejects bad rows, only mods can import, the map reflects attempts, the user only sees their own attempts and student courses, the curriculum follows program code and admission year, student courses fill elective slots then show as extra, totals can exceed the degree total, an excluded course counts toward nothing.
 - [ ] `scripts/seed.ts` now seeds the curricula from `data/curricula/` and two fake students.
 - [ ] Run: `vp test prereq courses`
 
