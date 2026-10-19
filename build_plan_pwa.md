@@ -16,7 +16,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - All limits live in one config file, and all times use Asia/Dhaka.
 - (2026-10-19) Any course can be marked waived: it counts as done and earns credits but never affects CGPA (Phase 4, Phase 6).
 - (2026-10-19) The course map covers every undergraduate program with a course map, picked by the program code in the student ID. Students add their own elective courses (code, title, credits), may go over the degree total, and can exclude extra courses from the transcript (Phase 4).
-- (2026-10-20) New Phase 4b: the Picture-House Billboard design language replaces Phase 1's four palettes with three paint sets (one of them a night set) and restyles every existing screen. The app now serves all NSU undergraduates, with CSE-only extras (faculty profiles, supervisor finder).
+- (2026-10-20) New Phase 4b: the Quiet Utility design language reorganizes Phase 1's four palettes into shared roles and restyles every existing screen. The app now serves all NSU undergraduates, with CSE-only extras (faculty profiles, supervisor finder).
 - (2026-10-19) Lost-and-found posts and marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (post photos kit, Phase 15). Photos in the "ID or card" category always go to a mod first. Authors can delete their own posts (Phase 12).
 
 ---
@@ -47,7 +47,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 - Mobile-first and responsive. The same screens work on a phone and on desktop.
 - Components use theme token classes only (`bg-app`, `text-ink`, `border-line`, `bg-surface`, …). No hex values, no `bg-white`, no Tailwind palette colors outside `index.css`.
-- Every screen follows the Picture-House Billboard language (Phase 4b, recorded in `DESIGN.md`): flat paint fields, no gradients, glass or resting shadows, one Anek Bangla family, the shared state marks, and color on data and state rather than chrome.
+- Every screen follows the Quiet Utility language (Phase 4b, recorded in `DESIGN.md`): neutral grounds, hairline-separated lists, one accent per palette, no gradients, glass or resting shadows, Geist with Noto Sans Bengali for Bangla, the shared state marks, and color on data and state rather than chrome.
 - Build forms from the shadcn/ui form components + React Hook Form + the shared Zod schema.
 - Feedback has one place per kind (decided 2026-10-18). **Toast** (sonner): short results of an action that stays on the same screen ("Saved", "Report sent", "Copied", rate limit hit, network error). **Inline field errors** for form validation, always; a toast is never the only place an error shows. **`StatusNote`** for moderation states, because they persist. **Inbox** for anything the user must see later. Toasts never contain contact details, student IDs or AI text.
 
@@ -173,7 +173,7 @@ unilink/                         # repo name until the app name is chosen
     │                            # market, finder
     └── client/
         ├── main.tsx
-        ├── index.css            # paint-set tokens, data-theme blocks, shadcn aliases [P1, P4b]
+        ├── index.css            # palette tokens, data-theme blocks, shadcn aliases [P1, P4b]
         ├── routes/              # TanStack file routes
         ├── components/ui/       # shadcn components
         ├── components/theme/    # ThemeProvider, ThemePicker, ThemePickerTrigger       [P1]
@@ -277,8 +277,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > **Design decisions (locked in):**
 >
 > - Palettes: **Ocean Teal** (default), **Red Gradient**, **Cherry Blossom Bloom**, **Cherry Red**, ported from the tested mock site. A theme changes colors only, not layout. `ceiling:` no dark mode. Revisit only after launch if users ask.
->   Note (2026-10-20): superseded by Phase 4b. Three paint sets replace these four, and one of them is a night set chosen in the picker (still no OS-driven dark mode).
-> - Tokens (CSS variables): app background, hero gradient start and end (replaced by paint fields in Phase 4b), primary, accent, ink, soft, faint, body, line, tint, chip, deep, hero sub-text, **surface**. The default is defined in Tailwind v4's `@theme`. Every other palette is a `:root[data-theme="<id>"]` block that overrides the same variables.
+>   Note (2026-10-20): Phase 4b keeps these four palettes and ids but reorganizes their colors into shared roles (still no dark mode).
+> - Tokens (CSS variables): app background, hero gradient start and end (removed in Phase 4b), primary, accent, ink, soft, faint, body, line, tint, chip, deep, hero sub-text, **surface**. The default is defined in Tailwind v4's `@theme`. Every other palette is a `:root[data-theme="<id>"]` block that overrides the same variables.
 > - shadcn's variables (`--background`, `--foreground`, `--primary`, `--card`, `--border`, `--ring`, …) are aliases of the tokens. Focus rings use the accent token.
 >   Note (2026-10-18): the accent token is named `brand` (`text-brand`, `border-brand`) because shadcn's `accent` is a subtle hover fill, which aliases `tint`.
 > - `ThemeProvider` at the root route sets `data-theme` on `<html>` and saves the choice in `localStorage` under `<appname>-theme`. If the saved value is missing or unknown, or storage throws (private mode), it falls back to Ocean Teal.
@@ -297,7 +297,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] D: contrast check for every palette (body text, large text, controls, text on primary buttons, text on the hero gradient). Failures are fixed in `index.css`. (2026-10-20: moved to Phase 4b, which checks the new paint sets instead.)
+- [ ] D: contrast check for every palette (body text, large text, controls, text on primary buttons, text on the hero gradient). Failures are fixed in `index.css`. (2026-10-20: moved to Phase 4b, which checks the reorganized palettes instead.)
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -472,37 +472,39 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 **Owner:** Dev B (Dev A reviews) · **When:** Sprint 2, before Phase 5 and Phase 7 add screens · **Depends on:** Phase 1, Phase 3, Phase 4
 
-**Goal:** UniLink has its own look, the Picture-House Billboard. Three paint sets (two day, one night) replace the four Phase 1 palettes, and every existing screen is rebuilt in the new language before later phases add more.
+**Goal:** UniLink gets one calm, consistent look, Quiet Utility. Phase 1's four palettes are kept and reorganized into the same set of roles, and every existing screen is rebuilt in this look before later phases add more.
 
 > **Justification:** 14 phases of screens are still to come. Restyling 8 routes now costs less than restyling 30 later, and the post kit (Phase 12) should be built once, in its final form.
 
 > **Design decisions (locked in):**
 >
-> - **World:** the Picture-House Billboard, after hand-painted Dhaka cinema hoardings. Flat paint fields own whole regions, the one thing that matters on a screen is billed large, and section headers are billed in condensed caps on a field. The direction contract lives in `.impeccable/surfaces/src-client.md`, and `DESIGN.md` records the built system when this phase finishes. `PRODUCT.md` holds the product facts that design work reads.
-> - **Paint sets:** three, chosen in the Settings picker: two day sets (one is the default) and one night set. Each set is a tinted ground, a surface one tone step off it, an ink that is never pure black, soft and faint text tiers, a line, and three paint fields, each with its own on-field ink. The night set is an ordinary theme. Nothing follows the OS setting, and the `dark:` variant still never matches.
-> - **Tokens:** the token class names stay (`bg-app`, `bg-surface`, `text-ink`, `text-soft`, `text-faint`, `border-line`, `bg-tint`, `bg-chip`, `bg-primary`, `text-brand`). `hero1`, `hero2` and `herosub` are replaced by `paint-1..3` and `on-paint-1..3`. `<meta name="theme-color">` takes each set's `bar` color.
-> - **Type:** one family, Anek Bangla (variable, OFL, Latin and Bengali in one file): condensed width and caps for billed headings, normal width for text, so Bangla post text renders in the same family. Four sizes at most per screen. Rank comes from weight, case and reversal, not from more sizes. Figures use `tabular-nums`. If Anek's digits turn out not to be tabular, figures get one second face and the swap is recorded here.
-> - **Surfaces:** no gradients, glass, glows or resting shadows. Only things that float (sheets, menus, toasts) get a shadow. Paint fields have square corners. Controls share one radius, decided once.
+> - **World:** Quiet Utility, a calm productivity app in the spirit of Linear or Things. Neutral ground, content on plain surfaces separated by hairlines, lists rather than card grids, generous whitespace, and one accent color per palette. Rank comes from weight and spacing, not from color or decoration. The direction contract lives in `.impeccable/surfaces/src-client.md`, and `DESIGN.md` records the built system when this phase finishes. `PRODUCT.md` holds the product facts that design work reads.
+>   Note (2026-10-20): replaces the Picture-House Billboard direction, which was dropped before it shipped.
+> - **Palettes:** Phase 1's four stay, with the same ids so saved choices keep working: Ocean Teal (default), Red Gradient, Cherry Blossom Bloom and Cherry Red. Each one is reorganized into the same roles: a neutral ground tinted toward its hue, a `surface` one step lighter, an `ink` that is never pure black, `soft` and `faint` text tiers, a `line` hairline for dividers, an `edge` border for controls, one `brand` accent (also `primary`), a `brand-soft` fill for selected and current rows, and a `danger` color. Display names may change (for example, Red Gradient no longer has a gradient). The ids may not. `ceiling:` still no dark mode and nothing follows the OS setting. The `dark:` variant never matches.
+> - **Tokens:** the token class names stay (`bg-app`, `bg-surface`, `text-ink`, `text-soft`, `text-faint`, `border-line`, `bg-tint`, `bg-chip`, `bg-primary`, `text-brand`). `hero1`, `hero2` and `herosub` are removed, and `edge`, `brand-soft`, `danger` and `bar` are added. `<meta name="theme-color">` takes each palette's `bar` color (its ground).
+> - **Type:** Geist stays for Latin text. Noto Sans Bengali (variable, through Fontsource) is its fallback for Bangla post text, and the family stack lists it right after Geist. Four sizes at most per screen. Rank comes from weight (400, 500, 600) and spacing, not from more sizes. Headings are sentence case, never all caps. Figures use `tabular-nums`.
+> - **Surfaces:** no gradients, glass, glows or resting shadows. Panels are `bg-surface` with a `line` hairline and one panel radius. Controls share one smaller radius. Both radii are decided once and recorded here. Only things that float (sheets, menus, toasts) get a soft shadow.
 > - **Course state marks:** one vocabulary everywhere: filled = done, hollow = available, struck = locked, half = waived. Color never carries a state on its own.
-> - **Shell:** on phones, a wordmark bar plus a bottom tab bar of four or five destinations with short labels. From `md` up, the same destinations in a plain top bar, with the course-map sidebar where it exists. The active tab shows by weight and ink, never a colored pill.
-> - **Home bill ("now showing"):** a full-width paint field heads Home. Until Phase 9 lands it bills the student's degree standing (credits done of the total and the courses unlocked next). From Phase 9 on, it bills the next class (course code at display size, title, room, "starts in 12 min") and changes to the following class when one ends.
+> - **Shell:** on phones, a slim wordmark bar plus a bottom tab bar with short labels for the destinations that exist. From `md` up, the same destinations in a plain top bar, with the course-map sidebar where it exists. The active tab shows by weight and ink, never a colored pill. The wordmark is the word "UniLink" only: no university name and no crest-like mark.
+> - **Home:** a summary panel heads Home. Until Phase 9 lands it shows the student's degree standing (credits done of the total as one large figure, a thin progress bar in `brand`) and a list of the courses unlocked next. From Phase 9 on, the panel shows the next class (course code, title, room, "starts in 12 min") and changes to the following class when one ends.
 > - **App-screen rules** (from the taste skill's app-screen chapter): colors go on data, state and the one primary action, not on chrome. One filled primary per screen. Numbers are right-aligned in tabular figures. A real zero prints as `0` and a missing value as a grey dash. Loading shows the final layout with flat bars, and an error shows inside the block that failed, with a Retry.
-> - **Contrast floor** (unchanged from Phase 1): body text ≥ 4.5:1, large text and controls ≥ 3:1, on every set, including every on-paint ink. A set that fails is fixed before it ships.
-> - `ceiling:` three paint sets. Each extra set adds a full contrast pass. Revisit after launch if users ask for more.
+> - **Contrast floor** (unchanged from Phase 1): body text ≥ 4.5:1, large text and controls (including `edge` borders) ≥ 3:1 on every palette, including text on primary buttons and on `brand-soft`. A palette that fails is fixed before it ships.
+> - `ceiling:` four palettes. Each extra one adds a full contrast pass. Revisit after launch if users ask for more.
 
-### Checklist — Paint sets & tokens
+### Checklist — Palettes & tokens
 
-- [ ] Three paint sets in `src/client/index.css` (names decided here and recorded), with the new `paint-*` / `on-paint-*` / `bar` tokens and the shadcn aliases remapped. Remove `hero1`, `hero2` and `herosub`.
-- [ ] `src/shared/themes.ts` and the inline script in `index.html` move to the three new ids. A saved id from the old four themes falls back to the default set.
-- [ ] Anek Bangla through Fontsource (`vp add @fontsource-variable/anek-bangla`), replacing Geist. Check that `tabular-nums` changes its digit widths, and record the result.
-- [ ] Theme picker restyled: each set previews as its ground with its three paint fields.
+- [ ] The four palettes in `src/client/index.css` reorganized into the roles above, with `edge`, `brand-soft`, `danger` and `bar` added and the shadcn aliases remapped (`--input` → `edge`, `--destructive` → `danger`). Remove `hero1`, `hero2` and `herosub`.
+- [ ] `src/shared/themes.ts` and the inline script in `index.html` move from `hero` to `bar`. The ids are unchanged, and an unknown id still falls back to Ocean Teal.
+- [ ] Noto Sans Bengali through Fontsource (`vp add @fontsource-variable/noto-sans-bengali`) as Geist's fallback. Check that Bangla sample text renders in it and that Geist's `tabular-nums` changes digit widths, and record the result.
+- [ ] Theme picker restyled: each palette previews as its ground, ink and accent.
 
 ### Checklist — Components & shell
 
-- [ ] shadcn components restyled to the language (button, input, select, sheet, tabs, badge, card, checkbox, radio-group, textarea, dialog, sonner, field): one control radius, no resting shadows, focus ring in `brand`.
-- [ ] `BilledHeading` (condensed caps on a paint field) and `StateMark` (filled, hollow, struck, half) as shared components.
+- [ ] shadcn components restyled to the language (button, input, select, sheet, tabs, badge, card, checkbox, radio-group, textarea, dialog, sonner, field): one control radius, `edge` borders, no resting shadows, no opacity hovers on filled buttons, focus ring in `brand`.
+- [ ] `SectionHeader` (sentence-case title, optional count and action, hairline below) and `StateMark` (filled, hollow, struck, half) as shared components.
 - [ ] `AppLayout`: wordmark bar, bottom tab bar on phones, top bar from `md` up, active tab by weight and ink.
-- [ ] Home: the "now showing" bill (degree standing until Phase 9), with loading, empty (no curriculum yet) and error states.
+- [ ] Home: the summary panel (degree standing until Phase 9) and the "unlocked next" list, with loading, empty (no curriculum yet), signed-out and error states.
+- [ ] Courses header: the degree standing (credits done of the total and one short bar per category, all in `brand`).
 
 ### Checklist — Restyle existing screens
 
@@ -514,22 +516,22 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] D: contrast check for every paint set (body, large text, controls, text on primary buttons, every on-paint ink). Failures are fixed in `index.css`.
+- [ ] D: contrast check for every palette (body, large text, controls and `edge` borders, text on primary buttons, text on `brand-soft`). Failures are fixed in `index.css`.
 - [ ] `DESIGN.md` written from the built system at the end of this phase (tokens, type, components, state marks, do and don't).
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/themes.test.ts` updated: every set in `themes.ts` has its CSS block, and the inline script knows the same ids and `bar` colors.
-- [ ] `ThemeProvider.test.tsx`: a saved id from a retired theme falls back to the default set.
+- [ ] `src/shared/themes.test.ts` updated: every palette in `themes.ts` has its CSS block with every role token, no `hero*` token is left, and the inline script knows the same ids and `bar` colors.
+- [ ] `ThemeProvider.test.tsx`: an unknown saved id falls back to Ocean Teal, and the `theme-color` meta takes the `bar` color.
 - [ ] `StateMark` test: each course status renders its mark with an accessible label, not only a color.
 - [ ] Run: `vp test theme StateMark`, then `.claude/skills/impeccable/scripts/impeccable detect --json src/client` and fix what it reports.
 
 ### Test Gate 4b
 
 - [ ] **Theme and component tests pass.**
-- [ ] **The hard-coded color search (Quick Reference) finds nothing in `src/client` outside `index.css`, and a search for `gradient` in `src/client` finds nothing.**
-- [ ] **(Manual) Every existing screen is checked at 390px and 1440px on all three sets: no overlap, no clipped text, and Bangla sample text renders in Anek.**
-- [ ] **(Manual, D) Every paint set passes the contrast check.**
+- [ ] **The hard-coded color search (Quick Reference) finds nothing in `src/client` outside `index.css`, and a search for `gradient` in `src/client` finds nothing outside theme ids.**
+- [ ] **(Manual) Every existing screen is checked at 390px and 1440px on all four palettes: no overlap, no clipped text, and Bangla sample text renders in Noto Sans Bengali.**
+- [ ] **(Manual, D) Every palette passes the contrast check.**
 
 ---
 
@@ -710,6 +712,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - An overlap on the same day **warns but does not block**.
 > - Private: mods and admins cannot see it, and it is never used for notifications or shown to anyone else.
 > - `ceiling:` manual entry only. There is no import from NSU's portal, which keeps the app free of scraping and login sharing.
+> - Look (added 2026-10-20, Phase 4b): Home's summary panel switches from degree standing to the next class. Today's classes are a list on a time rail, with the current class on a `brand-soft` row and finished classes in `faint` ink.
 
 ### Checklist
 
@@ -1168,7 +1171,7 @@ Shrink Phase 17 hardening only as a last resort. **Never cut** moderation, audit
 - Native apps or app stores: the PWA covers every platform.
 - File hosting: links only, which avoids copyright and storage risk.
 - Photos on rides and on profiles: faces and personal data for little gain. (Lost-and-found and marketplace photos were un-parked on 2026-10-19, see Phase 15.)
-- Automatic (OS-driven) dark mode: themes are picked by hand. The night paint set (Phase 4b) is an ordinary theme.
+- Automatic (OS-driven) dark mode: themes are picked by hand, and none of the four palettes is dark.
 - Offline editing or sync: data is always live.
 - Scraping Google Scholar, or letting the AI browse ORCID or Scholar: against the terms and gives messy data.
 - Importing from the NSU portal: means scraping and login sharing.

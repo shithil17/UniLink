@@ -35,7 +35,7 @@ Before calling a checklist done: `vp check && vp test && vp build`.
 - Never expose student IDs publicly, never send usernames or student IDs to AI services, never put contact details in feed responses.
 - AI output is never shown as free text: validate model JSON with Zod, check IDs against the DB, build reply text on the server.
 - Before touching any UI (components, routes, styles), invoke the `impeccable` skill and read `design-taste-frontend`'s `references/app-screens.md`. Follow `DESIGN.md` (once written), `PRODUCT.md` and the direction contract in `.impeccable/surfaces/src-client.md`. Don't use the Anthropic `frontend-design` skill.
-- UI language: Picture-House Billboard (Phase 4b). No gradients, glass or resting shadows; paint fields come from `paint-*` tokens; one Anek Bangla family; course states use the shared state marks.
+- UI language: Quiet Utility (Phase 4b). Neutral grounds, hairline-separated lists, one accent per palette; no gradients, glass or resting shadows; Geist with Noto Sans Bengali for Bangla; course states use the shared state marks.
 - UI: mobile-first. Theme token classes only (`bg-app`, `text-ink`, `border-line`, `bg-surface`, ...). No hex values, `bg-white`/`text-white`/`bg-black` or Tailwind palette colors outside `src/client/index.css`.
 - Forms: shadcn form + React Hook Form + the shared Zod schema.
 - Tests sit next to code: `*.test.ts` (unit), `*.api.test.ts` (API against local D1). Leave at least one test that fails if the logic breaks.
