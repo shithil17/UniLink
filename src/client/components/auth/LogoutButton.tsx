@@ -6,7 +6,8 @@ export function LogoutButton() {
   return (
     <Button
       variant="outline"
-      className="h-11 w-full sm:w-auto"
+      size="lg"
+      className="w-full sm:w-auto"
       disabled={logout.isPending}
       onClick={() => logout.mutate()}
     >

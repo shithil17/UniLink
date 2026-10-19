@@ -41,7 +41,7 @@ export function AttemptForm({
     setServerError(null);
     record.mutate(values, {
       onSuccess: () => {
-        toast.success("Saved");
+        toast.success("Grade saved");
         onSaved();
       },
       onError: (err) => {
@@ -91,7 +91,7 @@ export function AttemptForm({
           />
           {grade === WAIVED ? (
             <FieldDescription>
-              Waived courses count toward your credits but not your CGPA.
+              A waived course counts toward your credits, not your CGPA.
             </FieldDescription>
           ) : null}
           <FieldError errors={[errors.grade]} />
@@ -112,7 +112,7 @@ export function AttemptForm({
           />
         </Field>
         <FormError message={serverError} />
-        <Button type="submit" className="h-11 w-full" disabled={record.isPending}>
+        <Button type="submit" size="lg" className="w-full" disabled={record.isPending}>
           {record.isPending ? "Saving..." : "Save grade"}
         </Button>
       </FieldGroup>

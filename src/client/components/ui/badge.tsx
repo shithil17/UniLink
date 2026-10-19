@@ -9,23 +9,19 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-brand-soft text-brand [a]:hover:bg-chip",
-        secondary: "bg-chip text-ink [a]:hover:bg-tint",
-        destructive: "bg-tint text-destructive [a]:hover:bg-chip",
+        // Plain label for a state that is not a course state (for example "Excluded").
         outline: "border-input text-ink [a]:hover:bg-tint",
-        ghost: "text-soft hover:bg-tint",
-        link: "text-brand underline-offset-4 hover:underline",
       },
     },
     defaultVariants: {
-      variant: "default",
+      variant: "outline",
     },
   },
 );
 
 function Badge({
   className,
-  variant = "default",
+  variant = "outline",
   render,
   ...props
 }: useRender.ComponentProps<"span"> & VariantProps<typeof badgeVariants>) {

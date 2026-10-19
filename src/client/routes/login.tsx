@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-import { AuthScreen, FormError } from "@/components/auth/AuthForm";
+import { AuthScreen, FormError, textLink } from "@/components/auth/AuthForm";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,18 @@ function LoginPage() {
   const { errors } = form.formState;
 
   return (
-    <AuthScreen title="Log in" intro="Welcome back.">
+    <AuthScreen
+      title="Log in"
+      intro="Welcome back."
+      footer={
+        <p>
+          New here?{" "}
+          <Link to="/signup" className={textLink}>
+            Create an account
+          </Link>
+        </p>
+      }
+    >
       <form onSubmit={form.handleSubmit((values) => login.mutate(values))} noValidate>
         <FieldGroup>
           <Field data-invalid={Boolean(errors.username)}>
@@ -56,17 +67,11 @@ function LoginPage() {
             <FieldError errors={[errors.password]} />
           </Field>
           <FormError message={login.isError ? errorMessage(login.error) : null} />
-          <Button type="submit" className="h-11 w-full" disabled={login.isPending}>
+          <Button type="submit" size="lg" className="w-full" disabled={login.isPending}>
             {login.isPending ? "Logging in..." : "Log in"}
           </Button>
         </FieldGroup>
       </form>
-      <p className="text-sm text-soft">
-        New here?{" "}
-        <Link to="/signup" className="font-medium text-ink underline">
-          Sign up
-        </Link>
-      </p>
     </AuthScreen>
   );
 }

@@ -16,7 +16,7 @@ import { isToastError, useDeleteStudentCourse } from "@/lib/courses";
 import type { CourseMap } from "../../../shared/schemas/courses";
 import { AttemptForm } from "./AttemptForm";
 import { PrereqText } from "./PrereqText";
-import { DoneChip, StatusChip } from "./StatusChip";
+import { StateMark } from "./StateMark";
 import { StudentCourseForm } from "./StudentCourseForm";
 
 type Slot = CourseMap["categories"][number]["slots"][number];
@@ -88,7 +88,7 @@ function SlotDetails({ slot, onClose }: { slot: Slot; onClose: () => void }) {
       </SheetHeader>
       <div className="space-y-5 px-4">
         <div className="flex flex-wrap items-center gap-2">
-          <StatusChip status={slot.status} waived={slot.waived} />
+          <StateMark showLabel status={slot.status} waived={slot.waived} />
           {slot.filledBy && slot.filledBy !== slot.code ? (
             <span className="text-sm text-soft">Taken as {slot.filledBy}</span>
           ) : null}
@@ -107,7 +107,7 @@ function SlotDetails({ slot, onClose }: { slot: Slot; onClose: () => void }) {
         ) : null}
         <PrereqText rule={slot.prereq} />
         {slot.status === "locked" ? (
-          <p className="text-sm text-soft">Prerequisites are not met yet.</p>
+          <p className="text-sm text-soft">You haven't met the prerequisites yet.</p>
         ) : null}
         <div className="space-y-3 border-t border-line pt-4">
           <h3 className="text-sm font-semibold text-ink">Record a grade</h3>
@@ -156,7 +156,7 @@ function StudentCourseDetails({
     setDeleteError(null);
     remove.mutate(course.id, {
       onSuccess: () => {
-        toast.success("Deleted");
+        toast.success("Course deleted");
         onClose();
       },
       onError: (err) => {
@@ -178,7 +178,7 @@ function StudentCourseDetails({
       </SheetHeader>
       <div className="space-y-5 px-4">
         <div className="flex flex-wrap items-center gap-2">
-          <DoneChip done={course.done} waived={course.waived} />
+          <StateMark showLabel status={course.done ? "done" : "available"} waived={course.waived} />
           {course.excluded ? <Badge variant="outline">Excluded</Badge> : null}
         </div>
         <div className="space-y-3 border-t border-line pt-4">
@@ -192,30 +192,28 @@ function StudentCourseDetails({
               <FormError message={deleteError} />
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Button
-                  variant="destructive"
-                  className="h-11"
+                  variant="outline"
+                  size="lg"
+                  className="text-destructive"
                   disabled={remove.isPending}
                   onClick={onDelete}
                 >
                   {remove.isPending ? "Deleting..." : "Delete course"}
                 </Button>
-                <Button
-                  variant="outline"
-                  className="h-11"
-                  onClick={() => setConfirmingDelete(false)}
-                >
+                <Button variant="outline" size="lg" onClick={() => setConfirmingDelete(false)}>
                   Keep it
                 </Button>
               </div>
             </>
           ) : (
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button variant="outline" className="h-11" onClick={() => setEditing(true)}>
+              <Button variant="outline" size="lg" onClick={() => setEditing(true)}>
                 Edit course
               </Button>
               <Button
                 variant="outline"
-                className="h-11 text-destructive"
+                size="lg"
+                className="text-destructive"
                 onClick={() => setConfirmingDelete(true)}
               >
                 Delete course

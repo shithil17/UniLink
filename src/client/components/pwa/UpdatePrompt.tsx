@@ -18,7 +18,7 @@ export function UpdatePrompt() {
 
   useEffect(() => {
     if (!needRefresh) return;
-    toast("Update available", {
+    toast("A new version is ready", {
       id: UPDATE_TOAST_ID,
       duration: Infinity,
       action: { label: "Reload", onClick: () => void updateServiceWorker(true) },

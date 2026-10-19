@@ -11,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { focusRingInset } from "@/components/ui/focus";
 import { useTheme } from "./themeContext";
 
 /**
@@ -20,7 +21,7 @@ import { useTheme } from "./themeContext";
 function Preview({ theme }: { theme: ThemeMeta }) {
   return (
     <span
-      className="flex h-9 w-14 shrink-0 items-center justify-between rounded-md border border-line px-2"
+      className="flex h-9 w-14 shrink-0 items-center justify-between rounded-control border border-line px-2"
       style={{ backgroundColor: theme.bar }}
       aria-hidden
     >
@@ -42,7 +43,7 @@ export function ThemePicker() {
       onValueChange={(id) => {
         setTheme(resolveTheme(id).id);
       }}
-      className="gap-0 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface"
+      className="gap-0 divide-y divide-line overflow-hidden rounded-panel border border-line bg-surface"
     >
       {themes.map((t) => {
         const active = t.id === theme;
@@ -51,7 +52,7 @@ export function ThemePicker() {
             key={t.id}
             value={t.id}
             className={cn(
-              "flex min-h-14 w-full cursor-pointer items-center gap-3 px-3 py-2 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-inset",
+              `flex min-h-14 w-full cursor-pointer items-center gap-3 px-4 py-2 text-left transition-colors ${focusRingInset}`,
               active ? "bg-brand-soft" : "hover:bg-tint",
             )}
           >
@@ -80,7 +81,7 @@ export function ThemePickerTrigger() {
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className="flex min-h-14 w-full items-center gap-3 rounded-lg border border-edge bg-surface px-3 py-2 text-left transition-colors hover:bg-tint focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
+        className={`flex min-h-14 w-full items-center gap-3 rounded-panel border border-line bg-surface px-4 py-2 text-left transition-colors hover:bg-tint ${focusRingInset}`}
       >
         <Preview theme={current} />
         <span className="min-w-0 flex-1">
@@ -92,8 +93,8 @@ export function ThemePickerTrigger() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom">
           <SheetHeader>
-            <SheetTitle>Choose theme</SheetTitle>
-            <SheetDescription>Colors only. Your choice is saved on this device.</SheetDescription>
+            <SheetTitle>Color theme</SheetTitle>
+            <SheetDescription>Just colors. Your pick is saved on this device.</SheetDescription>
           </SheetHeader>
           <div className="px-4">
             <ThemePicker />

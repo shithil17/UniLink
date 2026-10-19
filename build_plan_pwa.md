@@ -511,11 +511,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Restyle existing screens
 
-- [ ] Course map, course sheet, attempt form and student course form, with `StatusChip` replaced by `StateMark`.
-- [ ] Settings, login, signup and change password.
-- [ ] Offline screen, update prompt and install hint.
-- [ ] Mod curriculum import.
-- [ ] Copy pass in the friendly-peer voice (see `PRODUCT.md`). "Your NSU CSE student companion" becomes copy for every program.
+- [x] Course map, course sheet, attempt form and student course form, with `StatusChip` replaced by `StateMark`.
+- [x] Settings, login, signup and change password.
+- [x] Offline screen, update prompt and install hint.
+- [x] Mod curriculum import.
+- [x] Copy pass in the friendly-peer voice (see `PRODUCT.md`). "Your NSU CSE student companion" becomes copy for every program.
 
 ### Checklist — Docs & QA (C, D)
 

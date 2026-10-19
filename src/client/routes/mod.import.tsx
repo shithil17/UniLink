@@ -50,12 +50,12 @@ function ImportPage() {
   };
 
   return (
-    <section className="max-w-4xl space-y-6">
+    <section className="max-w-3xl space-y-6">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-ink">Import a curriculum</h1>
+        <h1 className="text-xl font-semibold text-ink">Import a curriculum</h1>
         <p className="text-sm text-soft">
-          Pick one curriculum JSON file. Importing the same program and version again replaces its
-          courses.
+          Pick one curriculum JSON file. Importing a program and version that already exist replaces
+          its courses.
         </p>
       </header>
       <FieldGroup>
@@ -78,7 +78,8 @@ function ImportPage() {
           ) : null}
         </Field>
         <Button
-          className="h-11 w-full sm:w-auto"
+          size="lg"
+          className="w-full sm:w-auto"
           disabled={!file?.parsed.ok || importCurriculum.isPending}
           onClick={submit}
         >
@@ -108,18 +109,18 @@ function ImportPage() {
 function RejectedTable({ rows }: { rows: Rejected }) {
   if (rows.length === 0) return null;
   return (
-    <div className="overflow-x-auto rounded-xl border border-line bg-surface">
+    <div className="overflow-x-auto rounded-panel border border-line bg-surface">
       <table className="w-full text-left text-sm">
         <caption className="sr-only">Rejected rows</caption>
         <thead className="border-b border-line text-soft">
           <tr>
-            <th scope="col" className="px-3 py-2 font-semibold">
+            <th scope="col" className="px-4 py-2 text-right font-medium">
               Row
             </th>
-            <th scope="col" className="px-3 py-2 font-semibold">
+            <th scope="col" className="px-4 py-2 font-medium">
               Code
             </th>
-            <th scope="col" className="px-3 py-2 font-semibold">
+            <th scope="col" className="px-4 py-2 font-medium">
               Reason
             </th>
           </tr>
@@ -127,9 +128,11 @@ function RejectedTable({ rows }: { rows: Rejected }) {
         <tbody>
           {rows.map((r) => (
             <tr key={r.index} className="border-b border-line last:border-b-0">
-              <td className="px-3 py-2 text-body">{r.index + 1}</td>
-              <td className="px-3 py-2 text-body">{r.code ?? "-"}</td>
-              <td className="px-3 py-2 text-body">{r.reason}</td>
+              <td className="px-4 py-2 text-right text-body tabular-nums">{r.index + 1}</td>
+              <td className="px-4 py-2 text-body">
+                {r.code ?? <span className="text-faint">&mdash;</span>}
+              </td>
+              <td className="px-4 py-2 text-body">{r.reason}</td>
             </tr>
           ))}
         </tbody>

@@ -9,11 +9,13 @@ type Props = {
   action?: ReactNode;
   /** The heading element; pick the level that fits the page outline. */
   as?: "h1" | "h2" | "h3";
+  /** An id on the heading, for `aria-labelledby` and anchors. */
+  id?: string;
   className?: string;
 };
 
 /** A sentence-case title with an optional count and action, over a hairline. */
-export function SectionHeader({ title, count, action, as: Heading = "h2", className }: Props) {
+export function SectionHeader({ title, count, action, as: Heading = "h2", id, className }: Props) {
   return (
     <div
       className={cn(
@@ -21,7 +23,10 @@ export function SectionHeader({ title, count, action, as: Heading = "h2", classN
         className,
       )}
     >
-      <Heading className="flex items-baseline gap-2 text-base font-semibold text-ink">
+      <Heading
+        id={id}
+        className="flex scroll-mt-20 items-baseline gap-2 text-base font-semibold text-ink"
+      >
         {title}
         {count === undefined ? null : (
           <span className="text-sm font-normal text-faint tabular-nums">{count}</span>

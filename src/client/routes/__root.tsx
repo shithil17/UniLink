@@ -7,6 +7,7 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { Button } from "@/components/ui/button";
 import { OfflineScreen } from "@/components/pwa/OfflineScreen";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { isOffline } from "@/lib/api";
@@ -51,10 +52,11 @@ function RootError({ error, reset }: ErrorComponentProps) {
         <OfflineScreen onRetry={retry} />
       ) : (
         <main className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-app px-6 text-center text-body">
-          <h1 className="text-2xl font-semibold text-ink">Something went wrong</h1>
-          <button type="button" className="text-brand underline" onClick={retry}>
+          <h1 className="text-xl font-semibold text-ink">Something went wrong</h1>
+          <p className="max-w-xs text-sm text-soft">That didn't load. Give it another go.</p>
+          <Button variant="outline" size="lg" className="mt-2" onClick={retry}>
             Try again
-          </button>
+          </Button>
         </main>
       )}
     </ThemeProvider>

@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-import { AuthScreen, FormError } from "@/components/auth/AuthForm";
+import { AuthScreen, FormError, textLink } from "@/components/auth/AuthForm";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -36,8 +36,16 @@ function SignupPage() {
 
   return (
     <AuthScreen
-      title="Sign up"
-      intro="Use your NSU details. Only your username is ever shown to others."
+      title="Create an account"
+      intro="Sign up with your NSU details. Other students only ever see your username."
+      footer={
+        <p>
+          Already have an account?{" "}
+          <Link to="/login" className={textLink}>
+            Log in
+          </Link>
+        </p>
+      }
     >
       <form onSubmit={form.handleSubmit((values) => signup.mutate(values))} noValidate>
         <FieldGroup>
@@ -65,7 +73,7 @@ function SignupPage() {
               aria-invalid={Boolean(errors.fullName)}
               {...form.register("fullName")}
             />
-            <FieldDescription>Private. Never shown to other students.</FieldDescription>
+            <FieldDescription>Private. Other students never see it.</FieldDescription>
             <FieldError errors={[errors.fullName]} />
           </Field>
           <Field data-invalid={Boolean(errors.email)}>
@@ -80,7 +88,7 @@ function SignupPage() {
               aria-invalid={Boolean(errors.email)}
               {...form.register("email")}
             />
-            <FieldDescription>Private. Never shown to other students.</FieldDescription>
+            <FieldDescription>Private. Other students never see it.</FieldDescription>
             <FieldError errors={[errors.email]} />
           </Field>
           <Field data-invalid={Boolean(errors.studentId)}>
@@ -95,7 +103,7 @@ function SignupPage() {
               {...form.register("studentId")}
             />
             <FieldDescription>
-              Private. Used once per student, never shown to others.
+              Private. One account per student, never shown to others.
             </FieldDescription>
             <FieldError errors={[errors.studentId]} />
           </Field>
@@ -113,17 +121,11 @@ function SignupPage() {
             <FieldError errors={[errors.password]} />
           </Field>
           <FormError message={signup.isError ? errorMessage(signup.error) : null} />
-          <Button type="submit" className="h-11 w-full" disabled={signup.isPending}>
-            {signup.isPending ? "Creating account..." : "Sign up"}
+          <Button type="submit" size="lg" className="w-full" disabled={signup.isPending}>
+            {signup.isPending ? "Creating account..." : "Create account"}
           </Button>
         </FieldGroup>
       </form>
-      <p className="text-sm text-soft">
-        Already have an account?{" "}
-        <Link to="/login" className="font-medium text-ink underline">
-          Log in
-        </Link>
-      </p>
     </AuthScreen>
   );
 }

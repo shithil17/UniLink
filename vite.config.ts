@@ -100,7 +100,7 @@ export default defineConfig({
           // Remote-only bindings (AI) are opt-in for dev so a plain `vp dev` needs no login and costs nothing.
           cloudflare({ remoteBindings: process.env.CF_REMOTE_BINDINGS === "1" }),
           VitePWA({
-            // The app shows an "Update available" toast; the user decides when to reload.
+            // The app shows a "new version" toast; the user decides when to reload.
             registerType: "prompt",
             // useRegisterSW (UpdatePrompt) registers the worker, so no injected script.
             injectRegister: false,
@@ -108,7 +108,7 @@ export default defineConfig({
             manifest: {
               name: "UniLink",
               short_name: "UniLink",
-              description: "Unofficial NSU CSE student companion",
+              description: "An unofficial, student-run companion for NSU students",
               start_url: "/",
               scope: "/",
               display: "standalone",

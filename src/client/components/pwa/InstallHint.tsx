@@ -11,12 +11,12 @@ export function InstallHint() {
   return (
     <div
       role="note"
-      className="mb-4 flex items-start gap-3 rounded-lg border border-line bg-surface p-3 text-sm text-body"
+      className="mb-4 flex items-center gap-3 rounded-panel border border-line bg-surface py-2 pr-2 pl-4 text-sm text-body"
     >
       <p className="flex-1">
-        Install UniLink: tap{" "}
-        <ShareIcon className="mx-0.5 inline size-4 text-brand" aria-label="Share" /> then{" "}
-        <strong className="text-ink">Add to Home Screen</strong>.
+        Keep UniLink on your home screen: tap{" "}
+        <ShareIcon className="mx-0.5 inline size-4 text-ink" aria-label="Share" />, then{" "}
+        <strong className="font-semibold text-ink">Add to Home Screen</strong>.
       </p>
       <Button
         variant="ghost"
