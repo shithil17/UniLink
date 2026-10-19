@@ -14,7 +14,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - Signup rate limits and the new-account cooldown move from Sprint 4 to Phase 2, because they are the main defence while there is no email verification. They use one shared `rateLimit()` helper.
 - Week 0 now also proves D1 reads, an API test harness and the deploy pipeline.
 - All limits live in one config file, and all times use Asia/Dhaka.
-- (2026-10-19) Lost-and-found posts and marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (post photos kit, Phase 15). No photos in the "ID or card" category. Authors can delete their own posts (Phase 12).
+- (2026-10-19) Lost-and-found posts and marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (post photos kit, Phase 15). Photos in the "ID or card" category always go to a mod first. Authors can delete their own posts (Phase 12).
 
 ---
 
@@ -834,7 +834,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - Two thresholds, both from calibration and never guessed: auto-reject needs a high score on a clear category, auto-approve needs a high score on "fine", and everything in between goes to a human. The target is a very low false-reject rate (the exact number is an Open decision). The review band is kept narrow so the mod queue stays manageable.
 > - Students write English, Bangla and Banglish. The calibration set (about 150 examples: allowed posts, each prohibited category, personal data, spam, Banglish) covers all three, and uncertain results go to humans.
 > - The model sees only post text, never usernames or IDs.
-> - **Photos (added 2026-10-19):** post photos go to Clef-flash in the same call as the text, as image bytes (Clef does not accept URLs), never with filenames or metadata. Extra questions: does a photo show an ID card, a bank or payment card, a phone number or other personal data (→ personal data), nudity or violence (→ abuse), or a prohibited item (→ prohibited item). The same two thresholds apply. Cost: about 1,030 input tokens per photo (one token per 32×32 block, capped at 1,024, plus 3), so a 3-photo post is about 11 Neurons.
+> - **Photos (added 2026-10-19):** post photos go to Clef-flash in the same call as the text, as image bytes (Clef does not accept URLs), never with filenames or metadata. Extra questions: does a photo show a readable ID or card number, a phone number or other personal data (→ personal data; on "ID or card" lost-and-found posts this goes to review, never auto-reject, since those posts are always reviewed), nudity or violence (→ abuse), or a prohibited item (→ prohibited item). The same two thresholds apply. Cost: about 1,030 input tokens per photo (one token per 32×32 block, capped at 1,024, plus 3), so a 3-photo post is about 11 Neurons.
 > - **Finder gate:** cheap checks first (empty, over 500 characters, symbols only), then one Clef decision: relevant / too vague / off-topic / abusive or instruction attempt. Only "relevant" goes on to DeepSeek. The others get fixed server-written replies, and "too vague" has its own reply that suggests topics. Chips skip the gate. The gate sees only the message, never the faculty list. Gate limit: 30 per user per day. If Clef is down or capped, the message goes to the match step, where the normal limits apply. Only messages that pass the gate count toward the 10-per-day match limit. `note:` the gate saves money but is not a security boundary. The match call still treats the text as data.
 > - **Fallback (cut order step 4):** if Clef is not ready, the stub stays and posts publish straight away after the rules. The report flow covers the rest.
 
@@ -852,7 +852,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/server/moderation/clef.test.ts`: the score-to-verdict mapping at and around each threshold, timeout, error and cap → review, the audit row has the model name and scores, images reach the fake client, a fake "ID card" answer on a photo gives personal data.
+- [ ] `src/server/moderation/clef.test.ts`: the score-to-verdict mapping at and around each threshold, timeout, error and cap → review, the audit row has the model name and scores, images reach the fake client, a fake "readable ID number" answer on a photo gives personal data, and review (not reject) on an "ID or card" lost-and-found post.
 - [ ] `src/server/features/finder/gate.api.test.ts`: only "relevant" reaches DeepSeek (spy), each other class returns its fixed reply, chips skip the gate, the gate limit applies, a Clef failure falls through to the match limits.
 - [ ] Run: `vp test clef gate moderation` and `vp run moderation:calibrate`
 
@@ -873,7 +873,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 >
 > - Type `lost | found`. Title, category (ID or card, wallet, phone, laptop or charger, bag, keys, books or notes, other), description, place (free text), date, contacts (shared kit), status `open | resolved`.
 > - Found posts have an optional private **verification detail** that only the poster can see. It is never included in any other user's response.
-> - **Photos (added 2026-10-19):** up to 3 per post through the post photos kit below, so owners can recognise their item. **Never in the "ID or card" category:** the server refuses photos there for lost and found posts alike, and the form hides the picker, because a photo of an ID or card shows a student ID or card number publicly. On found posts the form tells the finder to leave out what proves ownership (wallet contents, lock screens, serial numbers, name labels) and put it in the verification detail instead, or anyone could claim the item from the photo.
+> - **Photos (added 2026-10-19):** up to 3 per post through the post photos kit below, so owners, or friends who recognise the item, can identify it. **"ID or card" category:** photos are allowed, but the student ID or card number must be covered. The form says so above the picker, and every post in this category with photos goes to `pending_review` whatever the model says, so a mod checks that no number is readable before it is published. Ownership details are settled between the two users over the required contact method.
 > - Student IDs and card numbers are rejected by the Phase 8 rules. The form warns about it up front.
 > - Expires after 30 days, and the poster can renew once. Resolved or expired posts leave the feed and are hard-deleted 14 days later by cron.
 > - Feed filters: type, category, place text, date, keyword.
@@ -903,11 +903,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 - [ ] **Photos kit:** `src/shared/webp.ts`, the photo caps in `limits.ts`, the `post_photos` table, `src/client/lib/imageEncode.ts` (resize, WebP encode, `blob.type` check with the WASM fallback), a shared `PhotoPicker` (add, remove, reorder, inline errors) and `PhotoGallery`, the multipart parsing and R2-then-D1 write helper with rollback, `screen()` with images, `GET /api/photos/:key`, the purge helper for cron jobs. Update `docs/api-contracts.md`.
 - [ ] **Step 1:** `lost_found_posts` table with check constraints and indexes on category, status and expiry.
-- [ ] **Step 2:** create, edit, resolve, renew (once), author delete, with photos, using the shared kit, the photos kit, `screen()` and `canPost()`. Photos refused for the "ID or card" category.
+- [ ] **Step 2:** create, edit, resolve, renew (once), author delete, with photos, using the shared kit, the photos kit, `screen()` and `canPost()`. "ID or card" posts with photos always go to review.
 - [ ] **Step 3:** confirm the ID and card rules fire for lost-and-found text, and add the form warning.
 - [ ] **Step 4:** feed, filters and search, excluding expired and resolved posts in the query.
 - [ ] **Step 5:** cleanup job in `cron.ts` (14 days after expiry or resolution, the author-delete window, photos before rows).
-- [ ] **Step 6:** screens: post, edit, my posts, feed with covers, detail with photos and contact buttons, verification detail field and the "leave out what proves ownership" hint, lost-property pointer.
+- [ ] **Step 6:** screens: post, edit, my posts, feed with covers, detail with photos and contact buttons, verification detail field, the "cover the ID or card number" note on the picker, lost-property pointer.
 - [ ] **Step 7:** report, mod removal, reversal (`target_type` `lost_found`).
 - [ ] **Step 8:** possible-match notification.
 
@@ -915,13 +915,13 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 - [ ] C: update the SRS and diagrams.
 - [ ] D: screens (early Week 7), ID-number warning wording, test cases.
-- [ ] D: photo rules in the ToS and post forms (no IDs, cards, documents or people's faces; on found posts, nothing that proves ownership). Privacy note: location data is removed from photos.
+- [ ] D: photo rules in the ToS and post forms (no documents or people's faces; on IDs and cards, cover the number). Privacy note: location data is removed from photos.
 
 ### Checklist — Test Scripts & Smoke Tests
 
 - [ ] `src/shared/webp.test.ts`: accepts a valid WebP, rejects PNG and JPEG bytes, a file over the byte limit, dimensions over the limit, and a WebP with an `EXIF` or `XMP ` chunk.
 - [ ] `src/server/features/photos/photos.api.test.ts` (local R2): a fourth photo is refused, a non-WebP upload never reaches R2 or the model step, photos with the stub give `pending_review`, a failed D1 write leaves no object, an edit that removes a photo deletes its object, a hidden, pending or author-deleted post's photo returns 404 to another student but loads for a mod, the upload caps apply, the purge deletes objects before rows.
-- [ ] `src/server/features/lostfound/lostfound.api.test.ts`: an ID number in the text is rejected, photos on an "ID or card" post are refused, the verification detail is never returned to a non-owner (feed, detail and contact endpoints), renewal allowed once, resolve hides the post, author delete, the cron timing, report + removal, the possible match notifies the right users and not the poster.
+- [ ] `src/server/features/lostfound/lostfound.api.test.ts`: an ID number in the text is rejected, photos on an "ID or card" post go to `pending_review` even when the model approves, the verification detail is never returned to a non-owner (feed, detail and contact endpoints), renewal allowed once, resolve hides the post, author delete, the cron timing, report + removal, the possible match notifies the right users and not the poster.
 - [ ] Run: `vp test lostfound photos webp`
 
 ### Test Gate 15
@@ -1075,7 +1075,7 @@ Shrink Phase 17 hardening only as a last resort. **Never cut** moderation, audit
 
 - Native apps or app stores: the PWA covers every platform.
 - File hosting: links only, which avoids copyright and storage risk.
-- Photos in the "ID or card" lost-and-found category, on rides and on profiles: they would show student IDs or faces for little gain. (Lost-and-found and marketplace photos were un-parked on 2026-10-19, see Phase 15.)
+- Photos on rides and on profiles: faces and personal data for little gain. (Lost-and-found and marketplace photos were un-parked on 2026-10-19, see Phase 15.)
 - Dark mode: themes are colors only.
 - Offline editing or sync: data is always live.
 - Scraping Google Scholar, or letting the AI browse ORCID or Scholar: against the terms and gives messy data.
