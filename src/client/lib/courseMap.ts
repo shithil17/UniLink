@@ -19,6 +19,20 @@ export function overNote(earned: number, required: number): string | null {
   return earned > required ? `over by ${formatCredits(earned - required)}` : null;
 }
 
+/** Share of the required credits earned, 0 to 100. Going over the total fills the bar, never more. */
+export function progressPercent(earned: number, required: number): number {
+  if (required <= 0) return earned > 0 ? 100 : 0;
+  return Math.min(100, Math.round((earned / required) * 100));
+}
+
+/** A stable element id for a category heading: "Math & Science" -> "cat-math-science". */
+export function categoryAnchor(name: string): string {
+  return `cat-${name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")}`;
+}
+
 /** A prerequisite rule as one readable line: `CSE115 and (MAT120 or MAT125)`. Null when there is none. */
 export function describePrereq(rule: PrereqRule | null | undefined): string | null {
   return rule ? describe(rule, false) || null : null;

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
+  categoryAnchor,
+  progressPercent,
   defaultElectiveCategory,
   describePrereq,
   formatTotals,
@@ -66,5 +68,19 @@ describe("defaultElectiveCategory", () => {
       ],
     } as CourseMap;
     expect(defaultElectiveCategory(map)).toBe("Electives");
+  });
+});
+
+describe("progress and anchors", () => {
+  it("fills the bar up to 100 and never past it", () => {
+    expect(progressPercent(0, 30)).toBe(0);
+    expect(progressPercent(15, 30)).toBe(50);
+    expect(progressPercent(36, 30)).toBe(100);
+    expect(progressPercent(0, 0)).toBe(0);
+  });
+
+  it("turns a category name into a valid id", () => {
+    expect(categoryAnchor("Math & Science")).toBe("cat-math-science");
+    expect(categoryAnchor("Major Core (by major)")).toBe("cat-major-core-by-major");
   });
 });

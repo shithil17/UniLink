@@ -1,7 +1,7 @@
 import { ChevronRightIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCredits, formatTotals, overNote } from "@/lib/courseMap";
+import { categoryAnchor, formatCredits, formatTotals, overNote } from "@/lib/courseMap";
 import type { CourseMap } from "../../../shared/schemas/courses";
 import { DoneChip, StatusChip } from "./StatusChip";
 
@@ -66,9 +66,12 @@ export function CategorySection({
 }) {
   const over = overNote(category.earned, category.required);
   return (
-    <section aria-labelledby={`cat-${category.name}`} className="space-y-2">
+    <section
+      aria-labelledby={categoryAnchor(category.name)}
+      className="mb-6 scroll-mt-20 space-y-2 break-inside-avoid"
+    >
       <div className="flex items-baseline justify-between gap-3">
-        <h2 id={`cat-${category.name}`} className="font-semibold text-ink">
+        <h2 id={categoryAnchor(category.name)} className="font-semibold text-ink">
           {category.name}
         </h2>
         <p className="shrink-0 text-sm text-soft">
@@ -100,7 +103,7 @@ export function ExtrasSection({
   onAdd: () => void;
 }) {
   return (
-    <section aria-labelledby="extras" className="space-y-2">
+    <section aria-labelledby="extras" className="mb-6 scroll-mt-20 space-y-2 break-inside-avoid">
       <div className="flex items-center justify-between gap-3">
         <h2 id="extras" className="font-semibold text-ink">
           Your extra courses
