@@ -14,6 +14,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - Signup rate limits and the new-account cooldown move from Sprint 4 to Phase 2, because they are the main defence while there is no email verification. They use one shared `rateLimit()` helper.
 - Week 0 now also proves D1 reads, an API test harness and the deploy pipeline.
 - All limits live in one config file, and all times use Asia/Dhaka.
+- (2026-10-19) The course map covers every undergraduate program with a course map, picked by the program code in the student ID. Students add their own elective courses (code, title, credits), may go over the degree total, and can exclude extra courses from the transcript (Phase 4).
 - (2026-10-19) Lost-and-found posts and marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (post photos kit, Phase 15). Photos in the "ID or card" category always go to a mod first. Authors can delete their own posts (Phase 12).
 
 ---
@@ -128,10 +129,12 @@ unilink/                         # repo name until the app name is chosen
 ├── drizzle.config.ts                                                                   [P0]
 ├── index.html                   # inline no-flash theme script + theme-color meta      [P1]
 ├── drizzle/                     # generated migrations (committed)
+├── data/
+│   └── curricula/               # one JSON curriculum per program (import format)     [P4]
 ├── docs/
 │   └── api-contracts.md         # agreed endpoint list; shapes live in src/shared       [P0]
 ├── scripts/
-│   ├── seed.ts                  # small curriculum + fake students for dev/tests       [P0→P4]
+│   ├── seed.ts                  # curricula + fake students for dev/tests             [P0→P4]
 │   ├── seed-admin.ts            # first admin from env vars                            [P2]
 │   └── faculty-sync.ts          # OpenAlex/ORCID → trim → DeepSeek → admin route       [P11]
 └── src/
@@ -139,7 +142,7 @@ unilink/                         # repo name until the app name is chosen
     │   ├── schemas/             # Zod request/response schemas per module
     │   ├── studentId.ts         # regex, split into key + suffix, admission year       [P2]
     │   ├── themes.ts            # theme list (id, name, blurb, 5 swatches)             [P1]
-    │   ├── prereq.ts            # Composite rule tree (all/any) evaluator              [P4]
+    │   ├── prereq.ts            # Composite rule tree (all/any/credits) evaluator      [P4]
     │   ├── grading.ts           # Strategy: grade scale + retake policy + CGPA         [P6]
     │   ├── terms.ts             # term type, current term (Asia/Dhaka)                 [P4]
     │   ├── routine.ts           # overlap check                                         [P9]
@@ -396,7 +399,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] **(Manual) After a new staging deploy, relaunching shows the update prompt, and reloading shows the new build.**
 - [x] **(Manual, DevTools) No `/api` response is served from the service worker cache.**
 
-**Sprint 1 milestone (Phases 2-4):** a user can sign up, log in, see the CSE course map and install the app.
+**Sprint 1 milestone (Phases 2-4):** a user can sign up, log in, see their program's course map and install the app.
 
 ---
 
@@ -404,41 +407,56 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 **Owner:** Dev A · **When:** Sprint 1 · **Depends on:** Phase 0 (Phase 2 for the logged-in user)
 
-**Goal:** Mods import the CSE curriculum, and students see the course map for their curriculum version with categories, credit totals, prerequisite status and done courses taken from their attempts.
+**Goal:** Mods import the NSU undergraduate curricula, and students see the course map for their program and curriculum version with categories, credit totals, prerequisite status and done courses taken from their attempts. Students fill elective slots with their own courses and may go over the degree total.
 
 > **Design decisions (locked in):**
 >
 > - Curriculum is imported from CSV or JSON by a mod (D prepares the data). Courses have code, title, credits, category, a non-credit flag and a prerequisite rule. They belong to a curriculum version chosen by admission year.
+>   Note (2026-10-19): every undergraduate program with a course map is imported, not only CSE. A curriculum belongs to an NSU program code (the last two digits of the student ID, `NSU_PROGRAM_CODES`) and has a version label, an `effectiveFromYear` (YY) and a degree total. A student's curriculum is the one for their program with the highest `effectiveFromYear` not after their admission year, else the oldest one for that program. A program with no curriculum shows an empty state. The import format is JSON only (one file per curriculum, `curriculumImport` in `src/shared/schemas/courses.ts`); the source files live in `data/curricula/`. Re-importing the same program + version replaces its courses. Graduate programs are out of scope. `ceiling:` no data for ETE (no program code in the list), English (the supplied file was the LLB map), Anthropology, Sociology, History or Environmental Science; add a file when D has the map.
 > - Prerequisites are a **Composite** rule tree: a course leaf, `all` groups and `any` groups. They are evaluated in `src/shared/prereq.ts`.
-> - **Attempts are the only source of truth** (decided 2026-10-18). A course is _done_ when it has a passing attempt (any grade that earns credits, so not F, I or W). The "tick" on the map opens a quick attempt form: course + letter grade, with term and faculty optional. Phase 6 adds the full form and the retake rules. There is no separate ticks table.
+>   Note (2026-10-19): one more leaf, `{ credits: n }`, is met when the student has earned at least `n` degree credits (for "60 credits completed" style rules). A waiver ("ENG102/Waiver") is stored as the plain course leaf.
+> - Course rows have a `kind`. A `course` row is a fixed course; it may list `alternatives` (other codes that fill the same slot, e.g. POL101/POL104, or "choose any three" written as three slots with the same options). A passing attempt fills at most one slot, assigned in curriculum order. An `elective` row is a placeholder (ELECT1, OPEN ELECT, a BBA major course, …) with a category and credits but no fixed code.
+> - **Student courses** (decided 2026-10-19): students add their own courses with a code, title, credits and a category taken from their curriculum's categories (default the first elective category). They fill that category's elective placeholders in the order they were added; any beyond the placeholders show as extra. A student course code must not clash with a code in their curriculum or another of their own. Student courses are private to their owner (same repo-layer rule as attempts) and are not posts, so they are not screened. `ceiling:` `limits.studentCoursesMax` per user, to bound D1 rows.
+> - **Going over the degree total** (decided 2026-10-19): there is no cap on earned credits. Totals show e.g. 136 / 130 with no block. Any student course can be marked **excluded from transcript**: it keeps its attempts and stays on the map with an "Excluded" badge, but counts toward no total, no `credits` prerequisite and (Phase 6) no CGPA. Curriculum courses cannot be excluded.
+> - **Attempts are the only source of truth** (decided 2026-10-18). A course is _done_ when it has a passing attempt (any grade that earns credits, so not F, I or W). The "tick" on the map opens a quick attempt form: course + letter grade, with term and faculty optional. Phase 6 adds the full form and the retake rules. There is no separate ticks table. An attempt's course code must be in the student's curriculum (a slot code or an alternative) or one of their student courses.
 > - Terms: a shared `Term` value (year + Spring/Summer/Fall). The current term is worked out in Asia/Dhaka from one set of term start dates in `src/shared/terms.ts` (D confirms the dates).
 
 ### Checklist — Data & API
 
-- [ ] Tables: `curricula`, `courses` (with the prereq rule stored as JSON), `attempts` (user, course, grade, term nullable, created_at). Faculty is added in Phase 6.
+- [ ] Tables: `curricula` (program code, name, version, `effective_from_year`, total credits), `courses` (kind, alternatives and the prereq rule stored as JSON), `attempts` (user, course code, grade, term nullable, created_at), `student_courses` (user, code, title, credits, category, excluded, created_at). Faculty is added in Phase 6.
 - [ ] Import endpoint (mod only), validated by a Zod schema. It reports the rows it rejected and why. The import is logged with `audit()`.
-- [ ] `GET /api/courses/map` returns courses with each one's status for the current user (done, available, locked), plus category and credit totals.
+- [ ] `GET /api/courses/map` returns the student's curriculum with each slot's status for the current user (done, available, locked), their student courses filling elective slots and extras, plus category and degree credit totals (which may exceed the required total; excluded courses never count).
 - [ ] `POST /api/attempts` (quick form). Attempts are visible only to their owner and never to mods (enforced in the repo layer).
+- [ ] Student courses API: list, add, edit (including the excluded flag), delete. Owner only, capped by `limits.studentCoursesMax`.
+
+### Checklist — Curriculum data
+
+- [ ] `data/curricula/*.json`, one file per program, transcribed from the NSU course maps: Architecture, LLB, MCJ, Public Health, Economics, CEE, Environmental Management, BBA, CSE, EEE, Pharmacy, Biochemistry & Biotechnology, Microbiology.
+- [ ] A unit test validates every file against `curriculumImport` and checks that every prereq course leaf points at a code in the same file.
 
 ### Checklist — Screens
 
-- [ ] Course map screen: grouped by category, with credit totals and status chips. Tapping a course opens its prerequisites and the quick attempt form.
+- [ ] Course map screen: grouped by category, with credit totals (over-total allowed) and status chips. Tapping a course opens its prerequisites and the quick attempt form. Elective slots show the student course filling them, or an "Add course" action.
+- [ ] Student course form (code, title, credits, category, excluded toggle) built from the shared schema.
+- [ ] Mod-only curriculum import screen: upload a JSON file, show the imported count and the rejected rows.
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] D: course map screens. The first CSE course data batch (early semesters first) in the agreed spreadsheet format.
+- [ ] D: course map screens. Check the transcribed curriculum files against the official maps.
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/prereq.test.ts`: leaf, nested `all`/`any`, empty rule, an F, I or W attempt does not satisfy a prereq, a passing attempt does.
-- [ ] `src/server/features/courses/courses.api.test.ts`: the import rejects bad rows, only mods can import, the map reflects attempts, the user only sees their own attempts.
-- [ ] `scripts/seed.ts` now seeds a small curriculum and two fake students.
+- [ ] `src/shared/prereq.test.ts`: leaf, nested `all`/`any`, empty rule, a `credits` leaf, an F, I or W attempt does not satisfy a prereq, a passing attempt does.
+- [ ] `src/server/features/courses/courses.api.test.ts`: the import rejects bad rows, only mods can import, the map reflects attempts, the user only sees their own attempts and student courses, the curriculum follows program code and admission year, student courses fill elective slots then show as extra, totals can exceed the degree total, an excluded course counts toward nothing.
+- [ ] `scripts/seed.ts` now seeds the curricula from `data/curricula/` and two fake students.
 - [ ] Run: `vp test prereq courses`
 
 ### Test Gate 4
 
 - [ ] **Prereq and course API tests pass.**
+- [ ] **Every file in `data/curricula/` passes the curriculum data test.**
 - [ ] **On staging, a seeded student records a grade from the map, and the course turns done and unlocks its dependants.**
+- [ ] **(Manual) On staging, a student fills an elective slot with their own course, adds an extra course that takes them over the degree total, then excludes it, and the totals update each time.**
 
 ---
 
