@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { HouseIcon, SettingsIcon } from "lucide-react";
+import { BookOpenIcon, HouseIcon, SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { InstallHint } from "@/components/pwa/InstallHint";
 import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 const navItems = [
   { to: "/", label: "Home", icon: HouseIcon },
+  { to: "/courses", label: "Courses", icon: BookOpenIcon },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 

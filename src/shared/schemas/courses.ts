@@ -20,7 +20,7 @@ const text = (max: number) => z.string().trim().min(1).max(max);
 
 /** Credits come in halves (3, 1.5, 0 for a non-credit course). */
 const credits = z
-  .number()
+  .number({ error: "Enter the credits" })
   .min(0)
   .max(COURSE_CREDITS_MAX)
   .refine((n) => Number.isInteger(n * 2), "Credits must be a multiple of 0.5");

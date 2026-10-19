@@ -436,9 +436,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Screens
 
-- [ ] Course map screen: grouped by category, with credit totals (over-total allowed) and status chips. Tapping a course opens its prerequisites and the quick attempt form. Elective slots show the student course filling them, or an "Add course" action.
-- [ ] Student course form (code, title, credits, category, excluded toggle) built from the shared schema.
-- [ ] Mod-only curriculum import screen: upload a JSON file, show the imported count and the rejected rows.
+- [x] Course map screen: grouped by category, with credit totals (over-total allowed) and status chips. Tapping a course opens its prerequisites and the quick attempt form. Elective slots show the student course filling them, or an "Add course" action.
+- [x] Student course form (code, title, credits, category, excluded toggle) built from the shared schema.
+- [x] Mod-only curriculum import screen: upload a JSON file, show the imported count and the rejected rows.
 
 ### Checklist — Docs & QA (C, D)
 

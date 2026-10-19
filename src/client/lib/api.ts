@@ -40,7 +40,7 @@ export function errorMessage(err: unknown): string {
 }
 
 async function request<T extends z.ZodType>(
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "PATCH" | "DELETE",
   path: `/api/${string}`,
   schema: T,
   body?: unknown,
@@ -79,4 +79,19 @@ export function apiPost<T extends z.ZodType>(
   body?: unknown,
 ): Promise<z.infer<T>> {
   return request("POST", path, schema, body);
+}
+
+export function apiPatch<T extends z.ZodType>(
+  path: `/api/${string}`,
+  schema: T,
+  body: unknown,
+): Promise<z.infer<T>> {
+  return request("PATCH", path, schema, body);
+}
+
+export function apiDelete<T extends z.ZodType>(
+  path: `/api/${string}`,
+  schema: T,
+): Promise<z.infer<T>> {
+  return request("DELETE", path, schema);
 }

@@ -11,10 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChangePasswordRouteImport } from './routes/change-password'
+import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ModImportRouteImport } from './routes/mod.import'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -24,6 +26,11 @@ const IndexRoute = IndexRouteImport.update({
 const ChangePasswordRoute = ChangePasswordRouteImport.update({
   id: '/change-password',
   path: '/change-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CoursesRoute = CoursesRouteImport.update({
+  id: '/courses',
+  path: '/courses',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoRoute = DemoRouteImport.update({
@@ -46,55 +53,85 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ModImportRoute = ModImportRouteImport.update({
+  id: '/mod/import',
+  path: '/mod/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/change-password': typeof ChangePasswordRoute
+  '/courses': typeof CoursesRoute
   '/demo': typeof DemoRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/mod/import': typeof ModImportRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/change-password': typeof ChangePasswordRoute
+  '/courses': typeof CoursesRoute
   '/demo': typeof DemoRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/mod/import': typeof ModImportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/change-password': typeof ChangePasswordRoute
+  '/courses': typeof CoursesRoute
   '/demo': typeof DemoRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/mod/import': typeof ModImportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/change-password' | '/demo' | '/login' | '/settings' | '/signup'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/change-password' | '/demo' | '/login' | '/settings' | '/signup'
-  id:
-    | '__root__'
     | '/'
     | '/change-password'
+    | '/courses'
     | '/demo'
     | '/login'
     | '/settings'
     | '/signup'
+    | '/mod/import'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | '/change-password'
+    | '/courses'
+    | '/demo'
+    | '/login'
+    | '/settings'
+    | '/signup'
+    | '/mod/import'
+  id:
+    | '__root__'
+    | '/'
+    | '/change-password'
+    | '/courses'
+    | '/demo'
+    | '/login'
+    | '/settings'
+    | '/signup'
+    | '/mod/import'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ChangePasswordRoute: typeof ChangePasswordRoute
+  CoursesRoute: typeof CoursesRoute
   DemoRoute: typeof DemoRoute
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
+  ModImportRoute: typeof ModImportRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -111,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/change-password'
       fullPath: '/change-password'
       preLoaderRoute: typeof ChangePasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/courses': {
+      id: '/courses'
+      path: '/courses'
+      fullPath: '/courses'
+      preLoaderRoute: typeof CoursesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/demo': {
@@ -141,16 +185,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mod/import': {
+      id: '/mod/import'
+      path: '/mod/import'
+      fullPath: '/mod/import'
+      preLoaderRoute: typeof ModImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChangePasswordRoute: ChangePasswordRoute,
+  CoursesRoute: CoursesRoute,
   DemoRoute: DemoRoute,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
+  ModImportRoute: ModImportRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

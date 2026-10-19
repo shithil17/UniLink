@@ -37,6 +37,17 @@ function Settings() {
           <LogoutButton />
         </div>
       </div>
+      {user && user.role !== "student" ? (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-soft">Moderation</h2>
+          <Link
+            to="/mod/import"
+            className={buttonVariants({ variant: "outline", className: "h-11" })}
+          >
+            Import a curriculum
+          </Link>
+        </div>
+      ) : null}
     </section>
   );
 }
