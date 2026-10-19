@@ -14,6 +14,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - Signup rate limits and the new-account cooldown move from Sprint 4 to Phase 2, because they are the main defence while there is no email verification. They use one shared `rateLimit()` helper.
 - Week 0 now also proves D1 reads, an API test harness and the deploy pipeline.
 - All limits live in one config file, and all times use Asia/Dhaka.
+- (2026-10-19) Marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (Phase 16). Lost and found stays text-only.
 
 ---
 
@@ -21,7 +22,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 **Architecture**
 
-- One repo, one Cloudflare Worker, one D1 database per environment. The Worker serves both `/api/*` (Hono) and the built PWA (Workers Static Assets), so everything is on one origin: no CORS and no second host.
+- One repo, one Cloudflare Worker, one D1 database and one private R2 bucket (marketplace photos) per environment. The Worker serves both `/api/*` (Hono) and the built PWA (Workers Static Assets), so everything is on one origin: no CORS and no second host.
 - Request and response shapes are Zod schemas in `src/shared/schemas/`. The client forms (React Hook Form) and the Hono validators import the same schema, so nobody writes a shape twice.
 - Data access goes through the repository layer (`src/server/repos/`). Route handlers never build SQL.
 - Every external service (OpenAlex, ORCID, Crossref, DeepSeek, Clef) sits behind a small interface in `src/server/adapters/` with a fake next to it. Tests use the fakes and never touch the network.
@@ -86,6 +87,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 | API             | Hono on Cloudflare Workers, Zod validation                                                                              | Small, typed, built for Workers                                                     |
 | Hosting         | Workers Static Assets via `@cloudflare/vite-plugin`                                                                     | One deploy ships the API and the PWA together, so they also roll back together      |
 | Database        | Cloudflare D1 (SQLite)                                                                                                  | Same platform as the Worker, free tier                                              |
+| Object storage  | Cloudflare R2, private bucket bound to the Worker (`MARKET_IMAGES`). Marketplace photos only, WebP only                 | Same platform, no egress fees, free tier far above expected use                     |
 | ORM             | Drizzle (`schema.ts`, `drizzle-kit` migrations)                                                                         | Typed queries, versioned migrations                                                 |
 | Auth            | Own `sessions` table, hashed tokens, HttpOnly + Secure + SameSite=Lax cookie, WebCrypto PBKDF2                          | No third-party auth. Works on Workers                                               |
 | Scheduled jobs  | Cloudflare Cron Triggers (same Worker)                                                                                  | No extra service                                                                    |
@@ -122,6 +124,7 @@ unilink/                         # repo name until the app name is chosen
 ├── .node-version                                                                       [P0]
 ├── vite.config.ts               # vite-plus config: plugins, lint, fmt, test, staged   [P0]
 ├── wrangler.jsonc               # staging + production envs, D1, assets, AI, crons     [P0]
+│                                # + R2 bucket MARKET_IMAGES                            [P16]
 ├── drizzle.config.ts                                                                   [P0]
 ├── index.html                   # inline no-flash theme script + theme-color meta      [P1]
 ├── drizzle/                     # generated migrations (committed)
@@ -141,7 +144,8 @@ unilink/                         # repo name until the app name is chosen
     │   ├── terms.ts             # term type, current term (Asia/Dhaka)                 [P4]
     │   ├── routine.ts           # overlap check                                         [P9]
     │   ├── urlAllowlist.ts      # sharing hosts                                         [P10]
-    │   └── contact.ts           # phone / wa.me / m.me / facebook.com rules            [P12]
+    │   ├── contact.ts           # phone / wa.me / m.me / facebook.com rules            [P12]
+    │   └── webp.ts              # WebP header parser: magic, size, chunks              [P16]
     ├── server/
     │   ├── index.ts             # Hono app, /api router, scheduled() handler           [P0]
     │   ├── limits.ts            # every limit, cap, cooldown, expiry, threshold        [P2]
@@ -165,7 +169,7 @@ unilink/                         # repo name until the app name is chosen
         ├── components/ui/       # shadcn components
         ├── components/theme/    # ThemeProvider, ThemePicker, ThemePickerTrigger       [P1]
         ├── components/post/     # ContactInput, ExpiryBadge, ReportButton, StatusNote  [P12]
-        └── lib/                 # query client, api fetcher
+        └── lib/                 # query client, api fetcher, imageEncode.ts (WebP) [P16]
 ```
 
 Tests sit next to the code: `*.test.ts` for unit tests and `*.api.test.ts` for API tests that run against a local D1.
@@ -573,6 +577,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - **Audit:** every automatic decision writes an audit row with actor `automod`, the model name, the category, the scores and a text snapshot.
 > - A test-only flag forces `review`, so the queue can be exercised before Clef exists.
 > - The mod's decision overrides the model. The author gets a `notify()` message on approve or reject.
+> - **Images (added 2026-10-19, for marketplace photos in Phase 16):** `screen()` input takes optional `images` (WebP bytes). The rules step treats a bad image (not WebP, too large, wrong dimensions, EXIF or XMP chunk) as a clear rule violation. The model step receives the images with the text. The stub model step returns `review` whenever images are present, so photos are never published unscreened.
 
 ### Checklist
 
@@ -590,7 +595,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Test Scripts & Smoke Tests
 
 - [ ] `src/server/moderation/rules.test.ts`: student IDs with and without spaces, a Luhn card number is caught, a BD phone number in text is not, a non-allowlisted URL, length limits, banned words.
-- [ ] `src/server/moderation/screen.test.ts`: a rule violation never calls the model step (spy), a stub approve publishes, the forced flag gives review, a model error or timeout gives review, the audit row has actor `automod`.
+- [ ] `src/server/moderation/screen.test.ts`: a rule violation never calls the model step (spy), a stub approve publishes, the stub with images gives review, an invalid image is rejected by the rules, the forced flag gives review, a model error or timeout gives review, the audit row has actor `automod`.
 - [ ] `src/server/moderation/queue.api.test.ts`: a pending post is hidden from other students, the mod decision overrides and notifies the author, 3 rejections trigger the cooldown, an edit is screened again.
 - [ ] Run: `vp test moderation`
 
@@ -828,12 +833,13 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - Two thresholds, both from calibration and never guessed: auto-reject needs a high score on a clear category, auto-approve needs a high score on "fine", and everything in between goes to a human. The target is a very low false-reject rate (the exact number is an Open decision). The review band is kept narrow so the mod queue stays manageable.
 > - Students write English, Bangla and Banglish. The calibration set (about 150 examples: allowed posts, each prohibited category, personal data, spam, Banglish) covers all three, and uncertain results go to humans.
 > - The model sees only post text, never usernames or IDs.
+> - **Photos (added 2026-10-19):** marketplace photos go to Clef-flash in the same call as the text, as image bytes (Clef does not accept URLs), never with filenames or metadata. Extra questions: does a photo show an ID card, a bank or payment card, a phone number or other personal data (→ personal data), nudity or violence (→ abuse), or a prohibited item (→ prohibited item). The same two thresholds apply. Cost: about 1,030 input tokens per photo (one token per 32×32 block, capped at 1,024, plus 3), so a 3-photo listing is about 11 Neurons.
 > - **Finder gate:** cheap checks first (empty, over 500 characters, symbols only), then one Clef decision: relevant / too vague / off-topic / abusive or instruction attempt. Only "relevant" goes on to DeepSeek. The others get fixed server-written replies, and "too vague" has its own reply that suggests topics. Chips skip the gate. The gate sees only the message, never the faculty list. Gate limit: 30 per user per day. If Clef is down or capped, the message goes to the match step, where the normal limits apply. Only messages that pass the gate count toward the 10-per-day match limit. `note:` the gate saves money but is not a security boundary. The match call still treats the text as data.
 > - **Fallback (cut order step 4):** if Clef is not ready, the stub stays and posts publish straight away after the rules. The report flow covers the rest.
 
 ### Checklist — Build order
 
-- [ ] **Step 5:** `ClefClient` + fake. Confirm the exact call format on the model page. Wire it in as the `ModelStep` behind the existing interface.
+- [ ] **Step 5:** `ClefClient` + fake. Confirm the exact call format on the model page, including how image bytes are passed in `images`. Wire it in as the `ModelStep` behind the existing interface.
 - [ ] **Step 6:** calibration runner script (`vp run moderation:calibrate`): runs the labelled set and reports the false-reject rate, the false-approve rate and the share sent to review at the candidate thresholds. Lock the chosen thresholds in `limits.ts` and record them here: `________`.
 - [ ] **Step 7:** finder gate in front of `/api/finder/match`.
 - [ ] **Step 8:** tests with the fake Clef client (Dev A and Dev B).
@@ -841,10 +847,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Docs & QA (C, D)
 
 - [ ] D: finish the calibration set early in Week 7 and run it with Dev A. Banglish samples in the manual test run.
+- [ ] D: about 30 labelled listing photos in the calibration set: ordinary items, ID cards, payment cards, screenshots with phone numbers, prohibited items.
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/server/moderation/clef.test.ts`: the score-to-verdict mapping at and around each threshold, timeout, error and cap → review, the audit row has the model name and scores.
+- [ ] `src/server/moderation/clef.test.ts`: the score-to-verdict mapping at and around each threshold, timeout, error and cap → review, the audit row has the model name and scores, images reach the fake client, a fake "ID card" answer on a photo gives personal data.
 - [ ] `src/server/features/finder/gate.api.test.ts`: only "relevant" reaches DeepSeek (spy), each other class returns its fixed reply, chips skip the gate, the gate limit applies, a Clef failure falls through to the match limits.
 - [ ] Run: `vp test clef gate moderation` and `vp run moderation:calibrate`
 
@@ -863,7 +870,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 > **Design decisions (locked in):**
 >
-> - Type `lost | found`. Title, category (ID or card, wallet, phone, laptop or charger, bag, keys, books or notes, other), description, place (free text), date, contacts (shared kit), status `open | resolved`. `ceiling:` text only, no photos.
+> - Type `lost | found`. Title, category (ID or card, wallet, phone, laptop or charger, bag, keys, books or notes, other), description, place (free text), date, contacts (shared kit), status `open | resolved`. `ceiling:` text only, no photos: a photo of a found ID or card would show a student ID publicly. Revisit only after marketplace photos have run cleanly for a semester and Clef reliably catches ID cards in the calibration set.
 > - Found posts have an optional private **verification detail** that only the poster can see. It is never included in any other user's response.
 > - Student IDs and card numbers are rejected by the Phase 8 rules. The form warns about it up front.
 > - Expires after 30 days, and the poster can renew once. Resolved or expired posts leave the feed and are hard-deleted 14 days later by cron.
@@ -913,6 +920,22 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - Feed filters: category, price range, condition, keyword.
 > - Prohibited items (ToS and post form): weapons, drugs, alcohol, tobacco, exam papers or answers, pirated or copied material, university property, anything illegal in Bangladesh.
 > - The app does not handle payment, delivery or disputes. An in-app notice says to meet in public places on campus and inspect items before paying.
+> - **Photos (added 2026-10-19):** optional, at most 3 per listing. The first is the cover shown in the feed. Only WebP is ever stored.
+> - **Encoding in the browser:** the client resizes each photo so its longest side is at most the max side in `limits.ts` (start at 1600px) and encodes WebP at quality 0.8. Re-encoding through a canvas drops EXIF, including GPS. If `canvas.toBlob(..., "image/webp")` returns a blob that is not WebP (some Safari versions fall back to PNG), the client uses a WASM WebP encoder (`@jsquash/webp`) instead. The server never converts images: Workers Free allows 10 ms CPU per request.
+> - **Server checks (never trust the client):** create and edit are one multipart request carrying the fields and the photos, so a photo never exists without its listing. `src/shared/webp.ts` accepts only RIFF/WEBP files within the byte limit and dimension limits read from the header, with no `EXIF` or `XMP ` chunk. The client uses the same parser to check its own output. A bad file is a field error, returned before R2 or Clef is touched.
+> - **Screening:** photos go through `screen()` with the text (Phase 8 image hook, Phase 14 photo questions). Until Clef is live, a listing with photos goes to `pending_review`. Edits that add, remove or reorder photos are screened again.
+> - **Storage:** private R2 bucket per environment, binding `MARKET_IMAGES`. Keys are `market/<listingId>/<random>.webp`. The listing ID is generated in the Worker before the insert. Objects are written first, then the D1 rows. If the D1 write fails, the request deletes the objects it wrote. A `marketplace_images` table (listing ID, key, position, width, height, bytes), indexed on listing ID, holds the keys. Photos removed in an edit are deleted from R2 after the D1 update. `ceiling:` a Worker killed between the R2 write and the D1 write leaves an orphan object. The key prefix makes a later sweep possible. Revisit if the bucket size drifts from the sum of `bytes`.
+> - **Serving:** `GET /api/market/images/:key` looks up the row, applies `visibleTo(user)` to its listing and streams the object with `Cache-Control: private, max-age=<limits.ts>, immutable`. A key never gets new content, so long caching is safe. The bucket has no public access, no `r2.dev` URL and no custom domain, so a hidden listing's photos stop loading for anyone who has not cached them. Mods see photos in the queue through the same endpoint. `ceiling:` every uncached photo is one Worker request against the 100,000/day free limit, and the feed loads full-size covers (no thumbnails). Revisit if photo requests pass about 30% of daily requests or users report heavy data use.
+> - **Cleanup:** mod removal stays a soft delete. The objects stay until the purge, so a reversal restores the photos. The marketplace cron job deletes a listing's R2 objects (one batched `delete()` per run, at most 1,000 keys) before its rows, so a failed run retries next time instead of losing the keys.
+> - **Caps** in `limits.ts`: photos per listing, bytes per photo, max side, a per-user daily upload cap (`rateLimit()`) and a global daily upload cap. Workers and D1 fail when over their free limits, but R2 bills the card, so these caps are the spending limit.
+
+### Checklist — Photo setup (one-time)
+
+- [ ] Enable R2 on the Cloudflare account (dashboard → R2 → "Add R2 subscription"). It needs a payment method. Nothing is charged within the free tier.
+- [ ] Turn on a usage-based billing notification in the dashboard so any R2 charge is noticed.
+- [ ] Add `r2:create:staging` and `r2:create:prod` scripts (`wrangler r2 bucket create unilink-market-staging` / `unilink-market-prod`) and run each once with `vp run`. Leave public access, the `r2.dev` URL and custom domains off.
+- [ ] `wrangler.jsonc`: `r2_buckets` with binding `MARKET_IMAGES` at the top level (local dev and tests; Wrangler simulates it locally, so no real bucket) and in each env with its bucket name, since bindings are not inherited. Then `vp run cf:types`.
+- [ ] `vp add @jsquash/webp`. No secrets are needed: the binding is the credential.
 
 ### Checklist — Build order
 
@@ -922,21 +945,31 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [ ] **Step 4:** cleanup job in `cron.ts` (30 days after sold or expiry).
 - [ ] **Step 5:** screens: post, edit, my listings, feed, detail with contact buttons, prohibited-items list, meet-in-public notice.
 - [ ] **Step 6:** report, mod removal, reversal (`target_type` `listing`).
+- [ ] **Step 7:** `src/shared/webp.ts`, the photo caps in `limits.ts`, the `marketplace_images` table.
+- [ ] **Step 8:** `src/client/lib/imageEncode.ts`: resize, WebP encode, `blob.type` check with the WASM fallback. Photo picker in the post and edit forms (add, remove, reorder, inline errors).
+- [ ] **Step 9:** multipart create and edit: header checks, upload caps, R2-then-D1 write order with rollback, `screen()` with images, deleting removed photos.
+- [ ] **Step 10:** image endpoint with `visibleTo()`, cover in the feed, gallery on the detail screen, photos in the mod queue.
+- [ ] **Step 11:** extend the marketplace cron job to delete R2 objects before rows.
+- [ ] **Step 12:** update `docs/api-contracts.md` (multipart create and edit, image endpoint, `screen()` images).
 
 ### Checklist — Docs & QA (C, D)
 
 - [ ] C: update the SRS and diagrams.
 - [ ] D: screens, prohibited-items text, test cases.
+- [ ] D: photo rules in the ToS and post form (no IDs, cards, documents or people's faces). Privacy note: location data is removed from photos.
 
 ### Checklist — Test Scripts & Smoke Tests
 
 - [ ] `src/server/features/market/market.api.test.ts`: the 11th active listing is refused, price and condition validation, free listings, mark sold hides the listing, renew, the cron timing, report + removal + reversal.
-- [ ] Run: `vp test market`
+- [ ] `src/shared/webp.test.ts`: accepts a valid WebP, rejects PNG and JPEG bytes, a file over the byte limit, dimensions over the limit, and a WebP with an `EXIF` or `XMP ` chunk.
+- [ ] `src/server/features/market/images.api.test.ts` (local R2): a fourth photo is refused, a non-WebP upload never reaches R2 or the model step, photos with the stub give `pending_review`, a failed D1 write leaves no object, an edit that removes a photo deletes its object, a hidden or pending listing's photo returns 404 to another student but loads for a mod, the upload caps apply, the cron purge deletes objects and rows.
+- [ ] Run: `vp test market webp`
 
 ### Test Gate 16
 
 - [ ] **Marketplace tests pass.**
 - [ ] **(Manual) Post, filter by price range, and mark sold on a phone on staging.**
+- [ ] **(Manual) On staging, post a listing with photos from an iPhone (Safari) and an Android phone. The stored objects are WebP, a downloaded photo has no location data, and the photos stop loading for another account after a mod removes the listing.**
 
 ---
 
@@ -956,7 +989,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [ ] Every write route has a `rateLimit()` (signup, login, every post create, reports, contact reveal, match, gate). List them in `limits.ts` comments.
 - [ ] Reports, mod removal and admin reversal confirmed for resource submissions, rides, lost and found, and marketplace listings.
 - [ ] Hard-coded color search is clean. D has checked the key screens (Home, course map, feeds, forms, mod panel, finder chat) in every palette at phone width.
-- [ ] Re-check the Clef-flash price, free allowance and context, the DeepSeek price, and the Workers and D1 limits. Set the production caps and the DeepSeek prepaid budget.
+- [ ] Re-check the Clef-flash price, free allowance and context, the DeepSeek price, the R2 prices, and the Workers and D1 limits. Set the production caps and the DeepSeek prepaid budget. Confirm the R2 billing notification is on.
 - [ ] Re-run the calibration set against production thresholds.
 - [ ] Privacy note in the app (AI providers get only post text and interest text, never usernames or IDs, and finder text is not stored).
 - [ ] Lighthouse PWA audit passes.
@@ -1028,10 +1061,11 @@ C / D:    Docs & QA subsections inside each phase ──────────
 1. Stretch phases S1 to S3
 2. Lost-and-found possible-match notification (P15 step 8)
 3. Recurring-ride renewal (rides keep their default end date)
-4. The Clef step (P14). The rules, the stub and the human queue stay, and posts publish after the rules.
-5. Marketplace (P16)
-6. AI matching (P13). Profiles and keyword search stay. If only the chat UI slips, ship the single interest box.
-7. Lost and found (P15)
+4. Marketplace photos (P16 photo setup and steps 7 to 12). Listings stay text-only.
+5. The Clef step (P14). The rules, the stub and the human queue stay, and posts publish after the rules (listings with photos go to review).
+6. Marketplace (P16)
+7. AI matching (P13). Profiles and keyword search stay. If only the chat UI slips, ship the single interest box.
+8. Lost and found (P15)
 
 Shrink Phase 17 hardening only as a last resort. **Never cut** moderation, audit or reversal (P7, P8). The class routine (P9) is small and is not expected to be cut.
 
@@ -1039,7 +1073,7 @@ Shrink Phase 17 hardening only as a last resort. **Never cut** moderation, audit
 
 - Native apps or app stores: the PWA covers every platform.
 - File hosting: links only, which avoids copyright and storage risk.
-- Photo uploads in lost and found or the marketplace: privacy and moderation cost.
+- Photo uploads in lost and found: a found ID or card would show a student ID publicly. (Marketplace photos were un-parked on 2026-10-19, see Phase 16.)
 - Dark mode: themes are colors only.
 - Offline editing or sync: data is always live.
 - Scraping Google Scholar, or letting the AI browse ORCID or Scholar: against the terms and gives messy data.
@@ -1074,6 +1108,7 @@ Each row names the phase that needs the answer. When it is settled, move it into
 | Target false-reject rate, number of mods, target review turnaround                            | P14               | All      |
 | Campus lost-property office or security desk to link                                          | P15               | D        |
 | Marketplace prohibited-items list and ToS wording                                             | P16               | All      |
+| Marketplace photo caps (bytes, max side, per-user and global daily uploads), cache lifetime   | P16               | Dev B    |
 | Stretch go/no-go                                                                              | Start of Sprint 4 | All      |
 | "Unofficial student-run app" wording; whether NSU name approval can wait until after the demo | P18               | All      |
 
@@ -1082,7 +1117,8 @@ Each row names the phase that needs the answer. When it is settled, move it into
 - **Workers Free:** 100,000 requests/day (resets 00:00 UTC), 10 ms CPU per request and per cron run, 50 subrequests per invocation, 5 Cron Triggers per account, 64 MiB uncompressed Worker size, 20,000 static files of at most 25 MiB each. Over the limit, requests fail; nothing is billed.
 - **D1 Free:** 5 million rows read/day, 100,000 rows written/day, 5 GB storage. Over a daily limit, queries fail until 00:00 UTC (06:00 Asia/Dhaka).
 - **Workers AI:** 10,000 Neurons/day free, then $0.011 per 1,000 Neurons (Workers Paid only; on Free, calls fail past the allowance). Resets 00:00 UTC.
-- **Clef-flash** `@cf/cloudflare/clef-flash`: $0.038 per million input tokens (3,455 Neurons/M), output free, 24,576-token context. Call: `env.AI.run("@cf/cloudflare/clef-flash", { model: "clef-flash", state, questions })`, where each question is `noul`, `choice` (with `criteria`) or `score`; the answer is a probability per option. Clef `@cf/cloudflare/clef`: $0.240/M input (21,818 Neurons/M). So the free allowance covers about 2.9M Clef-flash input tokens a day.
+- **Clef-flash** `@cf/cloudflare/clef-flash`: $0.038 per million input tokens (3,455 Neurons/M), output free, 24,576-token context. Call: `env.AI.run("@cf/cloudflare/clef-flash", { model: "clef-flash", state, questions })`, where each question is `noul`, `choice` (with `criteria`) or `score`; the answer is a probability per option. Clef `@cf/cloudflare/clef`: $0.240/M input (21,818 Neurons/M). So the free allowance covers about 2.9M Clef-flash input tokens a day. **Images (checked 2026-10-19):** PNG, JPEG or WebP in `images`, at most 4 per call, 4 MiB and 16 MP each, 8 MiB in total, no remote URLs. One token per 32×32 block plus 3 per image, capped at 1,024 per image; images under about 65,000 pixels are scaled up and over about 1 MP scaled down.
+- **R2 (checked 2026-10-19):** free each month: 10 GB storage, 1M Class A operations (writes, lists), 10M Class B operations (reads). Then $0.015 per GB-month, $4.50 per million Class A, $0.36 per million Class B, no egress fees. Needs a payment method, and **overages are billed**, unlike Workers and D1 Free.
 - **DeepSeek:** model id `deepseek-flash` (DeepSeek-V4.1-Flash-1017, 1M context). Per million tokens, off-peak/peak: input cache hit $0.003/$0.006, cache miss $0.15/$0.30, output $0.60/$1.20. Peak is 01:00–04:00 and 06:00–10:00 UTC on weekdays. The old `deepseek-v4-flash` name is retired but still accepted.
 
 ---
@@ -1102,6 +1138,7 @@ Seeded with the platform gotchas already known from `plan_pwa.md`. Add real ones
 | Hard-coded colors break non-default themes                                                   | Token classes only. Run the color search before every release                                  |
 | "Today" or expiry is wrong around midnight because the Worker runs in UTC                    | Compute day boundaries in Asia/Dhaka through the shared helper                                 |
 | A phone number in post text is flagged as a card number                                      | The card rule needs Luhn **and** excludes Bangladeshi phone formats (P8)                       |
+| Safari returns PNG from `canvas.toBlob(..., "image/webp")`                                   | Check `blob.type` and fall back to the WASM encoder (P16)                                      |
 | OpenAlex abstracts look empty                                                                | They come as an inverted index. Rebuild them in the adapter (P11)                              |
 
 ---
