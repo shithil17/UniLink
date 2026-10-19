@@ -1,11 +1,12 @@
 import { z } from "zod";
-import { LETTER_GRADES } from "../grading";
+import { ATTEMPT_GRADES } from "../grading";
 import { id, term } from "./common";
 import { courseCodeInput } from "./courses";
 
 // Quick attempt form: course, grade and an optional term. Faculty and the retake rules arrive with the full form.
 
-export const letterGrade = z.enum(LETTER_GRADES);
+/** A letter grade, or "WV" for a waived course. */
+export const letterGrade = z.enum(ATTEMPT_GRADES);
 
 export const attemptInput = z.object({
   courseCode: courseCodeInput,

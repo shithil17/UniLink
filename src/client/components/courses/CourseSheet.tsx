@@ -39,14 +39,14 @@ export function CourseSheet({
 }) {
   return (
     <Sheet open={target !== null} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto md:mx-auto md:max-w-lg">
+      <SheetContent side="bottom">
         {target?.type === "add" ? (
           <>
             <SheetHeader>
               <SheetTitle>Add a course</SheetTitle>
               <SheetDescription>It fills the next open elective in its category.</SheetDescription>
             </SheetHeader>
-            <div className="px-4 pb-6">
+            <div className="px-4">
               <StudentCourseForm
                 categories={categories}
                 initial={{ category: target.category }}
@@ -86,9 +86,9 @@ function SlotDetails({ slot, onClose }: { slot: Slot; onClose: () => void }) {
           {slot.category}
         </SheetDescription>
       </SheetHeader>
-      <div className="space-y-5 px-4 pb-6">
+      <div className="space-y-5 px-4">
         <div className="flex flex-wrap items-center gap-2">
-          <StatusChip status={slot.status} />
+          <StatusChip status={slot.status} waived={slot.waived} />
           {slot.filledBy && slot.filledBy !== slot.code ? (
             <span className="text-sm text-soft">Taken as {slot.filledBy}</span>
           ) : null}
@@ -139,7 +139,7 @@ function StudentCourseDetails({
           <SheetTitle>Edit {course.code}</SheetTitle>
           <SheetDescription>Your own course in {course.category}.</SheetDescription>
         </SheetHeader>
-        <div className="px-4 pb-6">
+        <div className="px-4">
           <StudentCourseForm
             categories={categories}
             initial={{ category: course.category }}
@@ -176,9 +176,9 @@ function StudentCourseDetails({
           {formatCredits(course.credits)} credits · {course.category} · your own course
         </SheetDescription>
       </SheetHeader>
-      <div className="space-y-5 px-4 pb-6">
+      <div className="space-y-5 px-4">
         <div className="flex flex-wrap items-center gap-2">
-          <DoneChip done={course.done} />
+          <DoneChip done={course.done} waived={course.waived} />
           {course.excluded ? <Badge variant="outline">Excluded</Badge> : null}
         </div>
         <div className="space-y-3 border-t border-line pt-4">

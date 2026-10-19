@@ -160,6 +160,8 @@ export const studentCourse = z.object({
 export const courseMapStudentCourse = studentCourse.extend({
   /** The student has a passing attempt for it. */
   done: z.boolean(),
+  /** Done only through a waiver: credits count, CGPA does not. */
+  waived: z.boolean(),
 });
 
 export const courseMapSlot = z.object({
@@ -175,6 +177,8 @@ export const courseMapSlot = z.object({
   status: courseStatus,
   /** The code of the passing attempt that filled a course slot: the slot code or one of its alternatives. */
   filledBy: z.string().nullable(),
+  /** The slot is done only through a waiver. */
+  waived: z.boolean(),
   /** The student course filling an elective slot. */
   studentCourse: courseMapStudentCourse.nullable(),
 });

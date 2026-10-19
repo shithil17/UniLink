@@ -14,6 +14,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - Signup rate limits and the new-account cooldown move from Sprint 4 to Phase 2, because they are the main defence while there is no email verification. They use one shared `rateLimit()` helper.
 - Week 0 now also proves D1 reads, an API test harness and the deploy pipeline.
 - All limits live in one config file, and all times use Asia/Dhaka.
+- (2026-10-19) Any course can be marked waived: it counts as done and earns credits but never affects CGPA (Phase 4, Phase 6).
 - (2026-10-19) The course map covers every undergraduate program with a course map, picked by the program code in the student ID. Students add their own elective courses (code, title, credits), may go over the degree total, and can exclude extra courses from the transcript (Phase 4).
 - (2026-10-19) Lost-and-found posts and marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (post photos kit, Phase 15). Photos in the "ID or card" category always go to a mod first. Authors can delete their own posts (Phase 12).
 
@@ -419,6 +420,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - **Student courses** (decided 2026-10-19): students add their own courses with a code, title, credits and a category taken from their curriculum's categories (default the first elective category). They fill that category's elective placeholders in the order they were added; any beyond the placeholders show as extra. A student course code must not clash with a code in their curriculum or another of their own. Student courses are private to their owner (same repo-layer rule as attempts) and are not posts, so they are not screened. `ceiling:` `limits.studentCoursesMax` per user, to bound D1 rows.
 > - **Going over the degree total** (decided 2026-10-19): there is no cap on earned credits. Totals show e.g. 136 / 130 with no block. Any student course can be marked **excluded from transcript**: it keeps its attempts and stays on the map with an "Excluded" badge, but counts toward no total, no `credits` prerequisite and (Phase 6) no CGPA. Curriculum courses cannot be excluded.
 > - **Attempts are the only source of truth** (decided 2026-10-18). A course is _done_ when it has a passing attempt (any grade that earns credits, so not F, I or W). The "tick" on the map opens a quick attempt form: course + letter grade, with term and faculty optional. Phase 6 adds the full form and the retake rules. There is no separate ticks table. An attempt's course code must be in the student's curriculum (a slot code or an alternative) or one of their student courses.
+>   Note (2026-10-19): any course can be **waived**. A waiver is an attempt with grade `WV` ("Waived" in the form), so attempts stay the only source of truth. It makes the course done and earns its credits (degree totals and `credits` prerequisites), but it has no grade points and never counts in CGPA. The map marks a course "Waived" when a waiver is its only passing attempt; a later graded pass replaces it.
 > - Terms: a shared `Term` value (year + Spring/Summer/Fall). The current term is worked out in Asia/Dhaka from one set of term start dates in `src/shared/terms.ts` (D confirms the dates).
 
 ### Checklist — Data & API
@@ -502,6 +504,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - **Scale:** A 4.0, A- 3.7, B+ 3.3, B 3.0, B- 2.7, C+ 2.3, C 2.0, C- 1.7, D+ 1.3, D 1.0, F 0.0. Students enter letter grades only, never numeric scores.
 > - **Best grade per course counts**, and credits count once.
 > - **F** counts in CGPA as 0.0 but earns no graduation credits. **I and W** are excluded from both CGPA and earned credits. Non-credit courses are excluded from CGPA.
+>   Note (2026-10-19): **WV** (waived, Phase 4) earns credits but is excluded from CGPA and from the best grade (`countsInCgpa()` in `grading.ts`). A waived course with no graded attempt never blocks a retake.
 > - **Retake rule:** a new attempt is allowed only while the best grade so far (ignoring I and W) is below B+. There is no limit on the number of attempts while that holds. I and W attempts never block a retake.
 > - The scale and the retake policy are **Strategy** objects in `src/shared/grading.ts`, so a different scale or policy is a new strategy, not an `if`.
 > - The basic `faculty` table (name, initials, designation) is created here for the attempt picker. Phase 11 extends it.
@@ -522,7 +525,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/grading.test.ts`: every grade point, best of several attempts, F then a pass, F only, I and W only, a non-credit course, the retake blocked at B+ and above, allowed below it, I and W never block, credits counted once.
+- [ ] `src/shared/grading.test.ts`: every grade point, best of several attempts, F then a pass, F only, I and W only, a waived course (credits, no CGPA), a non-credit course, the retake blocked at B+ and above, allowed below it, I and W never block, credits counted once.
 - [ ] `src/server/features/attempts/attempts.api.test.ts`: retake validation on create and edit, a mod gets 403 on another user's attempts and CGPA.
 - [ ] Run: `vp test grading attempts`
 

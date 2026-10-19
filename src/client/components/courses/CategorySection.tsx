@@ -44,7 +44,11 @@ function SlotRow({ slot, onOpen, onAdd }: { slot: Slot; onOpen: () => void; onAd
             {slot.filledBy && slot.filledBy !== slot.code ? ` · taken as ${slot.filledBy}` : ""}
           </p>
         </div>
-        {filler ? <DoneChip done={filler.done} /> : <StatusChip status={slot.status} />}
+        {filler ? (
+          <DoneChip done={filler.done} waived={filler.waived} />
+        ) : (
+          <StatusChip status={slot.status} waived={slot.waived} />
+        )}
         <ChevronRightIcon className="size-4 shrink-0 text-faint" aria-hidden="true" />
       </button>
     </li>
@@ -125,7 +129,7 @@ export function ExtrasSection({
                   </p>
                 </div>
                 {course.excluded ? <Badge variant="outline">Excluded</Badge> : null}
-                <DoneChip done={course.done} />
+                <DoneChip done={course.done} waived={course.waived} />
                 <ChevronRightIcon className="size-4 shrink-0 text-faint" aria-hidden="true" />
               </button>
             </li>

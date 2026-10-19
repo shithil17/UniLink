@@ -1,3 +1,4 @@
+import { WAIVED } from "../../../shared/grading";
 import { isPrereqMet, passedCodes } from "../../../shared/prereq";
 import type { CourseMap } from "../../../shared/schemas/courses";
 import { NSU_PROGRAM_CODES } from "../../../shared/studentId";
@@ -52,6 +53,10 @@ export function buildCourseMap(input: {
 }): CourseMap {
   const { curriculum, courses } = input;
   const passed = passedCodes(input.attempts);
+  // A code is waived when a waiver is its only passing attempt; a real pass wins over it.
+  const gradedPasses = passedCodes(input.attempts.filter((a) => a.grade !== WAIVED));
+  const isWaived = (code: string | undefined) =>
+    code !== undefined && passed.has(code) && !gradedPasses.has(code);
   const toMapCourse = (sc: StudentCourseRow): MapStudentCourse => ({
     id: sc.id,
     code: sc.code,
@@ -61,6 +66,7 @@ export function buildCourseMap(input: {
     excluded: sc.excluded,
     createdAt: sc.createdAt,
     done: passed.has(sc.code),
+    waived: isWaived(sc.code),
   });
 
   // Course slots, in curriculum order: a passing attempt fills the first slot that accepts it and
@@ -135,6 +141,7 @@ export function buildCourseMap(input: {
       prereq: row.prereq,
       status: done ? "done" : isPrereqMet(row.prereq, state) ? "available" : "locked",
       filledBy: filledBy.get(row.id) ?? null,
+      waived: isWaived(filledBy.get(row.id)),
       studentCourse,
     };
   };

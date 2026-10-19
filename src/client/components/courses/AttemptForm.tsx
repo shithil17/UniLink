@@ -1,19 +1,19 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { FormError } from "@/components/auth/AuthForm";
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { errorMessage } from "@/lib/api";
 import { termLabel, termOptions, termValue } from "@/lib/courseMap";
 import { isToastError, useRecordAttempt } from "@/lib/courses";
 import { useState } from "react";
-import { LETTER_GRADES } from "../../../shared/grading";
+import { ATTEMPT_GRADES, gradeLabel, WAIVED } from "../../../shared/grading";
 import { attemptInput, type AttemptInput } from "../../../shared/schemas/attempts";
 import { OptionSelect } from "./OptionSelect";
 
 const NO_TERM = "none";
-const gradeOptions = LETTER_GRADES.map((g) => ({ value: g, label: g }));
+const gradeOptions = ATTEMPT_GRADES.map((g) => ({ value: g, label: gradeLabel(g) }));
 
 /** The quick attempt form: which course, the letter grade, and when (optional). */
 export function AttemptForm({
@@ -35,6 +35,7 @@ export function AttemptForm({
     defaultValues: { courseCode: choices[0]?.code ?? "", term: null },
   });
   const { errors } = form.formState;
+  const grade = useWatch({ control: form.control, name: "grade" });
 
   const submit = form.handleSubmit((values) => {
     setServerError(null);
@@ -88,6 +89,11 @@ export function AttemptForm({
               />
             )}
           />
+          {grade === WAIVED ? (
+            <FieldDescription>
+              Waived courses count toward your credits but not your CGPA.
+            </FieldDescription>
+          ) : null}
           <FieldError errors={[errors.grade]} />
         </Field>
         <Field>

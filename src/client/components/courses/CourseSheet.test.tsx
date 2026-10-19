@@ -19,6 +19,7 @@ const slot: CourseMap["categories"][number]["slots"][number] = {
   prereq: { all: [{ course: "CSE115" }, { any: [{ course: "MAT120" }, { credits: 30 }] }] },
   status: "locked",
   filledBy: null,
+  waived: false,
   studentCourse: null,
 };
 
@@ -58,6 +59,7 @@ describe("CourseSheet", () => {
         excluded: true,
         createdAt: 0,
         done: false,
+        waived: false,
       },
     });
     expect(screen.getByText("Excluded")).toBeTruthy();

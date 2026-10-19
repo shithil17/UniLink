@@ -277,6 +277,23 @@ describe("GET /api/courses/map", () => {
     expect(slot(await getMap(token), "CSE225").status).toBe("available");
   });
 
+  it("a waiver makes a course done and earns its credits, and a real pass replaces it", async () => {
+    const mod = await signedIn({ role: "mod" });
+    await importFixture(mod.token);
+    const { token } = await signedIn();
+
+    await attempt(token, "CSE115", "WV");
+    let map = await getMap(token);
+    expect(slot(map, "CSE115")).toMatchObject({ status: "done", waived: true });
+    expect(slot(map, "CSE173").status).toBe("available");
+    expect(map.degree.earned).toBe(slot(map, "CSE115").credits);
+
+    await attempt(token, "CSE115", "B");
+    map = await getMap(token);
+    expect(slot(map, "CSE115")).toMatchObject({ status: "done", waived: false });
+    expect(map.degree.earned).toBe(slot(map, "CSE115").credits);
+  });
+
   it("holds a credits leaf back until enough credits are earned", async () => {
     const mod = await signedIn({ role: "mod" });
     await importFixture(
