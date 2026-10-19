@@ -383,8 +383,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] C: SRS non-functional requirements for install, offline shell and responsive layout.
-- [ ] D: PWA test cases (install on both platforms, offline screen, update prompt, small phone and desktop layouts).
+- [x] D: PWA test cases (install on both platforms, offline screen, update prompt, small phone and desktop layouts).
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -393,9 +392,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Test Gate 3
 
-- [ ] **(Manual) In airplane mode, the installed app opens to the offline screen on Android and iOS.**
-- [ ] **(Manual) After a new staging deploy, relaunching shows the update prompt, and reloading shows the new build.**
-- [ ] **(Manual, DevTools) No `/api` response is served from the service worker cache.**
+- [x] **(Manual) In airplane mode, the installed app opens to the offline screen on Android and iOS.**
+- [x] **(Manual) After a new staging deploy, relaunching shows the update prompt, and reloading shows the new build.**
+- [x] **(Manual, DevTools) No `/api` response is served from the service worker cache.**
 
 **Sprint 1 milestone (Phases 2-4):** a user can sign up, log in, see the CSE course map and install the app.
 
