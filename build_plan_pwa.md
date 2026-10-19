@@ -449,12 +449,12 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] `src/shared/prereq.test.ts`: leaf, nested `all`/`any`, empty rule, a `credits` leaf, an F, I or W attempt does not satisfy a prereq, a passing attempt does.
 - [x] `src/server/features/courses/courses.api.test.ts`: the import rejects bad rows, only mods can import, the map reflects attempts, the user only sees their own attempts and student courses, the curriculum follows program code and admission year, student courses fill elective slots then show as extra, totals can exceed the degree total, an excluded course counts toward nothing.
 - [x] `scripts/seed.ts` now seeds the curricula from `data/curricula/` and two fake students.
-- [ ] Run: `vp test prereq courses`
+- [x] Run: `vp test prereq courses`
 
 ### Test Gate 4
 
-- [ ] **Prereq and course API tests pass.**
-- [ ] **Every file in `data/curricula/` passes the curriculum data test.**
+- [x] **Prereq and course API tests pass.**
+- [x] **Every file in `data/curricula/` passes the curriculum data test.**
 - [ ] **On staging, a seeded student records a grade from the map, and the course turns done and unlocks its dependants.**
 - [ ] **(Manual) On staging, a student fills an elective slot with their own course, adds an extra course that takes them over the degree total, then excludes it, and the totals update each time.**
 
