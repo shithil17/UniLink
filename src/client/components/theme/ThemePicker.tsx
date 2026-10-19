@@ -90,10 +90,7 @@ export function ThemePickerTrigger() {
         <ChevronRightIcon className="size-4 shrink-0 text-faint" aria-hidden />
       </button>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="bottom"
-          className="mx-auto max-h-[90dvh] overflow-y-auto rounded-t-3xl pb-6 md:max-w-lg"
-        >
+        <SheetContent side="bottom">
           <SheetHeader>
             <SheetTitle>Choose theme</SheetTitle>
             <SheetDescription>Colors only. Your choice is saved on this device.</SheetDescription>
