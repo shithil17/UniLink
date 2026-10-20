@@ -8,7 +8,7 @@
   "notes": [
     "Credit sum: General Education 36 (Languages 9, Humanities 9, Social Sciences 6, Sciences 12) + School Core 21 + Math Requirements 6 + Major Requirements 18 + Economics Electives 12 + Free Electives 27 = 120.",
     "Courses marked * in the General Education and Major sections (BUS251, ECO101, ECO134, ECO172, MIS105) are counted only once, under School Core, as the document says.",
-    "Sciences: 'three courses from BIO103/CHE101/ENV107/PBH101/PHY107/PSY101 with one credit lab each' (12 Cr) are three 4-credit slots that each list the other five options. Prerequisites printed as 'Check relevant department', so null.",
+    "Sciences: 'three courses from BIO103/CHE101/ENV107/PBH101/PHY107/PSY101 with one credit lab each' (12 Cr). Modelled as three 3-credit theory slots (BIO103, CHE101, ENV107) and three 1-credit lab slots (BIO103L, CHE101L, ENV107L), each listing the other five options (code + 'L') as alternatives; the PDF gives every option a one-credit lab, PSY101 included. The 12 credits are unchanged.",
     "Social Sciences option 'ENV 203/GEO205' is listed as two alternatives with the same title.",
     "Economics Electives: 12 credits = 4 courses chosen from the 10 listed (ECO317 ... ECO492); modelled as 4 slots each listing the other nine. Each slot's prereq is that of its own code; the alternatives' prerequisites are not modelled. The document does not say whether other ECO courses also count.",
     "Free Electives 27 Cr = 12 Cr optional minor + 15 Cr from any area university-wide; modelled as 9 free elective placeholders of 3 credits.",
@@ -165,7 +165,7 @@
       "kind": "course",
       "code": "BIO103",
       "title": "Biology I",
-      "credits": 4,
+      "credits": 3,
       "category": "General Education",
       "nonCredit": false,
       "semester": null,
@@ -189,6 +189,38 @@
         {
           "code": "PSY101",
           "title": "Introduction to Psychology"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO103L",
+      "title": "Biology I Lab",
+      "credits": 1,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "CHE101L",
+          "title": "Chemistry I Lab"
+        },
+        {
+          "code": "ENV107L",
+          "title": "Introduction to Environmental Science Lab"
+        },
+        {
+          "code": "PBH101L",
+          "title": "Introduction to Public Health Lab"
+        },
+        {
+          "code": "PHY107L",
+          "title": "Physics I Lab"
+        },
+        {
+          "code": "PSY101L",
+          "title": "Introduction to Psychology Lab"
         }
       ],
       "prereq": null
@@ -197,7 +229,7 @@
       "kind": "course",
       "code": "CHE101",
       "title": "Chemistry I",
-      "credits": 4,
+      "credits": 3,
       "category": "General Education",
       "nonCredit": false,
       "semester": null,
@@ -227,9 +259,41 @@
     },
     {
       "kind": "course",
+      "code": "CHE101L",
+      "title": "Chemistry I Lab",
+      "credits": 1,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "BIO103L",
+          "title": "Biology I Lab"
+        },
+        {
+          "code": "ENV107L",
+          "title": "Introduction to Environmental Science Lab"
+        },
+        {
+          "code": "PBH101L",
+          "title": "Introduction to Public Health Lab"
+        },
+        {
+          "code": "PHY107L",
+          "title": "Physics I Lab"
+        },
+        {
+          "code": "PSY101L",
+          "title": "Introduction to Psychology Lab"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
       "code": "ENV107",
       "title": "Introduction to Environmental Science",
-      "credits": 4,
+      "credits": 3,
       "category": "General Education",
       "nonCredit": false,
       "semester": null,
@@ -253,6 +317,38 @@
         {
           "code": "PSY101",
           "title": "Introduction to Psychology"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV107L",
+      "title": "Introduction to Environmental Science Lab",
+      "credits": 1,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "BIO103L",
+          "title": "Biology I Lab"
+        },
+        {
+          "code": "CHE101L",
+          "title": "Chemistry I Lab"
+        },
+        {
+          "code": "PBH101L",
+          "title": "Introduction to Public Health Lab"
+        },
+        {
+          "code": "PHY107L",
+          "title": "Physics I Lab"
+        },
+        {
+          "code": "PSY101L",
+          "title": "Introduction to Psychology Lab"
         }
       ],
       "prereq": null

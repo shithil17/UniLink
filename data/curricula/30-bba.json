@@ -10,7 +10,7 @@
     "totalCredits 126 is the PDF's single-major credit limit, which includes ENG102 and BUS112 and excludes the internship. Sum: School Core 21 + BBA Core 36 + GED 36 + Major 18 + Free Elective 9 + ENG102/BUS112 6 = 126. Dual major is 135 credits (the 3 free electives are replaced by major courses and 3 more major courses are taken as extra); not modelled.",
     "ENG102 and BUS112 are credit courses that can be waived based on the admission test; if waived they need not be taken (the second JPG says a waived course counts as non-credit). Kept as normal 3-credit courses.",
     "GED item 3: BEN205 for batch 163 and onwards, ENG115 for batches 143-162. Modelled as one slot BEN205 with ENG115 as alternative. The second JPG also lists CHN101 as an option for this slot; not included.",
-    "GED science: 'choose any three of BIO103/ENV107/PBH101/PSY101/PHY107/CHE101' plus 3 one-credit labs for the chosen courses. Each of the three slots is 4 credits (3 + 1 lab) so GED totals 36. The second JPG also lists CSE101, CSE145 and CSE226 as science options and allows 'a 3-credit course from another department' in place of the labs; not included.",
+    "GED science: 'choose any three of BIO103/ENV107/PBH101/PSY101/PHY107/CHE101' plus a separate 1-credit lab for each chosen course (3 labs, 3 credits). Modelled as three 3-credit theory slots (BIO103, ENV107, PBH101) and three 1-credit lab slots (BIO103L, ENV107L, PBH101L), each listing the other five options (code + 'L') as alternatives; the PDF says the lab of any chosen science course counts, PSY101 included. GED still totals 36. The second JPG also lists CSE101, CSE145 and CSE226 as science options and allows 'a 3-credit course from another department' in place of the labs; not included.",
     "The second JPG differs in the history group ('any two of HIS101/HIS102/HIS103/HIS205') and adds LAW101 to the POL101/POL104/PAD201 group; the PDF version (HIS103 mandatory + one of HIS101/HIS102/HIS202/HIS205) was used.",
     "Internship: the PDF prints '1 Course - 4 Credit, Non-Credit, Not-Countable', so it is nonCredit (credits 0). The code BUS498 and the alternative BUS499 (Research Project, requires CGPA 3.30) come from the second JPG; the PDF gives no code.",
     "Major courses depend on the chosen major (Accounting, Economics, Entrepreneurship, Finance, HRM, International Business, Management, Marketing, MIS, SCM), so they are 4 Major Core + 2 Major Elective placeholders of 3 credits each.",
@@ -377,7 +377,7 @@
       "kind": "course",
       "code": "BIO103",
       "title": "Biology I",
-      "credits": 4,
+      "credits": 3,
       "category": "GED",
       "nonCredit": false,
       "semester": null,
@@ -401,6 +401,38 @@
         {
           "code": "CHE101",
           "title": "Chemistry I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO103L",
+      "title": "Biology I Lab",
+      "credits": 1,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "ENV107L",
+          "title": "Introduction to Environmental Science Lab"
+        },
+        {
+          "code": "PBH101L",
+          "title": "Introduction to Public Health Lab"
+        },
+        {
+          "code": "PSY101L",
+          "title": "Introduction to Psychology Lab"
+        },
+        {
+          "code": "PHY107L",
+          "title": "Physics I Lab"
+        },
+        {
+          "code": "CHE101L",
+          "title": "Chemistry I Lab"
         }
       ],
       "prereq": null
@@ -409,7 +441,7 @@
       "kind": "course",
       "code": "ENV107",
       "title": "Introduction to Environmental Science",
-      "credits": 4,
+      "credits": 3,
       "category": "GED",
       "nonCredit": false,
       "semester": null,
@@ -439,9 +471,41 @@
     },
     {
       "kind": "course",
+      "code": "ENV107L",
+      "title": "Introduction to Environmental Science Lab",
+      "credits": 1,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "BIO103L",
+          "title": "Biology I Lab"
+        },
+        {
+          "code": "PBH101L",
+          "title": "Introduction to Public Health Lab"
+        },
+        {
+          "code": "PSY101L",
+          "title": "Introduction to Psychology Lab"
+        },
+        {
+          "code": "PHY107L",
+          "title": "Physics I Lab"
+        },
+        {
+          "code": "CHE101L",
+          "title": "Chemistry I Lab"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
       "code": "PBH101",
       "title": "Introduction to Public Health",
-      "credits": 4,
+      "credits": 3,
       "category": "GED",
       "nonCredit": false,
       "semester": null,
@@ -465,6 +529,38 @@
         {
           "code": "CHE101",
           "title": "Chemistry I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "PBH101L",
+      "title": "Introduction to Public Health Lab",
+      "credits": 1,
+      "category": "GED",
+      "nonCredit": false,
+      "semester": null,
+      "alternatives": [
+        {
+          "code": "BIO103L",
+          "title": "Biology I Lab"
+        },
+        {
+          "code": "ENV107L",
+          "title": "Introduction to Environmental Science Lab"
+        },
+        {
+          "code": "PSY101L",
+          "title": "Introduction to Psychology Lab"
+        },
+        {
+          "code": "PHY107L",
+          "title": "Physics I Lab"
+        },
+        {
+          "code": "CHE101L",
+          "title": "Chemistry I Lab"
         }
       ],
       "prereq": null
