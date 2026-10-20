@@ -451,7 +451,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] D: course map screens. Check the transcribed curriculum files against the official maps. (Screens: `docs/screens.md`. Every file's credits sum to its official total; the row-by-row check against the source maps is pending, as the source PDFs are no longer online.)
+- [x] D: course map screens. Check the transcribed curriculum files against the official maps. (Screens: `docs/screens.md`. All 13 files checked row by row against their source maps on 2026-10-20; CSE gained BEN205 and HIS103 as alternatives. MCJ credits and PBH credits and titles are inferred where the maps print none, as their notes say.)
 
 ### Checklist — Test Scripts & Smoke Tests
 
