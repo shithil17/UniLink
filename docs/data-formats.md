@@ -17,6 +17,7 @@ Delivered as one JSON file per program and version, in `data/curricula/<program 
 | `totalCredits`      | number   | Degree total (earned credits may exceed it)                                                                                      |
 | `source`            | string   | Name of the official map the data came from                                                                                      |
 | `notes`             | string[] | Anything inferred or not encoded (category guesses, prerequisites that could not be written as a rule)                           |
+| `electiveTrails`    | object   | Optional. The specialized elective trails, see below                                                                             |
 | `courses`           | array    | Rows below, in map order. Order decides which slot a passing attempt fills first                                                 |
 
 ### Course row (spreadsheet columns)
@@ -45,6 +46,28 @@ A rule is one of:
 - earned credits: `{ "credits": 100 }` (for "100 credits completed")
 
 A waiver ("ENG102/Waiver") is written as the plain course. Every course in a rule must be a code in the same file; the data test fails otherwise.
+
+### Elective trails (optional)
+
+Some programs (CSE) fill their elective slots from named trails. Add one `electiveTrails` block to the file header:
+
+```json
+"electiveTrails": {
+  "category": "Electives",
+  "minFromOneTrail": 2,
+  "trails": [
+    { "name": "Networks", "courses": [{ "code": "CSE438", "title": "Data Communication & Network", "credits": 3 }] }
+  ]
+}
+```
+
+| Field             | Notes                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| `category`        | The category of the elective slots the trails fill (at least one `elective` row must use it)                 |
+| `minFromOneTrail` | Courses a student needs from one trail, at least 1 and no more than the largest trail. Shown, never enforced |
+| `trails`          | Trail `name` and its `courses` (`code`, `title`, `credits`), in the order NSU lists them                     |
+
+A trail course code follows the course code pattern (CSE438), appears in only one trail, and is not a slot code or an alternative anywhere in the file. A bad block rejects the whole file, rows included. Titles are copied as NSU prints them. Re-importing replaces the trails with the courses; a file without the block removes them. Students can look up any trail course by code when they add an open elective.
 
 ### Checking a file
 

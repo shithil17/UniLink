@@ -3,8 +3,9 @@ import {
   courseImportRow,
   type CourseImportRow,
   type CurriculumImport,
+  type ElectiveTrails,
 } from "../../../shared/schemas/courses.ts";
-import type { CurriculumHeader, NewCourse } from "../../repos/curricula.ts";
+import type { CurriculumHeader, NewCourse, NewElectiveOption } from "../../repos/curricula.ts";
 
 export type AcceptedRow = { index: number; row: CourseImportRow };
 export type RejectedRow = { index: number; code: string | null; reason: string };
@@ -87,7 +88,7 @@ export function toNewCourse({ index, row }: AcceptedRow): NewCourse {
 export function toCurriculumHeader(
   file: Pick<
     CurriculumImport,
-    "program" | "name" | "version" | "effectiveFromYear" | "totalCredits"
+    "program" | "name" | "version" | "effectiveFromYear" | "totalCredits" | "electiveTrails"
   >,
 ): CurriculumHeader {
   return {
@@ -96,5 +97,18 @@ export function toCurriculumHeader(
     version: file.version,
     effectiveFromYear: file.effectiveFromYear,
     totalCredits: file.totalCredits,
+    electiveRule: file.electiveTrails
+      ? {
+          category: file.electiveTrails.category,
+          minFromOneTrail: file.electiveTrails.minFromOneTrail,
+        }
+      : null,
   };
+}
+
+/** The `elective_options` rows for a trail block: one per trail course, positioned in file order. */
+export function toNewElectiveOptions(block: ElectiveTrails | undefined): NewElectiveOption[] {
+  return (block?.trails ?? [])
+    .flatMap((t) => t.courses.map((c) => ({ trail: t.name, ...c })))
+    .map((o, position) => ({ ...o, position }));
 }

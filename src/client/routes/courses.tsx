@@ -10,6 +10,7 @@ import {
   defaultElectiveCategory,
   formatCredits,
   formatTotals,
+  isNonCreditCategory,
   overNote,
 } from "@/lib/courseMap";
 import { focusRing } from "@/components/ui/focus";
@@ -50,6 +51,7 @@ function CourseMapPage() {
   const over = overNote(degree.earned, degree.required);
   const categoryNames = map.categories.map((c) => c.name);
   const electiveCategory = defaultElectiveCategory(map);
+  const trailCategory = map.categories.find((c) => c.trails);
 
   return (
     <div className="lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-start lg:gap-10">
@@ -82,15 +84,17 @@ function CourseMapPage() {
                     <span className="flex items-baseline justify-between gap-3 text-sm">
                       <span className="truncate text-ink">{c.name}</span>
                       <span className="shrink-0 text-soft tabular-nums">
-                        {formatTotals(c.earned, c.required)}
+                        {isNonCreditCategory(c) ? "Non-credit" : formatTotals(c.earned, c.required)}
                       </span>
                     </span>
-                    <CreditBar
-                      earned={c.earned}
-                      required={c.required}
-                      label={`${c.name} credits earned`}
-                      className="mt-1.5"
-                    />
+                    {isNonCreditCategory(c) ? null : (
+                      <CreditBar
+                        earned={c.earned}
+                        required={c.required}
+                        label={`${c.name} credits earned`}
+                        className="mt-1.5"
+                      />
+                    )}
                   </a>
                 </li>
               ))}
@@ -118,7 +122,16 @@ function CourseMapPage() {
           onAdd={() => setTarget({ type: "add", category: electiveCategory })}
         />
       </div>
-      <CourseSheet target={target} categories={categoryNames} onClose={close} />
+      <CourseSheet
+        target={target}
+        categories={categoryNames}
+        trailCategory={
+          trailCategory?.trails
+            ? { name: trailCategory.name, trails: trailCategory.trails }
+            : undefined
+        }
+        onClose={close}
+      />
     </div>
   );
 }

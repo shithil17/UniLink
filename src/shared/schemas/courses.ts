@@ -107,6 +107,81 @@ export const courseImportRow = z
   })
   .superRefine(slotShapeIssues);
 
+// Elective trails. A header block: trail lists are not slots, so a bad block rejects the whole file.
+
+export const electiveTrailCourse = z.strictObject({
+  code: strictCourseCode,
+  title: text(200),
+  credits: courseCredits,
+});
+
+export const electiveTrail = z.strictObject({
+  name: text(100),
+  courses: z.array(electiveTrailCourse).min(1, "A trail needs at least one course"),
+});
+
+/** The trail checks that need nothing but the block itself. */
+export function electiveTrailsIssues(block: ElectiveTrailsShape): string[] {
+  const issues: string[] = [];
+  const names = block.trails.map((t) => t.name);
+  if (new Set(names).size !== names.length) issues.push("Two trails share a name");
+  const seen = new Set<string>();
+  for (const code of block.trails.flatMap((t) => t.courses.map((c) => c.code))) {
+    if (seen.has(code)) issues.push(`Trail course ${code} appears more than once`);
+    seen.add(code);
+  }
+  const largest = Math.max(0, ...block.trails.map((t) => t.courses.length));
+  if (block.minFromOneTrail > largest) {
+    issues.push(
+      `minFromOneTrail ${block.minFromOneTrail} is more than the largest trail (${largest})`,
+    );
+  }
+  return issues;
+}
+
+type ElectiveTrailsShape = {
+  minFromOneTrail: number;
+  trails: { name: string; courses: { code: string }[] }[];
+};
+
+/**
+ * The trail checks that need the file's slots: the category is one an elective slot is filed under,
+ * and no trail course reuses a slot code or an alternative. Run on the accepted rows by the import route.
+ */
+export function electiveTrailsRowIssues(
+  block: { category: string; trails: ElectiveTrailsShape["trails"] },
+  rows: readonly {
+    kind: "course" | "elective";
+    code: string;
+    category: string;
+    alternatives: readonly { code: string }[];
+  }[],
+): string[] {
+  const issues: string[] = [];
+  if (!rows.some((r) => r.kind === "elective" && r.category === block.category)) {
+    issues.push(`Trail category "${block.category}" is not the category of any elective slot`);
+  }
+  const used = new Set(rows.flatMap((r) => [r.code, ...r.alternatives.map((a) => a.code)]));
+  for (const code of block.trails.flatMap((t) => t.courses.map((c) => c.code))) {
+    if (used.has(code)) issues.push(`Trail course ${code} is also a slot code or an alternative`);
+  }
+  return issues;
+}
+
+export const electiveTrails = z
+  .strictObject({
+    /** The category of the elective slots the trails fill. */
+    category: text(100),
+    /** Courses from one trail a student needs. Shown, never enforced. */
+    minFromOneTrail: z.number().int().min(1),
+    trails: z.array(electiveTrail).min(1, "Add at least one trail"),
+  })
+  .superRefine((block, ctx) => {
+    for (const message of electiveTrailsIssues(block)) {
+      ctx.addIssue({ code: "custom", message, path: [] });
+    }
+  });
+
 export const curriculumHeader = z.strictObject({
   program: z
     .string()
@@ -121,13 +196,21 @@ export const curriculumHeader = z.strictObject({
     .max(COURSE_CREDITS_MAX * SEMESTER_MAX),
   source: z.string().optional(),
   notes: z.array(z.string()).optional(),
+  electiveTrails: electiveTrails.optional(),
 });
 
 /** What the import route validates first: the header, with the rows left for per-row checks. */
 export const curriculumImportEnvelope = curriculumHeader.extend({ courses: z.array(z.unknown()) });
 
 /** A whole curriculum file; every row must be valid. */
-export const curriculumImport = curriculumHeader.extend({ courses: z.array(courseImportRow) });
+export const curriculumImport = curriculumHeader
+  .extend({ courses: z.array(courseImportRow) })
+  .superRefine((file, ctx) => {
+    if (!file.electiveTrails) return;
+    for (const message of electiveTrailsRowIssues(file.electiveTrails, file.courses)) {
+      ctx.addIssue({ code: "custom", message, path: ["electiveTrails"] });
+    }
+  });
 
 export const importRejection = z.object({
   /** Position of the row in the file's `courses` array. */
@@ -201,6 +284,34 @@ export const courseMapSlot = z.object({
   studentCourse: courseMapStudentCourse.nullable(),
 });
 
+export const trailCourseState = z.enum(["done", "added"]);
+
+export const courseMapTrail = z.object({
+  name: z.string(),
+  /** Courses in this trail the student has passed. */
+  done: z.number().int(),
+  /** Courses in this trail the student added and has not passed yet. */
+  added: z.number().int(),
+  courses: z.array(
+    z.object({
+      code: z.string(),
+      title: z.string(),
+      credits: z.number(),
+      /** Null: the student has not added it. */
+      state: trailCourseState.nullable(),
+    }),
+  ),
+});
+
+export const courseMapTrails = z.object({
+  minFromOneTrail: z.number().int(),
+  /** Some trail has at least `minFromOneTrail` done courses. */
+  met: z.boolean(),
+  /** The trail with the most done courses (ties: most added, then file order). Null if none has one. */
+  leading: z.string().nullable(),
+  trails: z.array(courseMapTrail),
+});
+
 export const courseMapCategory = z.object({
   name: z.string(),
   /** Credits the category needs: the sum of its slots, non-credit courses excluded. */
@@ -208,6 +319,18 @@ export const courseMapCategory = z.object({
   /** Credits earned in it. May exceed `required`. */
   earned: z.number(),
   slots: z.array(courseMapSlot),
+  /** Trail progress, on the category the curriculum's trails fill; null on every other. */
+  trails: courseMapTrails.nullable(),
+});
+
+/** `GET /api/courses/lookup?code=`: exact code. */
+export const courseLookupQuery = z.object({ code: courseCodeInput });
+export const courseLookup = z.object({
+  code: z.string(),
+  title: z.string(),
+  credits: z.number(),
+  /** The trail it belongs to in the student's own curriculum; null if none. */
+  trail: z.string().nullable(),
 });
 
 export const courseMap = z.object({
@@ -235,3 +358,6 @@ export type ImportResult = z.infer<typeof importResult>;
 export type StudentCourseInput = z.infer<typeof studentCourseInput>;
 export type StudentCourse = z.infer<typeof studentCourse>;
 export type CourseMap = z.infer<typeof courseMap>;
+export type ElectiveTrails = z.infer<typeof electiveTrails>;
+export type CourseMapTrails = z.infer<typeof courseMapTrails>;
+export type CourseLookup = z.infer<typeof courseLookup>;

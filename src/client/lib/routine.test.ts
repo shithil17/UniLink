@@ -128,6 +128,7 @@ describe("routineCourseChoices", () => {
           name: "Core",
           required: 0,
           earned: 0,
+          trails: null,
           slots: [
             slot({ alternatives: [{ code: "ENG115", title: "English" }] }),
             slot({ kind: "elective", code: "ELEC1", title: "Elective", studentCourse: own }),
@@ -149,6 +150,7 @@ describe("routineCourseChoices", () => {
           name: "Core",
           required: 0,
           earned: 0,
+          trails: null,
           slots: [
             slot({
               code: "CSE115",

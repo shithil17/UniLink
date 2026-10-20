@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { useEffect, useRef, useState } from "react";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "@/lib/toast";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ApiError, errorMessage } from "@/lib/api";
-import { useAddStudentCourse, useUpdateStudentCourse } from "@/lib/courses";
+import { formatCredits } from "@/lib/courseMap";
+import { useAddStudentCourse, useCourseLookup, useUpdateStudentCourse } from "@/lib/courses";
 import {
   studentCourseInput,
   type StudentCourse,
@@ -17,18 +19,28 @@ import { OptionSelect } from "./OptionSelect";
 
 type FormValues = z.input<typeof studentCourseInput>;
 
+// ceiling: wait for a pause in typing before looking a code up; a code is 6 or 7 characters, so
+// this keeps it to about one request per code. Revisit if lookups feel slow on a poor connection.
+const LOOKUP_DELAY_MS = 350;
+
+const hintOutsideTrail =
+  "Any course from any discipline. A course like one you already took won't count.";
+
 /**
  * Add a student course, or edit one (the code is then read-only). Server errors stay inline:
  * code_taken on the code, unknown_category on the category, anything else above the button.
  */
 export function StudentCourseForm({
   categories,
+  trailCategory,
   initial,
   existing,
   onSaved,
   onCancel,
 }: {
   categories: readonly string[];
+  /** The category the curriculum's elective trails fill, if it has any. */
+  trailCategory?: string;
   /** Starting values for a new course (the category is preset). */
   initial: { category: string };
   /** The course being edited, if any. */
@@ -52,6 +64,39 @@ export function StudentCourseForm({
       : { code: "", title: "", category: initial.category, excluded: false },
   });
   const { errors } = form.formState;
+  const category = useWatch({ control: form.control, name: "category" });
+  const typedCode = useWatch({ control: form.control, name: "code" });
+
+  // Look the typed code up once typing pauses, and fill title and credits that are still empty.
+  const [lookupCode, setLookupCode] = useState("");
+  useEffect(() => {
+    if (existing) return;
+    const timer = setTimeout(() => setLookupCode(typedCode ?? ""), LOOKUP_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [typedCode, existing]);
+  const lookup = useCourseLookup(existing ? "" : lookupCode);
+  const found = lookup.data ?? null;
+  // What we filled in ourselves, so a different code can replace it but typed text is never touched.
+  const filled = useRef<{ title?: string; credits?: number }>({});
+  useEffect(() => {
+    if (!found) return;
+    const { title, credits } = form.getValues();
+    if (!title?.trim() || title === filled.current.title) {
+      form.setValue("title", found.title, { shouldValidate: form.formState.isSubmitted });
+      filled.current.title = found.title;
+    }
+    if (
+      credits === undefined ||
+      Number.isNaN(credits) ||
+      String(credits) === "" ||
+      credits === filled.current.credits
+    ) {
+      form.setValue("credits", found.credits, { shouldValidate: form.formState.isSubmitted });
+      filled.current.credits = found.credits;
+    }
+  }, [found, form]);
+  const foundNow =
+    found && found.code === typedCode?.trim().toUpperCase() && !existing ? found : null;
 
   const submit = form.handleSubmit((values) => {
     mutation.mutate(values, {
@@ -86,6 +131,10 @@ export function StudentCourseForm({
           />
           {existing ? (
             <FieldDescription>The code cannot change once the course is added.</FieldDescription>
+          ) : foundNow ? (
+            <FieldDescription>
+              Found: {foundNow.title}, {formatCredits(foundNow.credits)} cr
+            </FieldDescription>
           ) : null}
           <FieldError errors={[errors.code]} />
         </Field>
@@ -129,6 +178,9 @@ export function StudentCourseForm({
               />
             )}
           />
+          {category !== trailCategory ? (
+            <FieldDescription>{hintOutsideTrail}</FieldDescription>
+          ) : null}
           <FieldError errors={[errors.category]} />
         </Field>
         <Controller

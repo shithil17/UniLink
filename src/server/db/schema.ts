@@ -146,6 +146,8 @@ export const rateLimits = sqliteTable(
   (t) => [primaryKey({ columns: [t.key, t.windowStart] })],
 );
 
+export type ElectiveRule = { category: string; minFromOneTrail: number };
+
 // An NSU course map for one program and version. A student's curriculum is picked by program code
 // and admission year (see the course map route).
 export const curricula = sqliteTable(
@@ -160,6 +162,9 @@ export const curricula = sqliteTable(
     effectiveFromYear: integer("effective_from_year").notNull(),
     // Degree total; earned credits may exceed it.
     totalCredits: real("total_credits").notNull(),
+    // The elective category the trails fill and how many courses from one trail the curriculum asks
+    // for. Null when the file has no trails. Shown on the map, never enforced.
+    electiveRule: text("elective_rule", { mode: "json" }).$type<ElectiveRule | null>(),
     createdAt: integer("created_at").notNull(),
   },
   (t) => [uniqueIndex("curricula_program_version_idx").on(t.programCode, t.version)],
@@ -195,6 +200,30 @@ export const courses = sqliteTable(
   (t) => [
     uniqueIndex("courses_curriculum_code_idx").on(t.curriculumId, t.code),
     index("courses_curriculum_idx").on(t.curriculumId),
+    // The open elective lookup finds a course by its exact code in any curriculum.
+    index("courses_code_idx").on(t.code),
+  ],
+);
+
+// A course a curriculum lists under one of its elective trails (a CSE student picks from these).
+// Replaced together with the curriculum's courses on every import and seed.
+export const electiveOptions = sqliteTable(
+  "elective_options",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    curriculumId: integer("curriculum_id")
+      .notNull()
+      .references(() => curricula.id, { onDelete: "cascade" }),
+    trail: text("trail").notNull(),
+    // Order in the import file across all trails; trails and their courses show in this order.
+    position: integer("position").notNull(),
+    code: text("code").notNull(),
+    title: text("title").notNull(),
+    credits: real("credits").notNull(),
+  },
+  (t) => [
+    uniqueIndex("elective_options_curriculum_code_idx").on(t.curriculumId, t.code),
+    index("elective_options_code_idx").on(t.code),
   ],
 );
 

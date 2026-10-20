@@ -1,6 +1,6 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
-import type { CourseMap } from "../../../shared/schemas/courses";
+import type { CourseLookup, CourseMap } from "../../../shared/schemas/courses";
 import { app } from "../../app";
 import { getDb } from "../../db/client";
 import { limits } from "../../limits";
@@ -113,6 +113,7 @@ beforeEach(async () => {
   for (const table of [
     "attempts",
     "student_courses",
+    "elective_options",
     "courses",
     "curricula",
     "sessions",
@@ -560,5 +561,258 @@ describe("student courses", () => {
     const left = await (await call("GET", "/api/attempts", token)).json<{ courseCode: string }[]>();
     expect(left.map((a) => a.courseCode)).toEqual(["CSE115"]);
     expect((await call("DELETE", `/api/student-courses/${made.id}`, token)).status).toBe(404);
+  });
+});
+
+/** Two trails filling the Electives category: A with three courses, B with two. */
+const trailBlock = (extra: Record<string, unknown> = {}) => ({
+  category: "Electives",
+  minFromOneTrail: 2,
+  trails: [
+    {
+      name: "Trail A",
+      courses: ["XYZ301", "XYZ302", "XYZ303"].map((code) => ({
+        code,
+        title: `${code} in A`,
+        credits: 3,
+      })),
+    },
+    {
+      name: "Trail B",
+      courses: ["XYZ401", "XYZ402"].map((code) => ({ code, title: `${code} in B`, credits: 1.5 })),
+    },
+  ],
+  ...extra,
+});
+const withTrails = (block: unknown = trailBlock()) => fixture({ electiveTrails: block });
+const electiveCategory = (map: CourseMap) => {
+  const found = map.categories.find((c) => c.name === "Electives");
+  if (!found) throw new Error("no Electives category");
+  return found;
+};
+const optionCount = async () =>
+  (await env.DB.prepare("SELECT COUNT(*) AS n FROM elective_options").first<{ n: number }>())?.n;
+
+describe("elective trails: import", () => {
+  it("stores the options with the rule, and a re-import replaces them", async () => {
+    const mod = await signedIn({ role: "mod" });
+    await importFixture(mod.token, withTrails());
+    expect(await optionCount()).toBe(5);
+    expect(
+      await env.DB.prepare("SELECT elective_rule AS r FROM curricula").first<{ r: string }>(),
+    ).toEqual({ r: JSON.stringify({ category: "Electives", minFromOneTrail: 2 }) });
+
+    await importFixture(
+      mod.token,
+      withTrails(
+        trailBlock({
+          trails: [{ name: "Only", courses: [{ code: "XYZ501", title: "T", credits: 3 }] }],
+          minFromOneTrail: 1,
+        }),
+      ),
+    );
+    const codes = await env.DB.prepare("SELECT code FROM elective_options").all<{ code: string }>();
+    expect(codes.results.map((r) => r.code)).toEqual(["XYZ501"]);
+
+    // A file without the block clears them and the rule.
+    await importFixture(mod.token, fixture());
+    expect(await optionCount()).toBe(0);
+    expect(
+      await env.DB.prepare("SELECT elective_rule AS r FROM curricula").first<{
+        r: string | null;
+      }>(),
+    ).toEqual({ r: null });
+  });
+
+  it("rejects the whole file for a bad trail block and keeps the old curriculum", async () => {
+    const mod = await signedIn({ role: "mod" });
+    await importFixture(mod.token, withTrails());
+    const clash = trailBlock({
+      trails: [{ name: "A", courses: [{ code: "CSE115", title: "T", credits: 3 }] }],
+      minFromOneTrail: 1,
+    });
+    const slotAlternative = trailBlock({
+      trails: [{ name: "A", courses: [{ code: "POL104", title: "T", credits: 3 }] }],
+      minFromOneTrail: 1,
+    });
+    const repeated = trailBlock({
+      trails: [
+        { name: "A", courses: [{ code: "XYZ301", title: "T", credits: 3 }] },
+        { name: "B", courses: [{ code: "XYZ301", title: "T", credits: 3 }] },
+      ],
+      minFromOneTrail: 1,
+    });
+    for (const bad of [
+      clash,
+      slotAlternative,
+      repeated,
+      trailBlock({ category: "Nope" }),
+      trailBlock({ category: "Core" }), // a category, but of no elective slot
+      trailBlock({ minFromOneTrail: 4 }), // larger than the biggest trail
+      trailBlock({ minFromOneTrail: 0 }),
+    ]) {
+      const res = await call("POST", "/api/courses/import", mod.token, withTrails(bad));
+      expect(res.status).toBe(400);
+      expect((await res.json<{ message: string }>()).message).toBeTruthy();
+    }
+    expect(await optionCount()).toBe(5);
+  });
+});
+
+describe("elective trails: course map", () => {
+  async function trailMap(token: string) {
+    const trails = electiveCategory(await getMap(token)).trails;
+    if (!trails) throw new Error("no trails");
+    return trails;
+  }
+
+  it("counts done and added per trail, and marks met when a trail has enough done", async () => {
+    const mod = await signedIn({ role: "mod" });
+    await importFixture(mod.token, withTrails());
+    const { token } = await signedIn();
+
+    // Nothing yet: every course listed, no state, no leader.
+    let trails = await trailMap(token);
+    expect(trails).toMatchObject({ minFromOneTrail: 2, met: false, leading: null });
+    expect(trails.trails.map((t) => [t.name, t.done, t.added])).toEqual([
+      ["Trail A", 0, 0],
+      ["Trail B", 0, 0],
+    ]);
+    expect(trails.trails[1].courses[0]).toEqual({
+      code: "XYZ401",
+      title: "XYZ401 in B",
+      credits: 1.5,
+      state: null,
+    });
+
+    await addStudentCourse(token, "XYZ301");
+    await addStudentCourse(token, "XYZ302");
+    await addStudentCourse(token, "XYZ401");
+    await attempt(token, "XYZ301");
+    trails = await trailMap(token);
+    expect(trails.met).toBe(false);
+    expect(trails.leading).toBe("Trail A");
+    expect(trails.trails.map((t) => [t.done, t.added])).toEqual([
+      [1, 1],
+      [0, 1],
+    ]);
+    expect(trails.trails[0].courses.map((c) => c.state)).toEqual(["done", "added", null]);
+
+    await attempt(token, "XYZ302");
+    trails = await trailMap(token);
+    expect(trails.met).toBe(true);
+    expect(trails.trails[0]).toMatchObject({ done: 2, added: 0 });
+  });
+
+  it("breaks a tie by added courses, then by trail order", async () => {
+    const mod = await signedIn({ role: "mod" });
+    await importFixture(mod.token, withTrails());
+    const { token } = await signedIn();
+    await addStudentCourse(token, "XYZ401");
+    expect((await trailMap(token)).leading).toBe("Trail B");
+    await addStudentCourse(token, "XYZ301");
+    expect((await trailMap(token)).leading).toBe("Trail A"); // 0 done, 1 added each: file order
+    await addStudentCourse(token, "XYZ402");
+    expect((await trailMap(token)).leading).toBe("Trail B"); // B has two added
+    await attempt(token, "XYZ301");
+    expect((await trailMap(token)).leading).toBe("Trail A"); // a done course beats added ones
+  });
+
+  it("ignores excluded courses and trail courses filed under another category", async () => {
+    const mod = await signedIn({ role: "mod" });
+    await importFixture(mod.token, withTrails());
+    const { token } = await signedIn();
+    await addStudentCourse(token, "XYZ301", { excluded: true });
+    await addStudentCourse(token, "XYZ302", { category: "Core" });
+    await addStudentCourse(token, "XYZ401");
+    await attempt(token, "XYZ301");
+    await attempt(token, "XYZ302");
+    const trails = await trailMap(token);
+    expect(trails.trails.map((t) => [t.done, t.added])).toEqual([
+      [0, 0],
+      [0, 1],
+    ]);
+    expect(trails.trails[0].courses.map((c) => c.state)).toEqual([null, null, null]);
+    // The Core category is not the trail category.
+    const map = await getMap(token);
+    expect(map.categories.find((c) => c.name === "Core")?.trails).toBeNull();
+  });
+
+  it("counts extras beyond the placeholders, and is null on every category without trails", async () => {
+    const mod = await signedIn({ role: "mod" });
+    await importFixture(mod.token, withTrails());
+    const { token } = await signedIn();
+    for (const code of ["XYZ301", "XYZ302", "XYZ303"]) await addStudentCourse(token, code);
+    expect(await getMap(token).then((m) => m.extras.map((e) => e.code))).toEqual(["XYZ303"]);
+    expect((await trailMap(token)).trails[0]).toMatchObject({ added: 3 });
+
+    await importFixture(mod.token, fixture());
+    const map = await getMap(token);
+    expect(map.categories.every((c) => c.trails === null)).toBe(true);
+  });
+});
+
+describe("GET /api/courses/lookup", () => {
+  const lookup = (token: string | null, code: string) =>
+    call("GET", `/api/courses/lookup?code=${code}`, token);
+
+  it("finds a course in another program's curriculum", async () => {
+    const mod = await signedIn({ role: "mod" });
+    await importFixture(mod.token);
+    await importFixture(
+      mod.token,
+      fixture({
+        program: "11",
+        courses: [course("LAW201", { title: "Torts", credits: 1.5 })],
+      }),
+    );
+    const { token } = await signedIn(); // program 42
+    const res = await lookup(token, "law201"); // typed in lower case
+    expect(res.status).toBe(200);
+    expect(await res.json<CourseLookup>()).toEqual({
+      code: "LAW201",
+      title: "Torts",
+      credits: 1.5,
+      trail: null,
+    });
+  });
+
+  it("finds a trail course and names its trail for the student's own curriculum", async () => {
+    const mod = await signedIn({ role: "mod" });
+    await importFixture(mod.token, withTrails());
+    const { token } = await signedIn();
+    expect(await (await lookup(token, "XYZ401")).json<CourseLookup>()).toEqual({
+      code: "XYZ401",
+      title: "XYZ401 in B",
+      credits: 1.5,
+      trail: "Trail B",
+    });
+    // Another program's student still gets the title, but no trail of a curriculum that is not theirs.
+    const other = await signedIn({ studentSuffix: "011" });
+    expect(await (await lookup(other.token, "XYZ401")).json<CourseLookup>()).toMatchObject({
+      title: "XYZ401 in B",
+      trail: null,
+    });
+  });
+
+  it("answers 404 for an unknown code, 400 for a malformed one and 401 signed out", async () => {
+    const mod = await signedIn({ role: "mod" });
+    await importFixture(mod.token, withTrails());
+    const { token } = await signedIn();
+    const none = await lookup(token, "ZZZ999");
+    expect(none.status).toBe(404);
+    expect(await none.json()).toEqual({ error: "not_found" });
+    expect((await lookup(token, "nope")).status).toBe(400);
+    expect((await call("GET", "/api/courses/lookup", token)).status).toBe(400);
+    expect((await lookup(null, "XYZ401")).status).toBe(401);
+  });
+
+  it("leaves out hidden courses and elective placeholders", async () => {
+    const mod = await signedIn({ role: "mod" });
+    await importFixture(mod.token);
+    await env.DB.prepare("UPDATE courses SET hidden = 1 WHERE code = 'CSE173'").run();
+    const { token } = await signedIn();
+    expect((await lookup(token, "CSE173")).status).toBe(404);
+    expect((await lookup(token, "CSE115")).status).toBe(200);
   });
 });

@@ -13,8 +13,220 @@
     "CSE499A requires '100 credits completed'; the sequence page adds 'and all core courses', which is not encoded in the rule.",
     "'SOC101/ANT101/ENV203(GEO205)' is one slot; ENV203 and GEO205 appear to be the same course (Bangladesh Geography) under two codes, both listed as alternatives.",
     "BEN205 (alternative to ENG115) and HIS103 (alternative to HIS101) are not on the CSE PDF, which is effective Fall 2014 and predates the rule. They are added because 1.-bbt-coursemap.pdf and bs-in-mic-course-map-3.pdf state 'BEN205 and HIS103 are mandatory courses for all NSU UG students from batch 163 and onwards'. Titles are the same as in the EEE file. Credits and the total are unchanged.",
-    "Courses printed with +CL (CSE115, PHY107, CSE215, PHY108, EEE141, CHE101, EEE111, BIO103; 4 credits) are split into a 3-credit theory row and a separate 1-credit lab row (code + 'L', title + ' Lab') with the same semester, category and prerequisite, because the lab is graded separately. Courses printed +IL (CSE225, CSE231, CSE311, CSE331; 3 credits) have an integrated lab inside the 3 credits and stay one row. Credits per program are unchanged (theory 3 + lab 1 = the printed 4)."
+    "Courses printed with +CL (CSE115, PHY107, CSE215, PHY108, EEE141, CHE101, EEE111, BIO103; 4 credits) are split into a 3-credit theory row and a separate 1-credit lab row (code + 'L', title + ' Lab') with the same semester, category and prerequisite, because the lab is graded separately. Courses printed +IL (CSE225, CSE231, CSE311, CSE331; 3 credits) have an integrated lab inside the 3 credits and stay one row. Credits per program are unchanged (theory 3 + lab 1 = the printed 4).",
+    "Elective trails: ELECT1 to ELECT3 are filled from six specialized trails, at least two courses from one trail (minFromOneTrail). The lists are the NSU CSE trail lists with titles as NSU prints them; all are 3 credits. Special topics courses (CSE491 to CSE494, CSE496) are one per trail. CSE498 Internship/Co-op is a non-credit course (minimum 8 to 12 weeks) with no prerequisite, filed under Internship in semester 12."
   ],
+  "electiveTrails": {
+    "category": "Electives",
+    "minFromOneTrail": 2,
+    "trails": [
+      {
+        "name": "Algorithms and Computation",
+        "courses": [
+          {
+            "code": "CSE401",
+            "title": "Advanced Programming Techniques",
+            "credits": 3
+          },
+          {
+            "code": "CSE417",
+            "title": "Numerical Methods",
+            "credits": 3
+          },
+          {
+            "code": "CSE418",
+            "title": "Computer Graphics",
+            "credits": 3
+          },
+          {
+            "code": "CSE426",
+            "title": "Compiler Constructions",
+            "credits": 3
+          },
+          {
+            "code": "CSE473",
+            "title": "Theory of Computation",
+            "credits": 3
+          },
+          {
+            "code": "CSE491",
+            "title": "Special Topics",
+            "credits": 3
+          }
+        ]
+      },
+      {
+        "name": "Software Engineering",
+        "courses": [
+          {
+            "code": "CSE411",
+            "title": "Advanced Database Systems",
+            "credits": 3
+          },
+          {
+            "code": "CSE427",
+            "title": "Software Quality Assurance & Testing",
+            "credits": 3
+          },
+          {
+            "code": "CSE428",
+            "title": "Software Process Management",
+            "credits": 3
+          },
+          {
+            "code": "CSE429",
+            "title": "Software System Architecture",
+            "credits": 3
+          },
+          {
+            "code": "CSE492",
+            "title": "Special Topics",
+            "credits": 3
+          }
+        ]
+      },
+      {
+        "name": "Networks",
+        "courses": [
+          {
+            "code": "CSE422",
+            "title": "Modelling and Simulation",
+            "credits": 3
+          },
+          {
+            "code": "CSE438",
+            "title": "Data Communication & Network",
+            "credits": 3
+          },
+          {
+            "code": "CSE482",
+            "title": "Internet and Web Technology",
+            "credits": 3
+          },
+          {
+            "code": "CSE485",
+            "title": "Digital Signal Processing",
+            "credits": 3
+          },
+          {
+            "code": "CSE486",
+            "title": "Mobile and Wireless Application Development",
+            "credits": 3
+          },
+          {
+            "code": "CSE493",
+            "title": "Special Topics",
+            "credits": 3
+          }
+        ]
+      },
+      {
+        "name": "Computer Architecture and VLSI",
+        "courses": [
+          {
+            "code": "CSE433",
+            "title": "Advanced Architecture",
+            "credits": 3
+          },
+          {
+            "code": "CSE435",
+            "title": "Introduction to VLSI Design",
+            "credits": 3
+          },
+          {
+            "code": "CSE413",
+            "title": "Verilog HDL: Modelling, Simulation, and Synthesis",
+            "credits": 3
+          },
+          {
+            "code": "CSE414",
+            "title": "Advanced Chip Design Methodology and Optimization using HDL",
+            "credits": 3
+          },
+          {
+            "code": "CSE415",
+            "title": "VLSI Chip Testing",
+            "credits": 3
+          },
+          {
+            "code": "CSE494",
+            "title": "Special Topics",
+            "credits": 3
+          }
+        ]
+      },
+      {
+        "name": "Artificial Intelligence",
+        "courses": [
+          {
+            "code": "CSE440",
+            "title": "Artificial Intelligence",
+            "credits": 3
+          },
+          {
+            "code": "CSE445",
+            "title": "Machine Learning",
+            "credits": 3
+          },
+          {
+            "code": "CSE465",
+            "title": "Pattern Recognition and Neural Network",
+            "credits": 3
+          },
+          {
+            "code": "CSE467",
+            "title": "Digital Image Processing",
+            "credits": 3
+          },
+          {
+            "code": "CSE470",
+            "title": "Theory of Fuzzy Systems",
+            "credits": 3
+          },
+          {
+            "code": "CSE419",
+            "title": "Data Mining",
+            "credits": 3
+          }
+        ]
+      },
+      {
+        "name": "Bioinformatics",
+        "courses": [
+          {
+            "code": "CSE446",
+            "title": "Introductions to Bioinformatics",
+            "credits": 3
+          },
+          {
+            "code": "CSE447",
+            "title": "Molecular Biology",
+            "credits": 3
+          },
+          {
+            "code": "CSE448",
+            "title": "Genome Sequence & Analysis",
+            "credits": 3
+          },
+          {
+            "code": "CSE449",
+            "title": "Structural Bioinformatics",
+            "credits": 3
+          },
+          {
+            "code": "CSE442",
+            "title": "Micro Array Bioinformatics",
+            "credits": 3
+          },
+          {
+            "code": "CSE496",
+            "title": "Special Topics",
+            "credits": 3
+          }
+        ]
+      }
+    ]
+  },
   "courses": [
     {
       "kind": "course",
@@ -721,6 +933,17 @@
       "prereq": {
         "course": "CSE499A"
       }
+    },
+    {
+      "kind": "course",
+      "code": "CSE498",
+      "title": "Internship/Co-op",
+      "credits": 0,
+      "category": "Internship",
+      "nonCredit": true,
+      "semester": 12,
+      "alternatives": [],
+      "prereq": null
     }
   ]
 }

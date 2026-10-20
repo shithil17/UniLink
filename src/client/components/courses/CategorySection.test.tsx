@@ -37,6 +37,7 @@ const category: Category = {
     slot({ code: "ENG102", title: "English", status: "done", waived: true }),
     slot({ kind: "elective", code: "ELEC", title: "Open elective", credits: 3 }),
   ],
+  trails: null,
 };
 
 describe("CategorySection", () => {
@@ -63,6 +64,83 @@ describe("CategorySection", () => {
   });
 });
 
+describe("CategorySection trails", () => {
+  const trails = (
+    over: Partial<NonNullable<Category["trails"]>>,
+  ): NonNullable<Category["trails"]> => ({
+    minFromOneTrail: 2,
+    met: false,
+    leading: null,
+    trails: [
+      { name: "Artificial Intelligence", done: 0, added: 0, courses: [] },
+      { name: "Networks", done: 0, added: 0, courses: [] },
+    ],
+    ...over,
+  });
+  const electives = (t: Category["trails"]): Category => ({
+    name: "Electives",
+    required: 6,
+    earned: 0,
+    slots: [slot({ kind: "elective", code: "ELEC1", title: "Elective 1", credits: 3 })],
+    trails: t,
+  });
+  const show = (t: Category["trails"]) =>
+    render(<CategorySection category={electives(t)} onOpenSlot={() => {}} onAdd={() => {}} />);
+
+  it("states the rule while no trail has a done course", () => {
+    show(trails({}));
+    expect(screen.getByText("Take at least 2 from one trail")).toBeTruthy();
+  });
+
+  it("shows the leading trail's progress", () => {
+    show(
+      trails({
+        leading: "Artificial Intelligence",
+        trails: [{ name: "Artificial Intelligence", done: 1, added: 1, courses: [] }],
+      }),
+    );
+    expect(screen.getByText("Artificial Intelligence: 1 of 2 done, 1 added")).toBeTruthy();
+  });
+
+  it("says when a trail is met", () => {
+    show(
+      trails({
+        met: true,
+        leading: "Artificial Intelligence",
+        trails: [{ name: "Artificial Intelligence", done: 2, added: 0, courses: [] }],
+      }),
+    );
+    expect(screen.getByText("Trail met: Artificial Intelligence (2 of 2 done)")).toBeTruthy();
+  });
+
+  it("tells an empty slot to pick from a trail, and elsewhere says any discipline", () => {
+    const { unmount } = show(trails({}));
+    expect(screen.getByText("ELEC1 · Pick from a trail")).toBeTruthy();
+    unmount();
+    show(null);
+    expect(screen.getByText("ELEC1 · Any discipline")).toBeTruthy();
+    expect(screen.queryByText(/Take at least/)).toBeNull();
+  });
+
+  it("prints Non-credit instead of 0 / 0 cr when every slot is non-credit", () => {
+    render(
+      <CategorySection
+        category={{
+          name: "Internship",
+          required: 0,
+          earned: 0,
+          slots: [slot({ code: "CSE498", title: "Internship", credits: 0, nonCredit: true })],
+          trails: null,
+        }}
+        onOpenSlot={() => {}}
+        onAdd={() => {}}
+      />,
+    );
+    expect(screen.getByText("Non-credit")).toBeTruthy();
+    expect(screen.queryByText(/0 \/ 0/)).toBeNull();
+  });
+});
+
 describe("CategorySection choice slots", () => {
   const choice = slot({
     code: "ENG115",
@@ -72,7 +150,7 @@ describe("CategorySection choice slots", () => {
   const section = (s: Slot) =>
     render(
       <CategorySection
-        category={{ name: "GED", required: 3, earned: 0, slots: [s] }}
+        category={{ name: "GED", required: 3, earned: 0, slots: [s], trails: null }}
         onOpenSlot={() => {}}
         onAdd={() => {}}
       />,

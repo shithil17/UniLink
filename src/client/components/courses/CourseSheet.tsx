@@ -12,12 +12,13 @@ import {
 import { errorMessage } from "@/lib/api";
 import { formatCredits, slotCodeChoices } from "@/lib/courseMap";
 import { useDeleteStudentCourse } from "@/lib/courses";
-import type { CourseMap } from "../../../shared/schemas/courses";
+import type { CourseMap, CourseMapTrails } from "../../../shared/schemas/courses";
 import { slotLabel } from "../../../shared/slotChoice";
 import { AttemptSection } from "./AttemptSection";
 import { PrereqText } from "./PrereqText";
 import { StateMark } from "./StateMark";
 import { StudentCourseForm } from "./StudentCourseForm";
+import { TrailPicker } from "./TrailPicker";
 
 type Slot = CourseMap["categories"][number]["slots"][number];
 type MapStudentCourse = CourseMap["extras"][number];
@@ -31,16 +32,31 @@ export type SheetTarget =
 export function CourseSheet({
   target,
   categories,
+  trailCategory,
   onClose,
 }: {
   target: SheetTarget | null;
   categories: readonly string[];
+  /** The category the curriculum's elective trails fill, with the student's progress in them. */
+  trailCategory?: { name: string; trails: CourseMapTrails };
   onClose: () => void;
 }) {
+  const trailName = trailCategory?.name;
+  const picking = target?.type === "add" && trailCategory?.name === target.category;
   return (
     <Sheet open={target !== null} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom">
-        {target?.type === "add" ? (
+      <SheetContent
+        side="bottom"
+        // The trail picker is a long list: it takes most of the screen and scrolls inside.
+        className={
+          picking
+            ? "data-[side=bottom]:h-[85dvh] data-[side=bottom]:gap-3 data-[side=bottom]:overflow-hidden data-[side=bottom]:pb-0"
+            : undefined
+        }
+      >
+        {picking && trailCategory ? (
+          <TrailAdd trailCategory={trailCategory} categories={categories} onClose={onClose} />
+        ) : target?.type === "add" ? (
           <>
             <SheetHeader>
               <SheetTitle>Add a course</SheetTitle>
@@ -49,6 +65,7 @@ export function CourseSheet({
             <div className="px-4">
               <StudentCourseForm
                 categories={categories}
+                trailCategory={trailName}
                 initial={{ category: target.category }}
                 onSaved={onClose}
                 onCancel={onClose}
@@ -56,12 +73,18 @@ export function CourseSheet({
             </div>
           </>
         ) : target?.type === "extra" ? (
-          <StudentCourseDetails course={target.course} categories={categories} onClose={onClose} />
+          <StudentCourseDetails
+            course={target.course}
+            categories={categories}
+            trailCategory={trailName}
+            onClose={onClose}
+          />
         ) : target?.type === "slot" ? (
           target.slot.studentCourse ? (
             <StudentCourseDetails
               course={target.slot.studentCourse}
               categories={categories}
+              trailCategory={trailName}
               onClose={onClose}
             />
           ) : (
@@ -70,6 +93,46 @@ export function CourseSheet({
         ) : null}
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** Add a course in the trail category: the trail picker first, the free form behind "not listed". */
+function TrailAdd({
+  trailCategory,
+  categories,
+  onClose,
+}: {
+  trailCategory: { name: string; trails: CourseMapTrails };
+  categories: readonly string[];
+  onClose: () => void;
+}) {
+  const [manual, setManual] = useState(false);
+  if (!manual) {
+    return (
+      <TrailPicker
+        category={trailCategory.name}
+        trails={trailCategory.trails}
+        onAdded={onClose}
+        onNotListed={() => setManual(true)}
+      />
+    );
+  }
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle>Add a course</SheetTitle>
+        <SheetDescription>It fills the next open elective in its category.</SheetDescription>
+      </SheetHeader>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+        <StudentCourseForm
+          categories={categories}
+          trailCategory={trailCategory.name}
+          initial={{ category: trailCategory.name }}
+          onSaved={onClose}
+          onCancel={() => setManual(false)}
+        />
+      </div>
+    </>
   );
 }
 
@@ -118,10 +181,12 @@ function SlotDetails({ slot, onClose }: { slot: Slot; onClose: () => void }) {
 function StudentCourseDetails({
   course,
   categories,
+  trailCategory,
   onClose,
 }: {
   course: MapStudentCourse;
   categories: readonly string[];
+  trailCategory?: string;
   onClose: () => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -138,6 +203,7 @@ function StudentCourseDetails({
         <div className="px-4">
           <StudentCourseForm
             categories={categories}
+            trailCategory={trailCategory}
             initial={{ category: course.category }}
             existing={course}
             onSaved={onClose}

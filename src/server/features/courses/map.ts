@@ -4,11 +4,46 @@ import type { CourseMap } from "../../../shared/schemas/courses";
 import { pickChosenCode } from "../../../shared/slotChoice";
 import { NSU_PROGRAM_CODES } from "../../../shared/studentId";
 import type { AttemptRow } from "../../repos/attempts";
-import type { CourseRow, CurriculumRow } from "../../repos/curricula";
+import type { CourseRow, CurriculumRow, ElectiveOptionRow } from "../../repos/curricula";
 import type { StudentCourseRow } from "../../repos/studentCourses";
 
 type MapStudentCourse = CourseMap["extras"][number];
 type MapSlot = CourseMap["categories"][number]["slots"][number];
+type MapTrails = NonNullable<CourseMap["categories"][number]["trails"]>;
+
+/**
+ * Trail progress for the category the curriculum's trails fill. Only the student's own non-excluded
+ * courses in that category count, each toward the trail that lists its code. Done is a passing
+ * attempt; added is anything else. A trail course filed under another category counts nowhere.
+ */
+function buildTrails(
+  rule: { category: string; minFromOneTrail: number },
+  options: readonly ElectiveOptionRow[],
+  studentCourses: readonly { code: string; category: string; excluded: boolean }[],
+  passed: ReadonlySet<string>,
+): MapTrails {
+  const own = new Set(
+    studentCourses.filter((s) => !s.excluded && s.category === rule.category).map((s) => s.code),
+  );
+  const byTrail = new Map<string, MapTrails["trails"][number]>();
+  for (const o of options) {
+    let trail = byTrail.get(o.trail);
+    if (!trail) byTrail.set(o.trail, (trail = { name: o.trail, done: 0, added: 0, courses: [] }));
+    const state = !own.has(o.code) ? null : passed.has(o.code) ? "done" : "added";
+    if (state === "done") trail.done += 1;
+    if (state === "added") trail.added += 1;
+    trail.courses.push({ code: o.code, title: o.title, credits: o.credits, state });
+  }
+  const trails = [...byTrail.values()];
+  // Most done, then most added; Array.sort is stable, so file order breaks the rest.
+  const leader = [...trails].sort((a, b) => b.done - a.done || b.added - a.added)[0];
+  return {
+    minFromOneTrail: rule.minFromOneTrail,
+    met: trails.some((t) => t.done >= rule.minFromOneTrail),
+    leading: leader && leader.done + leader.added > 0 ? leader.name : null,
+    trails,
+  };
+}
 
 export const EMPTY_COURSE_MAP: CourseMap = {
   curriculum: null,
@@ -68,6 +103,8 @@ export function buildCourseMap(input: {
   attempts: readonly AttemptRow[];
   /** In the order they were added. */
   studentCourses: readonly StudentCourseRow[];
+  /** The curriculum's trail courses; needed only when it has an elective rule. */
+  electiveOptions?: readonly ElectiveOptionRow[];
 }): CourseMap {
   const { curriculum, courses } = input;
   const passed = passedCodes(input.attempts);
@@ -178,6 +215,7 @@ export function buildCourseMap(input: {
     };
   };
 
+  const rule = curriculum.electiveRule;
   return {
     curriculum: {
       id: curriculum.id,
@@ -193,6 +231,10 @@ export function buildCourseMap(input: {
       required: c.required,
       earned: c.earned,
       slots: c.rows.map(toSlot),
+      trails:
+        rule && rule.category === name
+          ? buildTrails(rule, input.electiveOptions ?? [], input.studentCourses, passed)
+          : null,
     })),
     extras,
   };
