@@ -36,6 +36,30 @@ describe("seed", () => {
     expect(await count("users")).toBe(2);
   });
 
+  it("seeds the CSE trail options and rule, and a re-seed neither duplicates nor drops them", async () => {
+    const curricula = Object.values(files);
+    await seed(env.DB, curricula);
+    const rule = await env.DB.prepare(
+      "SELECT elective_rule AS r FROM curricula WHERE program_code = '42'",
+    ).first<{ r: string }>();
+    expect(JSON.parse(rule?.r ?? "null")).toEqual({ category: "Electives", minFromOneTrail: 2 });
+    expect(await count("elective_options")).toBe(35);
+    expect(
+      await env.DB.prepare("SELECT count(DISTINCT trail) AS n FROM elective_options").first(),
+    ).toEqual({ n: 6 });
+    expect(
+      await env.DB.prepare("SELECT credits FROM courses WHERE code = 'CSE498'").first(),
+    ).toEqual({ credits: 0 });
+    expect(
+      await env.DB.prepare(
+        "SELECT count(*) AS n FROM curricula WHERE elective_rule IS NULL",
+      ).first(),
+    ).toEqual({ n: 12 });
+
+    await seed(env.DB, curricula);
+    expect(await count("elective_options")).toBe(35);
+  });
+
   it("seeds department, NSU page and null initials, and a re-seed keeps what a moderator added", async () => {
     await env.DB.prepare("DELETE FROM faculty").run();
     const entry = {

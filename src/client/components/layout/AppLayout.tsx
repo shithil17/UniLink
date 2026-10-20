@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import {
   BellIcon,
   BookOpenIcon,
+  CalendarDaysIcon,
   HouseIcon,
   SettingsIcon,
   ShieldCheckIcon,
@@ -20,6 +21,7 @@ import { meQuery, unreadCountQuery } from "@/lib/queries";
 const tabIcons: Record<MainTab["to"], LucideIcon> = {
   "/": HouseIcon,
   "/courses": BookOpenIcon,
+  "/routine": CalendarDaysIcon,
   "/inbox": BellIcon,
   "/mod": ShieldCheckIcon,
   "/settings": SettingsIcon,

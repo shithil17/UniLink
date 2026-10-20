@@ -1,4 +1,4 @@
-# Class diagram (Phases 0 to 8)
+# Class diagram (Phases 0 to 9)
 
 Domain model from `src/server/db/schema.ts`, plus the shared strategy objects and helpers. Times are UTC epoch ms. "Private" fields never appear in a response to anyone but the owner.
 
@@ -63,6 +63,18 @@ classDiagram
     +int termYear?
     +Season termSeason?
   }
+  class RoutineEntry {
+    +int id
+    +int termYear
+    +Season termSeason
+    +string courseCode
+    +int section
+    +string days
+    +int startMinutes
+    +int endMinutes
+    +string room
+    +string facultyInitials
+  }
   class Faculty {
     +int id
     +string name
@@ -126,6 +138,7 @@ classDiagram
   User "1" --> "*" ModeratedPost : writes
   User "1" --> "*" Attempt : owns
   User "1" --> "*" StudentCourse : owns
+  User "1" --> "*" RoutineEntry : owns
   User "1" --> "*" Notification : receives
   User "1" --> "*" PushSubscription : devices
   User "1" --> "*" Report : files
@@ -135,10 +148,11 @@ classDiagram
   AuditLog "0..1" <-- "0..1" AuditLog : reverses
   Attempt ..> Course : courseCode
   Attempt ..> StudentCourse : courseCode
+  RoutineEntry ..> Course : courseCode
   User ..> Curriculum : program + admission year
 ```
 
-An attempt refers to a course by code, not by key: the code is a curriculum slot, one of its alternatives, or one of the user's student courses. A report's target is a `(targetType, targetId)` pair so a new post type needs no migration. `ModeratedPost` is the shared column set (`moderationColumns`) every post table spreads in; no concrete post table exists yet, the first is rides.
+An attempt refers to a course by code, not by key: the code is a curriculum slot, one of its alternatives, or one of the user's student courses. A routine entry names its course the same way; its days are NSU day letters in week order (`MW`) and its times are minutes after midnight in Asia/Dhaka, and it is private to its owner. A report's target is a `(targetType, targetId)` pair so a new post type needs no migration. `ModeratedPost` is the shared column set (`moderationColumns`) every post table spreads in; no concrete post table exists yet, the first is rides.
 
 ## Behaviour: strategies and helpers
 

@@ -85,6 +85,20 @@
       "when": 1792497665456,
       "tag": "0011_course_hidden",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1792515164350,
+      "tag": "0012_routine_entries",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1792532651204,
+      "tag": "0013_elective_trails",
+      "breakpoints": true
     }
   ]
 }

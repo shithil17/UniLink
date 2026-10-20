@@ -13,6 +13,7 @@ import {
   checkImportRows,
   toCurriculumHeader,
   toNewCourse,
+  toNewElectiveOptions,
 } from "../src/server/features/courses/importRows.ts";
 import { hashPassword } from "../src/server/password.ts";
 import { facultySeedEntry } from "../src/shared/schemas/faculty.ts";
@@ -34,7 +35,7 @@ const sqlOptional = (value: string | null | undefined) =>
   value == null ? "NULL" : sqlString(value);
 const sqlNullable = (value: unknown) => (value == null ? "NULL" : sqlString(JSON.stringify(value)));
 
-/** Insert-or-update of the curriculum, then its courses replaced one row per statement. */
+/** Insert-or-update of the curriculum, then its courses and trail options replaced one row per statement. */
 function curriculumStatements(file: CurriculumImport, now: number): string[] {
   const header = toCurriculumHeader(file);
   const { accepted, rejected } = checkImportRows(file.courses);
@@ -44,7 +45,7 @@ function curriculumStatements(file: CurriculumImport, now: number): string[] {
   const which = `program_code = ${sqlString(header.programCode)} AND version = ${sqlString(header.version)}`;
   const id = `(SELECT id FROM curricula WHERE ${which})`;
   return [
-    `INSERT INTO curricula (program_code, name, version, effective_from_year, total_credits, created_at) VALUES (${sqlString(header.programCode)}, ${sqlString(header.name)}, ${sqlString(header.version)}, ${header.effectiveFromYear}, ${header.totalCredits}, ${now}) ON CONFLICT (program_code, version) DO UPDATE SET name = excluded.name, effective_from_year = excluded.effective_from_year, total_credits = excluded.total_credits;`,
+    `INSERT INTO curricula (program_code, name, version, effective_from_year, total_credits, elective_rule, created_at) VALUES (${sqlString(header.programCode)}, ${sqlString(header.name)}, ${sqlString(header.version)}, ${header.effectiveFromYear}, ${header.totalCredits}, ${sqlNullable(header.electiveRule)}, ${now}) ON CONFLICT (program_code, version) DO UPDATE SET name = excluded.name, effective_from_year = excluded.effective_from_year, total_credits = excluded.total_credits, elective_rule = excluded.elective_rule;`,
     `DELETE FROM courses WHERE curriculum_id = ${id};`,
     ...accepted
       .map(toNewCourse)
@@ -52,6 +53,11 @@ function curriculumStatements(file: CurriculumImport, now: number): string[] {
         (c) =>
           `INSERT INTO courses (curriculum_id, position, kind, code, title, credits, category, non_credit, semester, alternatives, prereq) VALUES (${id}, ${c.position}, ${sqlString(c.kind)}, ${sqlString(c.code)}, ${sqlString(c.title)}, ${c.credits}, ${sqlString(c.category)}, ${c.nonCredit ? 1 : 0}, ${c.semester ?? "NULL"}, ${sqlString(JSON.stringify(c.alternatives))}, ${sqlNullable(c.prereq)});`,
       ),
+    `DELETE FROM elective_options WHERE curriculum_id = ${id};`,
+    ...toNewElectiveOptions(file.electiveTrails).map(
+      (o) =>
+        `INSERT INTO elective_options (curriculum_id, trail, position, code, title, credits) VALUES (${id}, ${sqlString(o.trail)}, ${o.position}, ${sqlString(o.code)}, ${sqlString(o.title)}, ${o.credits});`,
+    ),
   ];
 }
 

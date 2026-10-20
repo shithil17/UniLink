@@ -27,7 +27,7 @@ async function renderShell(me: Me | null, path = "/") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   client.setQueryData(["me"], me);
   const root = createRootRoute({ component: () => <AppLayout>content</AppLayout> });
-  const routes = ["/", "/courses", "/mod/queue", "/settings"].map((p) =>
+  const routes = ["/", "/courses", "/routine", "/mod/queue", "/settings"].map((p) =>
     createRoute({ getParentRoute: () => root, path: p }),
   );
   const router = createRouter({
@@ -55,10 +55,10 @@ describe("AppLayout navigation", () => {
     expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
   });
 
-  it("gives a student four tabs and marks the current one", async () => {
+  it("gives a student five tabs and marks the current one", async () => {
     await renderShell(user("student"), "/courses");
     const nav = screen.getByRole("navigation", { name: "Main" });
-    expect(nav.querySelectorAll("a")).toHaveLength(4);
+    expect(nav.querySelectorAll("a")).toHaveLength(5);
     expect(nav.querySelector("[aria-current=page]")?.textContent).toContain("Courses");
   });
 

@@ -1,8 +1,14 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { attempt, type AttemptInput, type AttemptUpdate } from "../../shared/schemas/attempts";
-import { importResult, studentCourse, type StudentCourseInput } from "../../shared/schemas/courses";
-import { apiDelete, apiPatch, apiPost } from "./api";
+import {
+  courseCodeInput,
+  courseLookup,
+  importResult,
+  studentCourse,
+  type StudentCourseInput,
+} from "../../shared/schemas/courses";
+import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "./api";
 import { courseMapQuery } from "./queries";
 
 /**
@@ -78,5 +84,26 @@ export function useImportCurriculum() {
     // An import replaces the courses the mod Courses screen lists.
     onSuccess: () =>
       Promise.all([invalidate(), queryClient.invalidateQueries({ queryKey: ["mod"] })]),
+  });
+}
+
+/**
+ * Title and credits for a typed course code, from any imported curriculum or trail list. Resolves to
+ * null when the code is unknown, and stays idle until the code is a valid one.
+ */
+export function useCourseLookup(code: string) {
+  const parsed = courseCodeInput.safeParse(code);
+  const normalized = parsed.success ? parsed.data : "";
+  return useQuery({
+    queryKey: ["course-lookup", normalized],
+    enabled: normalized !== "",
+    retry: false,
+    queryFn: () =>
+      apiGet(`/api/courses/lookup?code=${encodeURIComponent(normalized)}`, courseLookup).catch(
+        (err: unknown) => {
+          if (err instanceof ApiError && err.status === 404) return null;
+          throw err;
+        },
+      ),
   });
 }

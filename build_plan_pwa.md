@@ -6,7 +6,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 ## Status
 
-**Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty/` holds the ECE faculty from the public department listing plus partial lists for eight other departments (see `docs/faculty-sources.md`). Phase 7 automated gate passed (2026-10-20): mod tests pass; the staging check (an admin reverses a ban and a soft delete and both reversals appear in the audit log) is pending, and needs a content type with `deleted_at` registered in `softDeleteTargets` before a soft delete can happen on staging. Report reasons are not screened until `screen()` lands (Phase 8). Phase 8 automated gate passed (2026-10-20): moderation tests pass; the staging check (forced-review post reaches the mod queue, a mod approves it, the author gets an inbox message) waits for the first post type to register in `moderatedPostTypes` and call `submitPost()`. Changes from `plan_pwa.md`:
+**Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty/` holds the ECE faculty from the public department listing plus partial lists for eight other departments (see `docs/faculty-sources.md`). Phase 7 automated gate passed (2026-10-20): mod tests pass; the staging check (an admin reverses a ban and a soft delete and both reversals appear in the audit log) is pending, and needs a content type with `deleted_at` registered in `softDeleteTargets` before a soft delete can happen on staging. Report reasons are not screened until `screen()` lands (Phase 8). Phase 8 automated gate passed (2026-10-20): moderation tests pass; the staging check (forced-review post reaches the mod queue, a mod approves it, the author gets an inbox message) waits for the first post type to register in `moderatedPostTypes` and call `submitPost()`. Phase 9 automated gate passed (2026-10-20): routine tests pass; the manual check (entries show on Home on the right weekday and in time order, on a phone) is pending, and D still confirms the NSU day letters (S M T W R F A). Changes from `plan_pwa.md`:
 
 - The two cut orders that disagreed are now one locked order (see Suggested Build Order).
 - Course "ticks" are graded attempts, so attempts are the only source of truth for done courses, credits and CGPA (Phase 4).
@@ -20,6 +20,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - (2026-10-19) Lost-and-found posts and marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (post photos kit, Phase 15). Photos in the "ID or card" category always go to a mod first. Authors can delete their own posts (Phase 12).
 - (2026-10-20) Faculty now covers every NSU department, each with a department, optional initials, an NSU page and a hidden flag; students search and filter the picker by name, initials and department; mods manage faculty (add, edit, hide, show again) in the panel.
 - (2026-10-20) Mods manage curriculum courses in the panel (`/mod/courses`): add, edit (including prerequisites as text, such as `CSE215 and (MAT120 or MAT125)`) and hide or show again with a reason, never delete (`courses.hidden`, migration 0011). Hidden courses leave students' maps unless the student already has an attempt on them. Re-importing a version still replaces all its courses, edits included, and the import screen warns. A slot with alternatives shows all its codes joined with "/" until the student takes one.
+- (2026-10-21) Elective trails and open electives: a curriculum can list its specialized elective trails (CSE: six trails, at least two courses from one trail). Students fill trail elective slots by picking from the trail list, see their trail progress on the map, and get title and credits filled in from a course code for open electives. CSE498 Internship/Co-op is on the CSE map as a non-credit course (Phase 4).
 
 ---
 
@@ -430,6 +431,13 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - **Going over the degree total** (decided 2026-10-19): there is no cap on earned credits. Totals show e.g. 136 / 130 with no block. Any student course can be marked **excluded from transcript**: it keeps its attempts and stays on the map with an "Excluded" badge, but counts toward no total, no `credits` prerequisite and (Phase 6) no CGPA. Curriculum courses cannot be excluded.
 > - **Attempts are the only source of truth** (decided 2026-10-18). A course is _done_ when it has a passing attempt (any grade that earns credits, so not F, I or W). The "tick" on the map opens a quick attempt form: course + letter grade, with term and faculty optional. Phase 6 adds the full form and the retake rules. There is no separate ticks table. An attempt's course code must be in the student's curriculum (a slot code or an alternative) or one of their student courses.
 >   Note (2026-10-19): any course can be **waived**. A waiver is an attempt with grade `WV` ("Waived" in the form), so attempts stay the only source of truth. It makes the course done and earns its credits (degree totals and `credits` prerequisites), but it has no grade points and never counts in CGPA. The map marks a course "Waived" when a waiver is its only passing attempt; a later graded pass replaces it.
+> - **Elective trails and open electives** (decided 2026-10-21):
+>   - A curriculum file may carry an optional `electiveTrails` header block: `{ category, minFromOneTrail, trails: [{ name, courses: [{ code, title, credits }] }] }`. `category` must be the category of at least one elective slot in the file, trail course codes follow the course code pattern, never repeat across trails and never clash with a slot code or alternative of the file. A bad block rejects the whole file (it is header data, not a row). Stored in a new `elective_options` table (curriculum, trail, position, code, title, credits; unique per curriculum and code) plus a nullable `elective_rule` JSON column on `curricula` (`{ category, minFromOneTrail }`). Re-importing or re-seeding replaces the options together with the courses in the same batch. `ceiling:` only CSE has trails transcribed; other programs add the block when D has their lists. Mods change trails only by re-importing; revisit if trail lists change between imports often.
+>   - Students still fill trail elective slots with **student courses** (the slot-filling rule above is unchanged). The "Add course" action on a trail category opens a trail picker: every trail with its courses, searchable, already-added ones marked; one tap adds a student course with the listed code, title and credits in that category. A "Course not listed" link opens the usual student course form, because NSU adds special-topics courses; such a course counts its credits but belongs to no trail.
+>   - Trail progress is worked out by the map, not stored: a student course in the trail category whose code is in a trail counts for that trail (excluded courses never count; a trail course filed under another category counts there, not toward a trail). The category carries `trails` in the map response: each trail with its done and added counts and per-course state, the leading trail, and `met` when some trail has at least `minFromOneTrail` done courses. The rule is shown, never enforced: a student is not blocked from adding courses that do not satisfy it.
+>   - **Open elective**: any course from any discipline. The student course form looks the typed code up (`GET /api/courses/lookup?code=`, exact match only, through an index on `courses.code` and `elective_options.code`) in every imported curriculum and trail list, and fills an empty title and credits from it. The existing clash rule still refuses a code that is already in the student's curriculum. "A course like one already taken does not count" cannot be checked from codes, so the form says it in a hint instead.
+>   - Empty elective slots say what fills them: "Pick from a trail" in a trail category, "Any discipline" otherwise (they all said "open elective" before). A category whose slots are all non-credit shows "Non-credit" in place of "0 / 0 cr".
+>   - CSE498 Internship/Co-op (minimum 8 to 12 weeks) is a non-credit `course` row in the CSE file, category "Internship", semester 12, no prerequisite.
 > - Terms: a shared `Term` value (year + Spring/Summer/Fall). The current term is worked out in Asia/Dhaka from one set of term start dates in `src/shared/terms.ts` (D confirms the dates).
 
 ### Checklist — Data & API
@@ -444,6 +452,15 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 - [x] `data/curricula/*.json`, one file per program, transcribed from the NSU course maps: Architecture, LLB, MCJ, Public Health, Economics, CEE, Environmental Management, BBA, CSE, EEE, Pharmacy, Biochemistry & Biotechnology, Microbiology.
 - [x] A unit test validates every file against `curriculumImport` and checks that every prereq course leaf points at a code in the same file.
+
+### Checklist — Elective trails and open electives
+
+- [x] `electiveTrails` in `curriculumHeader` (shared schema), migration for `elective_options`, `curricula.elective_rule` and the `courses.code` index; import route and seed store and replace the options with the courses.
+- [x] `data/curricula/42-cse.json`: the six CSE trails (Algorithms and Computation, Software Engineering, Networks, Computer Architecture and VLSI, Artificial Intelligence, Bioinformatics) with minimum two from one trail, and the CSE498 Internship/Co-op row. Local D1 migrated and re-seeded.
+- [x] Course map: `trails` on the trail category (per-trail counts and course states, leading trail, `met`). `GET /api/courses/lookup?code=` for title and credits.
+- [x] Screens: trail progress in the trail category header, the trail picker sheet behind "Add course", lookup autofill and the open elective hint in the student course form, slot hints for empty elective slots, "Non-credit" for an all-non-credit category.
+- [x] Tests: the schema rejects a bad trail block (clash with a slot code, a repeated code, an unknown category); the curriculum data test checks trails; map tests for trail counts, `met`, excluded and other-category courses; lookup API test (found in another program, found in a trail, unknown is 404); seed test for the options; UI tests for the progress line and picking a trail course.
+- [x] `docs/data-formats.md` documents the `electiveTrails` block.
 
 ### Checklist — Screens
 
@@ -731,28 +748,30 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - `routine_entries` keyed by user and term. Add, edit, delete, and clear a whole term.
 > - An overlap on the same day **warns but does not block**.
 > - Private: mods and admins cannot see it, and it is never used for notifications or shown to anyone else.
+>   Note (2026-10-21): "cannot see it" means another user's routine. Mods and admins are students too and keep their own routine (reached from Home, since the Mod tab takes the Routine tab's place in the five-tab bar). No route reads another user's routine; another user's entry id is a 404.
 > - `ceiling:` manual entry only. There is no import from NSU's portal, which keeps the app free of scraping and login sharing.
 > - Look (added 2026-10-20, Phase 4b): Home's summary panel switches from degree standing to the next class. Today's classes are a list on a time rail, with the current class on a `brand-soft` row and finished classes in `faint` ink.
+>   Note (2026-10-21): the full routine screen is a calendar with Month, Week (the default) and Day views instead of a plain week list. A term's dates come from `TERM_STARTS` for now; moderators will set each term's start and end in a later change (students never do).
 
 ### Checklist
 
-- [ ] `routine_entries` table and API (owner only).
-- [ ] `src/shared/routine.ts`: `overlaps(entries)`.
-- [ ] Home "Today" list (time order, Asia/Dhaka) with a link to the full routine. A full-week screen with "No classes" on empty days. An add/edit form showing the overlap warning.
+- [x] `routine_entries` table and API (owner only).
+- [x] `src/shared/routine.ts`: `overlaps(entries)`.
+- [x] Home "Today" list (time order, Asia/Dhaka) with a link to the full routine. A full-week screen with "No classes" on empty days. An add/edit form showing the overlap warning.
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] D: routine screens and test cases.
+- [x] D: routine screens and test cases. (Screens: `docs/screens.md`, Class routine. Test cases: `docs/test-cases.md`, section K. Requirements FR-61 to FR-66 in `docs/srs.md`; the NSU day letters S M T W R F A still need D's confirmation against a printed routine.)
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/routine.test.ts`: overlap, touching end and start (no overlap), different days, "today" correct across UTC midnight.
-- [ ] `src/server/features/routine/routine.api.test.ts`: owner only, a mod gets 403, clear term.
-- [ ] Run: `vp test routine`
+- [x] `src/shared/routine.test.ts`: overlap, touching end and start (no overlap), different days, "today" correct across UTC midnight.
+- [x] `src/server/features/routine/routine.api.test.ts`: owner only, a mod gets 403, clear term. (Since 2026-10-21: a mod or admin keeps their own routine and gets 404 on a student's entry.)
+- [x] Run: `vp test routine`
 
 ### Test Gate 9
 
-- [ ] **Routine tests pass.**
+- [x] **Routine tests pass.**
 - [ ] **(Manual) On a phone, entries show on Home on the right weekday and in time order.**
 
 **Sprint 2 milestone (Phases 5-9):** CGPA and retakes work end to end. Students can enter their routine and see today's classes on Home. Mods and admins can act, reverse actions and review held posts from the queue.

@@ -56,6 +56,7 @@ const category = (slots: ReturnType<typeof slot>[]) => ({
   required: 0,
   earned: 0,
   slots,
+  trails: null,
 });
 
 describe("unlockedNext", () => {

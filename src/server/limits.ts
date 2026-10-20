@@ -12,6 +12,11 @@ import {
   FACULTY_NAME_MAX_LENGTH,
   FACULTY_PAGE_MAX_LENGTH,
 } from "../shared/schemas/faculty.ts";
+import {
+  ROUTINE_INITIALS_MAX_LENGTH,
+  ROUTINE_ROOM_MAX_LENGTH,
+  ROUTINE_SECTION_MAX,
+} from "../shared/schemas/routine.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
 
 // Every limit, cap, cooldown, expiry and threshold lives here. Feature code imports these, never inlines numbers.
@@ -63,6 +68,16 @@ export const limits = {
   facultyListCacheSeconds: HOUR / SECOND,
   // ceiling: a whole transcript entered in one sitting is roughly 50 attempts. Revisit if students hit it.
   attemptWrites: { limit: 200, windowMs: HOUR },
+  // ceiling: bounds D1 rows per user and term; a term is five or six courses, each a lecture and sometimes a lab. Revisit if students report hitting it.
+  routineEntriesMax: 40,
+  // ceiling: a term is entered in one sitting, a few dozen writes; this stops a loop from churning rows. Revisit if students report hitting it.
+  routineWrites: { limit: 100, windowMs: HOUR },
+  // ceiling: NSU sections are numbered in the low tens; room and initials are short codes printed on the routine. Defined in shared code for the client form. Revisit if a real value is refused.
+  routineField: {
+    sectionMax: ROUTINE_SECTION_MAX,
+    roomMax: ROUTINE_ROOM_MAX_LENGTH,
+    initialsMax: ROUTINE_INITIALS_MAX_LENGTH,
+  },
   // ceiling: a student has a phone, a laptop and a spare browser or two. Past this, subscribing is a 409 until a device is switched off. Revisit if students report hitting it.
   pushSubscriptionsMax: 5,
   /** Subscribe calls per user. Switching a device on is one call; this stops a loop from churning rows. */

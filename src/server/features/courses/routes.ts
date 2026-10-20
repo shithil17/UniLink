@@ -1,8 +1,11 @@
 import { Hono, type Context } from "hono";
 import {
+  courseLookupQuery,
   curriculumImportEnvelope,
+  electiveTrailsRowIssues,
   studentCourseInput,
   studentCourseUpdate,
+  type CourseLookup,
   type ImportResult,
   type StudentCourse,
 } from "../../../shared/schemas/courses";
@@ -14,9 +17,14 @@ import type { AppEnv } from "../../middleware/types";
 import { attemptsRepo } from "../../repos/attempts";
 import { curriculaRepo } from "../../repos/curricula";
 import { studentCoursesRepo, type StudentCourseRow } from "../../repos/studentCourses";
-import { validateJson } from "../../validate";
-import { loadCurriculum } from "./curriculum";
-import { checkImportRows, toCurriculumHeader, toNewCourse } from "./importRows";
+import { validateJson, validateQuery } from "../../validate";
+import { findCurriculum, loadCurriculum } from "./curriculum";
+import {
+  checkImportRows,
+  toCurriculumHeader,
+  toNewCourse,
+  toNewElectiveOptions,
+} from "./importRows";
 import { allCurriculumCodes, buildCourseMap, EMPTY_COURSE_MAP } from "./map";
 
 const toStudentCourse = (s: StudentCourseRow): StudentCourse => ({
@@ -53,6 +61,13 @@ export const courseRoutes = new Hono<AppEnv>()
       }),
     );
   })
+  .get("/lookup", validateQuery(courseLookupQuery), async (c) => {
+    const { code } = c.req.valid("query");
+    const db = getDb(c.env.DB);
+    const own = await findCurriculum(db, userId(c));
+    const found = await curriculaRepo(db).lookupByCode(code, own?.id ?? null);
+    return found ? c.json(found satisfies CourseLookup) : notFound(c);
+  })
   .post("/import", requireRole("mod"), validateJson(curriculumImportEnvelope), async (c) => {
     const body = c.req.valid("json");
     if (body.courses.length > limits.courseImportMaxRows) {
@@ -70,12 +85,27 @@ export const courseRoutes = new Hono<AppEnv>()
       return c.json({ error: "no_valid_rows", message: "Every row was rejected.", rejected }, 422);
     }
 
+    // A bad trail block rejects the whole file, like a bad header.
+    const trailIssue = body.electiveTrails
+      ? electiveTrailsRowIssues(
+          body.electiveTrails,
+          accepted.map((a) => a.row),
+        )[0]
+      : undefined;
+    if (trailIssue) {
+      return c.json({ error: "invalid_request", message: `electiveTrails: ${trailIssue}` }, 400);
+    }
+
     const db = getDb(c.env.DB);
     const repo = curriculaRepo(db);
     const previous = await repo.findByProgramVersion(body.program, body.version);
     const previousCount = previous ? await repo.countCourses(previous.id) : 0;
     const curriculum = await repo.upsert(toCurriculumHeader(body), Date.now());
-    await repo.replaceCourses(curriculum.id, accepted.map(toNewCourse));
+    await repo.replaceCourses(
+      curriculum.id,
+      accepted.map(toNewCourse),
+      toNewElectiveOptions(body.electiveTrails),
+    );
     await audit(db, {
       actor: userId(c),
       action: "curriculum.import",

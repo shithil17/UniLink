@@ -16,6 +16,7 @@ import { Route as DemoRouteImport } from './routes/demo'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ModRouteImport } from './routes/mod'
+import { Route as RoutineRouteImport } from './routes/routine'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ModIndexRouteImport } from './routes/mod.index'
@@ -60,6 +61,11 @@ const LoginRoute = LoginRouteImport.update({
 const ModRoute = ModRouteImport.update({
   id: '/mod',
   path: '/mod',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoutineRoute = RoutineRouteImport.update({
+  id: '/routine',
+  path: '/routine',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/mod': typeof ModRouteWithChildren
+  '/routine': typeof RoutineRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/mod/audit': typeof ModAuditRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/demo': typeof DemoRoute
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
+  '/routine': typeof RoutineRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/mod/audit': typeof ModAuditRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/mod': typeof ModRouteWithChildren
+  '/routine': typeof RoutineRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/mod/audit': typeof ModAuditRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/login'
     | '/mod'
+    | '/routine'
     | '/settings'
     | '/signup'
     | '/mod/audit'
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/demo'
     | '/inbox'
     | '/login'
+    | '/routine'
     | '/settings'
     | '/signup'
     | '/mod/audit'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/login'
     | '/mod'
+    | '/routine'
     | '/settings'
     | '/signup'
     | '/mod/audit'
@@ -237,6 +249,7 @@ export interface RootRouteChildren {
   InboxRoute: typeof InboxRoute
   LoginRoute: typeof LoginRoute
   ModRoute: typeof ModRouteWithChildren
+  RoutineRoute: typeof RoutineRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
 }
@@ -290,6 +303,13 @@ declare module '@tanstack/react-router' {
       path: '/mod'
       fullPath: '/mod'
       preLoaderRoute: typeof ModRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/routine': {
+      id: '/routine'
+      path: '/routine'
+      fullPath: '/routine'
+      preLoaderRoute: typeof RoutineRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -397,6 +417,7 @@ const rootRouteChildren: RootRouteChildren = {
   InboxRoute: InboxRoute,
   LoginRoute: LoginRoute,
   ModRoute: ModRouteWithChildren,
+  RoutineRoute: RoutineRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
 }
