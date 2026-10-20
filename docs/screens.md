@@ -37,7 +37,12 @@ flowchart LR
   Mod --> Audit[Audit log: admins only]
 ```
 
-Navigation: a bottom bar with Home, Courses, Inbox (unread badge) and Settings. The Moderation panel is reached from Settings and is hidden from students.
+Navigation:
+
+- **Main tabs.** A bottom bar on phones, the top bar from `md`: Home, Courses, Inbox (unread badge), Settings. Mods and admins get a fifth tab, Mod, for the moderation panel (it stays marked while any `/mod/...` screen is open); the bar never goes past five. Students never see it. The current tab is marked by `aria-current` and heavier ink. Moderation is also still listed under Settings.
+- **No tabs when they would lead nowhere.** Log in, Create an account and the forced Change password screen show only the wordmark; the tabs return once the user is signed in and has no temporary password.
+- **Moderation sections.** From `md`: an underline tab row (Queue, Users, Faculty, Courses, ID check, Audit log for admins, Import). On a phone seven sections do not fit a row, so the screen shows "Moderation" with a button naming the current section; it opens a bottom sheet listing every section the role can open, each with a one-line hint. The current row is tinted and ticked (`aria-current="page"`), and choosing a row closes the sheet.
+- **Back paths.** Mod sections are peers of one top-level panel, so they need no back. Change password, opened from Settings, shows "Settings" with a back chevron above its title (not while the change is forced). Sheets (course sheet, pickers, mod sheets) close with their X, Esc or a tap on the scrim.
 
 App-wide states: "You're offline" full screen with Retry when there is no connection; "A new version is ready" toast with a reload action after an update; an "Add to Home Screen" hint on iOS Safari that can be dismissed.
 

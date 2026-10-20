@@ -252,7 +252,7 @@ A sentence-case title (16px, 600, `ink`) with an optional count in 14px `faint` 
 
 ### Navigation
 
-Bottom tabs on phones, a plain top-bar row from `md`. Inactive tabs are `soft`; the active tab turns `ink` and semibold, never a colored pill or fill. A hidden bold copy of each label reserves its width so the row doesn't shift. Tabs inside screens use an underline rule in `ink` for the active one.
+Bottom tabs on phones (at most five; mods and admins get a fifth, Mod), a plain top-bar row from `md`. Signed out, the shell shows only the wordmark. The moderation panel's seven sections are an underline row from `md`; on a phone they become a button naming the current section that opens a bottom sheet list (current row `brand-soft` with a tick). Inactive tabs are `soft`; the active tab turns `ink` and semibold, never a colored pill or fill. A hidden bold copy of each label reserves its width so the row doesn't shift. Tabs inside screens use an underline rule in `ink` for the active one.
 
 ### State marks
 
