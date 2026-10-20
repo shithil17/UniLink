@@ -28,11 +28,11 @@ export function ClassRow({
   return (
     <li
       className={cn(
-        "grid grid-cols-[5rem_minmax(0,1fr)] border-b border-line",
+        "grid grid-cols-[6rem_minmax(0,1fr)] border-b border-line",
         status === "current" && "bg-brand-soft",
       )}
     >
-      <div className="py-3 pr-3 pl-2 text-right text-sm tabular-nums">
+      <div className="py-3 pr-3 pl-2 text-right text-sm whitespace-nowrap tabular-nums">
         <p className={cn("font-medium", done ? "text-faint" : "text-ink")}>
           {formatClock(entry.start)}
         </p>
