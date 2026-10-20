@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { PencilIcon, TriangleAlertIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useState } from "react";
-import { ClassRow } from "@/components/routine/ClassRow";
+import { MonthGrid } from "@/components/routine/MonthGrid";
 import { RoutineSheet, type RoutineSheetTarget } from "@/components/routine/RoutineSheet";
-import { SectionHeader } from "@/components/layout/SectionHeader";
+import { TimeGrid } from "@/components/routine/TimeGrid";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,16 +14,42 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorMessage } from "@/lib/api";
-import { courseMapQuery, meQuery, routineQuery } from "@/lib/queries";
-import { routineCourseChoices, titleByCode, useClearRoutine, weekDays } from "@/lib/routine";
 import { termLabel } from "@/lib/courseMap";
+import { courseMapQuery, meQuery, routineQuery } from "@/lib/queries";
+import { routineCourseChoices, titleByCode, useClearRoutine } from "@/lib/routine";
+import {
+  CALENDAR_VIEWS,
+  classesOn,
+  periodLabel,
+  stepDate,
+  type CalendarView,
+} from "@/lib/routineCalendar";
 import { toast } from "@/lib/toast";
 import { useNow } from "@/lib/useNow";
-import { dhakaDayLetter, entryStatus } from "../../shared/routine";
-import { currentTerm } from "../../shared/terms";
+import {
+  dhakaToday,
+  inRange,
+  isDateKey,
+  monthOf,
+  monthWeeks,
+  weekOf,
+  type DateKey,
+} from "../../shared/calendar";
+import { currentTerm, termRange } from "../../shared/terms";
+
+type RoutineSearch = { view?: CalendarView; date?: DateKey };
+
+const VIEW_LABELS: Record<CalendarView, string> = { month: "Month", week: "Week", day: "Day" };
 
 export const Route = createFileRoute("/routine")({
+  // The view and date live in the URL, so back and forward step through them. Week and today are
+  // the defaults and stay out of the URL.
+  validateSearch: (search: Record<string, unknown>): RoutineSearch => ({
+    view: CALENDAR_VIEWS.find((v) => v !== "week" && v === search.view),
+    date: isDateKey(search.date) ? search.date : undefined,
+  }),
   // Signed out goes to login. Everyone else, mods and admins included, has their own routine.
   beforeLoad: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(meQuery).catch(() => null);
@@ -32,41 +58,111 @@ export const Route = createFileRoute("/routine")({
   component: RoutinePage,
 });
 
-const flat = "rounded-control bg-tint";
-
 function RoutinePage() {
+  const search = Route.useSearch();
+  const navigate = Route.useNavigate();
   const routine = useQuery(routineQuery);
   const map = useQuery(courseMapQuery);
   const now = useNow();
   const [target, setTarget] = useState<RoutineSheetTarget>(null);
   const [clearing, setClearing] = useState(false);
 
+  const view = search.view ?? "week";
+  const today = dhakaToday(now);
+  const date = search.date ?? today;
+  const term = currentTerm(now);
+  // ceiling: the routine holds the current term only, and its dates come from the shared term
+  // start dates until moderators set each term's real start and end.
+  const range = termRange(term);
   const entries = routine.data ?? [];
-  const choices = map.data ? routineCourseChoices(map.data) : [];
-  const titles = titleByCode(choices);
-  const today = dhakaDayLetter(now);
+  const titles = titleByCode(map.data ? routineCourseChoices(map.data) : []);
+
+  const show = (next: { view?: CalendarView; date?: DateKey }) =>
+    void navigate({
+      search: (prev) => {
+        const v = next.view ?? prev.view ?? "week";
+        const d = next.date ?? prev.date ?? today;
+        return { view: v === "week" ? undefined : v, date: d === today ? undefined : d };
+      },
+    });
+  const openDay = (d: DateKey) => show({ view: "day", date: d });
+
+  const note =
+    view === "day" && !inRange(date, range)
+      ? `This day is outside ${termLabel(term)}, so it has no classes.`
+      : routine.data && entries.length === 0
+        ? "No classes yet. Add the ones you're taking this term, or tap an empty slot on the grid."
+        : view === "day" && routine.data && classesOn(entries, date, range).length === 0
+          ? "No classes this day."
+          : null;
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div className="space-y-4">
       <div className="flex min-h-11 items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-ink">Routine</h1>
-          <p className="text-sm text-soft">{termLabel(currentTerm(now))}</p>
+          <p className="text-sm text-soft">{termLabel(term)}</p>
         </div>
         <Button size="lg" disabled={!routine.data} onClick={() => setTarget("new")}>
           Add class
         </Button>
       </div>
 
-      {routine.isPending ? (
-        <div aria-busy="true" role="status" aria-label="Loading your routine" className="space-y-4">
-          {[0, 1, 2].map((n) => (
-            <div key={n} className="space-y-2">
-              <div className={`h-5 w-28 ${flat}`} />
-              <div className={`h-12 w-full ${flat}`} />
-            </div>
-          ))}
+      <div className="flex items-center justify-between gap-3">
+        <Tabs value={view} onValueChange={(v) => show({ view: v as CalendarView })}>
+          <TabsList aria-label="Calendar view" className="h-11!">
+            {CALENDAR_VIEWS.map((v) => (
+              <TabsTrigger key={v} value={v} className="px-3.5">
+                {VIEW_LABELS[v]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+        <Button
+          variant="outline"
+          size="lg"
+          className="px-3.5"
+          disabled={date === today}
+          onClick={() => show({ date: today })}
+        >
+          Today
+        </Button>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-ink" aria-live="polite">
+            {periodLabel(view, date)}
+          </h2>
+          <div className="-mr-2.5 flex items-center">
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              aria-label={`Previous ${view}`}
+              onClick={() => show({ date: stepDate(view, date, -1) })}
+            >
+              <ChevronLeftIcon />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-lg"
+              aria-label={`Next ${view}`}
+              onClick={() => show({ date: stepDate(view, date, 1) })}
+            >
+              <ChevronRightIcon />
+            </Button>
+          </div>
         </div>
+        {note ? <p className="text-sm text-soft">{note}</p> : null}
+      </div>
+
+      {routine.isPending ? (
+        <div
+          aria-busy="true"
+          role="status"
+          aria-label="Loading your routine"
+          className="h-[30rem] rounded-panel border border-line bg-tint"
+        />
       ) : routine.isError ? (
         <div className="rounded-panel border border-line bg-surface p-6 text-center">
           <p className="font-medium text-ink">Your routine didn't load</p>
@@ -75,72 +171,42 @@ function RoutinePage() {
             Try again
           </Button>
         </div>
+      ) : view === "month" ? (
+        <MonthGrid
+          weeks={monthWeeks(date)}
+          month={monthOf(date)}
+          entries={entries}
+          term={range}
+          today={today}
+          now={now}
+          onPickDate={openDay}
+        />
       ) : (
-        <>
-          {entries.length === 0 ? (
-            <p className="text-sm text-soft">
-              Add the classes you're taking this term. Today's show on Home, in time order.
-            </p>
-          ) : null}
-          {weekDays(entries).map(({ day, name, entries: held, clashes }) => (
-            <section key={day} aria-labelledby={`day-${day}`}>
-              <SectionHeader
-                id={`day-${day}`}
-                title={name}
-                action={day === today ? <span className="text-soft">Today</span> : undefined}
-              />
-              {held.length === 0 ? (
-                <p className="border-b border-line py-3 text-sm text-soft">No classes</p>
-              ) : (
-                <ul>
-                  {held.map((entry) => (
-                    <ClassRow
-                      key={entry.id}
-                      entry={entry}
-                      title={titles.get(entry.courseCode)}
-                      status={day === today ? entryStatus(entry, now) : "upcoming"}
-                      note={
-                        clashes.has(entry.id) ? (
-                          <p className="mt-0.5 flex items-center gap-1.5 text-sm text-ink">
-                            <TriangleAlertIcon className="size-3.5 shrink-0" aria-hidden="true" />
-                            Overlaps{" "}
-                            {clashes
-                              .get(entry.id)
-                              ?.map((c) => c.courseCode)
-                              .join(", ")}
-                          </p>
-                        ) : null
-                      }
-                      action={
-                        <Button
-                          variant="ghost"
-                          size="icon-lg"
-                          aria-label={`Edit ${entry.courseCode} section ${entry.section}, ${name}`}
-                          onClick={() => setTarget(entry)}
-                        >
-                          <PencilIcon />
-                        </Button>
-                      }
-                    />
-                  ))}
-                </ul>
-              )}
-            </section>
-          ))}
-          {entries.length > 0 ? (
-            <div className="pt-2">
-              <Button variant="outline" size="lg" onClick={() => setClearing(true)}>
-                Clear this term
-              </Button>
-            </div>
-          ) : null}
-        </>
+        <TimeGrid
+          dates={view === "week" ? weekOf(date) : [date]}
+          entries={entries}
+          term={range}
+          today={today}
+          now={now}
+          titles={titles}
+          onOpen={setTarget}
+          onAdd={setTarget}
+          onPickDate={view === "week" ? openDay : undefined}
+        />
       )}
+
+      {entries.length > 0 ? (
+        <div className="pt-2">
+          <Button variant="outline" size="lg" onClick={() => setClearing(true)}>
+            Clear this term
+          </Button>
+        </div>
+      ) : null}
 
       <RoutineSheet
         target={target}
         entries={entries}
-        choices={choices}
+        choices={map.data ? routineCourseChoices(map.data) : []}
         onClose={() => setTarget(null)}
       />
       <ClearTermDialog open={clearing} count={entries.length} onClose={() => setClearing(false)} />

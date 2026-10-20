@@ -1,3 +1,4 @@
+import { toDateKey, type DateKey } from "./calendar.ts";
 import { dhakaDate } from "./time.ts";
 
 export type TermSeason = "spring" | "summer" | "fall";
@@ -19,4 +20,19 @@ export function currentTerm(now: number = Date.now()): Term {
     if (month > start.month || (month === start.month && day >= start.day)) season = start.season;
   }
   return { year, season };
+}
+
+/**
+ * The dates a term covers: from its start up to (not including) the next term's start, so Fall runs
+ * into January. These come from `TERM_STARTS` until moderators set each term's real dates.
+ */
+export function termRange(term: Term): { start: DateKey; end: DateKey } {
+  const i = TERM_STARTS.findIndex((t) => t.season === term.season);
+  const start = TERM_STARTS[i];
+  const next = TERM_STARTS[(i + 1) % TERM_STARTS.length];
+  const nextYear = i + 1 === TERM_STARTS.length ? term.year + 1 : term.year;
+  return {
+    start: toDateKey(term.year, start.month, start.day),
+    end: toDateKey(nextYear, next.month, next.day),
+  };
 }

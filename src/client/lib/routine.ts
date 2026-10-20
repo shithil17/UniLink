@@ -1,11 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import {
-  entriesOn,
   nextEntry,
   overlapsWith,
-  ROUTINE_DAY_NAMES,
-  ROUTINE_DAYS,
   timeToMinutes,
   todayEntries,
   type RoutineDay,
@@ -40,6 +37,9 @@ export function formatGap(minutes: number): string {
   if (m < 60) return `${m} min`;
   return m % 60 === 0 ? `${m / 60} h` : `${Math.floor(m / 60)} h ${m % 60} min`;
 }
+
+/** "CSE115" with a soft break after its letters, so a narrow block wraps it as "CSE" over "115". */
+export const breakableCode = (code: string) => code.replace(/^([A-Z]+)(?=\d)/, "$1\u200B");
 
 /** "Section 2 · Room 304 · RkZ", leaving out what was not entered. */
 export function classDetails(entry: Pick<RoutineEntry, "section" | "room" | "initials">): string {
@@ -81,31 +81,6 @@ export function routineCourseChoices(map: Pick<CourseMap, "categories" | "extras
 /** Course code to title, for rows that show both. */
 export const titleByCode = (choices: readonly Choice[]) =>
   new Map(choices.map((c) => [c.code, c.title]));
-
-export type WeekDay = {
-  day: RoutineDay;
-  name: string;
-  entries: RoutineEntry[];
-  /** Entry id to the entries it clashes with on this day. */
-  clashes: Map<number, RoutineEntry[]>;
-};
-
-/** The routine laid out by day in week order. A class on several days appears under each. */
-export function weekDays(entries: readonly RoutineEntry[]): WeekDay[] {
-  return ROUTINE_DAYS.map((day) => {
-    const held = entriesOn(entries, day);
-    const clashes = new Map<number, RoutineEntry[]>();
-    for (const e of held) {
-      const ids = overlapsWith(e, held);
-      if (ids.length > 0)
-        clashes.set(
-          e.id,
-          held.filter((o) => ids.includes(o.id)),
-        );
-    }
-    return { day, name: ROUTINE_DAY_NAMES[day], entries: held, clashes };
-  });
-}
 
 /** The saved classes a draft would clash with, for the form's warning. Empty until the times make sense. */
 export function clashesFor(

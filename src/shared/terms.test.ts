@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { currentTerm } from "./terms";
+import { currentTerm, termRange } from "./terms";
 
 describe("currentTerm", () => {
   it("picks the season from the Dhaka date", () => {
@@ -14,5 +14,25 @@ describe("currentTerm", () => {
     expect(currentTerm(Date.UTC(2026, 3, 30, 18, 0)).season).toBe("summer");
     // New year in Dhaka while it is still 31 December in UTC.
     expect(currentTerm(Date.UTC(2026, 11, 31, 18, 0))).toEqual({ year: 2027, season: "spring" });
+  });
+});
+
+describe("termRange", () => {
+  it("runs from a term's start up to the next term's start", () => {
+    expect(termRange({ year: 2026, season: "spring" })).toEqual({
+      start: "2026-01-01",
+      end: "2026-05-01",
+    });
+    expect(termRange({ year: 2026, season: "summer" })).toEqual({
+      start: "2026-05-01",
+      end: "2026-09-01",
+    });
+  });
+
+  it("lets Fall run into the next year", () => {
+    expect(termRange({ year: 2026, season: "fall" })).toEqual({
+      start: "2026-09-01",
+      end: "2027-01-01",
+    });
   });
 });

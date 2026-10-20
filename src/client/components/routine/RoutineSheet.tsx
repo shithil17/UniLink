@@ -45,8 +45,14 @@ import {
 type FormValues = z.input<typeof routineInput>;
 type Choice = { code: string; title: string };
 
-/** What the sheet shows: a new class (`"new"`), a saved one to edit, or nothing (closed). */
-export type RoutineSheetTarget = RoutineEntry | "new" | null;
+/** A new class with its day and times filled in, from a tap on an empty slot of the calendar. */
+export type ClassPreset = { days: RoutineDay[]; start: string; end: string };
+
+/** What the sheet shows: a new class (`"new"` or a preset), a saved one to edit, or nothing (closed). */
+export type RoutineSheetTarget = RoutineEntry | ClassPreset | "new" | null;
+
+const isSaved = (target: RoutineEntry | ClassPreset | "new"): target is RoutineEntry =>
+  typeof target === "object" && "id" in target;
 
 export function RoutineSheet({
   target,
@@ -65,8 +71,9 @@ export function RoutineSheet({
       <SheetContent side="bottom">
         {target ? (
           <RoutineEditor
-            key={target === "new" ? "new" : target.id}
-            entry={target === "new" ? null : target}
+            key={isSaved(target) ? target.id : "new"}
+            entry={isSaved(target) ? target : null}
+            preset={isSaved(target) || target === "new" ? null : target}
             entries={entries}
             choices={choices}
             onClose={onClose}
@@ -83,11 +90,13 @@ const timeError = (error: { message?: string } | undefined, blank: string) =>
 
 function RoutineEditor({
   entry,
+  preset,
   entries,
   choices,
   onClose,
 }: {
   entry: RoutineEntry | null;
+  preset: ClassPreset | null;
   entries: readonly RoutineEntry[];
   choices: readonly Choice[];
   onClose: () => void;
@@ -115,7 +124,7 @@ function RoutineEditor({
           room: entry.room,
           initials: entry.initials,
         }
-      : { courseCode: "", days: [], start: "", end: "", room: "", initials: "" },
+      : { courseCode: "", days: [], start: "", end: "", room: "", initials: "", ...preset },
   });
   const { errors } = form.formState;
   const pending = add.isPending || edit.isPending;

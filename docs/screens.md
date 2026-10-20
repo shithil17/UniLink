@@ -135,11 +135,17 @@ Everyone has their own routine, mods and admins included (they reach it from Hom
 
 ### Routine (`/routine`)
 
-- Header "Routine" with the current term (for example "Fall 2026") and an "Add class" button.
-- One section per day, Sunday first, titled with the day name; today's section says "Today". Each class is a time-rail row as on Home, with an edit button. A day with nothing on it shows "No classes". A class that clashes with another on that day carries "Overlaps CSE215" under its details (a warning icon and ink text, not a danger colour).
-- No classes at all: "Add the classes you're taking this term. Today's show on Home, in time order."
+A calendar of the current term, like a phone's calendar app, with Month, Week and Day views. The routine repeats every week of the term, so each date shows the classes held on its weekday. The view and date are in the URL (`?view=month&date=2026-10-21`); Week and today are the defaults.
+
+- Header "Routine" with the current term (for example "Fall 2026") and the one primary button, "Add class".
+- A row with the view switch (Month · Week · Day, a segmented control) and "Today" (disabled while today is shown). Under it the period on screen ("October 2026", "Oct 18 - 24", "Wednesday, Oct 21") with back and forward arrows: a month, a week or a day at a time.
+- **Week** (the default): a time grid, Sunday to Saturday, 8 AM to 6 PM (wider when a class starts earlier or ends later), one hairline per hour. Each column header shows the weekday and date; today's date sits on a `brand-soft` chip, and tapping a header opens that day. Classes are blocks at their times: the code (and on wider screens the time and room); classes on now are `brand-soft` with a brand edge, finished ones are faint, and a thin brand line marks the current time in today's column. Classes that clash share their slot side by side; on a phone those narrow blocks drop their text, and the full label is read out and shown in the sheet. Tapping a block opens Edit class; tapping an empty slot opens "Add a class" with that day and time filled in (a 90-minute class from the nearest half hour).
+- **Day**: the same grid for one date, with each block showing the code and title, the time range and "Section 2 · Room 304 · RkZ".
+- **Month**: whole weeks covering the month, Sunday first. Each date shows its classes: on wider screens up to three as "8:00 AM CSE115" with "N more" after, on a phone one short bar per class. Other months' dates are faint; today's date sits on a `brand-soft` chip. Tapping a date opens it in Day.
+- Dates outside the term have no classes; a day outside it says "This day is outside Fall 2026, so it has no classes." Term dates come from the shared term start dates until moderators can set each term's start and end.
+- No classes at all: "No classes yet. Add the ones you're taking this term, or tap an empty slot on the grid." A day with none: "No classes this day."
 - "Clear this term" (only when there are classes) asks first: "Clear this term's routine?" / "This deletes all N classes from this term. It can't be undone." with "Keep them" and "Clear routine". Toast "Routine cleared".
-- Loading: flat placeholders. Error: "Your routine didn't load" with the reason and "Try again".
+- Loading: a flat placeholder at the grid's size. Error: "Your routine didn't load" with the reason and "Try again".
 
 ### Class sheet
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import type { CourseMap } from "../../shared/schemas/courses";
 import type { RoutineEntry } from "../../shared/schemas/routine";
 import {
+  breakableCode,
   classDetails,
   clashesFor,
   formatClock,
@@ -9,7 +10,6 @@ import {
   formatRange,
   nextClassOf,
   routineCourseChoices,
-  weekDays,
 } from "./routine";
 
 const entry = (over: Partial<RoutineEntry> & Pick<RoutineEntry, "id" | "days">): RoutineEntry => ({
@@ -44,35 +44,20 @@ describe("time formatting", () => {
   });
 });
 
+describe("breakableCode", () => {
+  it("lets a code break only between its letters and its number", () => {
+    expect(breakableCode("CSE115")).toBe("CSE\u200B115");
+    expect(breakableCode("CSE115L")).toBe("CSE\u200B115L");
+    expect(breakableCode("ELECT1")).toBe("ELECT\u200B1");
+  });
+});
+
 describe("classDetails", () => {
   it("leaves out the room and faculty when they were not entered", () => {
     expect(classDetails({ section: 2, room: "", initials: "" })).toBe("Section 2");
     expect(classDetails({ section: 2, room: "NAC 304", initials: "RkZ" })).toBe(
       "Section 2 · Room NAC 304 · RkZ",
     );
-  });
-});
-
-describe("weekDays", () => {
-  it("lists all seven days in week order, empty ones with no entries", () => {
-    const week = weekDays([entry({ id: 1, days: ["M", "W"] })]);
-    expect(week.map((d) => d.day)).toEqual(["S", "M", "T", "W", "R", "F", "A"]);
-    expect(week.map((d) => d.entries.length)).toEqual([0, 1, 0, 1, 0, 0, 0]);
-  });
-
-  it("marks a clash only on the day the two classes share", () => {
-    const a = entry({ id: 1, days: ["M", "W"], start: "09:00", end: "10:30" });
-    const b = entry({
-      id: 2,
-      days: ["W", "R"],
-      start: "10:00",
-      end: "11:00",
-      courseCode: "MAT120",
-    });
-    const week = weekDays([a, b]);
-    expect(week[1].clashes.size).toBe(0);
-    expect(week[3].clashes.get(1)?.map((e) => e.id)).toEqual([2]);
-    expect(week[4].clashes.size).toBe(0);
   });
 });
 

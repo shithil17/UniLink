@@ -734,6 +734,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 >   Note (2026-10-21): "cannot see it" means another user's routine. Mods and admins are students too and keep their own routine (reached from Home, since the Mod tab takes the Routine tab's place in the five-tab bar). No route reads another user's routine; another user's entry id is a 404.
 > - `ceiling:` manual entry only. There is no import from NSU's portal, which keeps the app free of scraping and login sharing.
 > - Look (added 2026-10-20, Phase 4b): Home's summary panel switches from degree standing to the next class. Today's classes are a list on a time rail, with the current class on a `brand-soft` row and finished classes in `faint` ink.
+>   Note (2026-10-21): the full routine screen is a calendar with Month, Week (the default) and Day views instead of a plain week list. A term's dates come from `TERM_STARTS` for now; moderators will set each term's start and end in a later change (students never do).
 
 ### Checklist
 
