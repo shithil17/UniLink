@@ -1,8 +1,10 @@
-import { queryOptions } from "@tanstack/react-query";
+import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { me } from "../../shared/schemas/auth";
 import { courseMap } from "../../shared/schemas/courses";
 import { healthResponse } from "../../shared/schemas/health";
+import { notificationPage, unreadCount } from "../../shared/schemas/inbox";
 import { ApiError, apiGet } from "./api";
+import { INBOX_POLL_MS } from "./inbox";
 
 export const healthQuery = queryOptions({
   queryKey: ["health"],
@@ -28,4 +30,24 @@ export const meQuery = queryOptions({
 export const courseMapQuery = queryOptions({
   queryKey: ["course-map"],
   queryFn: () => apiGet("/api/courses/map", courseMap),
+});
+
+/** The signed-in user's unread count for the nav badge. Marking read invalidates the `inbox` prefix. */
+export const unreadCountQuery = queryOptions({
+  queryKey: ["inbox", "unread-count"],
+  queryFn: () => apiGet("/api/inbox/unread-count", unreadCount),
+  refetchInterval: INBOX_POLL_MS,
+  refetchOnWindowFocus: true,
+});
+
+/** The inbox, newest first, one cursor page at a time. */
+export const inboxQuery = infiniteQueryOptions({
+  queryKey: ["inbox", "list"],
+  queryFn: ({ pageParam }) =>
+    apiGet(
+      pageParam ? `/api/inbox?cursor=${encodeURIComponent(pageParam)}` : "/api/inbox",
+      notificationPage,
+    ),
+  initialPageParam: "",
+  getNextPageParam: (last) => last.nextCursor ?? undefined,
 });

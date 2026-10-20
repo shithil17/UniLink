@@ -554,15 +554,15 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist
 
-- [ ] `notifications` table (user, type, payload JSON, `read_at`, `created_at`), indexed on (user, `read_at`).
-- [ ] `src/server/notify.ts` with batched inserts.
-- [ ] `GET /api/inbox` (paginated), `GET /api/inbox/unread-count`, `POST /api/inbox/:id/read`, `POST /api/inbox/read-all`.
-- [ ] Inbox screen and an unread badge in the navigation.
+- [x] `notifications` table (user, type, payload JSON, `read_at`, `created_at`), indexed on (user, `read_at`).
+- [x] `src/server/notify.ts` with batched inserts.
+- [x] `GET /api/inbox` (paginated), `GET /api/inbox/unread-count`, `POST /api/inbox/:id/read`, `POST /api/inbox/read-all`.
+- [x] Inbox screen and an unread badge in the navigation.
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/server/features/inbox/inbox.api.test.ts`: `notify()` writes rows for every target, a user sees only their own, mark-read works, another user's id gets 404.
-- [ ] Run: `vp test inbox`
+- [x] `src/server/features/inbox/inbox.api.test.ts`: `notify()` writes rows for every target, a user sees only their own, mark-read works, another user's id gets 404.
+- [x] Run: `vp test inbox`
 
 ### Test Gate 5
 
