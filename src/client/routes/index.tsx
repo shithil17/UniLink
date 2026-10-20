@@ -139,15 +139,8 @@ function HomeReady({
           </p>
         )}
         {total > items.length ? (
-          <p className="pt-3 text-sm text-soft">
-            {total - items.length} more in the{" "}
-            <Link
-              to="/courses"
-              className={`rounded-control text-brand underline underline-offset-4 ${focusRing}`}
-            >
-              course map
-            </Link>
-            .
+          <p className="pt-3 text-sm text-soft tabular-nums">
+            Showing {items.length} of {total}
           </p>
         ) : null}
       </section>

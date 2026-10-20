@@ -82,7 +82,7 @@ Current password and New password. Reached by choice from Settings, or forced af
 ### Home (`/`)
 
 - "Welcome to UniLink" header with the CGPA summary (CGPA, earned and remaining credits, a credit bar).
-- "Unlocked next": the courses whose prerequisites are now met, each with its state mark, linking to the course sheet.
+- "Unlocked next" with its count and a "Course map" link: the first six courses whose prerequisites are now met, each with its state mark. When there are more, a muted "Showing 6 of 12" line ends the list.
 - Empty: "No course map for your program yet. It will show up here once a moderator adds it. Your progress starts counting then."
 - Error: "Couldn't load your progress. Check your connection and try again."
 
