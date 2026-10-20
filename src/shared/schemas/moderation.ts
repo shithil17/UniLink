@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { role } from "./auth";
-import { id, instant, page, pageQuery, reasonCategory, reportTargetType } from "./common";
+import { role } from "./auth.ts";
+import { id, instant, page, pageQuery, reasonCategory, reportTargetType } from "./common.ts";
 
 export const verdict = z.enum(["approve", "review", "reject"]);
 
