@@ -731,6 +731,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - `routine_entries` keyed by user and term. Add, edit, delete, and clear a whole term.
 > - An overlap on the same day **warns but does not block**.
 > - Private: mods and admins cannot see it, and it is never used for notifications or shown to anyone else.
+>   Note (2026-10-21): "cannot see it" means another user's routine. Mods and admins are students too and keep their own routine (reached from Home, since the Mod tab takes the Routine tab's place in the five-tab bar). No route reads another user's routine; another user's entry id is a 404.
 > - `ceiling:` manual entry only. There is no import from NSU's portal, which keeps the app free of scraping and login sharing.
 > - Look (added 2026-10-20, Phase 4b): Home's summary panel switches from degree standing to the next class. Today's classes are a list on a time rail, with the current class on a `brand-soft` row and finished classes in `faint` ink.
 
@@ -747,7 +748,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Test Scripts & Smoke Tests
 
 - [x] `src/shared/routine.test.ts`: overlap, touching end and start (no overlap), different days, "today" correct across UTC midnight.
-- [x] `src/server/features/routine/routine.api.test.ts`: owner only, a mod gets 403, clear term.
+- [x] `src/server/features/routine/routine.api.test.ts`: owner only, a mod gets 403, clear term. (Since 2026-10-21: a mod or admin keeps their own routine and gets 404 on a student's entry.)
 - [x] Run: `vp test routine`
 
 ### Test Gate 9

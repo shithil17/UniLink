@@ -32,9 +32,8 @@ function Home() {
   const me = useQuery(meQuery);
   const map = useQuery({ ...courseMapQuery, enabled: me.data != null });
   const state = selectHomeState(me, map);
-  // The routine is a student feature: mods and admins never ask for it (the API would answer 403).
-  const isStudent = me.data?.role === "student";
-  const routine = useQuery({ ...routineQuery, enabled: isStudent });
+  // Every signed-in user has their own routine, mods and admins included.
+  const routine = useQuery({ ...routineQuery, enabled: me.data != null });
   const now = useNow();
 
   const retry = () => {
@@ -49,35 +48,26 @@ function Home() {
       {state === "empty" ? (
         <>
           <NoCurriculum />
-          {isStudent ? <TodaySection routine={routine} titles={new Map()} now={now} /> : null}
+          <TodaySection routine={routine} titles={new Map()} now={now} />
         </>
       ) : null}
       {state === "ready" && map.data ? (
-        <HomeReady map={map.data} routine={isStudent ? routine : null} now={now} />
+        <HomeReady map={map.data} routine={routine} now={now} />
       ) : null}
     </div>
   );
 }
 
-function HomeReady({
-  map,
-  routine,
-  now,
-}: {
-  map: CourseMap;
-  /** The student's routine, or null for a mod or admin, who have none. */
-  routine: RoutineView | null;
-  now: number;
-}) {
+function HomeReady({ map, routine, now }: { map: CourseMap; routine: RoutineView; now: number }) {
   const { items, total } = unlockedNext(map);
   const titles = titleByCode(routineCourseChoices(map));
   // The panel shows the class in progress or the next one today. With none left, or no routine, it
   // falls back to the degree standing. It waits for the routine so it does not swap after loading.
-  const nextClass = nextClassOf(routine?.data, now);
+  const nextClass = nextClassOf(routine.data, now);
 
   return (
     <>
-      {routine?.isPending ? (
+      {routine.isPending ? (
         <NextClassSkeleton className={panel} />
       ) : nextClass ? (
         <NextClassPanel
@@ -89,7 +79,7 @@ function HomeReady({
       ) : (
         <StandingPanel map={map} />
       )}
-      {routine ? <TodaySection routine={routine} titles={titles} now={now} /> : null}
+      <TodaySection routine={routine} titles={titles} now={now} />
 
       <section aria-label="Unlocked next">
         <SectionHeader

@@ -24,11 +24,10 @@ import { dhakaDayLetter, entryStatus } from "../../shared/routine";
 import { currentTerm } from "../../shared/terms";
 
 export const Route = createFileRoute("/routine")({
-  // Signed out goes to login. Mods and admins have no routine (the API refuses them), so Home.
+  // Signed out goes to login. Everyone else, mods and admins included, has their own routine.
   beforeLoad: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(meQuery).catch(() => null);
     if (!me) throw redirect({ to: "/login" });
-    if (me.role !== "student") throw redirect({ to: "/" });
   },
   component: RoutinePage,
 });

@@ -14,7 +14,7 @@ describe("mainTabs", () => {
     ]);
   });
 
-  it("keeps the Routine tab away from mods and admins, who have no routine", () => {
+  it("gives mods and admins the Mod tab in the Routine tab's place, so the bar stays at five", () => {
     for (const role of ["mod", "admin"] as const) {
       expect(mainTabs({ role, mustChangePassword: false }).map((t) => t.label)).not.toContain(
         "Routine",

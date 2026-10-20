@@ -191,25 +191,25 @@ describe("owner only", () => {
     expect((await call("GET", "/api/routine", null)).status).toBe(401);
   });
 
-  it("gives a mod and an admin 403 on every route", async () => {
+  it("lets a mod and an admin keep their own routine but never read or change a student's", async () => {
     const student = await signedIn();
     const made = await (await add(student.token)).json<RoutineEntry>();
     for (const role of ["mod", "admin"] as const) {
       const staff = await signedIn(role);
-      for (const [method, path, body] of [
-        ["GET", "/api/routine", undefined],
-        ["POST", "/api/routine", entry()],
-        ["PATCH", `/api/routine/${made.id}`, { room: "X" }],
-        ["DELETE", `/api/routine/${made.id}`, undefined],
-        ["DELETE", "/api/routine", undefined],
-      ] as const) {
-        expect(
-          (await call(method, path, staff.token, body)).status,
-          `${role} ${method} ${path}`,
-        ).toBe(403);
-      }
+      // Their own routine works like a student's.
+      expect((await add(staff.token)).status, `${role} adds`).toBe(201);
+      expect(await list(staff.token), `${role} lists only their own`).toHaveLength(1);
+      // The student's entry is not theirs: not found, and left untouched.
+      expect(
+        (await call("PATCH", `/api/routine/${made.id}`, staff.token, { room: "X" })).status,
+      ).toBe(404);
+      expect((await call("DELETE", `/api/routine/${made.id}`, staff.token)).status).toBe(404);
+      // Clearing a term clears only the caller's own entries.
+      expect(await (await call("DELETE", "/api/routine", staff.token)).json()).toEqual({
+        deleted: 1,
+      });
     }
-    expect(await list(student.token)).toHaveLength(1);
+    expect(await list(student.token)).toEqual([made]);
   });
 
   it("treats another student's entry as not found and leaves it untouched", async () => {

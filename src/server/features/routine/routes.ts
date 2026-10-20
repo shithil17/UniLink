@@ -1,4 +1,4 @@
-import { Hono, type Context, type MiddlewareHandler } from "hono";
+import { Hono, type Context } from "hono";
 import {
   joinDays,
   minutesToTime,
@@ -44,12 +44,6 @@ function paramId(c: Context): number | null {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-/** The routine belongs to students. A mod or admin gets 403 even on their own, so staff never hold or read one. */
-const studentsOnly: MiddlewareHandler<AppEnv> = async (c, next) => {
-  if (c.get("user")?.role !== "student") return c.json({ error: "forbidden" }, 403);
-  await next();
-};
-
 const termOf = (q: { year?: number; season?: Term["season"] }): Term =>
   q.year !== undefined && q.season !== undefined
     ? { year: q.year, season: q.season }
@@ -80,11 +74,11 @@ const badTimes = (c: Context) =>
 
 /**
  * The routine is private: every repo call is bound to the signed-in student, and no route names
- * another user. Mods and admins get 403. Overlapping classes are allowed; the client warns.
+ * another user, so a mod or admin keeps their own routine but can never read a student's.
+ * Overlapping classes are allowed; the client warns.
  */
 export const routineRoutes = new Hono<AppEnv>()
   .use(requireUser)
-  .use(studentsOnly)
   .get("/", validateQuery(routineTermQuery), async (c) => {
     const rows = await routineRepo(getDb(c.env.DB), userId(c)).listTerm(
       termOf(c.req.valid("query")),

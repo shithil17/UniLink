@@ -18,7 +18,7 @@ Out of scope: registration, payments, official transcripts, native app-store bui
 | Mod     | A trusted student. Bans, resets passwords, handles reports and ID conflicts, imports curricula. |
 | Admin   | Seeded first account. Everything a mod does, plus role changes, the audit log and reversals.    |
 
-Mods and admins cannot read any student's attempts, CGPA or routine.
+Mods and admins cannot read any student's attempts, CGPA or routine. They keep their own, like any student.
 
 ## 3. Functional requirements
 
@@ -141,7 +141,7 @@ Mods and admins cannot read any student's attempts, CGPA or routine.
 | FR-63 | Two classes on the same day whose times overlap get a warning in the form and on the routine screen, but saving is never blocked. A class that starts exactly when another ends does not overlap.                                                                                                         |
 | FR-64 | Home lists today's classes (today worked out in Asia/Dhaka) in time order, with the class in progress highlighted and finished ones dimmed, and a link to the full week. The summary panel shows the class in progress or the next one today, else the degree standing.                                   |
 | FR-65 | The routine screen shows the whole week from Sunday, with "No classes" on empty days.                                                                                                                                                                                                                     |
-| FR-66 | The routine is private to its owner. Mods and admins cannot open it (403) and have no routine of their own; another student's class is not found. The routine is never sent to a model, used for notifications or shown to anyone else. Entry is manual only.                                             |
+| FR-66 | The routine is private to its owner. Every signed-in user, mods and admins included, has their own routine; nobody can read or change another user's, and another user's class is not found. The routine is never sent to a model, used for notifications or shown to anyone else. Entry is manual only.  |
 
 ## 4. Non-functional requirements
 

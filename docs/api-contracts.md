@@ -2,7 +2,7 @@
 
 The agreed endpoint list. Request and response **shapes live only in `src/shared/schemas/`** (named in the Schema column); this file never repeats them. Everything is served by one Worker under `/api`, same origin as the app, JSON in and out, session cookie for auth.
 
-Auth column: `public` (no session), `user` (any signed-in user), `student` (signed-in students only; mods and admins get 403), `mod`, `admin`. Every list endpoint is paginated (`pageQuery` → `page(item)` in `common.ts`).
+Auth column: `public` (no session), `user` (any signed-in user), `mod`, `admin`. Every list endpoint is paginated (`pageQuery` → `page(item)` in `common.ts`).
 
 Rules that apply to every endpoint:
 
@@ -64,15 +64,15 @@ Refusals: a code already used by another slot, as its code or as an alternative,
 
 ## Routine
 
-| Method | Path               | Auth    | Schema                                                                  |
-| ------ | ------------------ | ------- | ----------------------------------------------------------------------- |
-| GET    | `/api/routine`     | student | `routine.ts` → `routineTermQuery` (`?year=&season=`) → `routineEntry[]` |
-| POST   | `/api/routine`     | student | `routine.ts` → `routineInput` → `routineEntry` (201)                    |
-| PATCH  | `/api/routine/:id` | student | `routine.ts` → `routineUpdate` → `routineEntry`                         |
-| DELETE | `/api/routine/:id` | student | –                                                                       |
-| DELETE | `/api/routine`     | student | `routineTermQuery` → `{ deleted }`: clears the whole term               |
+| Method | Path               | Auth | Schema                                                                  |
+| ------ | ------------------ | ---- | ----------------------------------------------------------------------- |
+| GET    | `/api/routine`     | user | `routine.ts` → `routineTermQuery` (`?year=&season=`) → `routineEntry[]` |
+| POST   | `/api/routine`     | user | `routine.ts` → `routineInput` → `routineEntry` (201)                    |
+| PATCH  | `/api/routine/:id` | user | `routine.ts` → `routineUpdate` → `routineEntry`                         |
+| DELETE | `/api/routine/:id` | user | –                                                                       |
+| DELETE | `/api/routine`     | user | `routineTermQuery` → `{ deleted }`: clears the whole term               |
 
-Students only: a mod or admin gets 403 on every route, and another user's entry id is a 404. The term is `year` and `season` together, or neither for the current term (Asia/Dhaka). Times are `"HH:MM"` in Asia/Dhaka, days are NSU day letters (`S M T W R F A`, Sunday first, defined in `src/shared/routine.ts`). The end must be after the start (400). The course code must be in the user's curriculum or their student courses (400 `unknown_course`). Adding past `limits.routineEntriesMax` in a term is a 409 `routine_limit`; writes are rate-limited by `limits.routineWrites`. Overlaps are never refused: the client warns with `overlaps()` / `overlapsWith()`. The routine is never screened, sent to a model or used in a notification.
+Owner only: every user, mods and admins included, manages only their own routine; no route reads another user's, and another user's entry id is a 404. The term is `year` and `season` together, or neither for the current term (Asia/Dhaka). Times are `"HH:MM"` in Asia/Dhaka, days are NSU day letters (`S M T W R F A`, Sunday first, defined in `src/shared/routine.ts`). The end must be after the start (400). The course code must be in the user's curriculum or their student courses (400 `unknown_course`). Adding past `limits.routineEntriesMax` in a term is a 409 `routine_limit`; writes are rate-limited by `limits.routineWrites`. Overlaps are never refused: the client warns with `overlaps()` / `overlapsWith()`. The routine is never screened, sent to a model or used in a notification.
 
 ## Inbox
 

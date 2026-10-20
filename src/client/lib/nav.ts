@@ -17,8 +17,8 @@ const settingsTab: MainTab = { to: "/settings", label: "Settings" };
 /**
  * The top-level destinations, in bar order. Signed-out users and anyone forced to change their
  * password get none: every tab would just bounce them back, so the shell shows the wordmark only.
- * Students get the Routine tab; mods and admins get the Mod tab instead, because the routine is
- * private to students. That keeps the bar at five.
+ * Students get the Routine tab; mods and admins get the Mod tab in its place, which keeps the bar
+ * at five. Mods and admins still have their own routine, reached from Home ("Full routine").
  */
 export function mainTabs(
   user: { role: Role; mustChangePassword: boolean } | null | undefined,

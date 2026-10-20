@@ -59,7 +59,7 @@ flowchart LR
   A --- UC19
 ```
 
-Generalisation: a mod can do everything a student can, and an admin everything a mod can. Mods and admins still cannot read other students' attempts or CGPA (UC6, UC8 act on the caller's own data only). The routine (UC20, UC21) is students only: mods and admins cannot open it at all.
+Generalisation: a mod can do everything a student can, and an admin everything a mod can. Mods and admins still cannot read other students' attempts or CGPA (UC6, UC8 act on the caller's own data only). The routine (UC20, UC21) is the same: mods and admins keep their own but cannot read anyone else's.
 
 ## Use case descriptions
 
@@ -112,9 +112,9 @@ Generalisation: a mod can do everything a student can, and an admin everything a
 
 ### UC20 Manage class routine (FR-61 to FR-63, FR-65, FR-66)
 
-- **Actor:** Student
-- **Main flow:** Open Routine, tap "Add class", pick the course, section, days, start and end time, and optionally the room and faculty initials. The system saves it to the current term and shows it under each of its days.
-- **Alternatives:** The times clash with another class that day: the form warns and the student can still save. End not after start, no day picked or a course outside the student's curriculum: refused. 40 classes in the term: 409. Edit or delete a class; clear the whole term after confirming. A mod or admin: 403.
+- **Actor:** Student (mods and admins too, for their own routine)
+- **Main flow:** Open Routine (mods and admins: "Full routine" on Home), tap "Add class", pick the course, section, days, start and end time, and optionally the room and faculty initials. The system saves it to the current term and shows it under each of its days.
+- **Alternatives:** The times clash with another class that day: the form warns and the student can still save. End not after start, no day picked or a course outside the student's curriculum: refused. 40 classes in the term: 409. Edit or delete a class; clear the whole term after confirming. Another user's class: not found.
 
 ### UC21 See today's classes (FR-64)
 

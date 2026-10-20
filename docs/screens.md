@@ -22,7 +22,7 @@ flowchart LR
   Change --> Home
   P -- no --> Home[Home]
   Home --> Courses[Course map]
-  Home --> Routine[Routine: students only]
+  Home --> Routine[Routine]
   Routine --> ClassSheet[Add or edit a class]
   Home --> Inbox[Inbox]
   Home --> Settings[Settings]
@@ -41,7 +41,7 @@ flowchart LR
 
 Navigation:
 
-- **Main tabs.** A bottom bar on phones, the top bar from `md`. Students: Home, Courses, Routine, Inbox (unread badge), Settings. Mods and admins: Home, Courses, Inbox, Mod, Settings; the Mod tab opens the moderation panel and stays marked while any `/mod/...` screen is open. The routine is private to students, so mods and admins get Mod in its place and the bar never goes past five. Students never see Mod. The current tab is marked by `aria-current` and heavier ink. Moderation is also still listed under Settings.
+- **Main tabs.** A bottom bar on phones, the top bar from `md`. Students: Home, Courses, Routine, Inbox (unread badge), Settings. Mods and admins: Home, Courses, Inbox, Mod, Settings; the Mod tab opens the moderation panel and stays marked while any `/mod/...` screen is open. Mods and admins get Mod in place of Routine so the bar never goes past five; they reach their own routine from Home ("Full routine"). Students never see Mod. The current tab is marked by `aria-current` and heavier ink. Moderation is also still listed under Settings.
 - **No tabs when they would lead nowhere.** Log in, Create an account and the forced Change password screen show only the wordmark; the tabs return once the user is signed in and has no temporary password.
 - **Moderation sections.** From `md`: an underline tab row (Queue, Users, Faculty, Courses, ID check, Audit log for admins, Import). On a phone seven sections do not fit a row, so the screen shows "Moderation" with a button naming the current section; it opens a bottom sheet listing every section the role can open, each with a one-line hint. The current row is tinted and ticked (`aria-current="page"`), and choosing a row closes the sheet.
 - **Back paths.** Mod sections are peers of one top-level panel, so they need no back. Change password, opened from Settings, shows "Settings" with a back chevron above its title (not while the change is forced). Sheets (course sheet, pickers, mod sheets) close with their X, Esc or a tap on the scrim.
@@ -125,7 +125,7 @@ CGPA summary (Home and Course map): the CGPA to two decimals, or "No CGPA yet"; 
 
 ## Class routine (Phase 9)
 
-Students only. Mods and admins have no routine: the tab is not shown and `/routine` sends them to Home. Nobody else ever sees a student's routine, and it is never used for notifications. Times are Asia/Dhaka.
+Everyone has their own routine, mods and admins included (they reach it from Home, since the Mod tab takes the Routine tab's place). Nobody else ever sees a user's routine, mods and admins included, and it is never used for notifications. Times are Asia/Dhaka.
 
 ### Home: next class and Today
 
