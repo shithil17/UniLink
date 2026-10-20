@@ -53,6 +53,18 @@ Attempts and student courses are readable by their owner only, never by mods or 
 | POST   | `/api/inbox/:id/read`     | user | –                                 |
 | POST   | `/api/inbox/read-all`     | user | –                                 |
 
+## Push
+
+Web push is best effort and per device; the inbox stays the source of truth. A push carries only a title, body and a link to `/inbox`, built on the server from the notification type (`src/shared/notificationCopy.ts`), never payload text or anyone's identity. Push is off (the key endpoint answers `null`) until `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` are set.
+
+| Method | Path                    | Auth | Schema                                                                 |
+| ------ | ----------------------- | ---- | ---------------------------------------------------------------------- |
+| GET    | `/api/push/public-key`  | user | `push.ts` → `pushPublicKey` (`key: null` while push is not configured) |
+| POST   | `/api/push/subscribe`   | user | `push.ts` → `pushSubscriptionInput` (rate-limited)                     |
+| POST   | `/api/push/unsubscribe` | user | `push.ts` → `pushUnsubscribeInput` (own row only, idempotent)          |
+
+An endpoint must be on a known push service host (400 `unknown_push_service`). Subscribing an endpoint that already exists moves it to the caller (same device, new login). A user holds at most `limits.pushSubscriptionsMax` devices: past it, subscribing a new one is a 409 `push_subscription_limit` (nothing is dropped; the user switches another device off first). A send the push service answers with 404 or 410 deletes that subscription. Logging out removes the device's subscription (the client unsubscribes before it calls logout).
+
 ## Reports and moderation
 
 | Method | Path                                | Auth  | Schema                            |
@@ -121,7 +133,9 @@ Schemas: `rides.ts` (`rideInput`, `rideFeedQuery`, `rideSummary`), `lostFound.ts
 ```ts
 // src/server/notify.ts — the single Observer entry point.
 // Types: `notificationType` in src/shared/schemas/inbox.ts. A payload never names another user.
-notify(db: Db, userIds: number[], type: NotificationType, payload: Record<string, unknown>, now = Date.now()): Promise<void>
+notify(db: Db, userIds: number[], type: NotificationType, payload: Record<string, unknown>, opts: { now?: number; push?: PushSender | null } = {}): Promise<void>
+// Pass `push: pushSenderFromEnv(c.env)` (src/server/adapters/push.ts) to also push to the targets' devices.
+// A push failure never throws; at most `limits.pushFanoutMax` devices are pushed per call.
 
 // src/server/moderation/screen.ts — Chain of Responsibility: rules → model step → verdict.
 // Any model error, timeout or cap yields `review` (never auto-publish, never auto-reject).

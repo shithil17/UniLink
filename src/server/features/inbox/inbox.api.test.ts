@@ -31,7 +31,7 @@ describe("notify()", () => {
   it("writes one row per target and ignores duplicate ids", async () => {
     const a = await createTestUser(db());
     const b = await createTestUser(db());
-    await notify(db(), [a.id, b.id, a.id], "post_approved", { title: "Hello" }, 1000);
+    await notify(db(), [a.id, b.id, a.id], "post_approved", { title: "Hello" }, { now: 1000 });
 
     const rows = await db().select().from(notifications);
     const mine = rows.filter((r) => r.userId === a.id || r.userId === b.id);
@@ -84,9 +84,9 @@ describe("GET /api/inbox", () => {
   it("shows a user only their own notifications, newest first", async () => {
     const a = await signedIn();
     const b = await signedIn();
-    await notify(db(), [a.user.id], "post_approved", { n: 1 }, 1);
-    await notify(db(), [b.user.id], "post_rejected", { n: 2 }, 2);
-    await notify(db(), [a.user.id], "resource_accepted", { n: 3 }, 3);
+    await notify(db(), [a.user.id], "post_approved", { n: 1 }, { now: 1 });
+    await notify(db(), [b.user.id], "post_rejected", { n: 2 }, { now: 2 });
+    await notify(db(), [a.user.id], "resource_accepted", { n: 3 }, { now: 3 });
 
     const page = await inbox(a.token);
     expect(page.items.map((i) => i.payload.n)).toEqual([3, 1]);

@@ -37,4 +37,12 @@ export const limits = {
   studentCoursesMax: 40,
   // ceiling: a whole transcript entered in one sitting is roughly 50 attempts. Revisit if students hit it.
   attemptWrites: { limit: 200, windowMs: HOUR },
+  // ceiling: a student has a phone, a laptop and a spare browser or two. Past this, subscribing is a 409 until a device is switched off. Revisit if students report hitting it.
+  pushSubscriptionsMax: 5,
+  /** Subscribe calls per user. Switching a device on is one call; this stops a loop from churning rows. */
+  pushSubscribe: { limit: 30, windowMs: HOUR },
+  // ceiling: a push is only worth showing soon after it happens; the inbox keeps the rest. Revisit if push services drop messages sooner.
+  pushTtlSeconds: DAY / SECOND,
+  // ceiling: one Worker request may make about 50 outbound requests on the free plan. A notify() call pushes to at most this many devices; every target still gets its inbox row. Revisit on a paid plan or when a fan-out moves to a queue.
+  pushFanoutMax: 40,
 } as const;

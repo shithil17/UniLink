@@ -207,3 +207,20 @@ export const notifications = sqliteTable(
     index("notifications_user_id_idx").on(t.userId, t.id),
   ],
 );
+
+// Web Push subscriptions, one row per browser/device. The endpoint is unique: signing in on a shared
+// device moves the row to the new user. `p256dh` and `auth` are the device's encryption keys. Private.
+export const pushSubscriptions = sqliteTable(
+  "push_subscriptions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("push_subscriptions_user_idx").on(t.userId)],
+);
