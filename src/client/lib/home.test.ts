@@ -45,6 +45,7 @@ const slot = (code: string, over: Partial<CourseMap["categories"][number]["slots
     prereq: null,
     status: "available",
     filledBy: null,
+    chosenCode: null,
     waived: false,
     studentCourse: null,
     ...over,

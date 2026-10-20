@@ -2,9 +2,16 @@ import type { Db } from "../../db/client";
 import { curriculaRepo, type CourseRow, type CurriculumRow } from "../../repos/curricula";
 import { studentCoursesRepo } from "../../repos/studentCourses";
 import { usersRepo } from "../../repos/users";
-import { courseCodes, pickCurriculum } from "./map";
+import { attemptsRepo } from "../../repos/attempts";
+import { activeCourses, courseCodes, pickCurriculum } from "./map";
 
-export type LoadedCurriculum = { curriculum: CurriculumRow; courses: CourseRow[] };
+export type LoadedCurriculum = {
+  curriculum: CurriculumRow;
+  /** The slots this student sees: hidden ones are left out unless they have an attempt on them. */
+  courses: CourseRow[];
+  /** Every slot, hidden ones included: codes there stay taken. */
+  allCourses: CourseRow[];
+};
 
 /** The student's curriculum: their program (last two digits of the student ID suffix) and admission year. */
 export async function loadCurriculum(db: Db, userId: number): Promise<LoadedCurriculum | null> {
@@ -15,7 +22,13 @@ export async function loadCurriculum(db: Db, userId: number): Promise<LoadedCurr
     await repo.listByProgram(user.studentSuffix.slice(-2)),
     user.admissionYear,
   );
-  return curriculum ? { curriculum, courses: await repo.listCourses(curriculum.id) } : null;
+  if (!curriculum) return null;
+  const allCourses = await repo.listCourses(curriculum.id);
+  // Attempts only matter when something is hidden, so the usual request skips the extra read.
+  const courses = allCourses.some((r) => r.hidden)
+    ? activeCourses(allCourses, await attemptsRepo(db, userId).listOwn())
+    : allCourses;
+  return { curriculum, courses, allCourses };
 }
 
 /** An attempt's course code must be in the student's curriculum (a slot code or an alternative) or one of their student courses. */

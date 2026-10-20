@@ -23,6 +23,8 @@ import type { AppEnv } from "../../middleware/types";
 import { reportsRepo } from "../../repos/reports";
 import { usersRepo } from "../../repos/users";
 import { validateJson, validateQuery } from "../../validate";
+import { courseModRoutes } from "../courses/modRoutes";
+import { facultyModRoutes } from "../faculty/modRoutes";
 import {
   banUser,
   clearProbingFlag,
@@ -54,6 +56,8 @@ const POST_FAILURES: Record<PostDecisionFailure, { status: 404 | 409; message: s
  */
 export const modRoutes = new Hono<AppEnv>()
   .use(requireRole("mod"))
+  .route("/faculty", facultyModRoutes)
+  .route("/", courseModRoutes)
   .get("/users", validateQuery(modUsersQuery), async (c) => {
     const { q, cursor, limit } = c.req.valid("query");
     const params = pageParams({ cursor, limit });

@@ -137,7 +137,7 @@ export const studentCourseRoutes = new Hono<AppEnv>()
       message: "That code is already in your course map or your own courses.",
     };
     if (
-      allCurriculumCodes(loaded.courses).has(body.code) ||
+      allCurriculumCodes(loaded.allCourses).has(body.code) ||
       own.some((s) => s.code === body.code)
     ) {
       return c.json(codeTaken, 409);

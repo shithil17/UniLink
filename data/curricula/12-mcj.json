@@ -8,7 +8,7 @@
   "notes": [
     "The version label is shortened from the printed title. The source is a scanned one-page table 'Suggested MCJ Core & Recommended Elective Course Map (Up To 12th Semester)' with no year, so effectiveFromYear is 0. Read from the page image.",
     "The map lists only MCJ courses: no credits, no degree total, no General Education, school core or free elective requirements, and no prerequisites (all prereq values are null). The program name is not printed and was inferred from the folder name.",
-    "Credits are not printed: every course is assumed 3 credits, including the '+Lab' courses (MCJ203, MCJ104, MCJ305, MCJ301, MCJ420, MCJ403, MCJ401) and MCJ407/MCJ406. Lab courses may really carry an extra lab credit.",
+    "Credits are not printed: every course is assumed 3 credits, including the '+Lab' courses (MCJ203, MCJ104, MCJ305, MCJ301, MCJ420, MCJ403, MCJ401) and MCJ407/MCJ406. Lab courses may really carry an extra lab credit. Not split into theory and lab rows: the map prints no credits, so no lab credit can be taken from it.",
     "totalCredits 69 is just the sum of the 23 transcribed slots, not the printed degree total (none is printed). The real degree total is higher once GED and other requirements are added; replace it when an official total is available.",
     "Courses printed '(Recommended Elective)' (MCJ103, MCJ205, MCJ104, MCJ207, MCJ420, MCJ414) are kept as fixed course rows in category 'Recommended Elective', since the map names a specific course; students may in practice choose other MCJ electives.",
     "Semester 12: 'MCJ407 Internship OR MCJ406 Research Monograph' is one slot MCJ407 with MCJ406 as alternative.",

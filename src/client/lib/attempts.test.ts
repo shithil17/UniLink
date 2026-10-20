@@ -3,7 +3,6 @@ import type { Attempt } from "../../shared/schemas/attempts";
 import {
   attemptTermLabel,
   categoriesLeft,
-  facultyOptions,
   formatCgpa,
   retakeCodes,
   retakeStatus,
@@ -15,6 +14,7 @@ const attempt = (id: number, courseCode: string, grade: Attempt["grade"]): Attem
   grade,
   term: null,
   facultyId: null,
+  faculty: null,
   createdAt: id,
 });
 
@@ -58,15 +58,7 @@ describe("categoriesLeft", () => {
   });
 });
 
-describe("faculty and term labels", () => {
-  it("starts the faculty options with a none choice and shows name and designation", () => {
-    const options = facultyOptions([
-      { id: 7, name: "Amy Ay", initials: "AA", designation: "Lecturer" },
-    ]);
-    expect(options[0]).toEqual({ value: "none", label: "No faculty" });
-    expect(options[1]).toEqual({ value: "7", label: "Amy Ay, Lecturer" });
-  });
-
+describe("term labels", () => {
   it("labels an attempt without a term", () => {
     expect(attemptTermLabel(null)).toBe("Term not set");
     expect(attemptTermLabel({ year: 2025, season: "fall" })).toBe("Fall 2025");

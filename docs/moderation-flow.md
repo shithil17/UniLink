@@ -73,7 +73,7 @@ flowchart TD
 ```mermaid
 flowchart TD
   A([Admin opens audit log]) --> B[Choose a row]
-  B --> C{Reversible type? ban, unban, role change, key release, soft delete}
+  B --> C{Reversible type? ban, unban, role change, key release, soft delete, faculty or course edit, hide, unhide}
   C -- no --> X1[/409 not_reversible or is_reversal/]
   C -- yes --> D{Already reversed?}
   D -- yes --> X2[/409 already_reversed/]

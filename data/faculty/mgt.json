@@ -1,0 +1,562 @@
+[
+  {
+    "name": "Abdul Hannan Chowdhury",
+    "initials": "AHw",
+    "designation": "Professor & Vice-Chancellor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/dr.-abdul-hannan-chowdhury.html"
+  },
+  {
+    "name": "Abul Khayer",
+    "initials": "AbKr",
+    "designation": "Associate Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/dr.-abul-khayer.html"
+  },
+  {
+    "name": "Adeyl Khan",
+    "initials": "Ayn",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/adeyl-khan.html"
+  },
+  {
+    "name": "Afnaan Ahmed",
+    "initials": "Afd",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/afnaan.ahmed.html"
+  },
+  {
+    "name": "Alima Aktar",
+    "initials": "ALM",
+    "designation": "Associate Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/alima-aktar.html"
+  },
+  {
+    "name": "Amreen Talukdar",
+    "initials": "AmTr",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/amreen-talukdar-amtr.html"
+  },
+  {
+    "name": "Ashik Imran Khan",
+    "initials": "AIK",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/mr.-ashik-imran-khan.html"
+  },
+  {
+    "name": "Asma Azad Akhi",
+    "initials": "AAA1",
+    "designation": "Lecturer (On Study Leave)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/asma-azad-akhi.html"
+  },
+  {
+    "name": "Atikur Rahman Khan",
+    "initials": null,
+    "designation": "Professor (On Leave)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/atikur-rahman-khan.html"
+  },
+  {
+    "name": "Bashir Ashhab Khan",
+    "initials": "BSK",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/bashir-ashhab-khan.html"
+  },
+  {
+    "name": "Bobby Hajjaj",
+    "initials": "BHj",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/bobby-hajjaj.html"
+  },
+  {
+    "name": "Farooq M. Shiekh",
+    "initials": "FAS",
+    "designation": "Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/farooq-m.-shiekh.html"
+  },
+  {
+    "name": "Faseeha Zabir",
+    "initials": "FsZ",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/faseeha-zabir.html"
+  },
+  {
+    "name": "Gibran Mahmood",
+    "initials": "GMA",
+    "designation": "Assistant Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/gibran-mahmood.html"
+  },
+  {
+    "name": "Hamida Mosharraf Moniea",
+    "initials": "HMM1",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/hamida-mosharraf-moniea.html"
+  },
+  {
+    "name": "Jashim Uddin Ahmed",
+    "initials": "JnA",
+    "designation": "Professor of Strategy",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/jashim.ahmed.html"
+  },
+  {
+    "name": "Jubaer Ahmed",
+    "initials": "JAH",
+    "designation": "Assistant Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/jubaer-ahmed.html"
+  },
+  {
+    "name": "Kabid Md Surid",
+    "initials": "KMS2",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/kabid-md-surid.html"
+  },
+  {
+    "name": "Looksina Khan",
+    "initials": "LkK",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/looksina-khan.html"
+  },
+  {
+    "name": "M Sayedur Rahman",
+    "initials": "MSY",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/m-sayedur-rahman.html"
+  },
+  {
+    "name": "Mahmud A. Shareef",
+    "initials": "MDS",
+    "designation": "Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/mds.html"
+  },
+  {
+    "name": "Mahmud Parvez",
+    "initials": "MPZ",
+    "designation": "Assistant Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/dr.-mahmud-parvez.html"
+  },
+  {
+    "name": "Md Asif Hossain",
+    "initials": "MAO",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/md-asif-hossain.html"
+  },
+  {
+    "name": "Md Kamrul Hasan",
+    "initials": "KHs",
+    "designation": "Senior Lecturer (On Study Leave)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/md-kamrul-hasan.html"
+  },
+  {
+    "name": "Md Mahbubul Alam",
+    "initials": "MMb",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/md-mahbubul-alam.html"
+  },
+  {
+    "name": "Md Moktar Ali",
+    "initials": "Mki",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/md-moktar-ali.html"
+  },
+  {
+    "name": "Md Shahedul Alam",
+    "initials": "ShL",
+    "designation": "Assistant Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/shl.html"
+  },
+  {
+    "name": "Md Taimur Ahad",
+    "initials": "MTAD",
+    "designation": "Assistant Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/dr.-md-taimur-ahad.html"
+  },
+  {
+    "name": "Md. Al-Amin",
+    "initials": "Mli",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/md.-al-amin.html"
+  },
+  {
+    "name": "Md. Hannan Miah",
+    "initials": "MHM",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/hannan.miah.html"
+  },
+  {
+    "name": "Md. Jamil Hasan Karami",
+    "initials": "JHK",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/md.-jamil-hasan-karami.html"
+  },
+  {
+    "name": "Md. Mofassel Hossain",
+    "initials": "Mof",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/mof.html"
+  },
+  {
+    "name": "Md. Mokhles Ur Rahman",
+    "initials": "MKR2",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/md.-mokhles-ur-rahman.html"
+  },
+  {
+    "name": "Md. Sabbir Alam",
+    "initials": "MSA3",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/md.-sabbir-alam.html"
+  },
+  {
+    "name": "Md. Shamim Talukder",
+    "initials": null,
+    "designation": "Assistant Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/dr.-md.-shamim-talukder.html"
+  },
+  {
+    "name": "Mehe Z. Rahman",
+    "initials": "ZbR",
+    "designation": "Associate Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/dr.-mehe-z.-rahman.html"
+  },
+  {
+    "name": "Meshbaul Hassan Chowdhury",
+    "initials": "MHCw",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/meshbaul-hassan-chowdhury.html"
+  },
+  {
+    "name": "MM Nawaz Ameen",
+    "initials": "NwA",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/nwa.html"
+  },
+  {
+    "name": "Mohaimen Mansur",
+    "initials": "MMs1",
+    "designation": "Associate Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/mohaimen-mansur.html"
+  },
+  {
+    "name": "Mohammad Amzad Hossain",
+    "initials": "AZD",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/mohammad-amzad-hossain.html"
+  },
+  {
+    "name": "Mohammad Asif Gazi",
+    "initials": "MAG",
+    "designation": "Lecturer (On Study Leave)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/mohammad-asif-gazi.html"
+  },
+  {
+    "name": "Mohammad Humyun Fuad Rahman",
+    "initials": "HFN",
+    "designation": "Assistant Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/mohammad-humyun-fuad-rahman.html"
+  },
+  {
+    "name": "Mohammad Jahangir Alam",
+    "initials": "MJA1",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/mohammad-jahangir-alam.html"
+  },
+  {
+    "name": "Mohammad Khasro Miah",
+    "initials": "KsM",
+    "designation": "Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/dr.-m.-khasro-miah.html"
+  },
+  {
+    "name": "Mohammad Lutfor Rahman (LRn)",
+    "initials": "LRn",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/mohammad-lutfor-rahman.html"
+  },
+  {
+    "name": "Mohammad Lutfor Rahman (MLtR)",
+    "initials": "MLtR",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/mltr.html"
+  },
+  {
+    "name": "Mohammad Noman Hossain Chowdhury",
+    "initials": "MNC",
+    "designation": "Associate Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/dr.-mohammad-noman-hossain-chowdhury-mnc.html"
+  },
+  {
+    "name": "Mohammad Safiqul Islam",
+    "initials": "SQM",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/dr.-mohammad-safiqul-islam.html"
+  },
+  {
+    "name": "Mohammad Shafiqur Rahman",
+    "initials": "Min",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/dr.-mohammad-shafiqur-rahman.html"
+  },
+  {
+    "name": "Mohammad Shahed Masud",
+    "initials": "HDO",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/mohammad-shahed-masud.html"
+  },
+  {
+    "name": "Muhammad Faisol Chowdhury",
+    "initials": "MFC",
+    "designation": "Faculty",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/muhammad-faisol-chowdhury-mfc.html"
+  },
+  {
+    "name": "Muhammad Iftakhar Alam",
+    "initials": "IAM",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/muhammad-iftakhar-alam.html"
+  },
+  {
+    "name": "Muslima Zahan",
+    "initials": "ZMU",
+    "designation": "Associate Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/zmu.html"
+  },
+  {
+    "name": "Nazlee Siddiqui",
+    "initials": "NZQ",
+    "designation": "Professor & Director MBA/EMBA Programs",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/nazlee-siddiqui.html"
+  },
+  {
+    "name": "Quazi Tafsirul Islam",
+    "initials": "QTI",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/quazi.tafsirul.islam.html"
+  },
+  {
+    "name": "Raguib Raihan",
+    "initials": "RAR",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/raguib-raihan.html"
+  },
+  {
+    "name": "Rahnuma Sanjana",
+    "initials": "RSj",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/rahnuma.sanjana.html"
+  },
+  {
+    "name": "Rumana Huq Luva",
+    "initials": "RHL",
+    "designation": "Lecturer (On Study Leave)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/rumana.luva.html"
+  },
+  {
+    "name": "S. S. M. Sadrul Huda",
+    "initials": "SSH2",
+    "designation": "Associate Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/s.-s.-m.-sadrul-huda.html"
+  },
+  {
+    "name": "Saad Md Maroof Hossain",
+    "initials": "SNO",
+    "designation": "Assistant Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/saad-md-maroof-hossain.html"
+  },
+  {
+    "name": "Samuel Mursalin",
+    "initials": "SmM4",
+    "designation": "Lecturer & Director, NSU Startups Next",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/samuel-mursalin.html"
+  },
+  {
+    "name": "Serajul I. Bhuiyan",
+    "initials": "SEB",
+    "designation": "Professor (Visiting)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/serajul-i.-bhuiyan.html"
+  },
+  {
+    "name": "Shabab Absarul Islam",
+    "initials": "SAI2",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/shabab-absarul-islam.html"
+  },
+  {
+    "name": "Shabnin Rahman Shorna",
+    "initials": "SRS2",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/shabnin-rahman-shorna-srs2.html"
+  },
+  {
+    "name": "Shafquat Rafiul Alam",
+    "initials": "Sqt",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/shafquat.alam.html"
+  },
+  {
+    "name": "Shahid Hossain",
+    "initials": "ShH",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/shahid.hossain.html"
+  },
+  {
+    "name": "Sheikh Mohammed Rafiul Huque",
+    "initials": "RUE",
+    "designation": "Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/sheikh-mohammed-rafiul-huque.html"
+  },
+  {
+    "name": "Syed Imamuzzaman",
+    "initials": "SYI",
+    "designation": "Lecturer & Assistant Proctor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/syed-imamuzzaman.html"
+  },
+  {
+    "name": "Tajuddin Ahmed",
+    "initials": "TuA",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/tua.html"
+  },
+  {
+    "name": "Tanya Ahmed",
+    "initials": "TYA",
+    "designation": "Senior Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/tanya-ahmed/"
+  },
+  {
+    "name": "Tasfia Mazid",
+    "initials": "TMd",
+    "designation": "Assistant Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/dr.-tasfia-mazid.html"
+  },
+  {
+    "name": "Tasnim Tarannum",
+    "initials": "Tnn",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/tasnim-tarannum.html"
+  },
+  {
+    "name": "Umama Rahman",
+    "initials": "UmR",
+    "designation": "Lecturer (On Study Leave)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/umama-rahman.html"
+  },
+  {
+    "name": "Ummaha Hazra",
+    "initials": "UTH",
+    "designation": "Associate Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/ummaha.hazra.html"
+  },
+  {
+    "name": "Umme Hani Meem",
+    "initials": "UHM",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/umme-hani-meem.html"
+  },
+  {
+    "name": "Yasir Arefin",
+    "initials": "YAR",
+    "designation": "Lecturer",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/yasir-arefin.html"
+  },
+  {
+    "name": "Zakir Hossain",
+    "initials": "ZkH3",
+    "designation": "Professor (Part Time Faculty)",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/zakir-hossain.html"
+  },
+  {
+    "name": "Zerin Tasnim",
+    "initials": "ZTM",
+    "designation": "Assistant Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/zerin-tasnim.html"
+  },
+  {
+    "name": "Ziaul Haq Adnan",
+    "initials": "ZIA",
+    "designation": "Associate Professor & Chair",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/ziaul-haq-adnan.html"
+  },
+  {
+    "name": "Zulkarin Jahangir",
+    "initials": "ZkJ",
+    "designation": "Assistant Professor",
+    "department": "MGT",
+    "nsuPage": "https://www.northsouth.edu/faculty-members/sbe/mgt/dr.-zulkarin-jahangir.html"
+  }
+]

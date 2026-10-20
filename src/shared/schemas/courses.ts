@@ -14,12 +14,12 @@ export const ELECTIVE_CODE_PATTERN = /^[A-Z][A-Z0-9-]{1,15}$/;
 // ceiling: no NSU course is worth more than this. Revisit if a thesis or internship map says otherwise.
 export const COURSE_CREDITS_MAX = 24;
 // ceiling: a curriculum has well under 20 semesters. Revisit if a program map counts them differently.
-const SEMESTER_MAX = 20;
+export const SEMESTER_MAX = 20;
 
-const text = (max: number) => z.string().trim().min(1).max(max);
+export const text = (max: number) => z.string().trim().min(1).max(max);
 
 /** Credits come in halves (3, 1.5, 0 for a non-credit course). */
-const credits = z
+export const courseCredits = z
   .number({ error: "Enter the credits" })
   .min(0)
   .max(COURSE_CREDITS_MAX)
@@ -55,41 +55,57 @@ export const courseStatus = z.enum(["done", "available", "locked"]);
 // Import. The header is checked strictly; each row is checked on its own so one bad row does not
 // stop the rest.
 
-const alternative = z.strictObject({ code: strictCourseCode, title: text(200) });
+export const alternative = z.strictObject({ code: strictCourseCode, title: text(200) });
+
+/**
+ * The checks a slot must pass whatever its source (a file row or the mod editor): the code matches
+ * its kind, an elective has no alternatives, and alternatives never repeat or name the slot's own code.
+ */
+export function slotShapeIssues(
+  row: { kind: "course" | "elective"; code: string; alternatives: readonly { code: string }[] },
+  ctx: z.RefinementCtx,
+): void {
+  const pattern = row.kind === "course" ? COURSE_CODE_PATTERN : ELECTIVE_CODE_PATTERN;
+  if (!pattern.test(row.code)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["code"],
+      message:
+        row.kind === "course"
+          ? "Course codes look like CSE115 or CSE115L"
+          : "Elective codes are capital letters, digits and dashes, like ELECT1",
+    });
+  }
+  if (row.kind === "elective" && row.alternatives.length > 0) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["alternatives"],
+      message: "An elective has no alternatives",
+    });
+  }
+  const codes = row.alternatives.map((a) => a.code);
+  if (new Set(codes).size !== codes.length || codes.includes(row.code)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["alternatives"],
+      message: "Alternatives repeat a code",
+    });
+  }
+}
 
 export const courseImportRow = z
   .strictObject({
     kind: courseKind,
     code: z.string(),
     title: text(200),
-    credits,
+    credits: courseCredits,
     category: text(100),
     nonCredit: z.boolean(),
     semester: z.number().int().min(0).max(SEMESTER_MAX).nullable(),
     alternatives: z.array(alternative),
     prereq: prereqRule.nullable(),
   })
-  .superRefine((row, ctx) => {
-    const pattern = row.kind === "course" ? COURSE_CODE_PATTERN : ELECTIVE_CODE_PATTERN;
-    if (!pattern.test(row.code)) {
-      ctx.addIssue({ code: "custom", path: ["code"], message: `Invalid ${row.kind} code` });
-    }
-    if (row.kind === "elective" && row.alternatives.length > 0) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["alternatives"],
-        message: "An elective has no alternatives",
-      });
-    }
-    const codes = row.alternatives.map((a) => a.code);
-    if (new Set(codes).size !== codes.length || codes.includes(row.code)) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["alternatives"],
-        message: "Alternatives repeat a code",
-      });
-    }
-  });
+  .superRefine(slotShapeIssues);
 
 export const curriculumHeader = z.strictObject({
   program: z
@@ -130,7 +146,7 @@ export const importResult = z.object({
 
 const studentCourseFields = z.object({
   title: text(200),
-  credits: credits.min(0.5, "Credits must be at least 0.5"),
+  credits: courseCredits.min(0.5, "Credits must be at least 0.5"),
   category: text(100),
   excluded: z.boolean(),
 });
@@ -177,6 +193,8 @@ export const courseMapSlot = z.object({
   status: courseStatus,
   /** The code of the passing attempt that filled a course slot: the slot code or one of its alternatives. */
   filledBy: z.string().nullable(),
+  /** The slot or alternative code the student took, even if not passed yet. Null until one has an attempt. */
+  chosenCode: z.string().nullable(),
   /** The slot is done only through a waiver. */
   waived: z.boolean(),
   /** The student course filling an elective slot. */

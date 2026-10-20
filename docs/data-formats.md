@@ -59,17 +59,18 @@ Programs with data: Architecture (10), LLB (11), MCJ (12), Public Health (18), E
 
 ## Faculty list
 
-Seeded from `data/faculty.json`: 87 ECE faculty (CSE and EEE share the department) taken from the public listing at `ece.northsouth.edu/people` on 2026-10-20, with honorifics dropped. Two professors share the name Atiqur Rahman, so both carry their initials in the name to stay unique. Five entries have no published initials and keep an empty `initials`. The attempt picker needs the first three columns. Phase 11 (faculty profiles) needs the rest, so collect them now.
+Seeded from `data/faculty/`, one file per department named after its lowercase code (`ece.json`, `mgt.json`, ...), each an array sorted by name: 352 rows in all. The 87 ECE faculty (CSE and EEE share the department) come from the public listing at `ece.northsouth.edu/people` on 2026-10-20. The other 265 come from archived copies of NSU's department listing pages (ACF, ECO, MGT, MKT, ARC, DMP, BBT, MIC), so some departments are partial and CEE, ESM, PHA, PBH, EML, PSS, LAW, HIS and MCJ have none yet; moderators add the rest in the Faculty panel. Sources, snapshot dates and judgement calls are in [faculty-sources.md](faculty-sources.md). Honorifics, the `[XX]` initials suffix and post-nominals are dropped from names. Other departments are added the same way: one entry per person, `department` set to a code from `src/shared/departments.ts`. People who share a printed name in one department (two ECE professors named Atiqur Rahman, two MGT named Mohammad Lutfor Rahman) keep their initials in the name to stay unique. Ten entries have no published initials and carry `"initials": null`. The attempt picker needs name, initials, designation and department. Phase 11 (faculty profiles) needs the rest, so collect them now.
 
-| Column             | In `faculty.json` today | Notes                                                                  |
-| ------------------ | ----------------------- | ---------------------------------------------------------------------- |
-| Name               | `name`                  | Unique; the seed upserts on name                                       |
-| Initials           | `initials`              | The short form students use, such as three letters                     |
-| Designation        | `designation`           | Professor, Associate Professor, Assistant Professor, Lecturer          |
-| NSU page URL       | `nsuPage`               | Public faculty page                                                    |
-| Google Scholar URL | later                   | Optional                                                               |
-| ORCID              | later                   | Optional                                                               |
-| OpenAlex author ID | later                   | Checked by hand against the person's papers, not guessed from the name |
+| Column             | In `data/faculty/*.json` today | Notes                                                                                                                    |
+| ------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| Name               | `name`                         | Unique within a department; the seed upserts on name + department. Every row's `department` must match its file name     |
+| Initials           | `initials`                     | NSU's university-wide code such as `RkZ` or `SfR1`; `null` when none is published. Unique without case                   |
+| Designation        | `designation`                  | Professor, Associate Professor, Assistant Professor, Lecturer, "(Adjunct)" variants                                      |
+| Department         | `department`                   | A department code (`ECE`, `BBT`, `MIC`, `MCJ`, ...) from `src/shared/departments.ts`                                     |
+| NSU page URL       | `nsuPage`                      | Public faculty page on `northsouth.edu` (https); optional. Non-ECE rows link to `www.northsouth.edu/faculty-members/...` |
+| Google Scholar URL | later                          | Optional                                                                                                                 |
+| ORCID              | later                          | Optional                                                                                                                 |
+| OpenAlex author ID | later                          | Checked by hand against the person's papers, not guessed from the name                                                   |
 
 Only public information. Do not collect phone numbers, personal emails or anything not already on a public page.
 
@@ -81,7 +82,13 @@ Example of the current file shape:
     "name": "Full Name",
     "initials": "FN",
     "designation": "Assistant Professor",
+    "department": "ECE",
     "nsuPage": "https://ece.northsouth.edu/people/full-name/"
   }
 ]
 ```
+
+Seeding is safe to repeat. A re-seed updates designation and fills initials or the NSU page from the file, but never clears initials or a page a moderator entered when the file has none, and never touches the `hidden` flag.
+
+- Local: `vp run seed` (after `vp run db:migrate:local`).
+- Staging or production: `vp run faculty:sql /tmp/faculty.sql` writes the same upsert SQL (without a path it prints to stdout), then `vp exec wrangler d1 execute DB --env staging --remote --file=/tmp/faculty.sql` (use `--env production` for production).

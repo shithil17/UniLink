@@ -9,7 +9,7 @@
     "Version label taken from the file name (LLB-New-Curriculum.pdf); the document prints no version or effective year, so effectiveFromYear is 0.",
     "Semesters numbered sequentially from Year 1 Term 1 = 1 to Year 4 Term 3 = 12 (three terms per year as printed).",
     "Categories: the document prints totals for Core Courses (73), General Education (51) and Free Elective (6). Each course was assigned by subject: LAW courses and the four Law Elective slots = Core Courses (they sum to exactly 73), Open Elective 1 and 2 = Free Elective, all others = General Education (sum 51).",
-    "The science/social science choice 'PSY 101 or ENV 107 or PBH 101 or BIO 103 or PHY 107 or CHE 101' is printed three times at 4 credits each; modelled as three rows (PSY101, ENV107, PBH101) each listing all other options as alternatives. 4 credits is as printed even though PSY101 alone is usually 3 credits elsewhere (presumably the 4 counts a lab for the science options).",
+    "The science/social science choice 'PSY 101 or ENV 107 or PBH 101 or BIO 103 or PHY 107 or CHE 101' is printed three times at 4 credits each, with no lab marker. Modelled as three 3-credit theory rows (PSY101, ENV107, PBH101) each listing the other five options as alternatives, plus three separate 1-credit lab rows (PSY101L, ENV107L, PBH101L) each listing the other five options (code + 'L') as alternatives. The theory/lab split is inferred, not printed: the other programs' maps (ECO, BBA) print these same six courses with a separately graded 1-credit lab each, PSY101 included, so the printed 4 is read as 3 + 1. The 4-credit LAW courses carry no lab and are unchanged.",
     "PHY107 and BIO103/CHE101 are printed only as 'Physics I', 'Biology I', 'Chemistry I' ('Biology | or Physics | or Chemistry |'); titles normalised to 'Biology I', 'Physics I', 'Chemistry I'.",
     "Law electives are printed as 'LAW 422-27 Law Elective n (see attached list)'; the attached list is not included in the source, so they are elective slots (LAW422-LAW427).",
     "ENV 205 is printed as the code for Introduction to Bangladesh Geography; other NSU maps list it as ENV203/GEO205. Kept ENV205 as printed.",
@@ -122,7 +122,7 @@
       "kind": "course",
       "code": "PSY101",
       "title": "Introduction to Psychology",
-      "credits": 4,
+      "credits": 3,
       "category": "General Education",
       "nonCredit": false,
       "semester": 3,
@@ -146,6 +146,38 @@
         {
           "code": "CHE101",
           "title": "Chemistry I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "PSY101L",
+      "title": "Introduction to Psychology Lab",
+      "credits": 1,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [
+        {
+          "code": "ENV107L",
+          "title": "Introduction to Environmental Science Lab"
+        },
+        {
+          "code": "PBH101L",
+          "title": "Introduction to Public Health Lab"
+        },
+        {
+          "code": "BIO103L",
+          "title": "Biology I Lab"
+        },
+        {
+          "code": "PHY107L",
+          "title": "Physics I Lab"
+        },
+        {
+          "code": "CHE101L",
+          "title": "Chemistry I Lab"
         }
       ],
       "prereq": null
@@ -198,7 +230,7 @@
       "kind": "course",
       "code": "ENV107",
       "title": "Introduction to Environmental Science",
-      "credits": 4,
+      "credits": 3,
       "category": "General Education",
       "nonCredit": false,
       "semester": 5,
@@ -222,6 +254,38 @@
         {
           "code": "CHE101",
           "title": "Chemistry I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV107L",
+      "title": "Introduction to Environmental Science Lab",
+      "credits": 1,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [
+        {
+          "code": "PSY101L",
+          "title": "Introduction to Psychology Lab"
+        },
+        {
+          "code": "PBH101L",
+          "title": "Introduction to Public Health Lab"
+        },
+        {
+          "code": "BIO103L",
+          "title": "Biology I Lab"
+        },
+        {
+          "code": "PHY107L",
+          "title": "Physics I Lab"
+        },
+        {
+          "code": "CHE101L",
+          "title": "Chemistry I Lab"
         }
       ],
       "prereq": null
@@ -323,7 +387,7 @@
       "kind": "course",
       "code": "PBH101",
       "title": "Introduction to Public Health",
-      "credits": 4,
+      "credits": 3,
       "category": "General Education",
       "nonCredit": false,
       "semester": 8,
@@ -347,6 +411,38 @@
         {
           "code": "CHE101",
           "title": "Chemistry I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "PBH101L",
+      "title": "Introduction to Public Health Lab",
+      "credits": 1,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [
+        {
+          "code": "PSY101L",
+          "title": "Introduction to Psychology Lab"
+        },
+        {
+          "code": "ENV107L",
+          "title": "Introduction to Environmental Science Lab"
+        },
+        {
+          "code": "BIO103L",
+          "title": "Biology I Lab"
+        },
+        {
+          "code": "PHY107L",
+          "title": "Physics I Lab"
+        },
+        {
+          "code": "CHE101L",
+          "title": "Chemistry I Lab"
         }
       ],
       "prereq": null

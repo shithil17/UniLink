@@ -38,6 +38,7 @@ function ChangePasswordPage() {
   return (
     <AuthScreen
       title="Change password"
+      back={user?.mustChangePassword ? undefined : { to: "/settings", label: "Settings" }}
       intro={
         user?.mustChangePassword
           ? "You're on a temporary password. Pick your own to keep going."

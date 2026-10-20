@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/api";
 import { attemptsForCodes, attemptTermLabel, retakeStatus } from "@/lib/attempts";
 import { useDeleteAttempt } from "@/lib/courses";
-import { attemptsQuery, facultyQuery } from "@/lib/queries";
+import { attemptsQuery } from "@/lib/queries";
+import { facultyTitle } from "../../../shared/facultySearch";
 import { bestAttempt, gradeLabel } from "../../../shared/grading";
 import type { Attempt } from "../../../shared/schemas/attempts";
 import { AttemptForm } from "./AttemptForm";
@@ -126,7 +127,6 @@ export function AttemptSection({
   onSaved: () => void;
 }) {
   const attemptsResult = useQuery(attemptsQuery);
-  const { data: faculty } = useQuery(facultyQuery);
   const [adding, setAdding] = useState(false);
   const [full, setFull] = useState(false);
   const codes = choices.map((c) => c.code);
@@ -191,7 +191,7 @@ export function AttemptSection({
             choices={choices}
             isBest={bestIds.has(a.id)}
             showCode={choices.length > 1}
-            facultyName={faculty?.find((f) => f.id === a.facultyId)?.name ?? null}
+            facultyName={a.faculty ? facultyTitle(a.faculty) : null}
           />
         ))}
       </ul>

@@ -1,9 +1,14 @@
 import { z } from "zod";
 import { auditActions, reversibleActions } from "../shared/auditActions";
+import { departmentCode } from "../shared/departments";
 import { role } from "../shared/schemas/auth";
 import { instant } from "../shared/schemas/common";
+import { courseKind, prereqRule } from "../shared/schemas/courses";
 import type { Db } from "./db/client";
+import { checkCourseChange, type RuleRow } from "./features/courses/courseRules";
 import { auditLogRepo, type AuditRow } from "./repos/auditLog";
+import { courseCodeConflictOf, curriculaRepo, type CourseState } from "./repos/curricula";
+import { facultyConflictOf, facultyRepo, type FacultyState } from "./repos/faculty";
 import { softDeleteRepo } from "./repos/softDelete";
 import { usersRepo, type UserState } from "./repos/users";
 import { softDeleteTargets, type SoftDeleteTargets } from "./softDelete";
@@ -22,7 +27,16 @@ import { softDeleteTargets, type SoftDeleteTargets } from "./softDelete";
  * | soft_delete  | { deletedAt, deletedBy }    | puts both columns back (the post is live again)       |
  * | clear_probing_flag | { postingBlockedUntil, probingFlaggedAt } | puts both back (flagged again, cooldown as it was) |
  *
- * Not reversible: a password reset (the old hash is never stored), a report resolution, an ID lookup,
+ * | faculty_edit | the edited columns         | puts them back; refused if the old initials or name+department |
+ * |              |                             | have been taken since (`value_in_use`)                  |
+ * | faculty_hide, faculty_unhide | { hidden } | puts `hidden` back (shown or hidden again)            |
+ *
+ * | course_edit | the edited columns         | puts them back; refused if the old code is used by another slot, |
+ * |              |                             | the old prerequisite names a missing course, or another slot's    |
+ * |              |                             | prerequisite needs a code the old values would remove (`value_in_use`) |
+ * | course_hide, course_unhide | { hidden }    | puts `hidden` back (shown or hidden again)            |
+ *
+ * Not reversible: adding a faculty member or a course, a password reset (the old hash is never stored), a report resolution, an ID lookup,
  * automatic actions and a reversal itself. To undo a reversal, repeat the original action. Each row
  * is reversed at most once. A user who has become an admin since is never touched.
  */
@@ -46,6 +60,36 @@ const softDeleteSnapshot = z.strictObject({
   deletedBy: z.number().int().nullable(),
 });
 
+/** Only the columns the edit changed are in the snapshot, so every key is optional. */
+const facultySnapshot = z
+  .strictObject({
+    name: z.string().min(1),
+    initials: z.string().nullable(),
+    designation: z.string().min(1),
+    department: departmentCode,
+    nsuPage: z.string().nullable(),
+    hidden: z.boolean(),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0);
+
+/** Only the columns the edit changed are in the snapshot, so every key is optional. */
+const courseSnapshot = z
+  .strictObject({
+    kind: courseKind,
+    code: z.string().min(1),
+    title: z.string().min(1),
+    credits: z.number(),
+    category: z.string().min(1),
+    nonCredit: z.boolean(),
+    semester: z.number().int().nullable(),
+    alternatives: z.array(z.strictObject({ code: z.string(), title: z.string() })),
+    prereq: prereqRule.nullable(),
+    hidden: z.boolean(),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0);
+
 export type ReverseFailure =
   | "not_found"
   | "not_reversible"
@@ -53,7 +97,8 @@ export type ReverseFailure =
   | "already_reversed"
   | "target_missing"
   | "target_protected"
-  | "key_in_use";
+  | "key_in_use"
+  | "value_in_use";
 
 export type ReverseResult = { ok: true; id: number } | { ok: false; reason: ReverseFailure };
 
@@ -122,6 +167,79 @@ async function planSoftDeleteReversal(
   return { current: state, restore: repo.restoreStatement(targetId, parsed.data) };
 }
 
+async function planFacultyReversal(
+  db: Db,
+  row: AuditRow,
+  snapshot: unknown,
+): Promise<Plan | ReverseFailure> {
+  const parsed = facultySnapshot.safeParse(snapshot);
+  const id = Number(row.targetId);
+  if (!parsed.success || !Number.isSafeInteger(id)) return "not_reversible";
+
+  const repo = facultyRepo(db);
+  const state = await repo.findById(id);
+  if (!state) return "target_missing";
+
+  const restore: Partial<FacultyState> = parsed.data;
+  const current = Object.fromEntries(
+    Object.keys(restore).map((k) => [k, state[k as keyof typeof state]]),
+  );
+  return { current, restore: repo.restoreStatement(id, restore) };
+}
+
+async function planCourseReversal(
+  db: Db,
+  row: AuditRow,
+  snapshot: unknown,
+): Promise<Plan | ReverseFailure> {
+  const parsed = courseSnapshot.safeParse(snapshot);
+  const id = Number(row.targetId);
+  if (!parsed.success || !Number.isSafeInteger(id)) return "not_reversible";
+
+  const repo = curriculaRepo(db);
+  const state = await repo.findCourse(id);
+  if (!state) return "target_missing";
+
+  // Putting old values back must not make a duplicate code or break another slot's prerequisite.
+  const restore: Partial<CourseState> = parsed.data;
+  const toRule = (
+    r: Pick<RuleRow, "id" | "kind" | "code" | "alternatives" | "prereq">,
+  ): RuleRow => ({
+    id: r.id,
+    kind: r.kind,
+    code: r.code,
+    alternatives: r.alternatives,
+    prereq: r.prereq,
+  });
+  const others = (await repo.listCourses(state.curriculumId))
+    .filter((r) => r.id !== id)
+    .map(toRule);
+  const problem = checkCourseChange(others, toRule(state), toRule({ ...state, ...restore }), {
+    checkCode: restore.code !== undefined && restore.code !== state.code,
+    checkPrereq: restore.prereq !== undefined,
+  });
+  if (problem) return "value_in_use";
+
+  const current = Object.fromEntries(
+    Object.keys(restore).map((k) => [k, state[k as keyof typeof state]]),
+  );
+  return { current, restore: repo.restoreCourseStatement(id, restore) };
+}
+
+function planFor(
+  db: Db,
+  row: AuditRow,
+  snapshot: unknown,
+  targets: SoftDeleteTargets,
+): Promise<Plan | ReverseFailure> {
+  if (row.action === auditActions.softDelete) {
+    return planSoftDeleteReversal(db, row, snapshot, targets);
+  }
+  if (row.targetType === "faculty") return planFacultyReversal(db, row, snapshot);
+  if (row.targetType === "course") return planCourseReversal(db, row, snapshot);
+  return planUserReversal(db, row, snapshot);
+}
+
 /**
  * Reverses one audit row from its snapshot and logs the reversal. Admin only: the caller checks the
  * role. The reversal row and the restore run as one D1 batch, so a failed restore leaves no row and a
@@ -144,10 +262,7 @@ export async function reverse(
   }
 
   const snapshot = parseSnapshot(row);
-  const plan =
-    row.action === auditActions.softDelete
-      ? await planSoftDeleteReversal(db, row, snapshot, opts.targets ?? softDeleteTargets)
-      : await planUserReversal(db, row, snapshot);
+  const plan = await planFor(db, row, snapshot, opts.targets ?? softDeleteTargets);
   if (typeof plan === "string") return { ok: false, reason: plan };
 
   try {
@@ -169,6 +284,8 @@ export async function reverse(
     if (failedUnique(err, "audit_log.reverses_id"))
       return { ok: false, reason: "already_reversed" };
     if (failedUnique(err, "users.student_key")) return { ok: false, reason: "key_in_use" };
+    if (facultyConflictOf(err) || courseCodeConflictOf(err))
+      return { ok: false, reason: "value_in_use" };
     throw err;
   }
 }

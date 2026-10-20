@@ -8,7 +8,7 @@
   "notes": [
     "The source is a one-page semester-by-semester major map marked 'Proposed (120 credits)' with no year, so effectiveFromYear is 0.",
     "The map prints only course codes and per-semester credit totals: no titles, per-course credits, categories or prerequisites. All prereq values are null.",
-    "Per-course credits were inferred from the semester totals: 3 credits each, except ENV107 (semester 1), CHE101 (semester 2) and BIO101/BIO103 (semester 5) at 4 credits (assumed 3 + 1 lab) so semesters 1, 2 and 5 total 10.",
+    "Per-course credits were inferred from the semester totals: 3 credits each, except ENV107 (semester 1), CHE101 (semester 2) and BIO101/BIO103 (semester 5) at 4 credits. The map prints no credits or lab marker; the split is inferred from the same courses in other programs' maps, where ENV107, CHE101 and BIO103 carry a separately graded 1-credit lab. Each is modelled as a 3-credit theory row plus a separate 1-credit lab row (ENV107L, CHE101L, BIO101L with BIO103L as its alternative), so semesters 1, 2 and 5 still total 10.",
     "The printed semester totals add up to 121, not 120: semester 9 prints 13 credits but has four courses (ENV313, ENV373, POL101/POL104, Major Elective). All four are kept at 3 credits (12), so the file sums to 120 and matches the header. If one of them is really 4 credits, the printed header 120 is wrong instead.",
     "English slots are shifted by waiver: semester 1 ENG102/ENG103, semester 2 ENG103/ENG105, semester 3 ENG105/ENG111 (a student with ENG102 waived takes ENG103, ENG105, ENG111). Modelled as three slots ENG102, ENG103, ENG105 with the printed alternatives.",
     "MAT112/MAT116 counts 3 credits here (semester 4 has four courses and totals 12), even though MAT116 is a 0-credit course in some NSU programs.",
@@ -48,7 +48,18 @@
       "kind": "course",
       "code": "ENV107",
       "title": "Introduction to Environmental Science",
-      "credits": 4,
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "ENV107L",
+      "title": "Introduction to Environmental Science Lab",
+      "credits": 1,
       "category": "Major Core",
       "nonCredit": false,
       "semester": 1,
@@ -59,7 +70,18 @@
       "kind": "course",
       "code": "CHE101",
       "title": "Chemistry I",
-      "credits": 4,
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CHE101L",
+      "title": "Chemistry I Lab",
+      "credits": 1,
       "category": "Math & Science",
       "nonCredit": false,
       "semester": 2,
@@ -184,7 +206,7 @@
       "kind": "course",
       "code": "BIO101",
       "title": "(title not printed)",
-      "credits": 4,
+      "credits": 3,
       "category": "Math & Science",
       "nonCredit": false,
       "semester": 5,
@@ -192,6 +214,22 @@
         {
           "code": "BIO103",
           "title": "Biology I"
+        }
+      ],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO101L",
+      "title": "(title not printed) Lab",
+      "credits": 1,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [
+        {
+          "code": "BIO103L",
+          "title": "Biology I Lab"
         }
       ],
       "prereq": null

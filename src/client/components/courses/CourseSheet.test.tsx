@@ -28,6 +28,7 @@ const slot: CourseMap["categories"][number]["slots"][number] = {
   prereq: { all: [{ course: "CSE115" }, { any: [{ course: "MAT120" }, { credits: 30 }] }] },
   status: "locked",
   filledBy: null,
+  chosenCode: null,
   waived: false,
   studentCourse: null,
 };
@@ -48,6 +49,21 @@ describe("CourseSheet", () => {
     expect(screen.getByText("You haven't met the prerequisites yet.")).toBeTruthy();
     expect(await screen.findByLabelText("Grade")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save grade" })).toBeTruthy();
+  });
+
+  it("names every code in the header until one is taken, then the course taken", () => {
+    const { unmount } = renderSheet({ type: "slot", slot });
+    expect(
+      screen.getByRole("heading", { name: "CSE225/CSE226 Data Structures / Data Structures II" }),
+    ).toBeTruthy();
+    expect(screen.getByText("Or take instead")).toBeTruthy();
+    unmount();
+
+    renderSheet({ type: "slot", slot: { ...slot, chosenCode: "CSE226", filledBy: "CSE226" } });
+    expect(screen.getByRole("heading", { name: "CSE226 Data Structures II" })).toBeTruthy();
+    expect(screen.getByText("Other choices for this slot")).toBeTruthy();
+    expect(screen.getByText("CSE225 Data Structures")).toBeTruthy();
+    expect(screen.queryByText("Or take instead")).toBeNull();
   });
 
   it("opens the add form with the code editable", () => {

@@ -15,7 +15,7 @@
     "EEE499A requires '100 credits completed'; the sequence page adds 'and all core courses', which is not encoded in the rule.",
     "EEE321 prerequisite printed as 'EEE221, MAT361' is read as both.",
     "'SOC101/ANT101/ENV203(GEO205)' is one slot; ENV203 and GEO205 appear to be the same course under two codes, both listed as alternatives.",
-    "Lab suffixes (+CL, +IL) were dropped; credits are as printed (combined where the map prints them combined)."
+    "Courses printed with +CL (EEE141, EEE241, PHY107, CSE115, PHY108, EEE111, EEE311, CHE101, EEE342, EEE363, BIO103; 4 credits) are split into a 3-credit theory row and a separate 1-credit lab row (code + 'L', title + ' Lab') with the same semester, category and prerequisite, because the lab is graded separately. Courses printed +IL (EEE211, EEE312, EEE362, EEE321; 3 credits) have an integrated lab inside the 3 credits and stay one row. Credits per program are unchanged (theory 3 + lab 1 = the printed 4)."
   ],
   "courses": [
     {
@@ -44,7 +44,18 @@
       "kind": "course",
       "code": "EEE141",
       "title": "Electrical Circuits I",
-      "credits": 4,
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "EEE141L",
+      "title": "Electrical Circuits I Lab",
+      "credits": 1,
       "category": "Major Core",
       "nonCredit": false,
       "semester": 1,
@@ -105,7 +116,20 @@
       "kind": "course",
       "code": "EEE241",
       "title": "Electrical Circuits II",
-      "credits": 4,
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": {
+        "course": "EEE141"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "EEE241L",
+      "title": "Electrical Circuits II Lab",
+      "credits": 1,
       "category": "Major Core",
       "nonCredit": false,
       "semester": 2,
@@ -142,7 +166,20 @@
       "kind": "course",
       "code": "PHY107",
       "title": "Physics I",
-      "credits": 4,
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT120"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "PHY107L",
+      "title": "Physics I Lab",
+      "credits": 1,
       "category": "Math & Science",
       "nonCredit": false,
       "semester": 3,
@@ -155,7 +192,20 @@
       "kind": "course",
       "code": "CSE115",
       "title": "Programming Language I",
-      "credits": 4,
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": {
+        "course": "MAT116"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "CSE115L",
+      "title": "Programming Language I Lab",
+      "credits": 1,
       "category": "Math & Science",
       "nonCredit": false,
       "semester": 3,
@@ -192,7 +242,27 @@
       "kind": "course",
       "code": "PHY108",
       "title": "Physics II",
-      "credits": 4,
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "MAT130"
+          },
+          {
+            "course": "PHY107"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "PHY108L",
+      "title": "Physics II Lab",
+      "credits": 1,
       "category": "Math & Science",
       "nonCredit": false,
       "semester": 4,
@@ -212,7 +282,20 @@
       "kind": "course",
       "code": "EEE111",
       "title": "Analog Electronics I",
-      "credits": 4,
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 4,
+      "alternatives": [],
+      "prereq": {
+        "course": "EEE141"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "EEE111L",
+      "title": "Analog Electronics I Lab",
+      "credits": 1,
       "category": "Major Core",
       "nonCredit": false,
       "semester": 4,
@@ -269,7 +352,20 @@
       "kind": "course",
       "code": "EEE311",
       "title": "Analog Electronics II",
-      "credits": 4,
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 5,
+      "alternatives": [],
+      "prereq": {
+        "course": "EEE111"
+      }
+    },
+    {
+      "kind": "course",
+      "code": "EEE311L",
+      "title": "Analog Electronics II Lab",
+      "credits": 1,
       "category": "Major Core",
       "nonCredit": false,
       "semester": 5,
@@ -335,7 +431,18 @@
       "kind": "course",
       "code": "CHE101",
       "title": "Chemistry I",
-      "credits": 4,
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 7,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "CHE101L",
+      "title": "Chemistry I Lab",
+      "credits": 1,
       "category": "Math & Science",
       "nonCredit": false,
       "semester": 7,
@@ -402,7 +509,27 @@
       "kind": "course",
       "code": "EEE342",
       "title": "Control Engineering",
-      "credits": 4,
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "EEE221"
+          },
+          {
+            "course": "MAT125"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "EEE342L",
+      "title": "Control Engineering Lab",
+      "credits": 1,
       "category": "Major Core",
       "nonCredit": false,
       "semester": 8,
@@ -422,7 +549,27 @@
       "kind": "course",
       "code": "EEE363",
       "title": "Electrical Machines",
-      "credits": 4,
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 8,
+      "alternatives": [],
+      "prereq": {
+        "all": [
+          {
+            "course": "EEE241"
+          },
+          {
+            "course": "EEE111"
+          }
+        ]
+      }
+    },
+    {
+      "kind": "course",
+      "code": "EEE363L",
+      "title": "Electrical Machines Lab",
+      "credits": 1,
       "category": "Major Core",
       "nonCredit": false,
       "semester": 8,
@@ -458,7 +605,18 @@
       "kind": "course",
       "code": "BIO103",
       "title": "Biology I",
-      "credits": 4,
+      "credits": 3,
+      "category": "Math & Science",
+      "nonCredit": false,
+      "semester": 9,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "BIO103L",
+      "title": "Biology I Lab",
+      "credits": 1,
       "category": "Math & Science",
       "nonCredit": false,
       "semester": 9,

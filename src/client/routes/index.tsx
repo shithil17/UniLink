@@ -10,6 +10,7 @@ import { formatCredits, overNote } from "@/lib/courseMap";
 import { selectHomeState, unlockedNext, UNLOCKED_NEXT_MAX } from "@/lib/home";
 import { courseMapQuery, meQuery } from "@/lib/queries";
 import type { CourseMap } from "../../shared/schemas/courses";
+import { slotLabel } from "../../shared/slotChoice";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -82,19 +83,31 @@ function HomeReady({ map }: { map: CourseMap }) {
         />
         {items.length > 0 ? (
           <ul>
-            {items.map((slot) => (
-              <li
-                key={slot.code}
-                className="flex items-center gap-3 border-b border-line py-3 text-sm"
-              >
-                <StateMark status={slot.status} waived={slot.waived} />
-                <span className="w-[4.5rem] shrink-0 font-medium text-ink">{slot.code}</span>
-                <span className="min-w-0 flex-1 truncate text-soft">{slot.title}</span>
-                <span className="shrink-0 text-right text-soft tabular-nums">
-                  {formatCredits(slot.credits)} cr
-                </span>
-              </li>
-            ))}
+            {items.map((slot) => {
+              // A slot that offers several courses shows all their codes until one is taken, and
+              // its titles wrap instead of cutting the other choices off.
+              const label = slotLabel(slot);
+              const open = label.hasChoices && !label.chosen;
+              return (
+                <li
+                  key={slot.code}
+                  className="flex items-center gap-3 border-b border-line py-3 text-sm"
+                >
+                  <StateMark status={slot.status} waived={slot.waived} />
+                  <span
+                    className={`min-w-[4.5rem] shrink-0 font-medium text-ink ${open ? "max-w-[40%] wrap-anywhere" : ""}`}
+                  >
+                    {label.code}
+                  </span>
+                  <span className={`min-w-0 flex-1 text-soft ${open ? "" : "truncate"}`}>
+                    {label.title}
+                  </span>
+                  <span className="shrink-0 text-right text-soft tabular-nums">
+                    {formatCredits(slot.credits)} cr
+                  </span>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p className="py-6 text-sm text-soft">

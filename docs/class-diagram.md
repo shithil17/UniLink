@@ -46,6 +46,7 @@ classDiagram
     +int semester?
     +Alternative[] alternatives
     +PrereqRule prereq?
+    +bool hidden  «set by a mod; the row and its code stay»
   }
   class StudentCourse {
     +int id
@@ -65,8 +66,11 @@ classDiagram
   class Faculty {
     +int id
     +string name
-    +string initials
+    +string initials?  «unique, any case»
     +string designation
+    +string department
+    +string nsuPage?
+    +bool hidden
   }
   class Notification {
     +int id

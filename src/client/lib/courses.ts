@@ -72,8 +72,11 @@ export function useDeleteStudentCourse() {
 /** The import body is the parsed file, whose rows the server checks one by one. */
 export function useImportCurriculum() {
   const invalidate = useInvalidateMap();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: unknown) => apiPost("/api/courses/import", importResult, body),
-    onSuccess: invalidate,
+    // An import replaces the courses the mod Courses screen lists.
+    onSuccess: () =>
+      Promise.all([invalidate(), queryClient.invalidateQueries({ queryKey: ["mod"] })]),
   });
 }

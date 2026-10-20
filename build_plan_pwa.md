@@ -6,7 +6,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 ## Status
 
-**Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty.json` holds the 87 ECE faculty from the public department listing. Phase 7 automated gate passed (2026-10-20): mod tests pass; the staging check (an admin reverses a ban and a soft delete and both reversals appear in the audit log) is pending, and needs a content type with `deleted_at` registered in `softDeleteTargets` before a soft delete can happen on staging. Report reasons are not screened until `screen()` lands (Phase 8). Phase 8 automated gate passed (2026-10-20): moderation tests pass; the staging check (forced-review post reaches the mod queue, a mod approves it, the author gets an inbox message) waits for the first post type to register in `moderatedPostTypes` and call `submitPost()`. Changes from `plan_pwa.md`:
+**Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty/` holds the ECE faculty from the public department listing plus partial lists for eight other departments (see `docs/faculty-sources.md`). Phase 7 automated gate passed (2026-10-20): mod tests pass; the staging check (an admin reverses a ban and a soft delete and both reversals appear in the audit log) is pending, and needs a content type with `deleted_at` registered in `softDeleteTargets` before a soft delete can happen on staging. Report reasons are not screened until `screen()` lands (Phase 8). Phase 8 automated gate passed (2026-10-20): moderation tests pass; the staging check (forced-review post reaches the mod queue, a mod approves it, the author gets an inbox message) waits for the first post type to register in `moderatedPostTypes` and call `submitPost()`. Changes from `plan_pwa.md`:
 
 - The two cut orders that disagreed are now one locked order (see Suggested Build Order).
 - Course "ticks" are graded attempts, so attempts are the only source of truth for done courses, credits and CGPA (Phase 4).
@@ -18,6 +18,8 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - (2026-10-19) The course map covers every undergraduate program with a course map, picked by the program code in the student ID. Students add their own elective courses (code, title, credits), may go over the degree total, and can exclude extra courses from the transcript (Phase 4).
 - (2026-10-20) New Phase 4b: the Quiet Utility design language reorganizes Phase 1's four palettes into shared roles and restyles every existing screen. The app now serves all NSU undergraduates, with CSE-only extras (faculty profiles, supervisor finder).
 - (2026-10-19) Lost-and-found posts and marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (post photos kit, Phase 15). Photos in the "ID or card" category always go to a mod first. Authors can delete their own posts (Phase 12).
+- (2026-10-20) Faculty now covers every NSU department, each with a department, optional initials, an NSU page and a hidden flag; students search and filter the picker by name, initials and department; mods manage faculty (add, edit, hide, show again) in the panel.
+- (2026-10-20) Mods manage curriculum courses in the panel (`/mod/courses`): add, edit (including prerequisites as text, such as `CSE215 and (MAT120 or MAT125)`) and hide or show again with a reason, never delete (`courses.hidden`, migration 0011). Hidden courses leave students' maps unless the student already has an attempt on them. Re-importing a version still replaces all its courses, edits included, and the import screen warns. A slot with alternatives shows all its codes joined with "/" until the student takes one.
 
 ---
 
@@ -597,12 +599,12 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 >   Note (2026-10-19): **WV** (waived, Phase 4) earns credits but is excluded from CGPA and from the best grade (`countsInCgpa()` in `grading.ts`). A waived course with no graded attempt never blocks a retake.
 > - **Retake rule:** a new attempt is allowed only while the best grade so far (ignoring I and W) is below B+. There is no limit on the number of attempts while that holds. I and W attempts never block a retake.
 > - The scale and the retake policy are **Strategy** objects in `src/shared/grading.ts`, so a different scale or policy is a new strategy, not an `if`.
-> - The basic `faculty` table (name, initials, designation) is created here for the attempt picker. Phase 11 extends it.
+> - The basic `faculty` table is created here for the attempt picker (since extended into the all-department directory, see the 2026-10-20 note at the top). Phase 11 extends it further.
 > - Mods and admins cannot read attempts or CGPA. This is enforced in the repo layer, not only in the UI.
 
 ### Checklist
 
-- [x] `faculty` table and a seeded list (D) (`data/faculty.json`, placeholder data; `GET /api/faculty`).
+- [x] `faculty` table and a seeded list (D) (`data/faculty/*.json`, one file per department; `GET /api/faculty`).
 - [x] Faculty picker component.
 - [x] Migration: `attempts.faculty_id` (nullable). The full attempt form makes term required for new attempts (`attemptFullInput`; the API keeps term optional for the map's quick form).
 - [x] `grading.ts`: grade points, `bestAttempt()`, `cgpa()`, `earnedCredits()`, `canRetake()`.
@@ -612,7 +614,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Docs & QA (C, D)
 
 - [ ] C: class diagram. Update the SRS from the survey results. (Class diagram written: `docs/class-diagram.md`. The SRS update waits for survey results.)
-- [x] D: CGPA screens. First manual test cases. Finish the CSE course data. Start the faculty list (name, designation, NSU page, Scholar URL, ORCID, checked OpenAlex author ID). (Screens: `docs/screens.md`. Test cases: `docs/test-cases.md`, sections D and E. CSE data: `data/curricula/42-cse.json`, 130 credits. Faculty list started in `data/faculty.json`: 87 ECE faculty with name, initials, designation and NSU page from the public department listing; Scholar, ORCID and OpenAlex IDs come in Phase 11.)
+- [x] D: CGPA screens. First manual test cases. Finish the CSE course data. Start the faculty list (name, designation, NSU page, Scholar URL, ORCID, checked OpenAlex author ID). (Screens: `docs/screens.md`. Test cases: `docs/test-cases.md`, sections D and E. CSE data: `data/curricula/42-cse.json`, 130 credits. Faculty list started in `data/faculty/`: 87 ECE faculty with name, initials, designation and NSU page from the public department listing; Scholar, ORCID and OpenAlex IDs come in Phase 11.)
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -818,7 +820,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Build order
 
-- [ ] **Step 1:** extend `faculty` (slug, photo link, Scholar URL, ORCID, OpenAlex ID, tags, summary, summary date, sync input JSON, `limited_data`, `hidden`) and add `faculty_papers`. Seed from D's verified list.
+- [ ] **Step 1:** extend `faculty` (slug, photo link, Scholar URL, ORCID, OpenAlex ID, tags, summary, summary date, sync input JSON, `limited_data`) and add `faculty_papers`. `department`, optional `initials`, `nsu_page` and `hidden` already exist (faculty directory, 2026-10-20), as does the mod hide/show with its audit row; the profile screens reuse that flag. Seed from D's verified list.
 - [ ] **Step 2:** adapters + fakes: `OpenAlexClient` (check the current access terms and whether a free key or `mailto` is required), `OrcidClient`, `CrossrefClient`. Rebuild abstracts, merge and dedupe by DOI, handle missing abstracts.
 - [ ] **Step 3:** `scripts/faculty-sync.ts` with the `DeepSeekClient` adapter (summary mode) and Zod validation. Admin-only `PUT /api/admin/faculty/:id/summary`. Admin form for the manual paper list.
 - [ ] **Step 4:** faculty list, profile page, keyword search, report button, mod hide.

@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "@/lib/toast";
@@ -7,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/api";
 import { parseCurriculumText, rejectedRows, type ParsedCurriculum } from "@/lib/courseImport";
 import { useImportCurriculum } from "@/lib/courses";
+import { modCurriculaQuery } from "@/lib/modCourses";
 import { meQuery } from "@/lib/queries";
 import type { ImportResult } from "../../shared/schemas/courses";
 
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/mod/import")({
 
 function ImportPage() {
   const importCurriculum = useImportCurriculum();
+  const curricula = useQuery(modCurriculaQuery);
   const [file, setFile] = useState<{ name: string; parsed: ParsedCurriculum } | null>(null);
   const [result, setResult] = useState<{ imported: number; rejected: Rejected } | null>(null);
   const [failure, setFailure] = useState<Rejected | null>(null);
@@ -36,6 +39,14 @@ function ImportPage() {
     if (next && !next.parsed.ok) toast.error(next.parsed.message);
     setFile(next);
   };
+
+  // Importing a version that exists swaps all its courses, so edits made on the Courses screen are lost.
+  const incoming = file?.parsed.ok ? file.parsed.body : null;
+  const replacing =
+    incoming !== null &&
+    (curricula.data ?? []).some(
+      (c) => c.programCode === incoming.program && c.version === incoming.version,
+    );
 
   const submit = () => {
     if (!file?.parsed.ok) return;
@@ -56,7 +67,7 @@ function ImportPage() {
         <h1 className="text-xl font-semibold text-ink">Import a curriculum</h1>
         <p className="text-sm text-soft">
           Pick one curriculum JSON file. Importing a program and version that already exist replaces
-          its courses.
+          its courses, including changes made in the Courses screen.
         </p>
       </header>
       <FieldGroup>
@@ -76,6 +87,15 @@ function ImportPage() {
             </FieldDescription>
           ) : null}
         </Field>
+        {replacing ? (
+          <p
+            role="note"
+            className="rounded-control border border-line bg-tint px-3 py-2 text-sm text-body"
+          >
+            Importing replaces every course of this version, including changes made in the Courses
+            screen.
+          </p>
+        ) : null}
         <Button
           size="lg"
           className="w-full sm:w-auto"

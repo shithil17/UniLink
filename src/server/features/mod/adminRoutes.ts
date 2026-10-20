@@ -12,6 +12,8 @@ import { getDb } from "../../db/client";
 import { requireRole } from "../../middleware/auth";
 import type { AppEnv } from "../../middleware/types";
 import { auditLogRepo } from "../../repos/auditLog";
+import { curriculaRepo } from "../../repos/curricula";
+import { facultyRepo } from "../../repos/faculty";
 import { usersRepo } from "../../repos/users";
 import { reverse, type ReverseFailure } from "../../reverse";
 import { validateJson, validateQuery } from "../../validate";
@@ -35,6 +37,11 @@ const REVERSE_FAILURES: Record<ReverseFailure, { status: 403 | 404 | 409; messag
   key_in_use: {
     status: 409,
     message: "Someone has taken that student ID since, so it can't be restored.",
+  },
+  value_in_use: {
+    status: 409,
+    message:
+      "Something else has taken those values since (initials, a name or a course code), or a course depends on them, so it can't be restored.",
   },
 };
 
@@ -67,6 +74,16 @@ export const adminRoutes = new Hono<AppEnv>()
       ...(r.targetType === "user" && /^\d+$/.test(r.targetId) ? [Number(r.targetId)] : []),
     ]);
     const names = await usersRepo(db).usernamesByIds(userIds);
+    const facultyNames = await facultyRepo(db).labelsByIds(
+      page.items.flatMap((r) =>
+        r.targetType === "faculty" && /^\d+$/.test(r.targetId) ? [Number(r.targetId)] : [],
+      ),
+    );
+    const courseLabels = await curriculaRepo(db).courseLabelsByIds(
+      page.items.flatMap((r) =>
+        r.targetType === "course" && /^\d+$/.test(r.targetId) ? [Number(r.targetId)] : [],
+      ),
+    );
     const reversals = await log.reversalsOf(page.items.map((r) => r.id));
     const nameOf = (id: string) => names.get(Number(id)) ?? `user #${id}`;
 
@@ -80,7 +97,13 @@ export const adminRoutes = new Hono<AppEnv>()
           targetType: r.targetType,
           targetId: r.targetId,
           targetLabel:
-            r.targetType === "user" && /^\d+$/.test(r.targetId) ? nameOf(r.targetId) : null,
+            r.targetType === "user" && /^\d+$/.test(r.targetId)
+              ? nameOf(r.targetId)
+              : r.targetType === "faculty"
+                ? (facultyNames.get(Number(r.targetId))?.name ?? null)
+                : r.targetType === "course"
+                  ? (courseLabels.get(Number(r.targetId))?.code ?? null)
+                  : null,
           reason: r.reason,
           createdAt: r.createdAt,
           reverses: r.reversesId,

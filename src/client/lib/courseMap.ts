@@ -1,3 +1,4 @@
+import { formatPrereq } from "../../shared/prereqText";
 import { currentTerm, type Term } from "../../shared/terms";
 import type { CourseMap, PrereqRule } from "../../shared/schemas/courses";
 
@@ -35,20 +36,7 @@ export function categoryAnchor(name: string): string {
 
 /** A prerequisite rule as one readable line: `CSE115 and (MAT120 or MAT125)`. Null when there is none. */
 export function describePrereq(rule: PrereqRule | null | undefined): string | null {
-  return rule ? describe(rule, false) || null : null;
-}
-
-function describe(rule: PrereqRule, nested: boolean): string {
-  if ("course" in rule) return rule.course;
-  if ("credits" in rule) return `${formatCredits(rule.credits)} credits completed`;
-  const mode = "all" in rule ? "all" : "any";
-  const parts = ("all" in rule ? rule.all : rule.any)
-    .map((r) => describe(r, true))
-    .filter((p) => p !== "");
-  if (parts.length === 0) return "";
-  if (parts.length === 1) return parts[0];
-  const joined = parts.join(mode === "all" ? " and " : " or ");
-  return nested ? `(${joined})` : joined;
+  return formatPrereq(rule) || null;
 }
 
 /** The codes an attempt can be recorded against for a slot: its own code, then its alternatives. */
