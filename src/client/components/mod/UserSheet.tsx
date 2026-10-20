@@ -1,9 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { z } from "zod";
-import { FormError } from "@/components/auth/AuthForm";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import {
@@ -59,16 +58,14 @@ function UserActions({
     resolver: zodResolver(reasonBody),
     defaultValues: { reason: "" },
   });
-  const [serverError, setServerError] = useState<string | null>(null);
   const [temporary, setTemporary] = useState<string | null>(null);
   const pending = userAction.isPending || changeRole.isPending;
   const allowed = canActOn(me, user);
 
-  const fail = (err: unknown) => setServerError(errorMessage(err));
+  const fail = (err: unknown) => toast.error(errorMessage(err));
 
   const run = (action: UserAction, done: string) =>
     form.handleSubmit(({ reason }) => {
-      setServerError(null);
       userAction.mutate(
         { id: user.id, action, reason },
         {
@@ -87,7 +84,6 @@ function UserActions({
 
   const setRole = (role: "mod" | "student", done: string) =>
     form.handleSubmit(({ reason }) => {
-      setServerError(null);
       changeRole.mutate(
         { id: user.id, role, reason },
         {
@@ -129,7 +125,6 @@ function UserActions({
                 register={form.register("reason")}
                 error={form.formState.errors.reason}
               />
-              <FormError message={serverError} />
               <div className="grid gap-2 sm:grid-cols-2">
                 {user.bannedAt === null ? (
                   <Button

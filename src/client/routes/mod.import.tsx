@@ -1,13 +1,12 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
-import { toast } from "sonner";
-import { FormError } from "@/components/auth/AuthForm";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/api";
 import { parseCurriculumText, rejectedRows, type ParsedCurriculum } from "@/lib/courseImport";
-import { isToastError, useImportCurriculum } from "@/lib/courses";
+import { useImportCurriculum } from "@/lib/courses";
 import { meQuery } from "@/lib/queries";
 import type { ImportResult } from "../../shared/schemas/courses";
 
@@ -26,14 +25,16 @@ function ImportPage() {
   const importCurriculum = useImportCurriculum();
   const [file, setFile] = useState<{ name: string; parsed: ParsedCurriculum } | null>(null);
   const [result, setResult] = useState<{ imported: number; rejected: Rejected } | null>(null);
-  const [failure, setFailure] = useState<{ message: string; rejected: Rejected } | null>(null);
+  const [failure, setFailure] = useState<Rejected | null>(null);
 
   const pick = async (picked: File | undefined) => {
     setResult(null);
     setFailure(null);
-    setFile(
-      picked ? { name: picked.name, parsed: parseCurriculumText(await picked.text()) } : null,
-    );
+    const next = picked
+      ? { name: picked.name, parsed: parseCurriculumText(await picked.text()) }
+      : null;
+    if (next && !next.parsed.ok) toast.error(next.parsed.message);
+    setFile(next);
   };
 
   const submit = () => {
@@ -43,8 +44,8 @@ function ImportPage() {
     importCurriculum.mutate(file.parsed.body, {
       onSuccess: (r) => setResult({ imported: r.imported, rejected: r.rejected }),
       onError: (err) => {
-        if (isToastError(err)) toast.error(errorMessage(err));
-        else setFailure({ message: errorMessage(err), rejected: rejectedRows(err) });
+        toast.error(errorMessage(err));
+        setFailure(rejectedRows(err));
       },
     });
   };
@@ -68,9 +69,7 @@ function ImportPage() {
             className="h-11"
             onChange={(e) => void pick(e.target.files?.[0])}
           />
-          {file && !file.parsed.ok ? (
-            <FormError message={file.parsed.message} />
-          ) : file?.parsed.ok ? (
+          {file?.parsed.ok ? (
             <FieldDescription>
               {file.name}: program {file.parsed.body.program}, version {file.parsed.body.version},{" "}
               {file.parsed.rowCount} rows.
@@ -96,12 +95,7 @@ function ImportPage() {
           <RejectedTable rows={result.rejected} />
         </div>
       ) : null}
-      {failure ? (
-        <div className="space-y-3">
-          <FormError message={failure.message} />
-          <RejectedTable rows={failure.rejected} />
-        </div>
-      ) : null}
+      {failure ? <RejectedTable rows={failure} /> : null}
     </section>
   );
 }

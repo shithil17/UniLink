@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { z } from "zod";
 import { ReasonForm } from "@/components/mod/ReasonForm";
 import { Badge } from "@/components/ui/badge";
@@ -69,7 +69,6 @@ function Holder({ studentKey }: { studentKey: string }) {
   const lookup = useQuery(idHolderLookup(studentKey));
   const { data: me } = useQuery(meQuery);
   const release = useReleaseKey();
-  const [serverError, setServerError] = useState<string | null>(null);
 
   if (lookup.isPending) {
     return <div className={`${panel} h-24`} aria-busy="true" aria-label="Looking up" />;
@@ -133,10 +132,8 @@ function Holder({ studentKey }: { studentKey: string }) {
             pendingLabel="Releasing"
             variant="destructive"
             pending={release.isPending}
-            serverError={serverError}
             hint="Say why this account should not hold the ID."
             onSubmit={(reason) => {
-              setServerError(null);
               release.mutate(
                 { userId: holder.id, reason },
                 {
@@ -144,7 +141,7 @@ function Holder({ studentKey }: { studentKey: string }) {
                     toast.success("ID released");
                     void lookup.refetch();
                   },
-                  onError: (err) => setServerError(errorMessage(err)),
+                  onError: (err) => toast.error(errorMessage(err)),
                 },
               );
             }}

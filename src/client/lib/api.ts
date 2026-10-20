@@ -31,6 +31,7 @@ export function isOffline(err: unknown): err is OfflineError {
 
 /** A message that is safe to show: the server's `message`, else a generic fallback. */
 export function errorMessage(err: unknown): string {
+  if (isOffline(err)) return err.message;
   if (err instanceof ApiError) {
     const parsed = apiError.safeParse(err.body);
     if (parsed.success && parsed.data.message) return parsed.data.message;

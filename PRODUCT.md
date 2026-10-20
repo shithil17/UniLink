@@ -33,7 +33,7 @@ Unofficial and student-run. Built around NSU's own course maps, grading and ID f
 - Every user post is screened automatically and can be held for a mod. Moderation states are shown persistently (`StatusNote`), never only in a toast.
 - Privacy: student IDs are never shown publicly, only usernames. Contact details appear only after an explicit, rate-limited reveal.
 - AI output is never shown as free text. Replies are built by the server from validated data.
-- Feedback rules: toast for same-screen results, inline field errors for forms, `StatusNote` for moderation states, inbox for anything seen later.
+- Feedback rules: toast for every action result and error (no inline message boxes), inline text only for per-field validation, `StatusNote` for moderation states, inbox for anything seen later.
 - Users choose a color theme in Settings from several palettes.
 
 ## Brand Commitments

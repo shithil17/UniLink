@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { toast } from "sonner";
-import { FormError } from "@/components/auth/AuthForm";
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { errorMessage } from "@/lib/api";
 import { formatCredits, slotCodeChoices } from "@/lib/courseMap";
-import { isToastError, useDeleteStudentCourse } from "@/lib/courses";
+import { useDeleteStudentCourse } from "@/lib/courses";
 import type { CourseMap } from "../../../shared/schemas/courses";
 import { AttemptSection } from "./AttemptSection";
 import { PrereqText } from "./PrereqText";
@@ -126,7 +125,6 @@ function StudentCourseDetails({
 }) {
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
   const remove = useDeleteStudentCourse();
 
   if (editing) {
@@ -150,16 +148,12 @@ function StudentCourseDetails({
   }
 
   const onDelete = () => {
-    setDeleteError(null);
     remove.mutate(course.id, {
       onSuccess: () => {
         toast.success("Course deleted");
         onClose();
       },
-      onError: (err) => {
-        if (isToastError(err)) toast.error(errorMessage(err));
-        else setDeleteError(errorMessage(err));
-      },
+      onError: (err) => toast.error(errorMessage(err)),
     });
   };
 
@@ -183,7 +177,6 @@ function StudentCourseDetails({
           {confirmingDelete ? (
             <>
               <p className="text-sm text-body">Delete {course.code}? Its grades are deleted too.</p>
-              <FormError message={deleteError} />
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Button
                   variant="outline"

@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { PencilIcon, Trash2Icon } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import { FormError } from "@/components/auth/AuthForm";
+import { useEffect, useState } from "react";
+import { toast } from "@/lib/toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { errorMessage } from "@/lib/api";
 import { attemptsForCodes, attemptTermLabel, retakeStatus } from "@/lib/attempts";
-import { isToastError, useDeleteAttempt } from "@/lib/courses";
+import { useDeleteAttempt } from "@/lib/courses";
 import { attemptsQuery, facultyQuery } from "@/lib/queries";
 import { bestAttempt, gradeLabel } from "../../../shared/grading";
 import type { Attempt } from "../../../shared/schemas/attempts";
@@ -35,7 +34,6 @@ function AttemptRow({
 }) {
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const remove = useDeleteAttempt();
   const label = `${gradeLabel(attempt.grade)}, ${attemptTermLabel(attempt.term)}`;
 
@@ -55,13 +53,9 @@ function AttemptRow({
   }
 
   const onDelete = () => {
-    setError(null);
     remove.mutate(attempt.id, {
       onSuccess: () => toast.success("Attempt deleted"),
-      onError: (err) => {
-        if (isToastError(err)) toast.error(errorMessage(err));
-        else setError(errorMessage(err));
-      },
+      onError: (err) => toast.error(errorMessage(err)),
     });
   };
 
@@ -100,7 +94,6 @@ function AttemptRow({
           <p className="text-sm text-body">
             Delete this attempt? Your CGPA and credits are worked out again without it.
           </p>
-          <FormError message={error} />
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button
               variant="outline"
@@ -138,6 +131,14 @@ export function AttemptSection({
   const [full, setFull] = useState(false);
   const codes = choices.map((c) => c.code);
 
+  useEffect(() => {
+    if (attemptsResult.isError) {
+      toast.error("Your attempts did not load. You can still record a grade.", {
+        id: "attempts-load",
+      });
+    }
+  }, [attemptsResult.isError]);
+
   if (attemptsResult.isPending) {
     return <p className="border-t border-line pt-4 text-sm text-soft">Loading your attempts...</p>;
   }
@@ -149,11 +150,6 @@ export function AttemptSection({
     return (
       <div className="space-y-3 border-t border-line pt-4">
         <h3 className="text-sm font-semibold text-ink">Record a grade</h3>
-        {attemptsResult.isError ? (
-          <p role="alert" className="text-sm text-soft">
-            Your attempts did not load. You can still record a grade.
-          </p>
-        ) : null}
         <AttemptForm
           key={full ? "full" : "quick"}
           mode={full ? "full" : "quick"}

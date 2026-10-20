@@ -49,7 +49,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - Components use theme token classes only (`bg-app`, `text-ink`, `border-line`, `bg-surface`, …). No hex values, no `bg-white`, no Tailwind palette colors outside `index.css`.
 - Every screen follows the Quiet Utility language (Phase 4b, recorded in `DESIGN.md`): neutral grounds, hairline-separated lists, one accent per palette, no gradients, glass or resting shadows, Geist with Noto Sans Bengali for Bangla, the shared state marks, and color on data and state rather than chrome.
 - Build forms from the shadcn/ui form components + React Hook Form + the shared Zod schema.
-- Feedback has one place per kind (decided 2026-10-18). **Toast** (sonner): short results of an action that stays on the same screen ("Saved", "Report sent", "Copied", rate limit hit, network error). **Inline field errors** for form validation, always; a toast is never the only place an error shows. **`StatusNote`** for moderation states, because they persist. **Inbox** for anything the user must see later. Toasts never contain contact details, student IDs or AI text.
+- Feedback has one place per kind (decided 2026-10-18). **Toast** (sonner): every message about an action or a failed load ("Saved", "Report sent", "Copied", a server error, rate limit hit, network error, "The faculty list did not load"). No inline message boxes (revised 2026-10-20). Error toasts stay up longer (`ERROR_TOAST_MS` in `src/client/lib/toast.ts`). **Inline field errors** only for per-field validation (the Zod schema, or a server error tied to one field such as `code_taken`). **`StatusNote`** for moderation states, because they persist. **Inbox** for anything the user must see later. Toasts never contain contact details, student IDs or AI text.
 
 **Process**
 
@@ -664,7 +664,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Test Gate 7
 
 - [x] **Mod tests pass.**
-- [ ] **On staging, an admin reverses a ban and a soft delete, and both reversals appear in the audit log.**
+- [x] **On staging, an admin reverses a ban and a soft delete, and both reversals appear in the audit log.**
 
 ---
 

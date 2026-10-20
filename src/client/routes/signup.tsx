@@ -1,10 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-import { AuthScreen, FormError, textLink } from "@/components/auth/AuthForm";
+import { AuthScreen, textLink } from "@/components/auth/AuthForm";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/lib/toast";
 import { errorMessage } from "@/lib/api";
 import { useSignup } from "@/lib/auth";
 import { meQuery } from "@/lib/queries";
@@ -47,7 +48,12 @@ function SignupPage() {
         </p>
       }
     >
-      <form onSubmit={form.handleSubmit((values) => signup.mutate(values))} noValidate>
+      <form
+        onSubmit={form.handleSubmit((values) =>
+          signup.mutate(values, { onError: (err) => toast.error(errorMessage(err)) }),
+        )}
+        noValidate
+      >
         <FieldGroup>
           <Field data-invalid={Boolean(errors.username)}>
             <FieldLabel htmlFor="username">Username</FieldLabel>
@@ -120,7 +126,6 @@ function SignupPage() {
             <FieldDescription>At least {PASSWORD_MIN_LENGTH} characters.</FieldDescription>
             <FieldError errors={[errors.password]} />
           </Field>
-          <FormError message={signup.isError ? errorMessage(signup.error) : null} />
           <Button type="submit" size="lg" className="w-full" disabled={signup.isPending}>
             {signup.isPending ? "Creating account..." : "Create account"}
           </Button>

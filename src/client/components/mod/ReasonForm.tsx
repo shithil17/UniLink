@@ -1,7 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
-import { FormError } from "@/components/auth/AuthForm";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import { reasonBody } from "../../../shared/schemas/moderation";
@@ -16,7 +15,6 @@ export function ReasonForm({
   pendingLabel,
   variant = "default",
   pending,
-  serverError,
   hint,
   onSubmit,
   onCancel,
@@ -26,7 +24,6 @@ export function ReasonForm({
   pendingLabel: string;
   variant?: "default" | "destructive" | "outline";
   pending: boolean;
-  serverError: string | null;
   hint?: string;
   onSubmit: (reason: string) => void;
   onCancel?: () => void;
@@ -46,7 +43,6 @@ export function ReasonForm({
           error={form.formState.errors.reason}
           hint={hint}
         />
-        <FormError message={serverError} />
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           {onCancel ? (
             <Button type="button" variant="ghost" size="lg" onClick={onCancel}>

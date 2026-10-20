@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 const UPDATE_TOAST_ID = "pwa-update";

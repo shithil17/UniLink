@@ -271,7 +271,7 @@ A 4px fully rounded track in `tint` with a `brand` fill, exposed as a `progressb
 
 ### Floating layers
 
-Sheets, dialogs, select popups and toasts are `surface` panels with the 10px corner, a `line` border and the one float shadow, over a 40% `deep` scrim where they are modal. Toasts are for same-screen results only. Moderation states use a persistent `StatusNote`.
+Sheets, dialogs, select popups and toasts are `surface` panels with the 10px corner, a `line` border and the one float shadow, over a 40% `deep` scrim where they are modal. Toasts carry every action result and error; there are no inline message boxes, and error toasts stay up longer. Moderation states use a persistent `StatusNote`.
 
 ## Do's and Don'ts
 

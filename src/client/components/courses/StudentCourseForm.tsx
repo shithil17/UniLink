@@ -1,15 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { z } from "zod";
-import { FormError } from "@/components/auth/AuthForm";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ApiError, errorMessage } from "@/lib/api";
-import { isToastError, useAddStudentCourse, useUpdateStudentCourse } from "@/lib/courses";
+import { useAddStudentCourse, useUpdateStudentCourse } from "@/lib/courses";
 import {
   studentCourseInput,
   type StudentCourse,
@@ -41,7 +39,6 @@ export function StudentCourseForm({
   const add = useAddStudentCourse();
   const update = useUpdateStudentCourse(existing?.id ?? 0);
   const mutation = existing ? update : add;
-  const [serverError, setServerError] = useState<string | null>(null);
   const form = useForm<FormValues, unknown, StudentCourseInput>({
     resolver: zodResolver(studentCourseInput),
     defaultValues: existing
@@ -57,7 +54,6 @@ export function StudentCourseForm({
   const { errors } = form.formState;
 
   const submit = form.handleSubmit((values) => {
-    setServerError(null);
     mutation.mutate(values, {
       onSuccess: () => {
         toast.success("Course saved");
@@ -68,8 +64,7 @@ export function StudentCourseForm({
         if (code === "code_taken") form.setError("code", { message: errorMessage(err) });
         else if (code === "unknown_category") {
           form.setError("category", { message: errorMessage(err) });
-        } else if (isToastError(err)) toast.error(errorMessage(err));
-        else setServerError(errorMessage(err));
+        } else toast.error(errorMessage(err));
       },
     });
   });
@@ -155,7 +150,6 @@ export function StudentCourseForm({
             </Field>
           )}
         />
-        <FormError message={serverError} />
         <div className="flex flex-col gap-2 sm:flex-row-reverse">
           <Button type="submit" size="lg" className="sm:flex-1" disabled={mutation.isPending}>
             {mutation.isPending ? "Saving..." : existing ? "Save changes" : "Add course"}
