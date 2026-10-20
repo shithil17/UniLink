@@ -9,7 +9,7 @@ const files = import.meta.glob("../../../../data/curricula/*.json", {
   import: "default",
 });
 
-const facultyFile = import.meta.glob("../../../../data/faculty.json", {
+const facultyFiles = import.meta.glob("../../../../data/faculty/*.json", {
   eager: true,
   import: "default",
 });
@@ -21,7 +21,7 @@ describe("seed", () => {
   it("loads every curriculum and both fake students, and can run twice", async () => {
     const curricula = Object.values(files);
     expect(curricula).toHaveLength(13);
-    const faculty = Object.values(facultyFile)[0] as unknown[];
+    const faculty = Object.values(facultyFiles).flat();
     await seed(env.DB, curricula, faculty);
     const courses = await count("courses");
     expect(await count("faculty")).toBe(faculty.length);

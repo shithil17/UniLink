@@ -198,7 +198,7 @@ export const courses = sqliteTable(
   ],
 );
 
-// NSU faculty of every department, for the attempt picker. The seeded list comes from data/faculty.json; mods
+// NSU faculty of every department, for the attempt picker. The seeded list comes from data/faculty/; mods
 // add, edit and hide rows. Public, read-only for students.
 export const faculty = sqliteTable(
   "faculty",

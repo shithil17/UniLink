@@ -1,4 +1,4 @@
-// Fixture data for local dev and API tests: the curricula in data/curricula/, the faculty list in data/faculty.json and two fake students.
+// Fixture data for local dev and API tests: the curricula in data/curricula/, the faculty lists in data/faculty/ and two fake students.
 // Run against local D1 with `vp run seed` (after `vp run db:migrate:local`); safe to run again.
 // API tests call `seed(env.DB)`, optionally with curricula they loaded themselves (a worker cannot read files).
 //
@@ -6,7 +6,7 @@
 //   dev_cse   CSE, admitted 22, student ID 221-9001-0-42
 //   dev_bba   BBA, admitted 23, student ID 231-9002-0-30
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -19,9 +19,7 @@ import { facultySeedEntry } from "../src/shared/schemas/faculty.ts";
 import { curriculumImport, type CurriculumImport } from "../src/shared/schemas/courses.ts";
 import { z } from "zod";
 import { readCurriculumFiles } from "./curricula.ts";
-
-/** The faculty list `vp run seed` reads. */
-const FACULTY_FILE = join(import.meta.dirname, "..", "data", "faculty.json");
+import { readFacultyFiles } from "./faculty.ts";
 
 export const DEV_PASSWORD = "unilink-dev-2026";
 
@@ -104,7 +102,7 @@ if (import.meta.main) {
   try {
     const file = join(dir, "seed.sql");
     const curricula = readCurriculumFiles().map(({ raw }) => raw);
-    const faculty = JSON.parse(readFileSync(FACULTY_FILE, "utf8")) as unknown[];
+    const faculty = readFacultyFiles();
     writeFileSync(file, (await seedStatements(curricula, Date.now(), faculty)).join("\n"));
     execFileSync("wrangler", ["d1", "execute", "DB", "--local", `--file=${file}`], {
       stdio: "inherit",

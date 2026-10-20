@@ -65,7 +65,7 @@ export const facultyOption = facultySummary
 /** The label an attempt row carries for its faculty member, even after the row is hidden from the picker. */
 export const facultyLabel = facultyOption.pick({ name: true, initials: true });
 
-/** One entry of `data/faculty.json`. */
+/** One entry of `data/faculty/*.json`. */
 export const facultySeedEntry = facultyOption.omit({ id: true }).extend({
   nsuPage: nsuPageUrl.nullable().optional(),
 });
