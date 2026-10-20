@@ -29,6 +29,10 @@ const COPY: Record<NotificationType, NotificationCopy> = {
     title: "A found post may match your lost item",
     detail: "Someone posted something similar. Check whether it's yours.",
   },
+  push_test: {
+    title: "Test notification",
+    detail: "Notifications reach this device. Nothing else to do.",
+  },
 };
 
 /** Words for a notification, built here from its type. Free text from a payload is never shown. */

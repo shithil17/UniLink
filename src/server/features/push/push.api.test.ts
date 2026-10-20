@@ -6,7 +6,7 @@ import { pushMessage, pushPublicKey } from "../../../shared/schemas/push";
 import { fakePushSender, type PushSender } from "../../adapters/push";
 import { app } from "../../app";
 import { getDb } from "../../db/client";
-import { notifications, pushSubscriptions } from "../../db/schema";
+import { auditLog, notifications, pushSubscriptions } from "../../db/schema";
 import { limits } from "../../limits";
 import { SESSION_COOKIE } from "../../middleware/session";
 import { notify } from "../../notify";
@@ -285,5 +285,72 @@ describe("notify() with push", () => {
     const fake = fakePushSender();
     await notify(db(), [u.user.id], "post_approved", {}, { push: fake });
     expect(fake.sent).toHaveLength(limits.pushFanoutMax);
+  });
+});
+
+describe("POST /api/push/test", () => {
+  // Fake keys: the admin has no subscriptions, so nothing is ever sent over the network.
+  const configured = {
+    ...env,
+    VAPID_PUBLIC_KEY: "pub",
+    VAPID_PRIVATE_KEY: "priv",
+    VAPID_SUBJECT: "mailto:a@b.c",
+  };
+  const unconfigured = {
+    ...env,
+    VAPID_PUBLIC_KEY: undefined,
+    VAPID_PRIVATE_KEY: undefined,
+    VAPID_SUBJECT: undefined,
+  };
+
+  async function admin() {
+    const user = await createTestUser(db(), { role: "admin" });
+    return { user, token: await createTestSession(db(), user.id) };
+  }
+
+  it("is admin only", async () => {
+    const student = await signedIn();
+    const mod = await createTestUser(db(), { role: "mod" });
+    const modToken = await createTestSession(db(), mod.id);
+    expect((await call("POST", "/api/push/test", null, undefined, configured)).status).toBe(401);
+    expect(
+      (await call("POST", "/api/push/test", student.token, undefined, configured)).status,
+    ).toBe(403);
+    expect((await call("POST", "/api/push/test", modToken, undefined, configured)).status).toBe(
+      403,
+    );
+  });
+
+  it("notifies only the caller and writes an audit row", async () => {
+    const a = await admin();
+    const other = await createTestUser(db());
+    const res = await call("POST", "/api/push/test", a.token, undefined, configured);
+    expect(res.status).toBe(200);
+
+    const rows = await db().select().from(notifications).where(eq(notifications.type, "push_test"));
+    expect(rows.filter((r) => r.userId === a.user.id)).toHaveLength(1);
+    expect(rows.some((r) => r.userId === other.id)).toBe(false);
+
+    const logged = await db().select().from(auditLog).where(eq(auditLog.action, "push.test"));
+    expect(logged.some((r) => r.actor === String(a.user.id))).toBe(true);
+  });
+
+  it("is a 409 and writes nothing while push is not configured", async () => {
+    const a = await admin();
+    const res = await call("POST", "/api/push/test", a.token, undefined, unconfigured);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ error: "push_not_configured" });
+    const rows = await db().select().from(notifications).where(eq(notifications.userId, a.user.id));
+    expect(rows).toHaveLength(0);
+  });
+
+  it("is rate-limited", async () => {
+    const a = await admin();
+    for (let i = 0; i < limits.pushTest.limit; i += 1) {
+      expect((await call("POST", "/api/push/test", a.token, undefined, configured)).status).toBe(
+        200,
+      );
+    }
+    expect((await call("POST", "/api/push/test", a.token, undefined, configured)).status).toBe(429);
   });
 });

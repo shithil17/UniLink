@@ -57,11 +57,12 @@ Attempts and student courses are readable by their owner only, never by mods or 
 
 Web push is best effort and per device; the inbox stays the source of truth. A push carries only a title, body and a link to `/inbox`, built on the server from the notification type (`src/shared/notificationCopy.ts`), never payload text or anyone's identity. Push is off (the key endpoint answers `null`) until `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` are set.
 
-| Method | Path                    | Auth | Schema                                                                 |
-| ------ | ----------------------- | ---- | ---------------------------------------------------------------------- |
-| GET    | `/api/push/public-key`  | user | `push.ts` → `pushPublicKey` (`key: null` while push is not configured) |
-| POST   | `/api/push/subscribe`   | user | `push.ts` → `pushSubscriptionInput` (rate-limited)                     |
-| POST   | `/api/push/unsubscribe` | user | `push.ts` → `pushUnsubscribeInput` (own row only, idempotent)          |
+| Method | Path                    | Auth  | Schema                                                                                                                |
+| ------ | ----------------------- | ----- | --------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/push/public-key`  | user  | `push.ts` → `pushPublicKey` (`key: null` while push is not configured)                                                |
+| POST   | `/api/push/subscribe`   | user  | `push.ts` → `pushSubscriptionInput` (rate-limited)                                                                    |
+| POST   | `/api/push/unsubscribe` | user  | `push.ts` → `pushUnsubscribeInput` (own row only, idempotent)                                                         |
+| POST   | `/api/push/test`        | admin | `push.ts` → `pushOk` (to the caller only; rate-limited, audited; 409 `push_not_configured` without the VAPID secrets) |
 
 An endpoint must be on a known push service host (400 `unknown_push_service`). Subscribing an endpoint that already exists moves it to the caller (same device, new login). A user holds at most `limits.pushSubscriptionsMax` devices: past it, subscribing a new one is a 409 `push_subscription_limit` (nothing is dropped; the user switches another device off first). A send the push service answers with 404 or 410 deletes that subscription. Logging out removes the device's subscription (the client unsubscribes before it calls logout).
 

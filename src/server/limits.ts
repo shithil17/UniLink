@@ -45,4 +45,6 @@ export const limits = {
   pushTtlSeconds: DAY / SECOND,
   // ceiling: one Worker request may make about 50 outbound requests on the free plan. A notify() call pushes to at most this many devices; every target still gets its inbox row. Revisit on a paid plan or when a fan-out moves to a queue.
   pushFanoutMax: 40,
+  /** Test pushes an admin may send to their own devices. Enough to check a few phones, not a spam loop. */
+  pushTest: { limit: 10, windowMs: HOUR },
 } as const;

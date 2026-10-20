@@ -567,6 +567,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] Push adapter in `src/server/adapters/` (VAPID + payload encryption with WebCrypto) and a fake. `notify()` sends to the targets' subscriptions and deletes expired ones; a push failure never fails `notify()`.
 - [x] `GET /api/push/public-key`, `POST /api/push/subscribe`, `POST /api/push/unsubscribe`; a script to generate VAPID keys.
 - [x] Service worker shows the push and opens `/inbox` on tap. Settings has a per-device "Notifications" switch with the iOS install and blocked-permission states; logout unsubscribes the device.
+- [x] `POST /api/push/test` (admin only, to the caller only, rate-limited and audited) and a "Send test" row in Settings, for checking push on a phone.
 - [x] `src/server/features/push/push.api.test.ts`: subscribe and unsubscribe, a foreign host is rejected, the cap holds, `notify()` pushes only to targets through the fake, an expired subscription is deleted, push text never contains payload values.
 
 ### Checklist — Test Scripts & Smoke Tests
@@ -577,7 +578,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Test Gate 5
 
 - [x] **Inbox tests pass, and the `notify()` signature matches `docs/api-contracts.md`.**
-- [ ] **(Manual) On staging, with the VAPID secrets set, a push arrives on Android Chrome and on iOS after Add to Home Screen, tapping it opens the inbox, and logging out stops pushes to that device.**
+- [ ] **(Manual) On staging, with the VAPID secrets set, a test push from Settings (signed in as the admin) arrives on Android Chrome and on iOS after Add to Home Screen, tapping it opens the inbox, and logging out stops pushes to that device.**
 
 ---
 

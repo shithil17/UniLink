@@ -7,11 +7,13 @@ import {
   type pushPublicKey,
 } from "../../../shared/schemas/push";
 import { isKnownPushEndpoint, pushSenderFromEnv } from "../../adapters/push";
+import { audit } from "../../audit";
 import { getDb } from "../../db/client";
 import { limits } from "../../limits";
-import { requireUser } from "../../middleware/auth";
+import { requireRole, requireUser } from "../../middleware/auth";
 import { rateLimitBy } from "../../middleware/rateLimit";
 import type { AppEnv } from "../../middleware/types";
+import { notify } from "../../notify";
 import { pushSubscriptionsRepo } from "../../repos/pushSubscriptions";
 import { validateJson } from "../../validate";
 
@@ -66,4 +68,24 @@ export const pushRoutes = new Hono<AppEnv>()
   .post("/unsubscribe", validateJson(pushUnsubscribeInput), async (c) => {
     await pushSubscriptionsRepo(getDb(c.env.DB)).remove(userId(c), c.req.valid("json").endpoint);
     return c.json(ok);
-  });
+  })
+  // An admin sends one test notification to themself only (inbox row + push to their devices).
+  .post(
+    "/test",
+    requireRole("admin"),
+    rateLimitBy((c) => `push-test:${userId(c)}`, limits.pushTest.limit, limits.pushTest.windowMs),
+    async (c) => {
+      const push = pushSenderFromEnv(c.env);
+      if (!push) {
+        return c.json(
+          { error: "push_not_configured", message: "Push is not set up on this server." },
+          409,
+        );
+      }
+      const db = getDb(c.env.DB);
+      const me = userId(c);
+      await notify(db, [me], "push_test", {}, { push });
+      await audit(db, { actor: me, action: "push.test", targetType: "user", targetId: me });
+      return c.json(ok);
+    },
+  );

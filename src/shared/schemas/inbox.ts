@@ -9,6 +9,8 @@ export const notificationType = z.enum([
   "resource_submitted",
   "resource_accepted",
   "lost_found_possible_match",
+  // An admin checking that web push reaches their own devices.
+  "push_test",
 ]);
 
 export type NotificationType = z.infer<typeof notificationType>;
