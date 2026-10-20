@@ -1,4 +1,4 @@
-# Manual test cases (Phases 0 to 8)
+# Manual test cases (Phases 0 to 8 and the faculty directory)
 
 Run on staging unless a case says otherwise. Each case cites the requirement in [`srs.md`](srs.md). Record Pass/Fail and the build date in the Result column; log failures in the defect report.
 
@@ -176,3 +176,36 @@ Needs a post type registered for screening (rides is the first). Until then, run
 | H-20 | A reverses the clear from H-19                                         | Flag and cooldown are back; reversal logged                                                 |        |
 | H-21 | S opens `/mod/queue` or calls `/api/mod/queue`                         | 403                                                                                         |        |
 | H-22 | A: audit log, filter by actor `automod`                                | One row per automatic decision with model name, category and a redacted text snapshot       |        |
+
+## I. Faculty directory (FR-48 to FR-53)
+
+Needs the faculty seeded (`vp run seed` locally; for staging see `docs/data-formats.md`). Use a mod M, an admin A and a student S with a course open in Courses.
+
+| ID   | Steps                                                                                       | Expected                                                                                                 | Result |
+| ---- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------ |
+| I-1  | S: open a course, "Add term and faculty", tap the Faculty field                             | A sheet "Who taught it?" opens with the search box focused, "No faculty" first and the list below        |        |
+| I-2  | Type `rahman`                                                                               | Only people with a name word starting "rahman"; each row shows "Name (INITIALS)" and a muted line        |        |
+| I-3  | Type `atiq rah`                                                                             | Both Atiqur Rahman entries                                                                               |        |
+| I-4  | Type `rkz`, then `RKZ`                                                                      | The same single person, first in the list                                                                |        |
+| I-5  | Type `sfr`, then `sfr1`                                                                     | `sfr` lists every code starting with it; `sfr1` lists exactly that person                                |        |
+| I-6  | Type `dr nova`                                                                              | Finds Nova Ahmed (the title is ignored)                                                                  |        |
+| I-7  | Type `zzzz`                                                                                 | "No faculty match that search."                                                                          |        |
+| I-8  | Filter to one department, then back to "All departments"                                    | The list narrows to that department and widens again; the search text is kept                            |        |
+| I-9  | With the keyboard: type, Arrow Down, Enter                                                  | The highlighted row is chosen and the sheet closes; the field shows "Name (INITIALS)"                    |        |
+| I-10 | Choose "No faculty"                                                                         | The field shows "No faculty"; saving works                                                               |        |
+| I-11 | Save the attempt with a faculty member                                                      | The attempt row shows "Name (INITIALS)"; a person without initials shows the name only                   |        |
+| I-12 | Use a phone-width window                                                                    | Rows are at least 44px tall; the sheet scrolls inside; the keyboard does not hide the search box         |        |
+| I-13 | Block `/api/faculty` in DevTools and open the form                                          | The Faculty field is disabled and a toast says "The faculty list did not load. You can save without it." |        |
+| I-14 | M: Moderation > Faculty                                                                     | All faculty are listed with the same search and department filter; hidden ones are not shown             |        |
+| I-15 | M: Add faculty with a name, initials `TsT1`, designation, department                        | Toast "Faculty added"; S finds the person in the picker                                                  |        |
+| I-16 | M: add another with initials `tst1`                                                         | The Initials field says another faculty member already has them; nothing is added                        |        |
+| I-17 | M: add the same name in the same department with other initials                             | The Name field says it is already listed; the same name in another department is accepted                |        |
+| I-18 | M: add with an NSU page `http://example.com/x`, then `https://ece.northsouth.edu/people/x/` | The first is refused (an https link on northsouth.edu); the second is accepted                           |        |
+| I-19 | M: edit the designation of a person                                                         | Toast "Faculty updated"; S sees the new designation after reloading                                      |        |
+| I-20 | S has an attempt naming P. M hides P with the reason "left NSU"                             | Toast "Faculty hidden"; P is gone from S's picker, but S's attempt row still shows P's name              |        |
+| I-21 | M: turn on "Show hidden"                                                                    | P appears with a "Hidden" badge; open P, "Show again" with a reason: toast "Faculty shown again"         |        |
+| I-22 | M: hide without a reason                                                                    | The reason field shows an error; nothing changes                                                         |        |
+| I-23 | S opens `/mod/faculty` or calls `/api/mod/faculty`                                          | Redirected away / 403                                                                                    |        |
+| I-24 | A: audit log, filter target type `faculty`                                                  | A row for each of I-15, I-19, I-20, I-21 with the faculty name; edit and hide rows can be reversed       |        |
+| I-25 | A: reverse the edit from I-19                                                               | The old designation is back; the reversal is logged                                                      |        |
+| I-26 | Seed twice, after M added initials to a person who has none in the file                     | No duplicates; the initials M added and any hidden flag are kept                                         |        |

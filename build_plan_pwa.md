@@ -18,6 +18,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - (2026-10-19) The course map covers every undergraduate program with a course map, picked by the program code in the student ID. Students add their own elective courses (code, title, credits), may go over the degree total, and can exclude extra courses from the transcript (Phase 4).
 - (2026-10-20) New Phase 4b: the Quiet Utility design language reorganizes Phase 1's four palettes into shared roles and restyles every existing screen. The app now serves all NSU undergraduates, with CSE-only extras (faculty profiles, supervisor finder).
 - (2026-10-19) Lost-and-found posts and marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (post photos kit, Phase 15). Photos in the "ID or card" category always go to a mod first. Authors can delete their own posts (Phase 12).
+- (2026-10-20) Faculty now covers every NSU department, each with a department, optional initials, an NSU page and a hidden flag; students search and filter the picker by name, initials and department; mods manage faculty (add, edit, hide, show again) in the panel.
 
 ---
 
@@ -597,7 +598,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 >   Note (2026-10-19): **WV** (waived, Phase 4) earns credits but is excluded from CGPA and from the best grade (`countsInCgpa()` in `grading.ts`). A waived course with no graded attempt never blocks a retake.
 > - **Retake rule:** a new attempt is allowed only while the best grade so far (ignoring I and W) is below B+. There is no limit on the number of attempts while that holds. I and W attempts never block a retake.
 > - The scale and the retake policy are **Strategy** objects in `src/shared/grading.ts`, so a different scale or policy is a new strategy, not an `if`.
-> - The basic `faculty` table (name, initials, designation) is created here for the attempt picker. Phase 11 extends it.
+> - The basic `faculty` table is created here for the attempt picker (since extended into the all-department directory, see the 2026-10-20 note at the top). Phase 11 extends it further.
 > - Mods and admins cannot read attempts or CGPA. This is enforced in the repo layer, not only in the UI.
 
 ### Checklist
@@ -818,7 +819,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Build order
 
-- [ ] **Step 1:** extend `faculty` (slug, photo link, Scholar URL, ORCID, OpenAlex ID, tags, summary, summary date, sync input JSON, `limited_data`, `hidden`) and add `faculty_papers`. Seed from D's verified list.
+- [ ] **Step 1:** extend `faculty` (slug, photo link, Scholar URL, ORCID, OpenAlex ID, tags, summary, summary date, sync input JSON, `limited_data`) and add `faculty_papers`. `department`, optional `initials`, `nsu_page` and `hidden` already exist (faculty directory, 2026-10-20), as does the mod hide/show with its audit row; the profile screens reuse that flag. Seed from D's verified list.
 - [ ] **Step 2:** adapters + fakes: `OpenAlexClient` (check the current access terms and whether a free key or `mailto` is required), `OrcidClient`, `CrossrefClient`. Rebuild abstracts, merge and dedupe by DOI, handle missing abstracts.
 - [ ] **Step 3:** `scripts/faculty-sync.ts` with the `DeepSeekClient` adapter (summary mode) and Zod validation. Admin-only `PUT /api/admin/faculty/:id/summary`. Admin form for the manual paper list.
 - [ ] **Step 4:** faculty list, profile page, keyword search, report button, mod hide.

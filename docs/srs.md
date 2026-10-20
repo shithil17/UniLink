@@ -1,6 +1,6 @@
 # Software Requirements Specification (draft)
 
-UniLink is an unofficial, student-run companion app for North South University (NSU) students. This draft covers what is built through Phase 8: accounts, the installable app shell, the course map, the inbox and web push, CGPA and attempts, moderation, and content screening with the review queue. Later features (routine, resources, rides, lost and found, marketplace, faculty profiles) are listed under [Planned](#planned) and get requirements as they land.
+UniLink is an unofficial, student-run companion app for North South University (NSU) students. This draft covers what is built through Phase 8: accounts, the installable app shell, the course map, the inbox and web push, CGPA and attempts, moderation, content screening with the review queue, and the faculty directory. Later features (routine, resources, rides, lost and found, marketplace, faculty profiles) are listed under [Planned](#planned) and get requirements as they land.
 
 Requirement IDs (`FR-*`, `NFR-*`) are stable. Test cases in [`test-cases.md`](test-cases.md) cite them. The build rules behind each requirement live in `build_plan_pwa.md`; the endpoints in [`api-contracts.md`](api-contracts.md).
 
@@ -84,16 +84,16 @@ Mods and admins cannot read any student's attempts or CGPA.
 
 ### Moderation
 
-| ID    | Requirement                                                                                                                                                                       |
-| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-31 | A user can report a target with a reason. One open report per reporter per target; reports are rate-limited (10 per hour); a user cannot report their own content.                |
-| FR-32 | A mod can list reports (open first, oldest first) and resolve or dismiss them with a reason.                                                                                      |
-| FR-33 | A mod can search users by username prefix and ban, unban, or issue a temporary password. Banning ends the user's sessions.                                                        |
-| FR-34 | A mod can look up the account holding a 7-digit ID key and release it (the holder is banned, the key is freed). This is the only place a mod sees a student ID, and it is logged. |
-| FR-35 | Nobody acts on themselves or on an admin. A mod acts on students only. An admin acts on students and mods.                                                                        |
-| FR-36 | An admin can promote a student to mod and demote a mod.                                                                                                                           |
-| FR-37 | Mods only soft-delete. Every mod and automatic action writes an audit row with a before-snapshot and a reason.                                                                    |
-| FR-38 | An admin can view the audit log (filter by actor, target type, target id) and reverse a ban, unban, role change, key release or soft delete. A row is reversed once.              |
+| ID    | Requirement                                                                                                                                                                          |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-31 | A user can report a target with a reason. One open report per reporter per target; reports are rate-limited (10 per hour); a user cannot report their own content.                   |
+| FR-32 | A mod can list reports (open first, oldest first) and resolve or dismiss them with a reason.                                                                                         |
+| FR-33 | A mod can search users by username prefix and ban, unban, or issue a temporary password. Banning ends the user's sessions.                                                           |
+| FR-34 | A mod can look up the account holding a 7-digit ID key and release it (the holder is banned, the key is freed). This is the only place a mod sees a student ID, and it is logged.    |
+| FR-35 | Nobody acts on themselves or on an admin. A mod acts on students only. An admin acts on students and mods.                                                                           |
+| FR-36 | An admin can promote a student to mod and demote a mod.                                                                                                                              |
+| FR-37 | Mods only soft-delete. Every mod and automatic action writes an audit row with a before-snapshot and a reason.                                                                       |
+| FR-38 | An admin can view the audit log (filter by actor, target type, target id) and reverse a ban, unban, role change, key release, soft delete or faculty change. A row is reversed once. |
 
 ### Content screening and review queue
 
@@ -108,6 +108,17 @@ Mods and admins cannot read any student's attempts or CGPA.
 | FR-45 | Mods see held posts and open reports in one queue with its size at the top. A held post shows its text (student IDs and card numbers redacted), the author's username, the model category and confidence, and the rule flags.                                                                                                          |
 | FR-46 | A mod approves or rejects a held post (a rejection needs a category and a reason). The mod's decision overrides the model, is decided once even if two mods act together, writes an audit row, and sends the author an inbox message.                                                                                                  |
 | FR-47 | Every automatic decision writes an audit row with actor `automod`, the model name, the category, the scores and a redacted text snapshot.                                                                                                                                                                                              |
+
+### Faculty directory
+
+| ID    | Requirement                                                                                                                                                                                                                                  |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-48 | The faculty directory covers every NSU department. Each faculty member has a name, a designation, a department, optional initials and an optional NSU page. Initials are unique across the university without regard to case.                |
+| FR-49 | A student picks the faculty member for an attempt from a searchable picker. Search matches the start of any word of the name or the start of the initials, ignoring case, accents and titles such as "Dr."; exact initials rank first.       |
+| FR-50 | The picker can be filtered to one department, offers "No faculty", and says "No faculty match that search." when nothing matches. It stays usable with the keyboard.                                                                         |
+| FR-51 | A faculty member is shown as "Name (INITIALS)" in the picker and in attempt rows, without brackets when there are no initials. The picker also shows designation and department.                                                             |
+| FR-52 | A mod or admin can add and edit faculty (name, initials, designation, department, NSU page) and hide or show a faculty member again with a reason. A taken name (same department) or taken initials is refused with a message on that field. |
+| FR-53 | A hidden faculty member is not offered to students, but attempts that already name them keep the name. Every faculty change writes an audit row with a before-snapshot; an admin can reverse an edit, a hide or a show.                      |
 
 ## 4. Non-functional requirements
 
@@ -127,7 +138,7 @@ Mods and admins cannot read any student's attempts or CGPA.
 - Email is format-checked, not verified. Mitigations: unique ID key, signup limits, posting cooldown, mod ID-conflict tool.
 - The student ID check rejects obviously fake IDs; it does not prove ownership.
 - No dark mode follows the OS; Night is a manual palette.
-- The faculty list comes from the public ECE department listing (2026-10-20); Scholar, ORCID and OpenAlex IDs are added with faculty profiles.
+- The faculty list starts from the public ECE department listing (2026-10-20); other departments are imported later and moderators can fix entries in the panel. Scholar, ORCID and OpenAlex IDs are added with faculty profiles.
 - Screening runs a stub model step (approves text, holds photos) until the real model is wired in; no post type ships yet, so FR-39 to FR-47 are exercised by tests and the forced-review flag.
 - Curricula exist for 13 undergraduate programs; graduate programs are out of scope.
 

@@ -94,7 +94,7 @@ Schemas are in `moderation.ts`. Mod routes need the mod role (admins pass too); 
 
 Who may be acted on (`src/shared/modPolicy.ts`, enforced on the server, mirrored on the screens): nobody acts on themselves or on an admin; a mod acts on students only; an admin acts on students and mods (403 `forbidden_target`).
 
-Reversal rules (`src/server/reverse.ts`): ban, unban, role change, key release and soft delete put the snapshot back and log a `reverse` row. A password reset, a report resolution, an ID lookup and a reversal are not reversible (409 `not_reversible` / `is_reversal`); a row is reversed once (409 `already_reversed`); a released key someone has taken since is 409 `key_in_use`; a user who is an admin now is 403 `target_protected`.
+Reversal rules (`src/server/reverse.ts`): ban, unban, role change, key release and soft delete put the snapshot back and log a `reverse` row. A password reset, a report resolution, an ID lookup and a reversal are not reversible (409 `not_reversible` / `is_reversal`); a row is reversed once (409 `already_reversed`); a released key someone has taken since is 409 `key_in_use`; a user who is an admin now is 403 `target_protected`. A faculty edit, hide or unhide can be reversed too (adding faculty cannot; hide the row instead); if the old initials or name were taken since, it is 409 `value_in_use`.
 
 ## Resources
 
@@ -134,13 +134,22 @@ Schemas: `rides.ts` (`rideInput`, `rideFeedQuery`, `rideSummary`), `lostFound.ts
 
 ## Faculty and finder
 
-| Method | Path                             | Auth  | Schema                                                      |
-| ------ | -------------------------------- | ----- | ----------------------------------------------------------- |
-| GET    | `/api/faculty`                   | user  | `faculty.ts` → `page(facultySummary)`, `?q=` keyword        |
-| GET    | `/api/faculty/:slug`             | user  | profile + recent papers                                     |
-| POST   | `/api/mod/faculty/:id/hide`      | mod   | –                                                           |
-| PUT    | `/api/admin/faculty/:id/summary` | admin | `faculty.ts` → `facultySummaryUpdate`                       |
-| POST   | `/api/finder/match`              | user  | `faculty.ts` → `finderMatchRequest` → `finderMatchResponse` |
+| Method | Path                             | Auth  | Schema                                                                      |
+| ------ | -------------------------------- | ----- | --------------------------------------------------------------------------- |
+| GET    | `/api/faculty`                   | user  | `faculty.ts` → `facultyOption[]`: visible faculty only, by name (see below) |
+| GET    | `/api/faculty/profiles`          | user  | Phase 11: `faculty.ts` → `page(facultySummary)`, `?q=` keyword              |
+| GET    | `/api/faculty/:slug`             | user  | Phase 11: profile + recent papers                                           |
+| GET    | `/api/mod/faculty`               | mod   | `faculty.ts` → `modFaculty[]`: every row, hidden ones included              |
+| POST   | `/api/mod/faculty`               | mod   | `facultyInput` → `modFaculty` (201)                                         |
+| PATCH  | `/api/mod/faculty/:id`           | mod   | `facultyPatch` (any of the input fields) → `modFaculty`                     |
+| POST   | `/api/mod/faculty/:id/hide`      | mod   | `facultyHideRequest` (`reason`) → `modFaculty`                              |
+| POST   | `/api/mod/faculty/:id/unhide`    | mod   | `facultyHideRequest` (`reason`) → `modFaculty`                              |
+| PUT    | `/api/admin/faculty/:id/summary` | admin | Phase 11: `faculty.ts` → `facultySummaryUpdate`                             |
+| POST   | `/api/finder/match`              | user  | Phase 11: `faculty.ts` → `finderMatchRequest` → `finderMatchResponse`       |
+
+`GET /api/faculty` returns `[{ id, name, initials | null, designation, department }]` ordered by name, capped at `limits.facultyListMax` (a bounded reference table: the client fetches it once, keeps it for an hour and searches it in the browser). It sends `Cache-Control: private, max-age=3600`. Hidden faculty are left out, but an attempt that already names a hidden faculty member still carries `faculty: { name, initials }` (see `attempt` in `attempts.ts`), so the student's own history keeps the name.
+
+`facultyInput`: `name` (2 to 100), `initials` (optional, 2 to 6 letters or digits, unique across the university without regard to case), `designation`, `department` (a code from `src/shared/departments.ts`), `nsuPage` (optional, https on `northsouth.edu` or a subdomain). Empty `initials` and `nsuPage` mean none. Conflicts answer `409` with `error: "initials_taken"` or `"name_taken"` (the same name in the same department), which the form shows under the Initials and Name fields. Hide and unhide need a `reason`; `409 already_hidden` / `not_hidden` when the row is already in that state. Every write logs an audit row (`faculty_add`, `faculty_edit`, `faculty_hide`, `faculty_unhide`) with a before-snapshot of the changed columns; an admin can reverse an edit, hide or unhide (`409 value_in_use` if the old initials or name were taken since).
 
 ## Server helpers
 

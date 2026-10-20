@@ -65,8 +65,11 @@ classDiagram
   class Faculty {
     +int id
     +string name
-    +string initials
+    +string initials?  «unique, any case»
     +string designation
+    +string department
+    +string nsuPage?
+    +bool hidden
   }
   class Notification {
     +int id

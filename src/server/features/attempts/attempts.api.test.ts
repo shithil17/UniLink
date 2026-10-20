@@ -99,6 +99,7 @@ describe("POST /api/attempts", () => {
       grade: "B",
       term: { year: 2024, season: "fall" },
       facultyId,
+      faculty: { name: "Test Faculty", initials: "TF" },
     });
   });
 

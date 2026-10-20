@@ -35,4 +35,36 @@ describe("seed", () => {
     expect(await count("courses")).toBe(courses);
     expect(await count("users")).toBe(2);
   });
+
+  it("seeds department, NSU page and null initials, and a re-seed keeps what a moderator added", async () => {
+    await env.DB.prepare("DELETE FROM faculty").run();
+    const entry = {
+      name: "Seed Person",
+      initials: null,
+      designation: "Lecturer",
+      department: "LAW",
+      nsuPage: "https://law.northsouth.edu/people/seed-person/",
+    };
+    await seed(env.DB, [], [entry]);
+    expect(
+      await env.DB.prepare("SELECT initials, department, nsu_page, hidden FROM faculty").first(),
+    ).toEqual({
+      initials: null,
+      department: "LAW",
+      nsu_page: entry.nsuPage,
+      hidden: 0,
+    });
+
+    // A moderator fills in initials and hides the row; the file still has no initials.
+    await env.DB.prepare("UPDATE faculty SET initials = 'SeP', hidden = 1").run();
+    await seed(env.DB, [], [{ ...entry, designation: "Professor" }]);
+    expect(
+      await env.DB.prepare("SELECT initials, designation, hidden FROM faculty").first(),
+    ).toEqual({ initials: "SeP", designation: "Professor", hidden: 1 });
+    expect(await count("faculty")).toBe(1);
+
+    // The same name in another department is a different person.
+    await seed(env.DB, [], [{ ...entry, department: "ECE" }]);
+    expect(await count("faculty")).toBe(2);
+  });
 });

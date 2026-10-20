@@ -17,6 +17,7 @@ const attempt = (over: Partial<Attempt>): Attempt => ({
   grade: "C",
   term: { year: 2025, season: "fall" },
   facultyId: 7,
+  faculty: { name: "Amy Ay", initials: "AA" },
   createdAt: 1,
   ...over,
 });
@@ -27,7 +28,7 @@ function stubApi(attempts: Attempt[]) {
     vi.fn(async (path: string) =>
       Response.json(
         path === "/api/faculty"
-          ? [{ id: 7, name: "Amy Ay", initials: "AA", designation: "Lecturer" }]
+          ? [{ id: 7, name: "Amy Ay", initials: "AA", designation: "Lecturer", department: "ECE" }]
           : attempts,
       ),
     ),
@@ -60,11 +61,17 @@ describe("AttemptSection", () => {
     renderWith(<AttemptSection choices={choices} onSaved={() => {}} />);
     expect(await screen.findByText("Your attempts")).toBeTruthy();
     expect(screen.getByText("Fall 2025")).toBeTruthy();
-    expect(await screen.findByText("Amy Ay")).toBeTruthy();
+    expect(await screen.findByText("Amy Ay (AA)")).toBeTruthy();
     expect(screen.getByText("Retake allowed")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Add attempt" }));
     expect(await screen.findByLabelText("Faculty (optional)")).toBeTruthy();
     expect(screen.getByLabelText("Term").textContent).toContain("Pick a term");
+  });
+
+  it("still names a faculty member who is no longer in the picker list", async () => {
+    stubApi([attempt({ facultyId: 99, faculty: { name: "Gone Person", initials: null } })]);
+    renderWith(<AttemptSection choices={choices} onSaved={() => {}} />);
+    expect(await screen.findByText("Gone Person")).toBeTruthy();
   });
 
   it("hides Add attempt and says why once the best grade is B+ or above", async () => {

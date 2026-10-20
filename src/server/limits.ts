@@ -5,6 +5,13 @@ import {
   USER_SEARCH_MAX_LENGTH,
   USER_SEARCH_MIN_LENGTH,
 } from "../shared/schemas/moderation.ts";
+import {
+  FACULTY_DESIGNATION_MAX_LENGTH,
+  FACULTY_INITIALS_MAX_LENGTH,
+  FACULTY_INITIALS_MIN_LENGTH,
+  FACULTY_NAME_MAX_LENGTH,
+  FACULTY_PAGE_MAX_LENGTH,
+} from "../shared/schemas/faculty.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
 
 // Every limit, cap, cooldown, expiry and threshold lives here. Feature code imports these, never inlines numbers.
@@ -42,8 +49,18 @@ export const limits = {
   courseImportMaxRows: 300,
   // ceiling: bounds D1 rows per user; a degree has around a dozen elective slots. Revisit if students report hitting it.
   studentCoursesMax: 40,
-  // ceiling: the CSE faculty list is around a hundred people, so the picker loads it in one go. Revisit if the list grows past this.
-  facultyListMax: 500,
+  // ceiling: the faculty directory is a bounded reference table of about a thousand people across every department. The picker fetches it once, caches it for an hour and searches it in the browser, so there is no paging. Revisit with server-side paginated search if the list outgrows this.
+  facultyListMax: 2000,
+  // ceiling: mod-entered faculty fields only need to hold real NSU names, designations, initials and profile links. Defined in shared code for the client form. Revisit if a real value is refused.
+  facultyField: {
+    nameMax: FACULTY_NAME_MAX_LENGTH,
+    designationMax: FACULTY_DESIGNATION_MAX_LENGTH,
+    initialsMin: FACULTY_INITIALS_MIN_LENGTH,
+    initialsMax: FACULTY_INITIALS_MAX_LENGTH,
+    pageMax: FACULTY_PAGE_MAX_LENGTH,
+  },
+  // ceiling: how long a browser may reuse the faculty list before asking again. The list changes only when a mod edits it. Revisit if mods need edits to show up sooner.
+  facultyListCacheSeconds: HOUR / SECOND,
   // ceiling: a whole transcript entered in one sitting is roughly 50 attempts. Revisit if students hit it.
   attemptWrites: { limit: 200, windowMs: HOUR },
   // ceiling: a student has a phone, a laptop and a spare browser or two. Past this, subscribing is a 409 until a device is switched off. Revisit if students report hitting it.

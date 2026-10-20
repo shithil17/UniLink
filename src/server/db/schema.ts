@@ -196,17 +196,33 @@ export const courses = sqliteTable(
   ],
 );
 
-// NSU CSE faculty, for the attempt picker. The seeded list comes from data/faculty.json. Public, read-only.
+// NSU faculty of every department, for the attempt picker. The seeded list comes from data/faculty.json; mods
+// add, edit and hide rows. Public, read-only for students.
 export const faculty = sqliteTable(
   "faculty",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     name: text("name").notNull(),
-    initials: text("initials").notNull(),
+    // NSU's university-wide faculty code (like "RkZ"). Many departments do not publish one.
+    initials: text("initials"),
     designation: text("designation").notNull(),
+    // A code from src/shared/departments.ts. The default only exists because SQLite's ADD COLUMN needs one
+    // for a NOT NULL column; every insert names its department.
+    department: text("department").notNull().default("ECE"),
+    // The profile page on northsouth.edu, when there is one.
+    nsuPage: text("nsu_page"),
+    // A hidden row never reaches the student picker; attempts that already point at it keep working.
+    hidden: integer("hidden", { mode: "boolean" }).notNull().default(false),
   },
-  // The seed upserts on name, so running it again updates a row instead of duplicating it.
-  (t) => [uniqueIndex("faculty_name_idx").on(t.name)],
+  (t) => [
+    // The seed upserts on this pair, so running it again updates a row instead of duplicating it.
+    uniqueIndex("faculty_name_department_idx").on(t.name, t.department),
+    // Initials are unique across the university, compared without case. Rows without initials are exempt.
+    uniqueIndex("faculty_initials_idx")
+      .on(sql`lower(${t.initials})`)
+      .where(sql`${t.initials} is not null`),
+    index("faculty_department_idx").on(t.department),
+  ],
 );
 
 // Graded attempts are the only source of truth for done courses. Owner only: never read for another user.

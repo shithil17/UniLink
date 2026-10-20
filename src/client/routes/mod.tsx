@@ -27,6 +27,9 @@ function ModLayout() {
           <Link to="/mod/users" className={tab}>
             Users
           </Link>
+          <Link to="/mod/faculty" className={tab}>
+            Faculty
+          </Link>
           <Link to="/mod/id-conflict" className={tab}>
             ID check
           </Link>

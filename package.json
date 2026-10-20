@@ -14,6 +14,7 @@
     "deploy:staging": "CLOUDFLARE_ENV=staging vp build && wrangler deploy",
     "deploy:prod": "CLOUDFLARE_ENV=production vp build && wrangler deploy",
     "seed": "node scripts/seed.ts",
+    "faculty:sql": "node scripts/faculty-sql.ts",
     "seed:admin": "node scripts/seed-admin.ts --local",
     "seed:admin:staging": "node scripts/seed-admin.ts --staging",
     "seed:admin:prod": "node scripts/seed-admin.ts --prod",

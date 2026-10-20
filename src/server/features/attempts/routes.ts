@@ -19,7 +19,16 @@ import { isKnownCourseCode, loadCurriculum } from "../courses/curriculum";
 import { buildCourseMap, EMPTY_COURSE_MAP } from "../courses/map";
 import { buildCgpaSummary } from "./summary";
 
-const toAttempt = (a: AttemptRow): Attempt => ({
+type FacultyLabels = Awaited<ReturnType<ReturnType<typeof facultyRepo>["labelsByIds"]>>;
+
+/** Rows become responses with the faculty name looked up apart from the picker list, so a hidden faculty member still shows. */
+async function toAttempts(db: Db, rows: readonly AttemptRow[]): Promise<Attempt[]> {
+  const ids = [...new Set(rows.flatMap((a) => (a.facultyId === null ? [] : [a.facultyId])))];
+  const labels = ids.length > 0 ? await facultyRepo(db).labelsByIds(ids) : new Map();
+  return rows.map((a) => toAttempt(a, labels));
+}
+
+const toAttempt = (a: AttemptRow, labels: FacultyLabels): Attempt => ({
   id: a.id,
   courseCode: a.courseCode,
   grade: a.grade as Attempt["grade"],
@@ -28,6 +37,7 @@ const toAttempt = (a: AttemptRow): Attempt => ({
       ? { year: a.termYear, season: a.termSeason }
       : null,
   facultyId: a.facultyId,
+  faculty: (a.facultyId !== null && labels.get(a.facultyId)) || null,
   createdAt: a.createdAt,
 });
 
@@ -74,8 +84,9 @@ export const attemptRoutes = new Hono<AppEnv>()
   .use(requireUser)
   .get("/", validateQuery(attemptListQuery), async (c) => {
     const { courseCode } = c.req.valid("query");
-    const rows = await attemptsRepo(getDb(c.env.DB), userId(c)).listOwn(courseCode);
-    return c.json(rows.map(toAttempt));
+    const db = getDb(c.env.DB);
+    const rows = await attemptsRepo(db, userId(c)).listOwn(courseCode);
+    return c.json(await toAttempts(db, rows));
   })
   .get("/summary", async (c) => {
     const db = getDb(c.env.DB);
@@ -120,7 +131,7 @@ export const attemptRoutes = new Hono<AppEnv>()
       facultyId: body.facultyId ?? null,
       createdAt: Date.now(),
     });
-    return c.json(toAttempt(row), 201);
+    return c.json((await toAttempts(db, [row]))[0], 201);
   })
   .patch("/:id", validateJson(attemptUpdate), async (c) => {
     const id = paramId(c);
@@ -148,7 +159,7 @@ export const attemptRoutes = new Hono<AppEnv>()
       ...(patch.term !== undefined && termColumns(patch.term)),
       ...(patch.facultyId !== undefined && { facultyId: patch.facultyId }),
     });
-    return row ? c.json(toAttempt(row)) : notFound(c);
+    return row ? c.json((await toAttempts(db, [row]))[0]) : notFound(c);
   })
   .delete("/:id", async (c) => {
     const id = paramId(c);

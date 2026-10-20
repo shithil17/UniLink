@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ATTEMPT_GRADES } from "../grading";
 import { id, term } from "./common";
 import { courseCodeInput } from "./courses";
+import { facultyLabel } from "./faculty";
 
 /** A letter grade, or "WV" for a waived course. */
 export const letterGrade = z.enum(ATTEMPT_GRADES);
@@ -42,6 +43,8 @@ export const attempt = z.object({
   grade: letterGrade,
   term: term.nullable(),
   facultyId: facultyId.nullable(),
+  /** Who taught it, by name and initials. Kept even when the faculty member is hidden from the picker. */
+  faculty: facultyLabel.nullable(),
   createdAt: z.number().int(),
 });
 

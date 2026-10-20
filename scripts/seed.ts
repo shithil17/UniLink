@@ -32,6 +32,8 @@ const DEV_STUDENTS = [
 ] as const;
 
 const sqlString = (value: string) => `'${value.replaceAll("'", "''")}'`;
+const sqlOptional = (value: string | null | undefined) =>
+  value == null ? "NULL" : sqlString(value);
 const sqlNullable = (value: unknown) => (value == null ? "NULL" : sqlString(JSON.stringify(value)));
 
 /** Insert-or-update of the curriculum, then its courses replaced one row per statement. */
@@ -55,14 +57,18 @@ function curriculumStatements(file: CurriculumImport, now: number): string[] {
   ];
 }
 
-/** Insert-or-update by name, so running the seed again (or with an edited list) never duplicates a row. */
-function facultyStatements(raw: readonly unknown[]): string[] {
+/**
+ * Insert-or-update by name and department, so running the seed again (or with an edited list) never
+ * duplicates a row. Initials and the NSU page a moderator filled in survive a file that has none, and
+ * `hidden` is never touched.
+ */
+export function facultyStatements(raw: readonly unknown[]): string[] {
   return z
     .array(facultySeedEntry)
     .parse(raw)
     .map(
       (f) =>
-        `INSERT INTO faculty (name, initials, designation) VALUES (${sqlString(f.name)}, ${sqlString(f.initials)}, ${sqlString(f.designation)}) ON CONFLICT (name) DO UPDATE SET initials = excluded.initials, designation = excluded.designation;`,
+        `INSERT INTO faculty (name, initials, designation, department, nsu_page) VALUES (${sqlString(f.name)}, ${sqlOptional(f.initials)}, ${sqlString(f.designation)}, ${sqlString(f.department)}, ${sqlOptional(f.nsuPage)}) ON CONFLICT (name, department) DO UPDATE SET initials = coalesce(excluded.initials, faculty.initials), designation = excluded.designation, nsu_page = coalesce(excluded.nsu_page, faculty.nsu_page);`,
     );
 }
 

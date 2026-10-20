@@ -71,6 +71,13 @@
       "when": 1792487774938,
       "tag": "0009_moderation_probing",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1792496648931,
+      "tag": "0010_faculty_directory",
+      "breakpoints": true
     }
   ]
 }

@@ -160,6 +160,7 @@ export function AttemptForm({
                   id="attempt-faculty"
                   value={field.value ?? null}
                   onChange={field.onChange}
+                  current={attempt?.faculty}
                 />
               )}
             />
