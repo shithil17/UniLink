@@ -1,6 +1,6 @@
 # Software Requirements Specification (draft)
 
-UniLink is an unofficial, student-run companion app for North South University (NSU) students. This draft covers what is built through Phase 8: accounts, the installable app shell, the course map, the inbox and web push, CGPA and attempts, moderation, content screening with the review queue, and the faculty directory. Later features (routine, resources, rides, lost and found, marketplace, faculty profiles) are listed under [Planned](#planned) and get requirements as they land.
+UniLink is an unofficial, student-run companion app for North South University (NSU) students. This draft covers what is built through Phase 9: accounts, the installable app shell, the course map, the inbox and web push, CGPA and attempts, moderation, content screening with the review queue, the faculty directory and the class routine. Later features (resources, rides, lost and found, marketplace, faculty profiles) are listed under [Planned](#planned) and get requirements as they land.
 
 Requirement IDs (`FR-*`, `NFR-*`) are stable. Test cases in [`test-cases.md`](test-cases.md) cite them. The build rules behind each requirement live in `build_plan_pwa.md`; the endpoints in [`api-contracts.md`](api-contracts.md).
 
@@ -18,7 +18,7 @@ Out of scope: registration, payments, official transcripts, native app-store bui
 | Mod     | A trusted student. Bans, resets passwords, handles reports and ID conflicts, imports curricula. |
 | Admin   | Seeded first account. Everything a mod does, plus role changes, the audit log and reversals.    |
 
-Mods and admins cannot read any student's attempts or CGPA.
+Mods and admins cannot read any student's attempts, CGPA or routine.
 
 ## 3. Functional requirements
 
@@ -132,6 +132,17 @@ Mods and admins cannot read any student's attempts or CGPA.
 | FR-59 | Importing a curriculum whose program and version already exist replaces every course of that version, including changes made in the Courses screen. The import screen warns about this before the import.                                                                                                                     |
 | FR-60 | A course map slot that accepts more than one course shows all its codes joined with "/" until the student has an attempt on one, then shows that course. If several have attempts, the one that counts shows, then the most recent. The same label is used on Home, the course map and the course sheet.                      |
 
+### Class routine
+
+| ID    | Requirement                                                                                                                                                                                                                                                                                               |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-61 | A student can add a class to their routine for the current term: a course from their curriculum or own courses, section (1 to 99), one or more days (the NSU day letters S M T W R F A), start and end time in Dhaka time (the end after the start), and optional room and faculty initials as free text. |
+| FR-62 | A student can edit and delete a class and clear a whole term (after a confirmation). A term holds at most 40 classes.                                                                                                                                                                                     |
+| FR-63 | Two classes on the same day whose times overlap get a warning in the form and on the routine screen, but saving is never blocked. A class that starts exactly when another ends does not overlap.                                                                                                         |
+| FR-64 | Home lists today's classes (today worked out in Asia/Dhaka) in time order, with the class in progress highlighted and finished ones dimmed, and a link to the full week. The summary panel shows the class in progress or the next one today, else the degree standing.                                   |
+| FR-65 | The routine screen shows the whole week from Sunday, with "No classes" on empty days.                                                                                                                                                                                                                     |
+| FR-66 | The routine is private to its owner. Mods and admins cannot open it (403) and have no routine of their own; another student's class is not found. The routine is never sent to a model, used for notifications or shown to anyone else. Entry is manual only.                                             |
+
 ## 4. Non-functional requirements
 
 | ID    | Requirement                                                                                                                                |
@@ -156,4 +167,4 @@ Mods and admins cannot read any student's attempts or CGPA.
 
 ## Planned
 
-Class routine, resource sharing, rides, lost and found, marketplace, faculty profiles and research sync. See `build_plan_pwa.md` phases 9 onward.
+Resource sharing, rides, lost and found, marketplace, faculty profiles and research sync. See `build_plan_pwa.md` phases 10 onward.

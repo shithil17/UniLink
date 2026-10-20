@@ -1,4 +1,4 @@
-# Manual test cases (Phases 0 to 8, the faculty directory and course management)
+# Manual test cases (Phases 0 to 9, the faculty directory and course management)
 
 Run on staging unless a case says otherwise. Each case cites the requirement in [`srs.md`](srs.md). Record Pass/Fail and the build date in the Result column; log failures in the defect report.
 
@@ -243,3 +243,26 @@ Use a mod M, an admin A, and a CSE (`42`) student S whose curriculum version is 
 | J-25 | S: record a grade on `BEN205`                                                                                              | The row, Home (if listed) and the sheet header show `BEN205` and its title; the sheet lists "Other choices for this slot"            |        |
 | J-26 | S: record a passing grade on `ENG115` too                                                                                  | The course that counts shows (the better best grade; equal grades show the most recent)                                              |        |
 | J-27 | S: a slot with a lab alternative (for example a `...L` course with an alternative)                                         | Shows its codes joined with "/" and behaves as J-23 to J-26                                                                          |        |
+
+## K. Class routine (FR-61 to FR-66)
+
+Use a CSE (`42`) student S with a curriculum, a second student S2, and a mod M. Run on a phone (390px) for K-8 to K-12. "Today" means the current day in Dhaka.
+
+| ID   | Steps                                                                                            | Expected                                                                                                                                  | Result |
+| ---- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| K-1  | S: open the Routine tab with no classes                                                          | Every day from Sunday shows "No classes"; the intro text and "Add class" show; no "Clear this term"                                       |        |
+| K-2  | S: Add class: CSE115, section 2, days S and T, 08:00 to 09:30, room `NAC 501`, faculty `RkZ`     | Toast "Class added"; it shows under Sunday and Tuesday with "Section 2 · Room NAC 501 · RkZ"                                              |        |
+| K-3  | S: Add class with no days, then with no times, then ending before it starts                      | "Pick at least one day"; "Pick a start time" / "Pick an end time"; "The class must end after it starts". Nothing is saved                 |        |
+| K-4  | S: add a class on S from 09:00 to 10:30                                                          | Before saving the sheet warns "This overlaps another class. You can still save it." naming CSE115; saving works; both rows say "Overlaps" |        |
+| K-5  | S: add a class on S from 09:30 to 11:00 after deleting the K-4 class                             | No overlap warning (touching times are not a clash)                                                                                       |        |
+| K-6  | S: edit the K-2 class to section 3; then delete a class                                          | Toast "Class updated"; the delete asks first, then toast "Class deleted"                                                                  |        |
+| K-7  | S: the Course picker                                                                             | Lists S's curriculum courses and own courses; no course from another program                                                              |        |
+| K-8  | S: add classes for today at three times, one that has finished, one on now, one later; open Home | "Today" lists them in time order: finished one in faint ink, the current one on a tinted row marked "Now", the later one plain            |        |
+| K-9  | S: look at the Home summary panel during the current class, then between classes                 | "In class now" with the minutes left; then "Next class" with the minutes until it starts, the course and the room                         |        |
+| K-10 | S: Home after the last class of the day (or on a day with no classes)                            | The panel shows the degree standing; Today says "No classes today."                                                                       |        |
+| K-11 | Set the phone to a time zone other than Dhaka (for example London) and reopen Home               | Today is still Dhaka's weekday and the current/finished states follow Dhaka time                                                          |        |
+| K-12 | Around 00:00 Dhaka (18:00 UTC), open Home just before and just after                             | Just after midnight Today shows the new day's classes                                                                                     |        |
+| K-13 | S: Clear this term, choose "Keep them", then again "Clear routine"                               | Nothing changes the first time; then toast "Routine cleared" and every day shows "No classes"                                             |        |
+| K-14 | S2: open Routine                                                                                 | Only S2's own classes; none of S's                                                                                                        |        |
+| K-15 | M: look for a Routine tab, open `/routine`, call `GET /api/routine`                              | No Routine tab (Mod is there instead); `/routine` goes to Home; the API answers 403                                                       |        |
+| K-16 | S: check the inbox and any push after adding classes                                             | No notification mentions the routine                                                                                                      |        |

@@ -1,4 +1,4 @@
-# Use cases (Phases 0 to 7)
+# Use cases (Phases 0 to 9)
 
 ## Use case diagram
 
@@ -32,6 +32,8 @@ flowchart LR
     UC17(View audit log)
     UC18(Reverse logged action)
     UC19(Send test push)
+    UC20(Manage class routine)
+    UC21(See today's classes)
   end
 
   V --- UC1
@@ -44,6 +46,8 @@ flowchart LR
   S --- UC8
   S --- UC9
   S --- UC10
+  S --- UC20
+  S --- UC21
   M --- UC11
   M --- UC12
   M --- UC13
@@ -55,7 +59,7 @@ flowchart LR
   A --- UC19
 ```
 
-Generalisation: a mod can do everything a student can, and an admin everything a mod can. Mods and admins still cannot read other students' attempts or CGPA (UC6, UC8 act on the caller's own data only).
+Generalisation: a mod can do everything a student can, and an admin everything a mod can. Mods and admins still cannot read other students' attempts or CGPA (UC6, UC8 act on the caller's own data only). The routine (UC20, UC21) is students only: mods and admins cannot open it at all.
 
 ## Use case descriptions
 
@@ -105,3 +109,15 @@ Generalisation: a mod can do everything a student can, and an admin everything a
 - **Actor:** Admin
 - **Main flow:** Open the audit log, choose a reversible row, enter a reason. The system restores the snapshot and writes its own audit row linked to the original.
 - **Alternatives:** Not reversible (password reset, report resolution, ID lookup, a reversal): 409. Already reversed: 409. Released key since taken: 409. Target now an admin: 403.
+
+### UC20 Manage class routine (FR-61 to FR-63, FR-65, FR-66)
+
+- **Actor:** Student
+- **Main flow:** Open Routine, tap "Add class", pick the course, section, days, start and end time, and optionally the room and faculty initials. The system saves it to the current term and shows it under each of its days.
+- **Alternatives:** The times clash with another class that day: the form warns and the student can still save. End not after start, no day picked or a course outside the student's curriculum: refused. 40 classes in the term: 409. Edit or delete a class; clear the whole term after confirming. A mod or admin: 403.
+
+### UC21 See today's classes (FR-64)
+
+- **Actor:** Student
+- **Main flow:** Open Home. The system works out today in Asia/Dhaka, lists today's classes in time order with the current one highlighted and finished ones dimmed, and the summary panel shows the class in progress or the next one.
+- **Alternatives:** No routine: a link to add one. No classes today: "No classes today." and the degree standing in the panel.

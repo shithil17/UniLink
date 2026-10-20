@@ -2,7 +2,7 @@
 
 The agreed endpoint list. Request and response **shapes live only in `src/shared/schemas/`** (named in the Schema column); this file never repeats them. Everything is served by one Worker under `/api`, same origin as the app, JSON in and out, session cookie for auth.
 
-Auth column: `public` (no session), `user` (any signed-in user), `mod`, `admin`. Every list endpoint is paginated (`pageQuery` → `page(item)` in `common.ts`).
+Auth column: `public` (no session), `user` (any signed-in user), `student` (signed-in students only; mods and admins get 403), `mod`, `admin`. Every list endpoint is paginated (`pageQuery` → `page(item)` in `common.ts`).
 
 Rules that apply to every endpoint:
 
@@ -35,8 +35,9 @@ Rules that apply to every endpoint:
 | POST   | `/api/courses/import`      | mod  | `courses.ts` → `curriculumImportEnvelope` (rows checked one by one) → `importResult` |
 | GET    | `/api/attempts`            | user | `attempts.ts` → `attempt[]` (own only)                                               |
 | POST   | `/api/attempts`            | user | `attempts.ts` → `attemptInput` → `attempt`                                           |
-| PATCH  | `/api/attempts/:id`        | user | `attempts.ts` → `attemptInput` → `attempt` (not built yet)                           |
-| DELETE | `/api/attempts/:id`        | user | – (not built yet)                                                                    |
+| GET    | `/api/attempts/summary`    | user | CGPA, earned and remaining credits by category (own only)                            |
+| PATCH  | `/api/attempts/:id`        | user | `attempts.ts` → `attemptUpdate` → `attempt`                                          |
+| DELETE | `/api/attempts/:id`        | user | –                                                                                    |
 | GET    | `/api/student-courses`     | user | `courses.ts` → `studentCourse[]` (own only)                                          |
 | POST   | `/api/student-courses`     | user | `courses.ts` → `studentCourseInput` → `studentCourse`                                |
 | PATCH  | `/api/student-courses/:id` | user | `courses.ts` → `studentCourseUpdate` → `studentCourse` (code is fixed once added)    |
@@ -60,6 +61,18 @@ Attempts and student courses are readable by their owner only, never by mods or 
 `courseInput`: `kind` (`course` or `elective`), `code` (capitalised; a course code like `CSE115` or `CSE115L`, an elective code like `ELECT1`), `title`, `credits` (halves, 0 to 24), `category` (an existing one or a new name), `nonCredit`, `semester` (0 to 20 or null), `alternatives` (`{ code, title }[]`, none for an elective, no repeats) and `prereq`. `prereq` is **text** in requests, for example `CSE215 and (MAT120 or MAT125)` or `60 credits completed`; empty means none. The shared parser (`src/shared/prereqText.ts`) turns it into a `PrereqRule`, so a typo is a 400 `invalid_request` with the parser's message. Responses carry the rule as JSON (`prereq: PrereqRule | null`). `and` binds tighter than `or`; brackets group.
 
 Refusals: a code already used by another slot, as its code or as an alternative, is `409 code_taken`. A prerequisite naming a code that is not a course (or alternative) of the curriculum is `400 prereq_unknown` with `codes`. An edit that removes a code another slot's prerequisite needs is `409 code_referenced`. Hide and unhide need a `reason`; `409 already_hidden` / `not_hidden` when the slot is already in that state. Shared alternatives between slots ("choose any three") are allowed, so alternatives are not compared across slots. Every write logs an audit row (`course_add`, `course_edit`, `course_hide`, `course_unhide`) with a before-snapshot of the changed columns. An admin can reverse an edit, hide or unhide (not an add); it is `409 value_in_use` if the old code was taken since or the old values would strand another prerequisite.
+
+## Routine
+
+| Method | Path               | Auth    | Schema                                                                  |
+| ------ | ------------------ | ------- | ----------------------------------------------------------------------- |
+| GET    | `/api/routine`     | student | `routine.ts` → `routineTermQuery` (`?year=&season=`) → `routineEntry[]` |
+| POST   | `/api/routine`     | student | `routine.ts` → `routineInput` → `routineEntry` (201)                    |
+| PATCH  | `/api/routine/:id` | student | `routine.ts` → `routineUpdate` → `routineEntry`                         |
+| DELETE | `/api/routine/:id` | student | –                                                                       |
+| DELETE | `/api/routine`     | student | `routineTermQuery` → `{ deleted }`: clears the whole term               |
+
+Students only: a mod or admin gets 403 on every route, and another user's entry id is a 404. The term is `year` and `season` together, or neither for the current term (Asia/Dhaka). Times are `"HH:MM"` in Asia/Dhaka, days are NSU day letters (`S M T W R F A`, Sunday first, defined in `src/shared/routine.ts`). The end must be after the start (400). The course code must be in the user's curriculum or their student courses (400 `unknown_course`). Adding past `limits.routineEntriesMax` in a term is a 409 `routine_limit`; writes are rate-limited by `limits.routineWrites`. Overlaps are never refused: the client warns with `overlaps()` / `overlapsWith()`. The routine is never screened, sent to a model or used in a notification.
 
 ## Inbox
 

@@ -742,7 +742,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] D: routine screens and test cases.
+- [x] D: routine screens and test cases. (Screens: `docs/screens.md`, Class routine. Test cases: `docs/test-cases.md`, section K. Requirements FR-61 to FR-66 in `docs/srs.md`; the NSU day letters S M T W R F A still need D's confirmation against a printed routine.)
 
 ### Checklist — Test Scripts & Smoke Tests
 

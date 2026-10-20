@@ -1,6 +1,6 @@
 # Screens and flows (mobile-first)
 
-The screen specification for what is built through Phase 8. It records each flow, what every screen shows, and its states (loading, empty, error) at phone width (390px). It replaces the planned Figma file: the screens were designed straight in code against [`DESIGN.md`](../DESIGN.md), so this document and the running app are the reference. Desktop (1440px) uses the same screens in a wider centred column, with the bottom bar moved into the top header.
+The screen specification for what is built through Phase 9. It records each flow, what every screen shows, and its states (loading, empty, error) at phone width (390px). It replaces the planned Figma file: the screens were designed straight in code against [`DESIGN.md`](../DESIGN.md), so this document and the running app are the reference. Desktop (1440px) uses the same screens in a wider centred column, with the bottom bar moved into the top header.
 
 Shared rules on every screen (from `PRODUCT.md` and `DESIGN.md`):
 
@@ -22,6 +22,8 @@ flowchart LR
   Change --> Home
   P -- no --> Home[Home]
   Home --> Courses[Course map]
+  Home --> Routine[Routine: students only]
+  Routine --> ClassSheet[Add or edit a class]
   Home --> Inbox[Inbox]
   Home --> Settings[Settings]
   Courses --> Sheet[Course sheet]
@@ -39,7 +41,7 @@ flowchart LR
 
 Navigation:
 
-- **Main tabs.** A bottom bar on phones, the top bar from `md`: Home, Courses, Inbox (unread badge), Settings. Mods and admins get a fifth tab, Mod, for the moderation panel (it stays marked while any `/mod/...` screen is open); the bar never goes past five. Students never see it. The current tab is marked by `aria-current` and heavier ink. Moderation is also still listed under Settings.
+- **Main tabs.** A bottom bar on phones, the top bar from `md`. Students: Home, Courses, Routine, Inbox (unread badge), Settings. Mods and admins: Home, Courses, Inbox, Mod, Settings; the Mod tab opens the moderation panel and stays marked while any `/mod/...` screen is open. The routine is private to students, so mods and admins get Mod in its place and the bar never goes past five. Students never see Mod. The current tab is marked by `aria-current` and heavier ink. Moderation is also still listed under Settings.
 - **No tabs when they would lead nowhere.** Log in, Create an account and the forced Change password screen show only the wordmark; the tabs return once the user is signed in and has no temporary password.
 - **Moderation sections.** From `md`: an underline tab row (Queue, Users, Faculty, Courses, ID check, Audit log for admins, Import). On a phone seven sections do not fit a row, so the screen shows "Moderation" with a button naming the current section; it opens a bottom sheet listing every section the role can open, each with a one-line hint. The current row is tinted and ticked (`aria-current="page"`), and choosing a row closes the sheet.
 - **Back paths.** Mod sections are peers of one top-level panel, so they need no back. Change password, opened from Settings, shows "Settings" with a back chevron above its title (not while the change is forced). Sheets (course sheet, pickers, mod sheets) close with their X, Esc or a tap on the scrim.
@@ -120,6 +122,39 @@ Full attempt form: Course, Grade, Term (optional, "Pick the term you took it in.
 **Faculty picker.** The Faculty field is a button showing the chosen "Name (INITIALS)" or "No faculty". Tapping it opens a bottom sheet (centred on desktop) titled "Who taught it?" with a search box ("Search by name or initials", focused on open), a department filter ("All departments" or one department) and a hairline list. The first row is "No faculty". Each row shows the name with initials in brackets (no brackets when the person has none) and a muted line "designation · department". The chosen row is tinted and ticked. Search matches the start of any name word, or the start of the initials, without regard to case or accents, and ignores titles like "Dr."; exact initials rank first. Empty result: "No faculty match that search." Keyboard: type, Arrow up/down to move, Enter to pick, Esc to close. The list is fetched once and searched in the browser. A faculty member a moderator has hidden is not in the list, but an attempt that already names them keeps showing the name. Attempt rows show "Name (INITIALS)".
 
 CGPA summary (Home and Course map): the CGPA to two decimals, or "No CGPA yet"; Earned and Remaining credits; a credit bar; "Every category has its credits." once nothing remains. Only the student sees their attempts and CGPA; mods cannot.
+
+## Class routine (Phase 9)
+
+Students only. Mods and admins have no routine: the tab is not shown and `/routine` sends them to Home. Nobody else ever sees a student's routine, and it is never used for notifications. Times are Asia/Dhaka.
+
+### Home: next class and Today
+
+- **Summary panel.** While a class is on, it reads "In class now" with the minutes left ("left in this class"); otherwise, if a class is still to come today, "Next class" with the minutes until it starts ("until it starts"). Below: the course code and title, the time range, and "Section 2 · Room 304 · RkZ". With no class left today, or no routine, the panel shows the degree standing as before (credits, credit bar, "Record a grade"). While the routine loads, a flat placeholder holds the panel's place so it does not swap.
+- **Today.** A section header "Today" with a "Full routine" link, then today's classes in time order on a time rail: start and end on the left, a hairline, then the course, title and details. The class in progress sits on a `brand-soft` row marked "Now"; finished classes are in `faint` ink (and say "Finished" to screen readers), so neither state is colour alone. The clock refreshes every 30 seconds and when the app comes back to the foreground.
+- Empty (no routine): "Add the classes you're taking this term and today's will show up here." with an "Add your routine" link. No class today: "No classes today." Loading: two flat placeholder rows. Error: "Today's classes didn't load. Check your connection and try again." with Retry.
+
+### Routine (`/routine`)
+
+- Header "Routine" with the current term (for example "Fall 2026") and an "Add class" button.
+- One section per day, Sunday first, titled with the day name; today's section says "Today". Each class is a time-rail row as on Home, with an edit button. A day with nothing on it shows "No classes". A class that clashes with another on that day carries "Overlaps CSE215" under its details (a warning icon and ink text, not a danger colour).
+- No classes at all: "Add the classes you're taking this term. Today's show on Home, in time order."
+- "Clear this term" (only when there are classes) asks first: "Clear this term's routine?" / "This deletes all N classes from this term. It can't be undone." with "Keep them" and "Clear routine". Toast "Routine cleared".
+- Loading: flat placeholders. Error: "Your routine didn't load" with the reason and "Try again".
+
+### Class sheet
+
+A bottom sheet titled "Add a class" or "Edit class", with "Times are Dhaka time. Only you can see your routine."
+
+| Field              | Notes                                                                                                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Course             | Picker of the student's curriculum courses and own courses ("Pick a course"). A saved class whose course left the list keeps it.                                         |
+| Section            | A number, 1 to 99                                                                                                                                                        |
+| Days               | Seven toggles with the letters NSU prints: S M T W R F A. Helper: "The letters NSU prints: S is Sunday, R is Thursday, A is Saturday." "Pick at least one day" when none |
+| Starts, Ends       | Times; "Pick a start time", "Pick an end time"; the end must be after the start                                                                                          |
+| Room (optional)    | Free text as printed on the NSU routine                                                                                                                                  |
+| Faculty (optional) | Faculty initials as printed on the NSU routine, free text (not the faculty picker)                                                                                       |
+
+When the days and times clash with another class: "This overlaps another class. You can still save it." naming each clashing class, its days and its time. It never blocks saving; touching times (one ends at 10:00, the next starts at 10:00) are not a clash. Buttons: "Add class" / "Save changes"; on an existing class, "Delete class" asks "Delete this class from your routine?" first. Toasts: "Class added", "Class updated", "Class deleted".
 
 ## Moderation panel (Phases 7 and 8)
 
