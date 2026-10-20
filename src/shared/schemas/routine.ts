@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { ROUTINE_DAYS, timeToMinutes } from "../routine";
-import { id, term } from "./common";
-import { courseCodeInput } from "./courses";
+import { ROUTINE_DAYS, timeToMinutes } from "../routine.ts";
+import { id, term } from "./common.ts";
+import { courseCodeInput } from "./courses.ts";
 
 // Field sizes live here so the client form and the server share them; limits.ts re-exports them.
 export const ROUTINE_SECTION_MAX = 99;
