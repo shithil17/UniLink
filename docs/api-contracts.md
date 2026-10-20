@@ -121,7 +121,7 @@ Schemas: `rides.ts` (`rideInput`, `rideFeedQuery`, `rideSummary`), `lostFound.ts
 ```ts
 // src/server/notify.ts — the single Observer entry point.
 // Types: `notificationType` in src/shared/schemas/inbox.ts. A payload never names another user.
-notify(userIds: number[], type: NotificationType, payload: Record<string, unknown>): Promise<void>
+notify(db: Db, userIds: number[], type: NotificationType, payload: Record<string, unknown>, now = Date.now()): Promise<void>
 
 // src/server/moderation/screen.ts — Chain of Responsibility: rules → model step → verdict.
 // Any model error, timeout or cap yields `review` (never auto-publish, never auto-reject).
