@@ -14,7 +14,7 @@
     "MAT112/MAT116 counts 3 credits here (semester 4 has four courses and totals 12), even though MAT116 is a 0-credit course in some NSU programs.",
     "ENV498 is printed '(Non-credit)', so nonCredit with 0 credits; semester 12 total 3 is the free elective. Its title is not printed (possibly an internship).",
     "Categories are not printed; grouped as General Education, Math & Science, Economics & Management, Major Core, Major Elective and Free Elective.",
-    "Titles taken from other NSU maps in this set: ENV203, ENV373, ENV455, ENG111, ENG115, HIS101, HIS102, HIS205, POL101, POL104, MIS105, MAT116, MAT120, STA172, CHE101, BIO103. Titles from the NSU catalogue (less certain): MAT112 College Algebra, MGT210 Principles of Management, MGT314 Production Management, MGT489 Strategic Management. Titles not known and left as 'Title not in source': ENV205, ENV207, ENV208, ENV260, ECO260, ENV313, ENV315, ENV316, ENV354, ENV375, ENV409, ENV410, ENV498, BIO101."
+    "Titles taken from other NSU maps in this set: ENV203, ENV373, ENV455, ENG111, ENG115, HIS101, HIS102, HIS205, POL101, POL104, MIS105, MAT116, MAT120, STA172, CHE101, BIO103. Titles from the NSU catalogue (less certain): MAT112 College Algebra, MGT210 Principles of Management, MGT314 Production Management, MGT489 Strategic Management. Titles not known and left as '(title not printed)': ENV205, ENV207, ENV208, ENV260, ECO260, ENV313, ENV315, ENV316, ENV354, ENV375, ENV409, ENV410, ENV498, BIO101."
   ],
   "courses": [
     {

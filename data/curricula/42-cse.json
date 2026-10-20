@@ -12,6 +12,7 @@
     "ENG103 prerequisite 'ENG102/Waiver' is stored as ENG102.",
     "CSE499A requires '100 credits completed'; the sequence page adds 'and all core courses', which is not encoded in the rule.",
     "'SOC101/ANT101/ENV203(GEO205)' is one slot; ENV203 and GEO205 appear to be the same course (Bangladesh Geography) under two codes, both listed as alternatives.",
+    "BEN205 (alternative to ENG115) and HIS103 (alternative to HIS101) are not on the CSE PDF, which is effective Fall 2014 and predates the rule. They are added because 1.-bbt-coursemap.pdf and bs-in-mic-course-map-3.pdf state 'BEN205 and HIS103 are mandatory courses for all NSU UG students from batch 163 and onwards'. Titles are the same as in the EEE file. Credits and the total are unchanged.",
     "Lab suffixes (+CL, +IL) were dropped; credits are as printed (combined where the map prints them combined)."
   ],
   "courses": [
@@ -226,7 +227,12 @@
       "category": "General Education",
       "nonCredit": false,
       "semester": 5,
-      "alternatives": [],
+      "alternatives": [
+        {
+          "code": "BEN205",
+          "title": "Bangla Language and Literature"
+        }
+      ],
       "prereq": {
         "course": "ENG103"
       }
@@ -285,7 +291,12 @@
       "category": "General Education",
       "nonCredit": false,
       "semester": 6,
-      "alternatives": [],
+      "alternatives": [
+        {
+          "code": "HIS103",
+          "title": "Emergence of Bangladesh"
+        }
+      ],
       "prereq": null
     },
     {
