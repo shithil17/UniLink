@@ -151,8 +151,20 @@ notify(db: Db, userIds: number[], type: NotificationType, payload: Record<string
 // Pass `push: pushSenderFromEnv(c.env)` (src/server/adapters/push.ts) to also push to the targets' devices.
 // A push failure never throws; at most `limits.pushFanoutMax` devices are pushed per call.
 
+// src/server/moderation/submit.ts — what every post type calls on create and on an edit of screened text.
+// mayPost (new-account wait, probing cooldown) → screen() → save(values) → audit as automod → count a rejection.
+submitPost(db: Db, env: { SCREEN_FORCE_REVIEW?: string }, args: { user; targetType: string; input: ScreenInput; save: (values) => Promise<number> }): Promise<SubmitResult>
+// SubmitResult = { ok: false; reason: "new_account" | "cooldown"; retryAfterMs } | { ok: true; id; outcome; cooldownStarted }
+
 // src/server/moderation/screen.ts — Chain of Responsibility: rules → model step → verdict.
-// Any model error, timeout or cap yields `review` (never auto-publish, never auto-reject).
-screen(input: { kind: ReportTargetType; text: Record<string, string> }): Promise<ScreenResult>
-// ScreenResult = { verdict: "approve" | "review" | "reject"; category: ReasonCategory }
+// A rule violation rejects without calling the model. Any model error, timeout, malformed answer or cap
+// yields review (never auto-publish, never auto-reject). SCREEN_FORCE_REVIEW=1 (test only) forces review.
+screen(input: { texts: string[]; images?: Uint8Array[]; contacts?: Contacts }, deps: { model: ModelStep; forceReview?: boolean }): Promise<ScreenOutcome>
+// ScreenOutcome = { verdict: "approve" | "review" | "reject"; status: PostStatus; category: ReasonCategory; source; flags; confidence; scores; modelName; failure; snapshot }
+
+// src/server/moderation/appeal.ts — "Ask a moderator to look" on the author's own rejected post (rate-limited).
+askModerator(db: Db, input: { userId: number; targetType: string; targetId: number }): Promise<AskModeratorResult>
+
+// src/server/repos/visibility.ts — the one filter on every post query: published, or own post, or viewer is a mod.
+visibleTo(table: ModeratedTable, viewer: { id: number; role: Role } | null): SQL | undefined
 ```

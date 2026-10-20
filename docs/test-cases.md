@@ -1,4 +1,4 @@
-# Manual test cases (Phases 0 to 7)
+# Manual test cases (Phases 0 to 8)
 
 Run on staging unless a case says otherwise. Each case cites the requirement in [`srs.md`](srs.md). Record Pass/Fail and the build date in the Result column; log failures in the defect report.
 
@@ -147,3 +147,32 @@ Use three accounts: a mod M, a student S and the admin A. S is a seeded student.
 | G-10 | Subscribe a 6th device                                                                    | Refused with the device limit message; none dropped |        |
 | G-11 | Read the push text                                                                        | Title and link only; no names, no payload text      |        |
 | G-12 | Push secrets unset (local)                                                                | Switch hidden or off; no crash                      |        |
+
+## H. Screening and review queue (FR-39 to FR-47)
+
+Needs a post type registered for screening (rides is the first). Until then, run the server-side cases through `vp test moderation`. For H-9 to H-16, set `SCREEN_FORCE_REVIEW=1` on staging (or in `.dev.vars`) so every post that passes the rules is held, and remove it afterwards. Use a mod M and two students S and T.
+
+| ID   | Steps                                                                  | Expected                                                                                    | Result |
+| ---- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ------ |
+| H-1  | S posts text containing a valid student ID written as `221 1234 042`   | Rejected; S sees the personal-data message; no ID in any response                           |        |
+| H-2  | S posts text with a test card number `4111 1111 1111 1111`             | Rejected with the personal-data message                                                     |        |
+| H-3  | S posts "call me on +880 1712 345678"                                  | Not flagged for a phone number                                                              |        |
+| H-4  | S posts a link to an unknown site, then a link to `github.com`         | The first is rejected (scam or spam); the second passes the rules                           |        |
+| H-5  | S posts text over the length limit                                     | Rejected (off-topic message)                                                                |        |
+| H-6  | S posts text with a banned phrase, in mixed case                       | Rejected with that phrase's category                                                        |        |
+| H-7  | S posts clean text with the flag off                                   | Published at once (stub model)                                                              |        |
+| H-8  | S posts clean text with a photo, flag off                              | Held: "Waiting for a moderator"                                                             |        |
+| H-9  | S posts clean text with the flag on                                    | Held: S sees "Waiting for a moderator"                                                      |        |
+| H-10 | T opens the feed and the held post's link                              | T cannot see it (404 or absent)                                                             |        |
+| H-11 | M opens Moderation > Queue                                             | The post is listed with S's username, category, confidence, flags; the queue size counts it |        |
+| H-12 | M approves it                                                          | Post published; T can see it; S gets "Your post is live" in the inbox; audit row exists     |        |
+| H-13 | Another held post: M rejects with category "scam or spam" and a reason | S gets the scam-or-spam message, not M's reason; audit row has the reason                   |        |
+| H-14 | Two mods approve the same held post at once                            | One succeeds; the other gets "Another moderator already decided that post"                  |        |
+| H-15 | S taps "Ask a moderator to look" on a rejected post                    | Post shows in the queue marked as asked; any student ID in it shows as `[redacted]` to M    |        |
+| H-16 | S asks a moderator 6 times within an hour (different posts)            | The 6th is refused                                                                          |        |
+| H-17 | S edits a published post to add a student ID                           | The edit is screened again and rejected                                                     |        |
+| H-18 | S gets 3 automatic rejections within an hour, then posts clean text    | Refused with a cooldown for about an hour; M sees S flagged in Users with the cooldown      |        |
+| H-19 | M clears S's flag with a reason                                        | Flag and cooldown cleared; S can post; audit row exists                                     |        |
+| H-20 | A reverses the clear from H-19                                         | Flag and cooldown are back; reversal logged                                                 |        |
+| H-21 | S opens `/mod/queue` or calls `/api/mod/queue`                         | 403                                                                                         |        |
+| H-22 | A: audit log, filter by actor `automod`                                | One row per automatic decision with model name, category and a redacted text snapshot       |        |

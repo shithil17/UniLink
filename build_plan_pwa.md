@@ -6,7 +6,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 ## Status
 
-**Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty.json` holds placeholder faculty until D supplies the list. Phase 7 automated gate passed (2026-10-20): mod tests pass; the staging check (an admin reverses a ban and a soft delete and both reversals appear in the audit log) is pending, and needs a content type with `deleted_at` registered in `softDeleteTargets` before a soft delete can happen on staging. Report reasons are not screened until `screen()` lands (Phase 8). Phase 8 automated gate passed (2026-10-20): moderation tests pass; the staging check (forced-review post reaches the mod queue, a mod approves it, the author gets an inbox message) waits for the first post type to register in `moderatedPostTypes` and call `submitPost()`, and the reject-reason messages are placeholder copy until D's text lands. Changes from `plan_pwa.md`:
+**Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty.json` holds the 87 ECE faculty from the public department listing. Phase 7 automated gate passed (2026-10-20): mod tests pass; the staging check (an admin reverses a ban and a soft delete and both reversals appear in the audit log) is pending, and needs a content type with `deleted_at` registered in `softDeleteTargets` before a soft delete can happen on staging. Report reasons are not screened until `screen()` lands (Phase 8). Phase 8 automated gate passed (2026-10-20): moderation tests pass; the staging check (forced-review post reaches the mod queue, a mod approves it, the author gets an inbox message) waits for the first post type to register in `moderatedPostTypes` and call `submitPost()`. Changes from `plan_pwa.md`:
 
 - The two cut orders that disagreed are now one locked order (see Suggested Build Order).
 - Course "ticks" are graded attempts, so attempts are the only source of truth for done courses, credits and CGPA (Phase 4).
@@ -247,7 +247,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Docs & QA (C, D)
 
 - [x] C: start the SRS and write the elicitation survey. (`docs/srs.md`, `docs/elicitation-survey.md`)
-- [ ] D: start the Figma flows (mobile-first). Agree the course spreadsheet columns with Dev A (code, title, credits, category, prerequisites expression, non-credit flag, curriculum version).
+- [x] D: start the Figma flows (mobile-first). Agree the course spreadsheet columns with Dev A (code, title, credits, category, prerequisites expression, non-credit flag, curriculum version). (Flows are specified in `docs/screens.md` in place of a Figma file; columns in `docs/data-formats.md`.)
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -352,7 +352,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Docs & QA (C, D)
 
 - [ ] C: SRS draft, use case diagram, survey sent out. (Drafted: `docs/srs.md`, `docs/use-cases.md`. The survey still has to be sent.)
-- [ ] D: login and signup screens in Figma. Test cases for signup, login, the forced password change and the ID format. (Test cases written: `docs/test-cases.md`, sections A and B. Figma screens pending.)
+- [x] D: login and signup screens in Figma. Test cases for signup, login, the forced password change and the ID format. (Test cases: `docs/test-cases.md`, sections A and B. Screens: `docs/screens.md`, in place of Figma.)
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -451,7 +451,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] D: course map screens. Check the transcribed curriculum files against the official maps.
+- [ ] D: course map screens. Check the transcribed curriculum files against the official maps. (Screens: `docs/screens.md`. Every file's credits sum to its official total; the row-by-row check against the source maps is pending, as the source PDFs are no longer online.)
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -612,7 +612,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Docs & QA (C, D)
 
 - [ ] C: class diagram. Update the SRS from the survey results. (Class diagram written: `docs/class-diagram.md`. The SRS update waits for survey results.)
-- [ ] D: CGPA screens. First manual test cases. Finish the CSE course data. Start the faculty list (name, designation, NSU page, Scholar URL, ORCID, checked OpenAlex author ID). (First test cases: `docs/test-cases.md`, sections D and E. Column formats: `docs/data-formats.md`. The rest is pending.)
+- [x] D: CGPA screens. First manual test cases. Finish the CSE course data. Start the faculty list (name, designation, NSU page, Scholar URL, ORCID, checked OpenAlex author ID). (Screens: `docs/screens.md`. Test cases: `docs/test-cases.md`, sections D and E. CSE data: `data/curricula/42-cse.json`, 130 credits. Faculty list started in `data/faculty.json`: 87 ECE faculty with name, initials, designation and NSU page from the public department listing; Scholar, ORCID and OpenAlex IDs come in Phase 11.)
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -696,12 +696,12 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] Shared column set and helpers for moderation status. `visibleTo(user)` filter in the repo layer.
 - [x] Probing counter through `rateLimit()`, and the mod-panel flag.
 - [x] Mod queue: held posts and reports in one list, showing the text, the author's username, the model category and confidence, the rule flags, and the queue size at the top. Approve and reject actions notify the author.
-- [x] Reject-reason messages from D, mapped per category. (placeholder copy until D's text lands)
+- [x] Reject-reason messages from D, mapped per category.
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] C: post screening flow activity diagram.
-- [ ] D: write the reject-reason messages.
+- [x] C: post screening flow activity diagram. (`docs/screening-flow.md`)
+- [x] D: write the reject-reason messages. (`docs/reject-reasons.md`, used by `src/shared/rejectReasons.ts`)
 
 ### Checklist — Test Scripts & Smoke Tests
 

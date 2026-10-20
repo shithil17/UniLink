@@ -4,9 +4,8 @@ import type { reasonCategory } from "./schemas/common";
 export type ReasonCategory = z.infer<typeof reasonCategory>;
 
 /*
- * PLACEHOLDER COPY, awaiting D's text (build plan: "D: write the reject-reason messages").
- * Plain and kind on purpose, so the screens work before the real words land. When D's text arrives,
- * replace the strings below and nothing else: the keys, the category-level rule and the callers stay.
+ * The author-facing copy from `docs/reject-reasons.md`. Change both together: the keys, the
+ * category-level rule and the callers stay.
  *
  * Category-level only. A message never names a score, a rule, a banned word or what exactly was found,
  * because that would tell someone how to get around the screen.
