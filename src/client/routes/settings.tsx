@@ -67,7 +67,7 @@ function Settings() {
       {user && user.role !== "student" ? (
         <Group title="Moderation">
           <div className={panel}>
-            <Link to="/mod/reports" className={linkRow}>
+            <Link to="/mod/queue" className={linkRow}>
               <span className="flex-1">Moderation panel</span>
               <ChevronRightIcon className="size-4 shrink-0 text-faint" aria-hidden="true" />
             </Link>

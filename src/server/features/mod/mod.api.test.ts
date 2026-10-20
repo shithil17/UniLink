@@ -105,6 +105,8 @@ describe("user list", () => {
       "createdAt",
       "id",
       "mustChangePassword",
+      "postingBlockedUntil",
+      "probingFlaggedAt",
       "role",
       "username",
     ]);

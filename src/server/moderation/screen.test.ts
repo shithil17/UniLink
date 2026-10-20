@@ -173,6 +173,7 @@ describe("moderationValues", () => {
       moderationFlags: '["banned_word"]',
       moderationConfidence: null,
       moderationModel: null,
+      moderationAppealedAt: null,
     });
   });
 });

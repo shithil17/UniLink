@@ -5,6 +5,9 @@ import { rateLimit } from "../middleware/rateLimit";
 import type { SessionUser } from "../middleware/types";
 import { usersRepo } from "../repos/users";
 
+/** The rate-limit key that counts a user's automatic rejections. Clearing the flag resets it. */
+export const probingKey = (userId: number) => `probe:${userId}`;
+
 export type MayPost =
   | { ok: true }
   | { ok: false; reason: "new_account" | "cooldown"; retryAfterMs: number };
@@ -41,7 +44,7 @@ export async function recordRejection(
   now: number = Date.now(),
 ): Promise<boolean> {
   const { rejections, windowMs, cooldownMs } = limits.probing;
-  const hit = await rateLimit(db, `probe:${userId}`, rejections, windowMs, now);
+  const hit = await rateLimit(db, probingKey(userId), rejections, windowMs, now);
   if (hit.count < rejections) return false;
   await usersRepo(db).blockPosting(userId, now + cooldownMs, now);
   return true;

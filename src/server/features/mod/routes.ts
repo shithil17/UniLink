@@ -1,17 +1,22 @@
 import { Hono } from "hono";
 import type { z } from "zod";
+import { pageQuery } from "../../../shared/schemas/common";
 import {
+  approvePostRequest,
   idConflictQuery,
   modReportsQuery,
   modUsersQuery,
   reasonBody,
+  rejectPostRequest,
   releaseKeyRequest,
   resolveReportRequest,
   type idConflictResult,
+  type modQueuePage,
   type modReportPage,
   type modUserPage,
   type temporaryPassword,
 } from "../../../shared/schemas/moderation";
+import { pushSenderFromEnv } from "../../adapters/push";
 import { getDb } from "../../db/client";
 import { requireRole } from "../../middleware/auth";
 import type { AppEnv } from "../../middleware/types";
@@ -20,6 +25,7 @@ import { usersRepo } from "../../repos/users";
 import { validateJson, validateQuery } from "../../validate";
 import {
   banUser,
+  clearProbingFlag,
   logIdLookup,
   releaseKey,
   resetPassword,
@@ -27,10 +33,18 @@ import {
   unbanUser,
 } from "./actions";
 import { pageParams, toPage } from "./paging";
-import { reportTargets } from "./reportTargets";
+import { decidePost, type PostDecisionFailure } from "./postActions";
+import { modQueue } from "./queue";
+import { toModReports } from "./reportView";
 import { actionFailure, actorOf, badCursor, paramId } from "./respond";
 
 const notFound = { error: "not_found" } as const;
+
+const POST_FAILURES: Record<PostDecisionFailure, { status: 404 | 409; message: string }> = {
+  unknown_target: { status: 404, message: "That does not exist." },
+  not_found: { status: 404, message: "That post no longer exists." },
+  not_held: { status: 409, message: "Another moderator already decided that post." },
+};
 
 /**
  * Moderation for mods and admins. The server is the real guard: every route needs the mod role, and
@@ -63,6 +77,8 @@ export const modRoutes = new Hono<AppEnv>()
         bannedAt: holder.bannedAt,
         mustChangePassword: holder.mustChangePassword,
         createdAt: holder.createdAt,
+        probingFlaggedAt: holder.probingFlaggedAt,
+        postingBlockedUntil: holder.postingBlockedUntil,
         studentId: `${holder.studentKey}${holder.studentSuffix}`,
       },
     } satisfies z.infer<typeof idConflictResult>);
@@ -82,6 +98,17 @@ export const modRoutes = new Hono<AppEnv>()
     const id = paramId(c);
     if (id === null) return c.json(notFound, 404);
     const result = await unbanUser(getDb(c.env.DB), actorOf(c), id, c.req.valid("json").reason);
+    return result.ok ? c.json({ ok: true }) : actionFailure(c, result.reason);
+  })
+  .post("/users/:id/clear-probing", validateJson(reasonBody), async (c) => {
+    const id = paramId(c);
+    if (id === null) return c.json(notFound, 404);
+    const result = await clearProbingFlag(
+      getDb(c.env.DB),
+      actorOf(c),
+      id,
+      c.req.valid("json").reason,
+    );
     return result.ok ? c.json({ ok: true }) : actionFailure(c, result.reason);
   })
   .post("/users/:id/reset-password", validateJson(reasonBody), async (c) => {
@@ -104,27 +131,50 @@ export const modRoutes = new Hono<AppEnv>()
       await reportsRepo(db).listPage(status, params.size + 1, params.cursor),
       params.size,
     );
-    // One label lookup per target type, so a page costs a query per type, not per row.
-    const labels = new Map<string, string>();
-    for (const [type, target] of Object.entries(reportTargets)) {
-      const ids = page.items.filter((r) => r.targetType === type).map((r) => Number(r.targetId));
-      for (const [id, label] of await target.labels(db, ids)) labels.set(`${type}:${id}`, label);
-    }
     return c.json({
-      items: page.items.map((r) => ({
-        id: r.id,
-        targetType: r.targetType as "user",
-        targetId: r.targetId,
-        targetLabel: labels.get(`${r.targetType}:${r.targetId}`) ?? null,
-        reporter: r.reporter,
-        reason: r.reason,
-        status: r.status,
-        createdAt: r.createdAt,
-        resolvedAt: r.resolvedAt,
-        resolveNote: r.resolveNote,
-      })),
+      items: await toModReports(db, page.items),
       nextCursor: page.nextCursor,
     } satisfies z.infer<typeof modReportPage>);
+  })
+  // Held posts and open reports in one list, plus the size of the whole queue.
+  .get("/queue", validateQuery(pageQuery), async (c) => {
+    const { cursor, limit } = c.req.valid("query");
+    const params = pageParams({ cursor, limit });
+    if (!params) return badCursor(c);
+    const page = await modQueue(getDb(c.env.DB), { cursor, size: params.size });
+    if (!page) return badCursor(c);
+    return c.json(page satisfies z.infer<typeof modQueuePage>);
+  })
+  .post("/posts/:type/:id/approve", validateJson(approvePostRequest), async (c) => {
+    const id = paramId(c);
+    const type = c.req.param("type");
+    if (id === null) return c.json(notFound, 404);
+    const result = await decidePost(
+      getDb(c.env.DB),
+      actorOf(c),
+      { type, id },
+      { decision: "approve", reason: c.req.valid("json").reason },
+      { push: pushSenderFromEnv(c.env) },
+    );
+    if (result.ok) return c.json({ ok: true });
+    const { status, message } = POST_FAILURES[result.reason];
+    return c.json({ error: result.reason, message }, status);
+  })
+  .post("/posts/:type/:id/reject", validateJson(rejectPostRequest), async (c) => {
+    const id = paramId(c);
+    const type = c.req.param("type");
+    if (id === null) return c.json(notFound, 404);
+    const { reason, category } = c.req.valid("json");
+    const result = await decidePost(
+      getDb(c.env.DB),
+      actorOf(c),
+      { type, id },
+      { decision: "reject", reason, category },
+      { push: pushSenderFromEnv(c.env) },
+    );
+    if (result.ok) return c.json({ ok: true });
+    const { status, message } = POST_FAILURES[result.reason];
+    return c.json({ error: result.reason, message }, status);
   })
   .post("/reports/:id/resolve", validateJson(resolveReportRequest), async (c) => {
     const id = paramId(c);

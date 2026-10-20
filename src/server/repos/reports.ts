@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, lt } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, lt } from "drizzle-orm";
 import type { Db } from "../db/client";
 import { reports, users } from "../db/schema";
 
@@ -66,6 +66,15 @@ export function reportsRepo(db: Db) {
         .limit(limit)
         .all();
       return rows.map((r) => ({ ...r.report, reporter: r.reporter }));
+    },
+    /** How many reports are open. Counts the (status, id) index. */
+    async countOpen(): Promise<number> {
+      const row = await db
+        .select({ n: count() })
+        .from(reports)
+        .where(eq(reports.status, "open"))
+        .get();
+      return row?.n ?? 0;
     },
     /** Closes an open report. Null when it is already closed (or does not exist): one UPDATE, no read first. */
     async resolve(

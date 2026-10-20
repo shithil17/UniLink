@@ -21,8 +21,8 @@ function ModLayout() {
     <div className="max-w-3xl space-y-5">
       <nav aria-label="Moderation" className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
         <div className="flex w-max min-w-full gap-1 border-b border-line">
-          <Link to="/mod/reports" className={tab}>
-            Reports
+          <Link to="/mod/queue" className={tab}>
+            Queue
           </Link>
           <Link to="/mod/users" className={tab}>
             Users

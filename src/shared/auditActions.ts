@@ -11,6 +11,9 @@ export const auditActions = {
   resolveReport: "resolve_report",
   idLookup: "id_lookup",
   reverse: "reverse",
+  clearProbingFlag: "clear_probing_flag",
+  modApprovePost: "mod_approve_post",
+  modRejectPost: "mod_reject_post",
   automodApprove: "automod_approve",
   automodHold: "automod_hold",
   automodReject: "automod_reject",
@@ -21,7 +24,8 @@ export type AuditAction = (typeof auditActions)[keyof typeof auditActions];
 /**
  * The actions an admin can reverse from the stored snapshot. A reversal is not one of them (do the
  * original action again instead), and neither are a password reset (the old hash is never stored),
- * a report resolution or an ID lookup (nothing to restore).
+ * a report resolution or an ID lookup (nothing to restore). A mod's decision on a held post is not
+ * either: the author has already been told, so the author edits and resubmits instead.
  */
 export const reversibleActions: readonly string[] = [
   auditActions.ban,
@@ -29,6 +33,7 @@ export const reversibleActions: readonly string[] = [
   auditActions.roleChange,
   auditActions.releaseKey,
   auditActions.softDelete,
+  auditActions.clearProbingFlag,
 ];
 
 const LABELS: Record<AuditAction, string> = {
@@ -41,6 +46,9 @@ const LABELS: Record<AuditAction, string> = {
   resolve_report: "Closed a report",
   id_lookup: "Looked up a student ID",
   reverse: "Reversed an action",
+  clear_probing_flag: "Cleared a probing flag",
+  mod_approve_post: "Approved a held post",
+  mod_reject_post: "Rejected a held post",
   automod_approve: "Published a post",
   automod_hold: "Held a post for review",
   automod_reject: "Rejected a post",

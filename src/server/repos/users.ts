@@ -12,14 +12,24 @@ export type CreateUserResult = { ok: true; user: UserRow } | { ok: false; confli
 /** What mods may see of a user: never the student ID, email or full name. */
 export type ModUserRow = Pick<
   UserRow,
-  "id" | "username" | "role" | "bannedAt" | "mustChangePassword" | "createdAt"
+  | "id"
+  | "username"
+  | "role"
+  | "bannedAt"
+  | "mustChangePassword"
+  | "createdAt"
+  | "probingFlaggedAt"
+  | "postingBlockedUntil"
 >;
 
 /** The ID-conflict tool is the one place a student ID leaves the database. */
 export type IdHolderRow = ModUserRow & Pick<UserRow, "studentKey" | "studentSuffix">;
 
 /** The columns a moderation action changes on a user, and so the shape of a reversal snapshot. */
-export type UserState = Pick<UserRow, "role" | "bannedAt" | "studentKey">;
+export type UserState = Pick<
+  UserRow,
+  "role" | "bannedAt" | "studentKey" | "probingFlaggedAt" | "postingBlockedUntil"
+>;
 
 /** A released student ID key is replaced by this prefix plus the user id, which no real 7-digit key can equal. */
 export const RELEASED_KEY_PREFIX = "released:";
@@ -31,6 +41,8 @@ const modUserColumns = {
   bannedAt: users.bannedAt,
   mustChangePassword: users.mustChangePassword,
   createdAt: users.createdAt,
+  probingFlaggedAt: users.probingFlaggedAt,
+  postingBlockedUntil: users.postingBlockedUntil,
 };
 
 type UniqueColumn = "username" | "student_key" | "email";
@@ -148,7 +160,13 @@ export function usersRepo(db: Db) {
     async findState(id: number): Promise<UserState | null> {
       return (
         (await db
-          .select({ role: users.role, bannedAt: users.bannedAt, studentKey: users.studentKey })
+          .select({
+            role: users.role,
+            bannedAt: users.bannedAt,
+            studentKey: users.studentKey,
+            probingFlaggedAt: users.probingFlaggedAt,
+            postingBlockedUntil: users.postingBlockedUntil,
+          })
           .from(users)
           .where(eq(users.id, id))
           .get()) ?? null
@@ -239,6 +257,15 @@ export function usersRepo(db: Db) {
         .update(users)
         .set({ postingBlockedUntil: until, probingFlaggedAt: now })
         .where(eq(users.id, id));
+    },
+    /** Clears the probing flag and any active cooldown. False when the user was not flagged (or does not exist). */
+    async clearProbing(id: number): Promise<boolean> {
+      const rows = await db
+        .update(users)
+        .set({ probingFlaggedAt: null, postingBlockedUntil: null })
+        .where(and(eq(users.id, id), isNotNull(users.probingFlaggedAt)))
+        .returning({ id: users.id });
+      return rows.length > 0;
     },
     /**
      * The update that puts a snapshot back (not run here, so a reversal can batch it with its audit

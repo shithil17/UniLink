@@ -88,6 +88,9 @@ export const limits = {
     // ceiling: a student ID typed in groups ("22 1 2345 0 42") spans at most this many digit groups, and a card at most five. Bounds the scan so a long run of numbers stays cheap. Revisit if people split IDs further.
     digitGroupsMax: 6,
   },
+  /** "Ask a moderator to look": an author sends a rejected post to the queue. */
+  // ceiling: an honest author appeals the odd post; this stops a loop from flooding the queue. Revisit if mods say honest authors are blocked.
+  appeal: { limit: 5, windowMs: HOUR },
   /** Probing: someone resubmitting a post until the screen lets it through. */
   probing: {
     // ceiling: three rejections in an hour is more than an honest mistake or two. Revisit if mods see honest students flagged.

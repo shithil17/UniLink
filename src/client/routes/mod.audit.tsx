@@ -22,7 +22,7 @@ export const Route = createFileRoute("/mod/audit")({
   // Only admins read the log and reverse from it; mods are sent back to the queue.
   beforeLoad: async ({ context }) => {
     const user = await context.queryClient.ensureQueryData(meQuery).catch(() => null);
-    if (user?.role !== "admin") throw redirect({ to: "/mod/reports" });
+    if (user?.role !== "admin") throw redirect({ to: "/mod/queue" });
   },
   component: AuditPage,
 });

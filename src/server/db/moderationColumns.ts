@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, index, real, text, type SQLiteColumn } from "drizzle-orm/sqlite-core";
+import { check, index, integer, real, text, type SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { postStatus, reasonCategory } from "../../shared/schemas/common.ts";
 
 /** Zod lists enum values as a plain array; Drizzle's `enum` option wants a non-empty tuple. */
@@ -12,8 +12,9 @@ const values = <T extends string>(options: T[]) => options as [T, ...T[]];
  *   export const rides = sqliteTable("rides", { id, authorId, ...moderationColumns, ... },
  *     (t) => [...moderationConstraints("rides", t)]);
  *
- * The table also needs an integer `id` and `author_id`. `status` defaults to `pending_review`, so a row
- * written without a screening result is held, never published.
+ * The table also needs an integer `id`, `author_id` and the soft-delete columns `deleted_at` and
+ * `deleted_by`. `status` defaults to `pending_review`, so a row written without a screening result is
+ * held, never published.
  */
 export const moderationColumns = {
   status: text("status", { enum: values(postStatus.options) })
@@ -26,6 +27,8 @@ export const moderationColumns = {
   // The model's confidence, 0 to 1. Null when the rules decided or the model gave none.
   moderationConfidence: real("moderation_confidence"),
   moderationModel: text("moderation_model"),
+  // When the author tapped "Ask a moderator to look" on a rejected post. Cleared by the next screening.
+  moderationAppealedAt: integer("moderation_appealed_at"),
 };
 
 const statusList = sql.raw(postStatus.options.map((s) => `'${s}'`).join(", "));

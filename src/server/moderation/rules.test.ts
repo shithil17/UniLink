@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { makeWebp } from "../../shared/webp.fixture";
 import { limits } from "../limits";
-import { isAllowedHost, passesLuhn, runRules } from "./rules";
+import { isAllowedHost, passesLuhn, redactText, runRules } from "./rules";
 
 const rulesOf = (
   texts: string[],
@@ -179,5 +179,17 @@ describe("clean text", () => {
   it("has no flags and the fine category", () => {
     const result = runRules({ texts: ["Lost a blue umbrella near the library, 3rd floor."] });
     expect(result).toMatchObject({ flags: [], category: "fine" });
+  });
+});
+
+describe("redactText", () => {
+  it("blanks student IDs and card numbers and leaves the rest, phone numbers included", () => {
+    expect(redactText("id 221 2345 042 ok")).toBe("id [redacted] ok");
+    expect(redactText("card 4111 1111 1111 1111.")).toBe("card [redacted].");
+    expect(redactText("call 01712345678 today")).toBe("call 01712345678 today");
+  });
+
+  it("does not scan text over the length limit", () => {
+    expect(redactText("2212345042 ".repeat(1000))).toBe("[text too long]");
   });
 });

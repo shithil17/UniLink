@@ -2,9 +2,11 @@ import { auditActions } from "../../../shared/auditActions";
 import { canActOn } from "../../../shared/modPolicy";
 import { audit } from "../../audit";
 import type { Db } from "../../db/client";
+import { probingKey } from "../../moderation/probing";
 import type { Role } from "../../middleware/types";
 import { hashPassword } from "../../password";
 import { reportsRepo, type ReportRow, type ReportStatus } from "../../repos/reports";
+import { rateLimitsRepo } from "../../repos/rateLimits";
 import { sessionsRepo } from "../../repos/sessions";
 import { RELEASED_KEY_PREFIX, usersRepo, type ModUserRow } from "../../repos/users";
 import { generateTemporaryPassword } from "../../tempPassword";
@@ -22,7 +24,8 @@ export type ActionFailure =
   | "key_already_released"
   | "role_unchanged"
   | "conflict"
-  | "already_resolved";
+  | "already_resolved"
+  | "not_flagged";
 
 export type ActionResult<T = Record<never, never>> =
   | ({ ok: true } & T)
@@ -182,6 +185,40 @@ export async function changeRole(
       targetType: "user",
       targetId,
       before: { role: from },
+      reason,
+    },
+    now,
+  );
+  return { ok: true };
+}
+
+/**
+ * Clears the probing flag and lifts any cooldown still running. The rejection count restarts too, so
+ * the next rejection is the first again. The snapshot holds both user columns, so an admin can reverse
+ * it (the restored flag and cooldown; the count is not brought back).
+ */
+export async function clearProbingFlag(
+  db: Db,
+  actor: Actor,
+  targetId: number,
+  reason: string,
+  now: number = Date.now(),
+): Promise<ActionResult> {
+  const loaded = await loadTarget(db, actor, targetId);
+  if (!loaded.ok) return loaded;
+  const before = await usersRepo(db).probingState(targetId);
+  if (!before || !(await usersRepo(db).clearProbing(targetId))) {
+    return { ok: false, reason: "not_flagged" };
+  }
+  await rateLimitsRepo(db).reset(probingKey(targetId));
+  await audit(
+    db,
+    {
+      actor: actor.id,
+      action: auditActions.clearProbingFlag,
+      targetType: "user",
+      targetId,
+      before,
       reason,
     },
     now,

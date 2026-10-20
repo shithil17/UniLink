@@ -59,6 +59,8 @@ function UserActions({
     defaultValues: { reason: "" },
   });
   const [temporary, setTemporary] = useState<string | null>(null);
+  // Read once when the sheet opens: the pause is shown in whole minutes, so no ticking is needed.
+  const [openedAt] = useState(() => Date.now());
   const pending = userAction.isPending || changeRole.isPending;
   const allowed = canActOn(me, user);
 
@@ -96,9 +98,18 @@ function UserActions({
       );
     });
 
-  const state = [roleName[user.role], user.bannedAt === null ? null : "Banned"]
+  const flagged = user.probingFlaggedAt !== null;
+  const state = [
+    roleName[user.role],
+    user.bannedAt === null ? null : "Banned",
+    flagged ? "Flagged" : null,
+  ]
     .filter(Boolean)
     .join(", ");
+  const pausedMinutes =
+    user.postingBlockedUntil === null
+      ? 0
+      : Math.max(0, Math.ceil((user.postingBlockedUntil - openedAt) / 60_000));
 
   return (
     <>
@@ -107,6 +118,19 @@ function UserActions({
         <SheetDescription>{state}</SheetDescription>
       </SheetHeader>
       <div className="space-y-4 px-4 pb-4">
+        {flagged ? (
+          <p className="text-sm text-soft">
+            Flagged for several rejected posts in a short time.{" "}
+            {pausedMinutes > 0 ? (
+              <>
+                Posting is paused for another <span className="tabular-nums">{pausedMinutes}</span>{" "}
+                min.
+              </>
+            ) : (
+              "The pause on posting is over."
+            )}
+          </p>
+        ) : null}
         {temporary ? (
           <TemporaryPassword password={temporary} onDone={onClose} />
         ) : !allowed ? (
@@ -156,6 +180,17 @@ function UserActions({
                 >
                   Reset password
                 </Button>
+                {flagged ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    disabled={pending}
+                    onClick={() => void run("clear-probing", "Flag cleared")()}
+                  >
+                    Clear flag
+                  </Button>
+                ) : null}
                 {me.role === "admin" ? (
                   user.role === "student" ? (
                     <Button

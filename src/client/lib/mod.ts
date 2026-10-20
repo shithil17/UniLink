@@ -8,11 +8,13 @@ import { z } from "zod";
 import {
   auditPage,
   idConflictResult,
+  modQueuePage,
   modReportPage,
   modUserPage,
   reverseResult,
   temporaryPassword,
 } from "../../shared/schemas/moderation";
+import type { rejectCategory } from "../../shared/schemas/moderation";
 import { apiGet, apiPost } from "./api";
 
 const ok = z.object({ ok: z.boolean() });
@@ -47,6 +49,15 @@ export const modReportsList = (status: ReportStatus) =>
     getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
 
+/** Held posts then open reports, one list, with the size of the whole queue. */
+export const modQueueList = infiniteQueryOptions({
+  queryKey: ["mod", "queue"],
+  queryFn: ({ pageParam }) =>
+    apiGet(`/api/mod/queue${queryString({ cursor: pageParam })}`, modQueuePage),
+  initialPageParam: "",
+  getNextPageParam: (last) => last.nextCursor ?? undefined,
+});
+
 /** The audit log, newest first (admins only). */
 export const auditList = infiniteQueryOptions({
   queryKey: ["mod", "audit"],
@@ -75,9 +86,9 @@ function useRefreshMod() {
   return () => queryClient.invalidateQueries({ queryKey: ["mod"] });
 }
 
-export type UserAction = "ban" | "unban" | "reset-password";
+export type UserAction = "ban" | "unban" | "reset-password" | "clear-probing";
 
-/** Ban, unban or reset the password of a user. A reset answers with the temporary password. */
+/** Ban, unban, clear the probing flag of or reset the password of a user. A reset answers with the temporary password. */
 export function useUserAction() {
   const refresh = useRefreshMod();
   return useMutation({
@@ -110,6 +121,30 @@ export function useResolveReport() {
   return useMutation({
     mutationFn: ({ id, outcome }: { id: number; outcome: "resolved" | "dismissed" }) =>
       apiPost(`/api/mod/reports/${id}/resolve`, ok, { outcome }),
+    onSuccess: refresh,
+  });
+}
+
+export type PostDecisionInput =
+  | { decision: "approve"; reason?: string }
+  | { decision: "reject"; reason: string; category: z.infer<typeof rejectCategory> };
+
+/** A mod's approve or reject on a held post. The author is notified by the server. */
+export function useDecidePost() {
+  const refresh = useRefreshMod();
+  return useMutation({
+    mutationFn: ({
+      targetType,
+      id,
+      ...input
+    }: PostDecisionInput & { targetType: string; id: number }) =>
+      apiPost(
+        `/api/mod/posts/${encodeURIComponent(targetType)}/${id}/${input.decision}`,
+        ok,
+        input.decision === "approve"
+          ? { reason: input.reason }
+          : { reason: input.reason, category: input.category },
+      ),
     onSuccess: refresh,
   });
 }

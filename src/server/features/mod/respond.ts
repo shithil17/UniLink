@@ -11,6 +11,7 @@ const FAILURES: Record<ActionFailure, { status: 403 | 404 | 409; message: string
   role_unchanged: { status: 409, message: "That account already has this role." },
   conflict: { status: 409, message: "That changed while you were working. Reload and try again." },
   already_resolved: { status: 409, message: "That report was already closed." },
+  not_flagged: { status: 409, message: "That account has no probing flag." },
 };
 
 /** The HTTP answer for a refused moderation action. */

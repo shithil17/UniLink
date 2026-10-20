@@ -694,9 +694,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 - [x] `src/server/moderation/rules.ts` and `screen.ts` with a `ModelStep` interface and a `StubModelStep`.
 - [x] Shared column set and helpers for moderation status. `visibleTo(user)` filter in the repo layer.
-- [ ] Probing counter through `rateLimit()`, and the mod-panel flag.
-- [ ] Mod queue: held posts and reports in one list, showing the text, the author's username, the model category and confidence, the rule flags, and the queue size at the top. Approve and reject actions notify the author.
-- [ ] Reject-reason messages from D, mapped per category.
+- [x] Probing counter through `rateLimit()`, and the mod-panel flag.
+- [x] Mod queue: held posts and reports in one list, showing the text, the author's username, the model category and confidence, the rule flags, and the queue size at the top. Approve and reject actions notify the author.
+- [x] Reject-reason messages from D, mapped per category. (placeholder copy until D's text lands)
 
 ### Checklist — Docs & QA (C, D)
 
@@ -707,8 +707,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 - [x] `src/server/moderation/rules.test.ts`: student IDs with and without spaces, a Luhn card number is caught, a BD phone number in text is not, a non-allowlisted URL, length limits, banned words, bad images.
 - [x] `src/server/moderation/screen.test.ts`: a rule violation never calls the model step (spy), a stub approve publishes, the stub with images gives review, an invalid image is rejected by the rules, the forced flag gives review, a model error or timeout gives review, the audit row has actor `automod`. (The audit row and the daily cap need D1, so they are in `record.api.test.ts`.)
-- [ ] `src/server/moderation/queue.api.test.ts`: a pending post is hidden from other students, the mod decision overrides and notifies the author, 3 rejections trigger the cooldown, an edit is screened again.
-- [ ] Run: `vp test moderation`
+- [x] `src/server/moderation/queue.api.test.ts`: a pending post is hidden from other students, the mod decision overrides and notifies the author, 3 rejections trigger the cooldown, an edit is screened again.
+- [x] Run: `vp test moderation`
 
 ### Test Gate 8
 

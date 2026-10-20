@@ -47,6 +47,7 @@ beforeAll(async () => {
       moderation_flags text,
       moderation_confidence real,
       moderation_model text,
+      moderation_appealed_at integer,
       CONSTRAINT test_moderated_posts_status_check CHECK(status in ('published', 'pending_review', 'rejected'))
     )`,
   ).run();

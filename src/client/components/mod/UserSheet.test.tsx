@@ -17,6 +17,8 @@ const student: ModUser = {
   bannedAt: null,
   mustChangePassword: false,
   createdAt: 1,
+  probingFlaggedAt: null,
+  postingBlockedUntil: null,
 };
 
 function renderSheet(user: ModUser, me: { username: string; role: "mod" | "admin" }) {
@@ -59,6 +61,23 @@ describe("UserSheet", () => {
       expect(screen.queryByRole("button", { name: "Reset password" })).toBeNull();
       cleanup();
     }
+  });
+
+  it("shows the probing flag and lets a mod clear it, with a reason", async () => {
+    const fetchMock = vi.fn(async (_url: string) => Response.json({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+    const flagged = { ...student, probingFlaggedAt: 5, postingBlockedUntil: Date.now() + 600_000 };
+    renderSheet(flagged, { username: "mod_1", role: "mod" });
+    expect(screen.getByText(/Posting is paused for another/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "honest mistakes" } });
+    fireEvent.click(screen.getByRole("button", { name: "Clear flag" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/mod/users/5/clear-probing");
+  });
+
+  it("offers no clear-flag button for an unflagged user", () => {
+    renderSheet(student, { username: "mod_1", role: "mod" });
+    expect(screen.queryByRole("button", { name: "Clear flag" })).toBeNull();
   });
 
   it("asks for a reason before it sends anything", async () => {

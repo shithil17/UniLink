@@ -1,3 +1,5 @@
+import { rejectReasonMessage } from "./rejectReasons";
+import { reasonCategory } from "./schemas/common";
 import type { NotificationType } from "./schemas/inbox";
 
 // Shared by the inbox screen and web push, so a notification reads the same everywhere.
@@ -35,7 +37,20 @@ const COPY: Record<NotificationType, NotificationCopy> = {
   },
 };
 
-/** Words for a notification, built here from its type. Free text from a payload is never shown. */
-export function notificationCopy(type: NotificationType): NotificationCopy {
+/**
+ * Words for a notification, built here from its type. Free text from a payload is never shown. The one
+ * payload value that changes the words is a rejection's `category`, and only after it parses as one of
+ * the known categories; the sentence itself comes from `rejectReasonMessage`.
+ */
+export function notificationCopy(
+  type: NotificationType,
+  payload?: Record<string, unknown>,
+): NotificationCopy {
+  if (type === "post_rejected") {
+    const category = reasonCategory.safeParse(payload?.category);
+    if (category.success) {
+      return { title: COPY[type].title, detail: rejectReasonMessage(category.data) };
+    }
+  }
   return COPY[type];
 }

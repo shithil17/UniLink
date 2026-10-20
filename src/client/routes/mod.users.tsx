@@ -114,6 +114,7 @@ function UsersPage() {
                     <Badge>{u.role === "admin" ? "Admin" : "Mod"}</Badge>
                   ) : null}
                   {u.bannedAt !== null ? <Badge>Banned</Badge> : null}
+                  {u.probingFlaggedAt !== null ? <Badge>Flagged</Badge> : null}
                 </button>
               </li>
             ))}

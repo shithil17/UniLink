@@ -153,5 +153,7 @@ export function moderationValues(result: ScreenOutcome) {
     moderationFlags: JSON.stringify(result.flags.map((f) => f.rule)),
     moderationConfidence: result.confidence,
     moderationModel: result.modelName,
+    // A fresh screening supersedes any earlier "ask a moderator" tap.
+    moderationAppealedAt: null,
   };
 }

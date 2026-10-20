@@ -174,6 +174,18 @@ function redact(text: string, spans: [number, number][]): string {
   return out + text.slice(at);
 }
 
+/**
+ * One text field with student IDs and card numbers blanked, the same way the audit snapshot is. For
+ * anything a moderator reads: the ID-conflict tool is the only screen where a student ID is shown.
+ * Text over the length limit is not scanned (it is rejected on length alone) and shows a placeholder.
+ */
+export function redactText(text: string): string {
+  if (text.length > limits.screen.textMaxLength) return "[text too long]";
+  const spans: [number, number][] = [];
+  scanDigits(text, [], spans, 0);
+  return redact(text, spans);
+}
+
 // ---- URLs ----------------------------------------------------------------------------------
 
 const SCHEME_URL = /\b(?:https?:\/\/|www\.)[^\s<>"')\]]+/gi;

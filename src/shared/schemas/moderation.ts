@@ -65,6 +65,10 @@ export const modUser = z.object({
   bannedAt: instant.nullable(),
   mustChangePassword: z.boolean(),
   createdAt: instant,
+  /** Set when the probing cooldown triggered; stays until a mod clears it. */
+  probingFlaggedAt: instant.nullable(),
+  /** No posting until this instant. Past or null means no cooldown is active. */
+  postingBlockedUntil: instant.nullable(),
 });
 
 /** A username prefix to search for. */
@@ -138,6 +142,47 @@ export const resolveReportRequest = z.object({
   note: reasonText.optional(),
 });
 
+// ---- Mod queue: held posts and open reports in one list (mods and admins) -------------------
+
+/** A held post as mods see it. The author is a username; contact details are never part of it. */
+export const modQueuePost = z.object({
+  kind: z.literal("post"),
+  /** The post type (a key of the moderated post registry) and the post's id in its table. */
+  targetType: z.string(),
+  id,
+  /** The screened text, one entry per field. */
+  text: z.array(z.string()),
+  author: z.string().nullable(),
+  /** The category of the latest automatic decision. "fine" with a hold means the model or a forced flag held it. */
+  category: reasonCategory,
+  confidence: z.number().min(0).max(1).nullable(),
+  /** The rule names that fired. */
+  flags: z.array(ruleName),
+  model: z.string().nullable(),
+  /** True when the author tapped "Ask a moderator to look" on a rejection. */
+  appealed: z.boolean(),
+});
+
+export const modQueueReport = modReport.extend({ kind: z.literal("report") });
+
+export const modQueueItem = z.discriminatedUnion("kind", [modQueuePost, modQueueReport]);
+
+export const modQueuePage = page(modQueueItem).extend({
+  /** The whole queue (held posts plus open reports), not just this page. */
+  total: z.number().int().nonnegative(),
+});
+
+/** Categories a mod can reject with. "fine" is a verdict, not a reason. */
+export const rejectCategory = reasonCategory.exclude(["fine"], "Choose a reason category");
+
+export const approvePostRequest = z.object({ reason: reasonText.optional() });
+
+export const rejectPostRequest = z.object({
+  reason: reasonText,
+  /** Shown to the author as a category-level message. */
+  category: rejectCategory,
+});
+
 // ---- Audit log (admins) ---------------------------------------------------------------------
 
 export const auditEntry = z.object({
@@ -171,5 +216,7 @@ export const reverseResult = z.object({ id });
 
 export type ModUser = z.infer<typeof modUser>;
 export type ModReport = z.infer<typeof modReport>;
+export type ModQueueItem = z.infer<typeof modQueueItem>;
+export type ModQueuePost = z.infer<typeof modQueuePost>;
 export type AuditEntry = z.infer<typeof auditEntry>;
 export type IdConflictHolder = z.infer<typeof idConflictHolder>;

@@ -107,7 +107,7 @@ function Inbox() {
 }
 
 function Row({ n, now, onOpen }: { n: Notification; now: number; onOpen: () => void }) {
-  const { title, detail } = notificationCopy(n.type);
+  const { title, detail } = notificationCopy(n.type, n.payload);
   const unread = n.readAt === null;
   const body = (
     <>
