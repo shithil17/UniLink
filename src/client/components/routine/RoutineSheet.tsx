@@ -3,7 +3,7 @@ import { TriangleAlertIcon } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import type { z } from "zod";
-import { OptionSelect } from "@/components/courses/OptionSelect";
+import { CoursePicker } from "@/components/courses/CoursePicker";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -23,6 +23,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { errorMessage } from "@/lib/api";
+import type { CourseChoice } from "@/lib/courseSearch";
 import {
   clashesFor,
   formatRange,
@@ -43,7 +44,7 @@ import {
 } from "../../../shared/schemas/routine";
 
 type FormValues = z.input<typeof routineInput>;
-type Choice = { code: string; title: string };
+type Choice = CourseChoice;
 
 /** A new class with its day and times filled in, from a tap on an empty slot of the calendar. */
 export type ClassPreset = { days: RoutineDay[]; start: string; end: string };
@@ -106,11 +107,10 @@ function RoutineEditor({
   const remove = useDeleteRoutineEntry(entry?.id ?? 0);
   const [confirming, setConfirming] = useState(false);
   // A class whose course left the picker (a deleted course) still has to show and save.
-  const options = (
+  const options =
     entry && !choices.some((c) => c.code === entry.courseCode)
       ? [...choices, { code: entry.courseCode, title: "" }]
-      : [...choices]
-  ).map((c) => ({ value: c.code, label: c.title ? `${c.code} ${c.title}` : c.code }));
+      : choices;
 
   const form = useForm<FormValues, unknown, RoutineInput>({
     resolver: zodResolver(routineInput),
@@ -170,12 +170,12 @@ function RoutineEditor({
                 control={form.control}
                 name="courseCode"
                 render={({ field }) => (
-                  <OptionSelect
+                  <CoursePicker
                     id="routine-course"
                     value={field.value || null}
                     onChange={field.onChange}
-                    options={options}
-                    placeholder="Pick a course"
+                    choices={options}
+                    title="Which course is this class?"
                     disabled={options.length === 0}
                     invalid={Boolean(errors.courseCode)}
                   />

@@ -139,4 +139,36 @@ describe("routineCourseChoices", () => {
     });
     expect(choices.map((c) => c.code)).toEqual(["BUS101", "CSE115", "ENG115"]);
   });
+
+  it("gives each course its state on the map, so the picker can mark and order them", () => {
+    const own = (code: string, done: boolean) =>
+      ({ code, title: code, done, waived: false }) as CourseMap["extras"][number];
+    const choices = routineCourseChoices({
+      categories: [
+        {
+          name: "Core",
+          required: 0,
+          earned: 0,
+          slots: [
+            slot({
+              code: "CSE115",
+              status: "done",
+              alternatives: [{ code: "CSE115X", title: "X" }],
+            }),
+            slot({ code: "CSE225", status: "locked" }),
+            slot({ code: "MAT116", status: "done", waived: true }),
+          ],
+        },
+      ],
+      extras: [own("BUS101", true), own("BUS102", false)],
+    });
+    expect(choices.map((c) => [c.code, c.status, c.waived])).toEqual([
+      ["BUS101", "done", false],
+      ["BUS102", "available", false],
+      ["CSE115", "done", false],
+      ["CSE115X", "done", false],
+      ["CSE225", "locked", false],
+      ["MAT116", "done", true],
+    ]);
+  });
 });

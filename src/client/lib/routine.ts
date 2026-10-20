@@ -14,6 +14,7 @@ import {
   type RoutineUpdate,
 } from "../../shared/schemas/routine";
 import type { CourseMap } from "../../shared/schemas/courses";
+import type { CourseChoice } from "./courseSearch";
 import { apiDelete, apiPatch, apiPost } from "./api";
 
 /** "14:30" to "2:30 PM", the way the NSU routine prints times. */
@@ -56,26 +57,30 @@ export function nextClassOf(entries: readonly RoutineEntry[] | undefined, now: n
   return entries ? nextEntry(todayEntries(entries, now), now) : null;
 }
 
-type Choice = { code: string; title: string };
+type Choice = CourseChoice;
 
 /**
  * Every course the routine form can offer: the curriculum's courses with their alternatives, plus
- * the student's own courses. The server accepts exactly these codes. Sorted by code, no repeats.
+ * the student's own courses, each with its state on the map. The server accepts exactly these
+ * codes. Sorted by code, no repeats; a code seen twice keeps its first title and state.
  */
 export function routineCourseChoices(map: Pick<CourseMap, "categories" | "extras">): Choice[] {
-  const byCode = new Map<string, string>();
-  const add = (c: Choice) => byCode.set(c.code, byCode.get(c.code) ?? c.title);
+  const byCode = new Map<string, Choice>();
+  const add = (c: Choice) => {
+    if (!byCode.has(c.code)) byCode.set(c.code, c);
+  };
+  const own = (c: { code: string; title: string; done: boolean; waived: boolean }) =>
+    add({ code: c.code, title: c.title, status: c.done ? "done" : "available", waived: c.waived });
   for (const slot of map.categories.flatMap((c) => c.slots)) {
     if (slot.kind === "course") {
-      add(slot);
-      slot.alternatives.forEach(add);
+      const state = { status: slot.status, waived: slot.waived };
+      add({ code: slot.code, title: slot.title, ...state });
+      slot.alternatives.forEach((alt) => add({ code: alt.code, title: alt.title, ...state }));
     }
-    if (slot.studentCourse) add(slot.studentCourse);
+    if (slot.studentCourse) own(slot.studentCourse);
   }
-  map.extras.forEach(add);
-  return [...byCode]
-    .map(([code, title]) => ({ code, title }))
-    .sort((a, b) => a.code.localeCompare(b.code));
+  map.extras.forEach(own);
+  return [...byCode.values()].sort((a, b) => a.code.localeCompare(b.code));
 }
 
 /** Course code to title, for rows that show both. */
