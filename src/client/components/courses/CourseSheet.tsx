@@ -13,6 +13,7 @@ import { errorMessage } from "@/lib/api";
 import { formatCredits, slotCodeChoices } from "@/lib/courseMap";
 import { useDeleteStudentCourse } from "@/lib/courses";
 import type { CourseMap } from "../../../shared/schemas/courses";
+import { slotLabel } from "../../../shared/slotChoice";
 import { AttemptSection } from "./AttemptSection";
 import { PrereqText } from "./PrereqText";
 import { StateMark } from "./StateMark";
@@ -74,11 +75,12 @@ export function CourseSheet({
 
 function SlotDetails({ slot, onClose }: { slot: Slot; onClose: () => void }) {
   const choices = slotCodeChoices(slot);
+  const label = slotLabel(slot);
   return (
     <>
       <SheetHeader>
         <SheetTitle>
-          {slot.code} {slot.title}
+          {label.code} {label.title}
         </SheetTitle>
         <SheetDescription>
           {slot.nonCredit ? "Non-credit" : `${formatCredits(slot.credits)} credits`} ·{" "}
@@ -88,15 +90,14 @@ function SlotDetails({ slot, onClose }: { slot: Slot; onClose: () => void }) {
       <div className="space-y-5 px-4">
         <div className="flex flex-wrap items-center gap-2">
           <StateMark showLabel status={slot.status} waived={slot.waived} />
-          {slot.filledBy && slot.filledBy !== slot.code ? (
-            <span className="text-sm text-soft">Taken as {slot.filledBy}</span>
-          ) : null}
         </div>
-        {slot.alternatives.length > 0 ? (
+        {label.others.length > 0 ? (
           <div className="space-y-1">
-            <h3 className="text-sm font-semibold text-soft">Or take instead</h3>
+            <h3 className="text-sm font-semibold text-soft">
+              {label.chosen ? "Other choices for this slot" : "Or take instead"}
+            </h3>
             <ul className="text-sm text-body">
-              {slot.alternatives.map((a) => (
+              {label.others.map((a) => (
                 <li key={a.code}>
                   {a.code} {a.title}
                 </li>

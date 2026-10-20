@@ -84,16 +84,16 @@ Mods and admins cannot read any student's attempts or CGPA.
 
 ### Moderation
 
-| ID    | Requirement                                                                                                                                                                          |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| FR-31 | A user can report a target with a reason. One open report per reporter per target; reports are rate-limited (10 per hour); a user cannot report their own content.                   |
-| FR-32 | A mod can list reports (open first, oldest first) and resolve or dismiss them with a reason.                                                                                         |
-| FR-33 | A mod can search users by username prefix and ban, unban, or issue a temporary password. Banning ends the user's sessions.                                                           |
-| FR-34 | A mod can look up the account holding a 7-digit ID key and release it (the holder is banned, the key is freed). This is the only place a mod sees a student ID, and it is logged.    |
-| FR-35 | Nobody acts on themselves or on an admin. A mod acts on students only. An admin acts on students and mods.                                                                           |
-| FR-36 | An admin can promote a student to mod and demote a mod.                                                                                                                              |
-| FR-37 | Mods only soft-delete. Every mod and automatic action writes an audit row with a before-snapshot and a reason.                                                                       |
-| FR-38 | An admin can view the audit log (filter by actor, target type, target id) and reverse a ban, unban, role change, key release, soft delete or faculty change. A row is reversed once. |
+| ID    | Requirement                                                                                                                                                                                         |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-31 | A user can report a target with a reason. One open report per reporter per target; reports are rate-limited (10 per hour); a user cannot report their own content.                                  |
+| FR-32 | A mod can list reports (open first, oldest first) and resolve or dismiss them with a reason.                                                                                                        |
+| FR-33 | A mod can search users by username prefix and ban, unban, or issue a temporary password. Banning ends the user's sessions.                                                                          |
+| FR-34 | A mod can look up the account holding a 7-digit ID key and release it (the holder is banned, the key is freed). This is the only place a mod sees a student ID, and it is logged.                   |
+| FR-35 | Nobody acts on themselves or on an admin. A mod acts on students only. An admin acts on students and mods.                                                                                          |
+| FR-36 | An admin can promote a student to mod and demote a mod.                                                                                                                                             |
+| FR-37 | Mods only soft-delete. Every mod and automatic action writes an audit row with a before-snapshot and a reason.                                                                                      |
+| FR-38 | An admin can view the audit log (filter by actor, target type, target id) and reverse a ban, unban, role change, key release, soft delete, faculty change or course change. A row is reversed once. |
 
 ### Content screening and review queue
 
@@ -119,6 +119,18 @@ Mods and admins cannot read any student's attempts or CGPA.
 | FR-51 | A faculty member is shown as "Name (INITIALS)" in the picker and in attempt rows, without brackets when there are no initials. The picker also shows designation and department.                                                             |
 | FR-52 | A mod or admin can add and edit faculty (name, initials, designation, department, NSU page) and hide or show a faculty member again with a reason. A taken name (same department) or taken initials is refused with a message on that field. |
 | FR-53 | A hidden faculty member is not offered to students, but attempts that already name them keep the name. Every faculty change writes an audit row with a before-snapshot; an admin can reverse an edit, a hide or a show.                      |
+
+### Course management and choice slots
+
+| ID    | Requirement                                                                                                                                                                                                                                                                                                                   |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-54 | A mod or admin can pick an imported curriculum (program and version) and see its courses by category, searchable by code or title, with hidden ones behind a "Show hidden" switch and marked "Hidden".                                                                                                                        |
+| FR-55 | A mod or admin can add a course or elective placeholder and edit one: code, title, credits (halves allowed), category (existing or new), non-credit, optional semester, "Or take instead" alternatives and prerequisites. A code already used in the curriculum, as a course or an alternative, is refused on the Code field. |
+| FR-56 | Prerequisites are written as text such as `CSE215 and (MAT120 or MAT125)` and turned into a rule. A mistake in the text, or a prerequisite on a course the curriculum does not have, is refused on that field with a message.                                                                                                 |
+| FR-57 | A mod or admin can hide a course and show it again, each with a reason; nothing is deleted. A hidden course leaves students' course maps, totals, "Unlocked next" and the codes an attempt can name, unless the student already has an attempt on it; their attempts are never deleted and keep counting.                     |
+| FR-58 | Every course add, edit, hide and show writes an audit row with a before-snapshot; an admin can reverse an edit, a hide or a show (refused if the old code has been taken since).                                                                                                                                              |
+| FR-59 | Importing a curriculum whose program and version already exist replaces every course of that version, including changes made in the Courses screen. The import screen warns about this before the import.                                                                                                                     |
+| FR-60 | A course map slot that accepts more than one course shows all its codes joined with "/" until the student has an attempt on one, then shows that course. If several have attempts, the one that counts shows, then the most recent. The same label is used on Home, the course map and the course sheet.                      |
 
 ## 4. Non-functional requirements
 

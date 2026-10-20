@@ -1,0 +1,1 @@
+ALTER TABLE `courses` ADD `hidden` integer DEFAULT false NOT NULL;

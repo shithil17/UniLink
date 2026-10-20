@@ -21,6 +21,7 @@ const slot = (over: Partial<Slot>): Slot => ({
   prereq: null,
   status: "available",
   filledBy: null,
+  chosenCode: null,
   waived: false,
   studentCourse: null,
   ...over,
@@ -59,6 +60,35 @@ describe("CategorySection", () => {
     expect(onOpenSlot).toHaveBeenCalledWith(category.slots[1]);
     fireEvent.click(screen.getByRole("button", { name: "Add course" }));
     expect(onAdd).toHaveBeenCalledWith("Core");
+  });
+});
+
+describe("CategorySection choice slots", () => {
+  const choice = slot({
+    code: "ENG115",
+    title: "Introduction to Composition",
+    alternatives: [{ code: "BEN205", title: "Bangla Language" }],
+  });
+  const section = (s: Slot) =>
+    render(
+      <CategorySection
+        category={{ name: "GED", required: 3, earned: 0, slots: [s] }}
+        onOpenSlot={() => {}}
+        onAdd={() => {}}
+      />,
+    );
+
+  it("joins the codes and titles until the student takes one", () => {
+    section(choice);
+    expect(screen.getByText("ENG115/BEN205")).toBeTruthy();
+    expect(screen.getByText("Introduction to Composition / Bangla Language")).toBeTruthy();
+  });
+
+  it("shows the course taken once there is an attempt", () => {
+    section({ ...choice, chosenCode: "BEN205", filledBy: "BEN205", status: "done" });
+    expect(screen.getByText("BEN205")).toBeTruthy();
+    expect(screen.getByText("Bangla Language")).toBeTruthy();
+    expect(screen.queryByText("ENG115/BEN205")).toBeNull();
   });
 });
 

@@ -20,6 +20,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ModIndexRouteImport } from './routes/mod.index'
 import { Route as ModAuditRouteImport } from './routes/mod.audit'
+import { Route as ModCoursesRouteImport } from './routes/mod.courses'
 import { Route as ModFacultyRouteImport } from './routes/mod.faculty'
 import { Route as ModIdConflictRouteImport } from './routes/mod.id-conflict'
 import { Route as ModImportRouteImport } from './routes/mod.import'
@@ -81,6 +82,11 @@ const ModAuditRoute = ModAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => ModRoute,
 } as any)
+const ModCoursesRoute = ModCoursesRouteImport.update({
+  id: '/courses',
+  path: '/courses',
+  getParentRoute: () => ModRoute,
+} as any)
 const ModFacultyRoute = ModFacultyRouteImport.update({
   id: '/faculty',
   path: '/faculty',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/mod/audit': typeof ModAuditRoute
+  '/mod/courses': typeof ModCoursesRoute
   '/mod/faculty': typeof ModFacultyRoute
   '/mod/id-conflict': typeof ModIdConflictRoute
   '/mod/import': typeof ModImportRoute
@@ -135,6 +142,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/mod/audit': typeof ModAuditRoute
+  '/mod/courses': typeof ModCoursesRoute
   '/mod/faculty': typeof ModFacultyRoute
   '/mod/id-conflict': typeof ModIdConflictRoute
   '/mod/import': typeof ModImportRoute
@@ -154,6 +162,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/mod/audit': typeof ModAuditRoute
+  '/mod/courses': typeof ModCoursesRoute
   '/mod/faculty': typeof ModFacultyRoute
   '/mod/id-conflict': typeof ModIdConflictRoute
   '/mod/import': typeof ModImportRoute
@@ -174,6 +183,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/mod/audit'
+    | '/mod/courses'
     | '/mod/faculty'
     | '/mod/id-conflict'
     | '/mod/import'
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/mod/audit'
+    | '/mod/courses'
     | '/mod/faculty'
     | '/mod/id-conflict'
     | '/mod/import'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/mod/audit'
+    | '/mod/courses'
     | '/mod/faculty'
     | '/mod/id-conflict'
     | '/mod/import'
@@ -308,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModAuditRouteImport
       parentRoute: typeof ModRoute
     }
+    '/mod/courses': {
+      id: '/mod/courses'
+      path: '/courses'
+      fullPath: '/mod/courses'
+      preLoaderRoute: typeof ModCoursesRouteImport
+      parentRoute: typeof ModRoute
+    }
     '/mod/faculty': {
       id: '/mod/faculty'
       path: '/faculty'
@@ -348,6 +367,7 @@ declare module '@tanstack/react-router' {
 
 interface ModRouteChildren {
   ModAuditRoute: typeof ModAuditRoute
+  ModCoursesRoute: typeof ModCoursesRoute
   ModFacultyRoute: typeof ModFacultyRoute
   ModIdConflictRoute: typeof ModIdConflictRoute
   ModImportRoute: typeof ModImportRoute
@@ -358,6 +378,7 @@ interface ModRouteChildren {
 
 const ModRouteChildren: ModRouteChildren = {
   ModAuditRoute: ModAuditRoute,
+  ModCoursesRoute: ModCoursesRoute,
   ModFacultyRoute: ModFacultyRoute,
   ModIdConflictRoute: ModIdConflictRoute,
   ModImportRoute: ModImportRoute,

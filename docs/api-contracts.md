@@ -42,7 +42,24 @@ Rules that apply to every endpoint:
 | PATCH  | `/api/student-courses/:id` | user | `courses.ts` → `studentCourseUpdate` → `studentCourse` (code is fixed once added)    |
 | DELETE | `/api/student-courses/:id` | user | – (also deletes the course's attempts)                                               |
 
-Attempts and student courses are readable by their owner only, never by mods or admins (enforced in the repo layer); another user's student course id is a 404. An attempt's course code must be in the user's curriculum (a slot code or an alternative) or one of their student courses (400 `unknown_course`). A student course code must not clash with the curriculum or their other courses (409 `code_taken`), its category must be one of the curriculum's categories (400 `unknown_category`), and adding past `limits.studentCoursesMax` is a 409 `student_course_limit`. The import keeps valid rows and lists the rest in `rejected`; a file with no valid row is a 422 and changes nothing.
+Attempts and student courses are readable by their owner only, never by mods or admins (enforced in the repo layer); another user's student course id is a 404. An attempt's course code must be in the user's curriculum (a slot code or an alternative) or one of their student courses (400 `unknown_course`). A student course code must not clash with the curriculum or their other courses (409 `code_taken`), its category must be one of the curriculum's categories (400 `unknown_category`), and adding past `limits.studentCoursesMax` is a 409 `student_course_limit`. The import keeps valid rows and lists the rest in `rejected`; a file with no valid row is a 422 and changes nothing. **An import of a program and version that already exist replaces every course of that version, including changes made in the mod Courses screen** (added, edited and hidden courses are all reset; the course ids change).
+
+`courseMap` slots carry `chosenCode`: the slot code or alternative the student has an attempt on (a passing attempt first, then the better grade, then the most recent), or `null` while none is taken. The client prints the choice label from it with `slotLabel()` (`src/shared/slotChoice.ts`). A hidden course (see below) is left out of the map, of "Unlocked next", of the totals and of the codes an attempt may name, unless the student already has an attempt on the slot's code or one of its alternatives; then the slot stays in all of those and the grades count as before. The map is built per request and never cached.
+
+### Course management (mods)
+
+| Method | Path                             | Auth | Schema                                                                |
+| ------ | -------------------------------- | ---- | --------------------------------------------------------------------- |
+| GET    | `/api/mod/curricula`             | mod  | `modCourses.ts` → `modCurriculum[]` (program, version, `courseCount`) |
+| GET    | `/api/mod/curricula/:id/courses` | mod  | `modCourse[]`: every slot in curriculum order, hidden ones included   |
+| POST   | `/api/mod/curricula/:id/courses` | mod  | `courseInput` → `modCourse` (201); added at the end of the curriculum |
+| PATCH  | `/api/mod/courses/:id`           | mod  | `coursePatch` (any of the input fields) → `modCourse`                 |
+| POST   | `/api/mod/courses/:id/hide`      | mod  | `courseHideRequest` (`reason`) → `modCourse`                          |
+| POST   | `/api/mod/courses/:id/unhide`    | mod  | `courseHideRequest` (`reason`) → `modCourse`                          |
+
+`courseInput`: `kind` (`course` or `elective`), `code` (capitalised; a course code like `CSE115` or `CSE115L`, an elective code like `ELECT1`), `title`, `credits` (halves, 0 to 24), `category` (an existing one or a new name), `nonCredit`, `semester` (0 to 20 or null), `alternatives` (`{ code, title }[]`, none for an elective, no repeats) and `prereq`. `prereq` is **text** in requests, for example `CSE215 and (MAT120 or MAT125)` or `60 credits completed`; empty means none. The shared parser (`src/shared/prereqText.ts`) turns it into a `PrereqRule`, so a typo is a 400 `invalid_request` with the parser's message. Responses carry the rule as JSON (`prereq: PrereqRule | null`). `and` binds tighter than `or`; brackets group.
+
+Refusals: a code already used by another slot, as its code or as an alternative, is `409 code_taken`. A prerequisite naming a code that is not a course (or alternative) of the curriculum is `400 prereq_unknown` with `codes`. An edit that removes a code another slot's prerequisite needs is `409 code_referenced`. Hide and unhide need a `reason`; `409 already_hidden` / `not_hidden` when the slot is already in that state. Shared alternatives between slots ("choose any three") are allowed, so alternatives are not compared across slots. Every write logs an audit row (`course_add`, `course_edit`, `course_hide`, `course_unhide`) with a before-snapshot of the changed columns. An admin can reverse an edit, hide or unhide (not an add); it is `409 value_in_use` if the old code was taken since or the old values would strand another prerequisite.
 
 ## Inbox
 
@@ -94,7 +111,7 @@ Schemas are in `moderation.ts`. Mod routes need the mod role (admins pass too); 
 
 Who may be acted on (`src/shared/modPolicy.ts`, enforced on the server, mirrored on the screens): nobody acts on themselves or on an admin; a mod acts on students only; an admin acts on students and mods (403 `forbidden_target`).
 
-Reversal rules (`src/server/reverse.ts`): ban, unban, role change, key release and soft delete put the snapshot back and log a `reverse` row. A password reset, a report resolution, an ID lookup and a reversal are not reversible (409 `not_reversible` / `is_reversal`); a row is reversed once (409 `already_reversed`); a released key someone has taken since is 409 `key_in_use`; a user who is an admin now is 403 `target_protected`. A faculty edit, hide or unhide can be reversed too (adding faculty cannot; hide the row instead); if the old initials or name were taken since, it is 409 `value_in_use`.
+Reversal rules (`src/server/reverse.ts`): ban, unban, role change, key release and soft delete put the snapshot back and log a `reverse` row. A password reset, a report resolution, an ID lookup and a reversal are not reversible (409 `not_reversible` / `is_reversal`); a row is reversed once (409 `already_reversed`); a released key someone has taken since is 409 `key_in_use`; a user who is an admin now is 403 `target_protected`. A faculty edit, hide or unhide can be reversed too (adding faculty cannot; hide the row instead); if the old initials or name were taken since, it is 409 `value_in_use`. A course edit, hide or unhide can be reversed in the same way (adding a course cannot; hide it instead).
 
 ## Resources
 

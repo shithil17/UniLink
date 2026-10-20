@@ -189,6 +189,8 @@ export const courses = sqliteTable(
     alternatives: text("alternatives", { mode: "json" }).$type<CourseAlternative[]>().notNull(),
     // JSON prerequisite rule tree (src/shared/prereq.ts); null means none.
     prereq: text("prereq", { mode: "json" }).$type<PrereqRule | null>(),
+    // Set by a moderator in place of deleting. A hidden slot leaves the student course map unless the student already has an attempt on one of its codes.
+    hidden: integer("hidden", { mode: "boolean" }).notNull().default(false),
   },
   (t) => [
     uniqueIndex("courses_curriculum_code_idx").on(t.curriculumId, t.code),

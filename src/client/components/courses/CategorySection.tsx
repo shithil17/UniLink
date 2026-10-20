@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { focusRingInset } from "@/components/ui/focus";
 import { categoryAnchor, formatCredits, formatTotals, overNote } from "@/lib/courseMap";
 import type { CourseMap } from "../../../shared/schemas/courses";
+import { slotLabel } from "../../../shared/slotChoice";
 import { StateMark } from "./StateMark";
 
 type Category = CourseMap["categories"][number];
@@ -65,6 +66,9 @@ function SlotRow({
     );
   }
   const filler = slot.studentCourse;
+  // Several courses can fill this slot: all their codes show until the student takes one.
+  const label = slotLabel(slot);
+  const open = label.hasChoices && !label.chosen;
   const codes = filler ? [filler.code] : [slot.code, ...slot.alternatives.map((a) => a.code)];
   const canRetake = codes.some((code) => retake?.has(code));
   return (
@@ -76,10 +80,11 @@ function SlotRow({
           <StateMark status={slot.status} waived={slot.waived} />
         )}
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-ink">{filler ? filler.title : slot.title}</p>
-          <p className="truncate text-sm text-soft">
-            {filler ? filler.code : slot.code}
-            {slot.filledBy && slot.filledBy !== slot.code ? ` · taken as ${slot.filledBy}` : ""}
+          <p className={`font-medium text-ink ${open ? "line-clamp-2" : "truncate"}`}>
+            {filler ? filler.title : label.title}
+          </p>
+          <p className={`text-sm text-soft ${open ? "wrap-anywhere" : "truncate"}`}>
+            {filler ? filler.code : label.code}
           </p>
         </div>
         {canRetake ? <CanRetake /> : null}

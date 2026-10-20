@@ -1,6 +1,7 @@
 import { WAIVED } from "../../../shared/grading";
 import { isPrereqMet, passedCodes } from "../../../shared/prereq";
 import type { CourseMap } from "../../../shared/schemas/courses";
+import { pickChosenCode } from "../../../shared/slotChoice";
 import { NSU_PROGRAM_CODES } from "../../../shared/studentId";
 import type { AttemptRow } from "../../repos/attempts";
 import type { CourseRow, CurriculumRow } from "../../repos/curricula";
@@ -28,6 +29,23 @@ export function pickCurriculum<T extends { effectiveFromYear: number }>(
   const sorted = [...versions].sort((a, b) => a.effectiveFromYear - b.effectiveFromYear);
   const fitting = sorted.filter((v) => v.effectiveFromYear <= admissionYear);
   return fitting.at(-1) ?? sorted[0] ?? null;
+}
+
+/**
+ * The slots a student sees. A hidden slot (see the mod Courses screen) is left out unless the
+ * student already has an attempt on one of its codes: their grades must keep counting and the map
+ * must not lose a course they took. Nothing is deleted either way.
+ */
+export function activeCourses(
+  rows: readonly CourseRow[],
+  attempts: readonly { courseCode: string }[],
+): CourseRow[] {
+  if (!rows.some((r) => r.hidden)) return [...rows];
+  const attempted = new Set(attempts.map((a) => a.courseCode));
+  return rows.filter(
+    (r) =>
+      !r.hidden || [r.code, ...r.alternatives.map((a) => a.code)].some((c) => attempted.has(c)),
+  );
 }
 
 /** Every code a student can record an attempt for: course slot codes and their alternatives. */
@@ -126,6 +144,19 @@ export function buildCourseMap(input: {
     earnedCredits: earned,
   };
 
+  // The course a slot shows once the student has taken one: the passing attempt that filled it, else
+  // the best of the failed ones. A code another slot already used does not count for this one.
+  const chosenCodeOf = (row: CourseRow): string | null => {
+    if (row.kind !== "course") return null;
+    return (
+      filledBy.get(row.id) ??
+      pickChosenCode(
+        [row.code, ...row.alternatives.map((a) => a.code)].filter((c) => !usedCodes.has(c)),
+        input.attempts,
+      )
+    );
+  };
+
   const toSlot = (row: CourseRow): MapSlot => {
     const studentCourse = fillers.get(row.id) ?? null;
     const done = row.kind === "course" ? filledBy.has(row.id) : (studentCourse?.done ?? false);
@@ -141,6 +172,7 @@ export function buildCourseMap(input: {
       prereq: row.prereq,
       status: done ? "done" : isPrereqMet(row.prereq, state) ? "available" : "locked",
       filledBy: filledBy.get(row.id) ?? null,
+      chosenCode: chosenCodeOf(row),
       waived: isWaived(filledBy.get(row.id)),
       studentCourse,
     };

@@ -46,6 +46,7 @@ classDiagram
     +int semester?
     +Alternative[] alternatives
     +PrereqRule prereq?
+    +bool hidden  «set by a mod; the row and its code stay»
   }
   class StudentCourse {
     +int id
