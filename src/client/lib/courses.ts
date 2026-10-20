@@ -1,20 +1,43 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { attempt, type AttemptInput } from "../../shared/schemas/attempts";
+import { attempt, type AttemptInput, type AttemptUpdate } from "../../shared/schemas/attempts";
 import { importResult, studentCourse, type StudentCourseInput } from "../../shared/schemas/courses";
 import { apiDelete, apiPatch, apiPost, ApiError, isOffline } from "./api";
 import { courseMapQuery } from "./queries";
 
-/** Refresh the map after anything that changes done courses, student courses or totals. */
+/**
+ * Refresh the map and everything built from attempts (history, CGPA summary) after anything that
+ * changes done courses, student courses or totals.
+ */
 function useInvalidateMap() {
   const queryClient = useQueryClient();
-  return () => queryClient.invalidateQueries({ queryKey: courseMapQuery.queryKey });
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: courseMapQuery.queryKey }),
+      queryClient.invalidateQueries({ queryKey: ["attempts"] }),
+    ]);
 }
 
 export function useRecordAttempt() {
   const invalidate = useInvalidateMap();
   return useMutation({
     mutationFn: (body: AttemptInput) => apiPost("/api/attempts", attempt, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateAttempt(id: number) {
+  const invalidate = useInvalidateMap();
+  return useMutation({
+    mutationFn: (body: AttemptUpdate) => apiPatch(`/api/attempts/${id}`, attempt, body),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteAttempt() {
+  const invalidate = useInvalidateMap();
+  return useMutation({
+    mutationFn: (id: number) => apiDelete(`/api/attempts/${id}`, z.object({ ok: z.boolean() })),
     onSuccess: invalidate,
   });
 }

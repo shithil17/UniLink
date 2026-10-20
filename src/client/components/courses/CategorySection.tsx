@@ -31,7 +31,24 @@ function studentCourseMark(course: { done: boolean; waived: boolean }) {
   return <StateMark status={course.done ? "done" : "available"} waived={course.waived} />;
 }
 
-function SlotRow({ slot, onOpen, onAdd }: { slot: Slot; onOpen: () => void; onAdd: () => void }) {
+type Retake = ReadonlySet<string>;
+
+/** Shown on a row whose course has an attempt and may still be retaken. */
+function CanRetake() {
+  return <Badge className="shrink-0">Can retake</Badge>;
+}
+
+function SlotRow({
+  slot,
+  retake,
+  onOpen,
+  onAdd,
+}: {
+  slot: Slot;
+  retake?: Retake;
+  onOpen: () => void;
+  onAdd: () => void;
+}) {
   if (slot.kind === "elective" && !slot.studentCourse) {
     return (
       <li className={rowClass}>
@@ -48,6 +65,8 @@ function SlotRow({ slot, onOpen, onAdd }: { slot: Slot; onOpen: () => void; onAd
     );
   }
   const filler = slot.studentCourse;
+  const codes = filler ? [filler.code] : [slot.code, ...slot.alternatives.map((a) => a.code)];
+  const canRetake = codes.some((code) => retake?.has(code));
   return (
     <li>
       <button type="button" className={tapRowClass} onClick={onOpen}>
@@ -63,6 +82,7 @@ function SlotRow({ slot, onOpen, onAdd }: { slot: Slot; onOpen: () => void; onAd
             {slot.filledBy && slot.filledBy !== slot.code ? ` · taken as ${slot.filledBy}` : ""}
           </p>
         </div>
+        {canRetake ? <CanRetake /> : null}
         <CreditsCell>
           {filler ? `${formatCredits(filler.credits)} cr` : slotCredits(slot)}
         </CreditsCell>
@@ -74,10 +94,13 @@ function SlotRow({ slot, onOpen, onAdd }: { slot: Slot; onOpen: () => void; onAd
 
 export function CategorySection({
   category,
+  retake,
   onOpenSlot,
   onAdd,
 }: {
   category: Category;
+  /** Codes that have an attempt and may still be retaken. Unset while attempts load. */
+  retake?: Retake;
   onOpenSlot: (slot: Slot) => void;
   onAdd: (category: string) => void;
 }) {
@@ -102,6 +125,7 @@ export function CategorySection({
             <SlotRow
               key={`${slot.code}-${i}`}
               slot={slot}
+              retake={retake}
               onOpen={() => onOpenSlot(slot)}
               onAdd={() => onAdd(category.name)}
             />
@@ -114,10 +138,12 @@ export function CategorySection({
 
 export function ExtrasSection({
   extras,
+  retake,
   onOpen,
   onAdd,
 }: {
   extras: readonly MapStudentCourse[];
+  retake?: Retake;
   onOpen: (course: MapStudentCourse) => void;
   onAdd: () => void;
 }) {
@@ -152,6 +178,7 @@ export function ExtrasSection({
                     </p>
                   </div>
                   {course.excluded ? <Badge variant="outline">Excluded</Badge> : null}
+                  {retake?.has(course.code) && !course.excluded ? <CanRetake /> : null}
                   <CreditsCell>{formatCredits(course.credits)} cr</CreditsCell>
                   <ChevronRightIcon className="size-4 shrink-0 text-faint" aria-hidden="true" />
                 </button>

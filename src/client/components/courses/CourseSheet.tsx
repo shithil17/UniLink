@@ -14,7 +14,7 @@ import { errorMessage } from "@/lib/api";
 import { formatCredits, slotCodeChoices } from "@/lib/courseMap";
 import { isToastError, useDeleteStudentCourse } from "@/lib/courses";
 import type { CourseMap } from "../../../shared/schemas/courses";
-import { AttemptForm } from "./AttemptForm";
+import { AttemptSection } from "./AttemptSection";
 import { PrereqText } from "./PrereqText";
 import { StateMark } from "./StateMark";
 import { StudentCourseForm } from "./StudentCourseForm";
@@ -109,10 +109,7 @@ function SlotDetails({ slot, onClose }: { slot: Slot; onClose: () => void }) {
         {slot.status === "locked" ? (
           <p className="text-sm text-soft">You haven't met the prerequisites yet.</p>
         ) : null}
-        <div className="space-y-3 border-t border-line pt-4">
-          <h3 className="text-sm font-semibold text-ink">Record a grade</h3>
-          <AttemptForm choices={choices} onSaved={onClose} />
-        </div>
+        <AttemptSection choices={choices} onSaved={onClose} />
       </div>
     </>
   );
@@ -181,10 +178,7 @@ function StudentCourseDetails({
           <StateMark showLabel status={course.done ? "done" : "available"} waived={course.waived} />
           {course.excluded ? <Badge variant="outline">Excluded</Badge> : null}
         </div>
-        <div className="space-y-3 border-t border-line pt-4">
-          <h3 className="text-sm font-semibold text-ink">Record a grade</h3>
-          <AttemptForm choices={[course]} onSaved={onClose} />
-        </div>
+        <AttemptSection choices={[course]} onSaved={onClose} />
         <div className="space-y-3 border-t border-line pt-4">
           {confirmingDelete ? (
             <>

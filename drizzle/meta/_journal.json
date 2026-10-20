@@ -50,6 +50,13 @@
       "when": 1792476739244,
       "tag": "0006_push_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1792480648613,
+      "tag": "0007_faculty_attempt_faculty",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-// Fixture data for local dev and API tests: the curricula in data/curricula/ and two fake students.
+// Fixture data for local dev and API tests: the curricula in data/curricula/, the faculty list in data/faculty.json and two fake students.
 // Run against local D1 with `vp run seed` (after `vp run db:migrate:local`); safe to run again.
 // API tests call `seed(env.DB)`, optionally with curricula they loaded themselves (a worker cannot read files).
 //
@@ -6,7 +6,7 @@
 //   dev_cse   CSE, admitted 22, student ID 221-9001-0-42
 //   dev_bba   BBA, admitted 23, student ID 231-9002-0-30
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -15,8 +15,13 @@ import {
   toNewCourse,
 } from "../src/server/features/courses/importRows.ts";
 import { hashPassword } from "../src/server/password.ts";
+import { facultySeedEntry } from "../src/shared/schemas/faculty.ts";
 import { curriculumImport, type CurriculumImport } from "../src/shared/schemas/courses.ts";
+import { z } from "zod";
 import { readCurriculumFiles } from "./curricula.ts";
+
+/** The faculty list `vp run seed` reads. */
+const FACULTY_FILE = join(import.meta.dirname, "..", "data", "faculty.json");
 
 export const DEV_PASSWORD = "unilink-dev-2026";
 
@@ -50,14 +55,27 @@ function curriculumStatements(file: CurriculumImport, now: number): string[] {
   ];
 }
 
+/** Insert-or-update by name, so running the seed again (or with an edited list) never duplicates a row. */
+function facultyStatements(raw: readonly unknown[]): string[] {
+  return z
+    .array(facultySeedEntry)
+    .parse(raw)
+    .map(
+      (f) =>
+        `INSERT INTO faculty (name, initials, designation) VALUES (${sqlString(f.name)}, ${sqlString(f.initials)}, ${sqlString(f.designation)}) ON CONFLICT (name) DO UPDATE SET initials = excluded.initials, designation = excluded.designation;`,
+    );
+}
+
 export async function seedStatements(
   curricula: readonly unknown[] = [],
   now: number = Date.now(),
+  faculty: readonly unknown[] = [],
 ): Promise<string[]> {
   const password = await hashPassword(DEV_PASSWORD);
   return [
     `INSERT OR REPLACE INTO app_meta (key, value) VALUES ('seeded', ${sqlString("dev")});`,
     ...curricula.flatMap((raw) => curriculumStatements(curriculumImport.parse(raw), now)),
+    ...facultyStatements(faculty),
     // OR IGNORE: running the seed again leaves the students (and anything they recorded) alone.
     ...DEV_STUDENTS.map(
       (s) =>
@@ -66,8 +84,12 @@ export async function seedStatements(
   ];
 }
 
-export async function seed(db: D1Database, curricula: readonly unknown[] = []): Promise<void> {
-  const statements = await seedStatements(curricula);
+export async function seed(
+  db: D1Database,
+  curricula: readonly unknown[] = [],
+  faculty: readonly unknown[] = [],
+): Promise<void> {
+  const statements = await seedStatements(curricula, Date.now(), faculty);
   await db.batch(statements.map((sql) => db.prepare(sql)));
 }
 
@@ -76,7 +98,8 @@ if (import.meta.main) {
   try {
     const file = join(dir, "seed.sql");
     const curricula = readCurriculumFiles().map(({ raw }) => raw);
-    writeFileSync(file, (await seedStatements(curricula)).join("\n"));
+    const faculty = JSON.parse(readFileSync(FACULTY_FILE, "utf8")) as unknown[];
+    writeFileSync(file, (await seedStatements(curricula, Date.now(), faculty)).join("\n"));
     execFileSync("wrangler", ["d1", "execute", "DB", "--local", `--file=${file}`], {
       stdio: "inherit",
     });

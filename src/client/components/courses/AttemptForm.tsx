@@ -1,60 +1,100 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm, useWatch } from "react-hook-form";
+import { useState } from "react";
+import { Controller, useForm, useWatch, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 import { FormError } from "@/components/auth/AuthForm";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { errorMessage } from "@/lib/api";
 import { termLabel, termOptions, termValue } from "@/lib/courseMap";
-import { isToastError, useRecordAttempt } from "@/lib/courses";
-import { useState } from "react";
+import { isToastError, useRecordAttempt, useUpdateAttempt } from "@/lib/courses";
 import { ATTEMPT_GRADES, gradeLabel, WAIVED } from "../../../shared/grading";
-import { attemptInput, type AttemptInput } from "../../../shared/schemas/attempts";
+import {
+  attemptFullInput,
+  attemptInput,
+  type Attempt,
+  type AttemptInput,
+} from "../../../shared/schemas/attempts";
+import { FacultyPicker } from "./FacultyPicker";
 import { OptionSelect } from "./OptionSelect";
 
 const NO_TERM = "none";
 const gradeOptions = ATTEMPT_GRADES.map((g) => ({ value: g, label: gradeLabel(g) }));
 
-/** The quick attempt form: which course, the letter grade, and when (optional). */
+/**
+ * One attempt form in three shapes:
+ * - `quick` (the map's tick): course and grade, term optional, no faculty;
+ * - `full`: a new attempt that must say its term, with the faculty picker;
+ * - editing (`attempt` given): the grade, term and faculty of a recorded attempt.
+ */
 export function AttemptForm({
   choices,
   onSaved,
+  onCancel,
+  mode = "quick",
+  attempt,
 }: {
   choices: readonly { code: string; title: string }[];
   onSaved: () => void;
+  onCancel?: () => void;
+  mode?: "quick" | "full";
+  attempt?: Attempt;
 }) {
   const record = useRecordAttempt();
+  const update = useUpdateAttempt(attempt?.id ?? 0);
+  const pending = attempt ? update.isPending : record.isPending;
   const [serverError, setServerError] = useState<string | null>(null);
+  const termRequired = mode === "full" && !attempt;
+  const showFaculty = mode === "full" || Boolean(attempt);
   const terms = termOptions();
+  const known = (t: Attempt["term"]) =>
+    t === null || terms.some((o) => termValue(o) === termValue(t));
+  const allTerms =
+    attempt && !known(attempt.term) && attempt.term ? [...terms, attempt.term] : terms;
   const termChoices = [
-    { value: NO_TERM, label: "Not sure" },
-    ...terms.map((t) => ({ value: termValue(t), label: termLabel(t) })),
+    ...(termRequired ? [] : [{ value: NO_TERM, label: "Not sure" }]),
+    ...allTerms.map((t) => ({ value: termValue(t), label: termLabel(t) })),
   ];
   const form = useForm<AttemptInput>({
-    resolver: zodResolver(attemptInput),
-    defaultValues: { courseCode: choices[0]?.code ?? "", term: null },
+    resolver: zodResolver(termRequired ? attemptFullInput : attemptInput) as Resolver<AttemptInput>,
+    defaultValues: attempt
+      ? {
+          courseCode: attempt.courseCode,
+          grade: attempt.grade,
+          term: attempt.term,
+          facultyId: attempt.facultyId,
+        }
+      : { courseCode: choices[0]?.code ?? "", term: null, facultyId: null },
   });
   const { errors } = form.formState;
   const grade = useWatch({ control: form.control, name: "grade" });
 
   const submit = form.handleSubmit((values) => {
     setServerError(null);
-    record.mutate(values, {
+    const done = {
       onSuccess: () => {
-        toast.success("Grade saved");
+        toast.success(attempt ? "Attempt updated" : "Grade saved");
         onSaved();
       },
-      onError: (err) => {
+      onError: (err: unknown) => {
         if (isToastError(err)) toast.error(errorMessage(err));
         else setServerError(errorMessage(err));
       },
-    });
+    };
+    if (attempt) {
+      update.mutate(
+        { grade: values.grade, term: values.term ?? null, facultyId: values.facultyId ?? null },
+        done,
+      );
+    } else {
+      record.mutate(values, done);
+    }
   });
 
   return (
     <form onSubmit={submit} noValidate>
       <FieldGroup>
-        {choices.length > 1 ? (
+        {choices.length > 1 && !attempt ? (
           <Field data-invalid={Boolean(errors.courseCode)}>
             <FieldLabel htmlFor="attempt-course">Course</FieldLabel>
             <Controller
@@ -96,25 +136,59 @@ export function AttemptForm({
           ) : null}
           <FieldError errors={[errors.grade]} />
         </Field>
-        <Field>
-          <FieldLabel htmlFor="attempt-term">Term (optional)</FieldLabel>
+        <Field data-invalid={Boolean(errors.term)}>
+          <FieldLabel htmlFor="attempt-term">
+            {termRequired ? "Term" : "Term (optional)"}
+          </FieldLabel>
           <Controller
             control={form.control}
             name="term"
             render={({ field }) => (
               <OptionSelect
                 id="attempt-term"
-                value={field.value ? termValue(field.value) : NO_TERM}
-                onChange={(v) => field.onChange(terms.find((t) => termValue(t) === v) ?? null)}
+                value={field.value ? termValue(field.value) : termRequired ? null : NO_TERM}
+                onChange={(v) => field.onChange(allTerms.find((t) => termValue(t) === v) ?? null)}
                 options={termChoices}
+                placeholder="Pick a term"
+                invalid={Boolean(errors.term)}
               />
             )}
           />
+          <FieldError errors={[errors.term && { message: "Pick the term you took it in." }]} />
         </Field>
+        {showFaculty ? (
+          <Field>
+            <FieldLabel htmlFor="attempt-faculty">Faculty (optional)</FieldLabel>
+            <Controller
+              control={form.control}
+              name="facultyId"
+              render={({ field }) => (
+                <FacultyPicker
+                  id="attempt-faculty"
+                  value={field.value ?? null}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+          </Field>
+        ) : null}
         <FormError message={serverError} />
-        <Button type="submit" size="lg" className="w-full" disabled={record.isPending}>
-          {record.isPending ? "Saving..." : "Save grade"}
-        </Button>
+        <div className="flex flex-col gap-2">
+          <Button type="submit" size="lg" className="w-full" disabled={pending}>
+            {pending
+              ? "Saving..."
+              : attempt
+                ? "Save changes"
+                : mode === "full"
+                  ? "Save attempt"
+                  : "Save grade"}
+          </Button>
+          {onCancel ? (
+            <Button type="button" variant="outline" size="lg" className="w-full" onClick={onCancel}>
+              Cancel
+            </Button>
+          ) : null}
+        </div>
       </FieldGroup>
     </form>
   );

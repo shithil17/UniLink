@@ -1,0 +1,8 @@
+[
+  { "name": "Placeholder Faculty One", "initials": "PFO", "designation": "Professor" },
+  { "name": "Placeholder Faculty Two", "initials": "PFT", "designation": "Associate Professor" },
+  { "name": "Placeholder Faculty Three", "initials": "PFH", "designation": "Assistant Professor" },
+  { "name": "Placeholder Faculty Four", "initials": "PFF", "designation": "Assistant Professor" },
+  { "name": "Placeholder Faculty Five", "initials": "PFV", "designation": "Lecturer" },
+  { "name": "Placeholder Faculty Six", "initials": "PFS", "designation": "Lecturer" }
+]

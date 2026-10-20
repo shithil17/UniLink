@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { authRoutes } from "./features/auth/routes";
-import { attemptRoutes, courseRoutes, studentCourseRoutes } from "./features/courses/routes";
+import { attemptRoutes } from "./features/attempts/routes";
+import { courseRoutes, studentCourseRoutes } from "./features/courses/routes";
+import { facultyRoutes } from "./features/faculty/routes";
 import { healthRoutes } from "./features/health/routes";
 import { inboxRoutes } from "./features/inbox/routes";
 import { pushRoutes } from "./features/push/routes";
@@ -15,6 +17,7 @@ export const app = new Hono<AppEnv>()
   .route("/courses", courseRoutes)
   .route("/attempts", attemptRoutes)
   .route("/student-courses", studentCourseRoutes)
+  .route("/faculty", facultyRoutes)
   .route("/inbox", inboxRoutes)
   .route("/push", pushRoutes);
 

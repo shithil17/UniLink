@@ -6,7 +6,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 ## Status
 
-**Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Changes from `plan_pwa.md`:
+**Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty.json` holds placeholder faculty until D supplies the list. Changes from `plan_pwa.md`:
 
 - The two cut orders that disagreed are now one locked order (see Suggested Build Order).
 - Course "ticks" are graded attempts, so attempts are the only source of truth for done courses, credits and CGPA (Phase 4).
@@ -601,11 +601,12 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist
 
-- [ ] `faculty` table and a seeded list (D). Faculty picker component.
-- [ ] Migration: `attempts.faculty_id` (nullable). The full attempt form makes term required for new attempts.
-- [ ] `grading.ts`: grade points, `bestAttempt()`, `cgpa()`, `earnedCredits()`, `canRetake()`.
-- [ ] Attempt API: create, edit, delete. Create and edit run `canRetake()` and return a clear error when a retake is not allowed.
-- [ ] Screens: attempt history per course, CGPA summary, credits remaining by category, a retake badge.
+- [x] `faculty` table and a seeded list (D) (`data/faculty.json`, placeholder data; `GET /api/faculty`).
+- [x] Faculty picker component.
+- [x] Migration: `attempts.faculty_id` (nullable). The full attempt form makes term required for new attempts (`attemptFullInput`; the API keeps term optional for the map's quick form).
+- [x] `grading.ts`: grade points, `bestAttempt()`, `cgpa()`, `earnedCredits()`, `canRetake()`.
+- [x] Attempt API: create, edit, delete (plus list and `GET /api/attempts/summary`). Create and edit run `canRetake()` and return a clear error when a retake is not allowed.
+- [x] Screens: attempt history per course, CGPA summary, credits remaining by category, a retake badge.
 
 ### Checklist — Docs & QA (C, D)
 
@@ -614,13 +615,13 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/grading.test.ts`: every grade point, best of several attempts, F then a pass, F only, I and W only, a waived course (credits, no CGPA), a non-credit course, the retake blocked at B+ and above, allowed below it, I and W never block, credits counted once.
-- [ ] `src/server/features/attempts/attempts.api.test.ts`: retake validation on create and edit, a mod gets 403 on another user's attempts and CGPA.
-- [ ] Run: `vp test grading attempts`
+- [x] `src/shared/grading.test.ts`: every grade point, best of several attempts, F then a pass, F only, I and W only, a waived course (credits, no CGPA), a non-credit course, the retake blocked at B+ and above, allowed below it, I and W never block, credits counted once.
+- [x] `src/server/features/attempts/attempts.api.test.ts`: retake validation on create and edit, a mod gets 403 on another user's attempts and CGPA (implemented as 404: no route names another user, and another user's attempt id is not found).
+- [x] Run: `vp test grading attempts`
 
 ### Test Gate 6
 
-- [ ] **Grading and attempt tests pass.**
+- [x] **Grading and attempt tests pass.**
 - [ ] **(Manual) A seeded student's CGPA on staging matches a hand calculation done by D.**
 
 ---

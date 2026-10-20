@@ -1,6 +1,4 @@
 import { Hono, type Context } from "hono";
-import { attemptInput } from "../../../shared/schemas/attempts";
-import type { Attempt } from "../../../shared/schemas/attempts";
 import {
   curriculumImportEnvelope,
   studentCourseInput,
@@ -9,49 +7,17 @@ import {
   type StudentCourse,
 } from "../../../shared/schemas/courses";
 import { audit } from "../../audit";
-import { getDb, type Db } from "../../db/client";
+import { getDb } from "../../db/client";
 import { limits } from "../../limits";
 import { requireRole, requireUser } from "../../middleware/auth";
-import { rateLimit, rateLimitedResponse } from "../../middleware/rateLimit";
 import type { AppEnv } from "../../middleware/types";
-import { attemptsRepo, type AttemptRow } from "../../repos/attempts";
-import { curriculaRepo, type CourseRow, type CurriculumRow } from "../../repos/curricula";
+import { attemptsRepo } from "../../repos/attempts";
+import { curriculaRepo } from "../../repos/curricula";
 import { studentCoursesRepo, type StudentCourseRow } from "../../repos/studentCourses";
-import { usersRepo } from "../../repos/users";
 import { validateJson } from "../../validate";
+import { loadCurriculum } from "./curriculum";
 import { checkImportRows, toCurriculumHeader, toNewCourse } from "./importRows";
-import {
-  allCurriculumCodes,
-  buildCourseMap,
-  courseCodes,
-  EMPTY_COURSE_MAP,
-  pickCurriculum,
-} from "./map";
-
-type Loaded = { curriculum: CurriculumRow; courses: CourseRow[] };
-
-/** The student's curriculum: their program (last two digits of the student ID suffix) and admission year. */
-async function loadCurriculum(db: Db, userId: number): Promise<Loaded | null> {
-  const user = await usersRepo(db).findById(userId);
-  if (!user) return null;
-  const repo = curriculaRepo(db);
-  const curriculum = pickCurriculum(
-    await repo.listByProgram(user.studentSuffix.slice(-2)),
-    user.admissionYear,
-  );
-  return curriculum ? { curriculum, courses: await repo.listCourses(curriculum.id) } : null;
-}
-
-const toAttempt = (a: AttemptRow): Attempt => ({
-  id: a.id,
-  courseCode: a.courseCode,
-  grade: a.grade as Attempt["grade"],
-  term:
-    a.termYear !== null && a.termSeason !== null
-      ? { year: a.termYear, season: a.termSeason }
-      : null,
-  createdAt: a.createdAt,
-});
+import { allCurriculumCodes, buildCourseMap, EMPTY_COURSE_MAP } from "./map";
 
 const toStudentCourse = (s: StudentCourseRow): StudentCourse => ({
   id: s.id,
@@ -130,47 +96,6 @@ export const courseRoutes = new Hono<AppEnv>()
       imported: accepted.length,
       rejected,
     } satisfies ImportResult);
-  });
-
-export const attemptRoutes = new Hono<AppEnv>()
-  .use(requireUser)
-  .get("/", async (c) => {
-    const rows = await attemptsRepo(getDb(c.env.DB), userId(c)).listOwn();
-    return c.json(rows.map(toAttempt));
-  })
-  .post("/", validateJson(attemptInput), async (c) => {
-    const body = c.req.valid("json");
-    const db = getDb(c.env.DB);
-    const hit = await rateLimit(
-      db,
-      `attempts:user:${userId(c)}`,
-      limits.attemptWrites.limit,
-      limits.attemptWrites.windowMs,
-    );
-    if (!hit.allowed) return rateLimitedResponse(c, hit);
-
-    const loaded = await loadCurriculum(db, userId(c));
-    const known = loaded ? courseCodes(loaded.courses) : new Set<string>();
-    if (!known.has(body.courseCode)) {
-      const own = await studentCoursesRepo(db, userId(c)).listOwn();
-      if (!own.some((s) => s.code === body.courseCode)) {
-        return c.json(
-          {
-            error: "unknown_course",
-            message: "That course is not in your curriculum or your own courses.",
-          },
-          400,
-        );
-      }
-    }
-    const row = await attemptsRepo(db, userId(c)).create({
-      courseCode: body.courseCode,
-      grade: body.grade,
-      termYear: body.term?.year ?? null,
-      termSeason: body.term?.season ?? null,
-      createdAt: Date.now(),
-    });
-    return c.json(toAttempt(row), 201);
   });
 
 export const studentCourseRoutes = new Hono<AppEnv>()

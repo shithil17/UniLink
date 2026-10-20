@@ -1,11 +1,20 @@
 // @vitest-environment happy-dom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import type { CourseMap } from "../../../shared/schemas/courses";
 import { CourseSheet } from "./CourseSheet";
 
-afterEach(cleanup);
+beforeEach(() =>
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json([])),
+  ),
+);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 const slot: CourseMap["categories"][number]["slots"][number] = {
   kind: "course",
@@ -32,12 +41,12 @@ function renderSheet(target: Parameters<typeof CourseSheet>[0]["target"]) {
 }
 
 describe("CourseSheet", () => {
-  it("shows a slot's alternatives, readable prerequisites and the attempt form", () => {
+  it("shows a slot's alternatives, readable prerequisites and the attempt form", async () => {
     renderSheet({ type: "slot", slot });
     expect(screen.getByText("CSE115 and (MAT120 or 30 credits completed)")).toBeTruthy();
     expect(screen.getByText("CSE226 Data Structures II")).toBeTruthy();
     expect(screen.getByText("You haven't met the prerequisites yet.")).toBeTruthy();
-    expect(screen.getByLabelText("Grade")).toBeTruthy();
+    expect(await screen.findByLabelText("Grade")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save grade" })).toBeTruthy();
   });
 

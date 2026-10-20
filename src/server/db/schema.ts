@@ -147,6 +147,19 @@ export const courses = sqliteTable(
   ],
 );
 
+// NSU CSE faculty, for the attempt picker. The seeded list comes from data/faculty.json. Public, read-only.
+export const faculty = sqliteTable(
+  "faculty",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    name: text("name").notNull(),
+    initials: text("initials").notNull(),
+    designation: text("designation").notNull(),
+  },
+  // The seed upserts on name, so running it again updates a row instead of duplicating it.
+  (t) => [uniqueIndex("faculty_name_idx").on(t.name)],
+);
+
 // Graded attempts are the only source of truth for done courses. Owner only: never read for another user.
 export const attempts = sqliteTable(
   "attempts",
@@ -160,6 +173,8 @@ export const attempts = sqliteTable(
     grade: text("grade").notNull(),
     termYear: integer("term_year"),
     termSeason: text("term_season", { enum: ["spring", "summer", "fall"] }),
+    // The faculty who taught it. Optional; a removed faculty row leaves the attempt without one.
+    facultyId: integer("faculty_id").references(() => faculty.id, { onDelete: "set null" }),
     createdAt: integer("created_at").notNull(),
   },
   (t) => [index("attempts_user_idx").on(t.userId)],
