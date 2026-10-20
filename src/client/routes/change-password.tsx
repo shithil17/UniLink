@@ -2,11 +2,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-import { AuthScreen, FormError } from "@/components/auth/AuthForm";
+import { AuthScreen } from "@/components/auth/AuthForm";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/lib/toast";
 import { errorMessage } from "@/lib/api";
 import { useChangePassword } from "@/lib/auth";
 import { meQuery } from "@/lib/queries";
@@ -44,7 +45,12 @@ function ChangePasswordPage() {
       }
       footer={<LogoutButton />}
     >
-      <form onSubmit={form.handleSubmit((values) => change.mutate(values))} noValidate>
+      <form
+        onSubmit={form.handleSubmit((values) =>
+          change.mutate(values, { onError: (err) => toast.error(errorMessage(err)) }),
+        )}
+        noValidate
+      >
         <FieldGroup>
           <Field data-invalid={Boolean(errors.currentPassword)}>
             <FieldLabel htmlFor="currentPassword">Current password</FieldLabel>
@@ -71,7 +77,6 @@ function ChangePasswordPage() {
             <FieldDescription>At least {PASSWORD_MIN_LENGTH} characters.</FieldDescription>
             <FieldError errors={[errors.newPassword]} />
           </Field>
-          <FormError message={change.isError ? errorMessage(change.error) : null} />
           <Button type="submit" size="lg" className="w-full" disabled={change.isPending}>
             {change.isPending ? "Saving..." : "Change password"}
           </Button>

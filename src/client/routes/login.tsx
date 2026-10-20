@@ -1,10 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
-import { AuthScreen, FormError, textLink } from "@/components/auth/AuthForm";
+import { AuthScreen, textLink } from "@/components/auth/AuthForm";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/lib/toast";
 import { errorMessage } from "@/lib/api";
 import { useLogin } from "@/lib/auth";
 import { meQuery } from "@/lib/queries";
@@ -40,7 +41,12 @@ function LoginPage() {
         </p>
       }
     >
-      <form onSubmit={form.handleSubmit((values) => login.mutate(values))} noValidate>
+      <form
+        onSubmit={form.handleSubmit((values) =>
+          login.mutate(values, { onError: (err) => toast.error(errorMessage(err)) }),
+        )}
+        noValidate
+      >
         <FieldGroup>
           <Field data-invalid={Boolean(errors.username)}>
             <FieldLabel htmlFor="username">Username</FieldLabel>
@@ -66,7 +72,6 @@ function LoginPage() {
             />
             <FieldError errors={[errors.password]} />
           </Field>
-          <FormError message={login.isError ? errorMessage(login.error) : null} />
           <Button type="submit" size="lg" className="w-full" disabled={login.isPending}>
             {login.isPending ? "Logging in..." : "Log in"}
           </Button>

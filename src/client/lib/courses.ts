@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { attempt, type AttemptInput, type AttemptUpdate } from "../../shared/schemas/attempts";
 import { importResult, studentCourse, type StudentCourseInput } from "../../shared/schemas/courses";
-import { apiDelete, apiPatch, apiPost, ApiError, isOffline } from "./api";
+import { apiDelete, apiPatch, apiPost } from "./api";
 import { courseMapQuery } from "./queries";
 
 /**
@@ -76,9 +76,4 @@ export function useImportCurriculum() {
     mutationFn: (body: unknown) => apiPost("/api/courses/import", importResult, body),
     onSuccess: invalidate,
   });
-}
-
-/** Offline and rate-limit errors belong in a toast; everything else stays inline in the form. */
-export function isToastError(err: unknown): boolean {
-  return isOffline(err) || (err instanceof ApiError && err.status === 429);
 }

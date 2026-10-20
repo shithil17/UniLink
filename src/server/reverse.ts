@@ -20,6 +20,7 @@ import { softDeleteTargets, type SoftDeleteTargets } from "./softDelete";
  * | release_key  | { studentKey, bannedAt }    | puts the key and `banned_at` back; refused if someone |
  * |              |                             | has taken the key since (`key_in_use`)                |
  * | soft_delete  | { deletedAt, deletedBy }    | puts both columns back (the post is live again)       |
+ * | clear_probing_flag | { postingBlockedUntil, probingFlaggedAt } | puts both back (flagged again, cooldown as it was) |
  *
  * Not reversible: a password reset (the old hash is never stored), a report resolution, an ID lookup,
  * automatic actions and a reversal itself. To undo a reversal, repeat the original action. Each row
@@ -33,6 +34,10 @@ const userSnapshot = {
   [auditActions.releaseKey]: z.strictObject({
     studentKey: z.string().min(1),
     bannedAt: instant.nullable(),
+  }),
+  [auditActions.clearProbingFlag]: z.strictObject({
+    postingBlockedUntil: instant.nullable(),
+    probingFlaggedAt: instant.nullable(),
   }),
 } as const;
 

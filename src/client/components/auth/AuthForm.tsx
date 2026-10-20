@@ -27,16 +27,3 @@ export function AuthScreen({
     </section>
   );
 }
-
-/** A server error shown above the submit button. */
-export function FormError({ message }: { message: string | null }) {
-  if (!message) return null;
-  return (
-    <p
-      role="alert"
-      className="rounded-control border border-destructive bg-surface p-3 text-sm text-destructive"
-    >
-      {message}
-    </p>
-  );
-}

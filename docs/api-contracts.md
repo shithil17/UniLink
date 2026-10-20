@@ -70,23 +70,27 @@ An endpoint must be on a known push service host (400 `unknown_push_service`). S
 
 Schemas are in `moderation.ts`. Mod routes need the mod role (admins pass too); admin routes need the admin role. Every action takes a `reason` (3 to 300 characters) and writes an audit row with a before-snapshot.
 
-| Method | Path                                | Auth  | Schema / note                                                                                                                                                                 |
-| ------ | ----------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/api/reports`                      | user  | `reportRequest` → `reportCreated`. Rate-limited (`limits.reportCreate`); 404 unknown target, 400 own target, 409 `already_reported` (one open report per reporter per target) |
-| GET    | `/api/mod/users`                    | mod   | `modUsersQuery` (`q` = username prefix, cursor) → `modUserPage`. Handle and state only: no student ID, email or name                                                          |
-| POST   | `/api/mod/users/:id/ban`            | mod   | `reasonBody`. Deletes the user's sessions. 409 if already banned                                                                                                              |
-| POST   | `/api/mod/users/:id/unban`          | mod   | `reasonBody`. 409 if not banned                                                                                                                                               |
-| POST   | `/api/mod/users/:id/reset-password` | mod   | `reasonBody` → `temporaryPassword` (shown once, `no-store`). Sets `must_change_password`, deletes sessions                                                                    |
-| GET    | `/api/mod/id-conflict?key=`         | mod   | `idConflictQuery` → `idConflictResult`. The only response with a student ID; a hit is logged (`id_lookup`)                                                                    |
-| POST   | `/api/mod/id-conflict/release`      | mod   | `releaseKeyRequest`. Bans the holder and replaces the key with `released:<id>` so its owner can sign up                                                                       |
-| GET    | `/api/mod/reports`                  | mod   | `modReportsQuery` (`status`, default `open`; open runs oldest first) → `modReportPage`                                                                                        |
-| POST   | `/api/mod/reports/:id/resolve`      | mod   | `resolveReportRequest` (`resolved` or `dismissed`). 409 if already closed                                                                                                     |
-| GET    | `/api/mod/queue`                    | mod   | held posts merged into the report list (not built yet)                                                                                                                        |
-| POST   | `/api/mod/queue/:id/approve`        | mod   | – (not built yet)                                                                                                                                                             |
-| POST   | `/api/mod/queue/:id/reject`         | mod   | – (not built yet)                                                                                                                                                             |
-| POST   | `/api/admin/users/:id/role`         | admin | `roleChangeRequest`: student to mod or mod to student                                                                                                                         |
-| GET    | `/api/admin/audit`                  | admin | `auditQuery` (filters: `actor`, `targetType`, `targetId`) → `auditPage`. Never returns the snapshot                                                                           |
-| POST   | `/api/admin/audit/:id/reverse`      | admin | `reasonBody` → `reverseResult`                                                                                                                                                |
+| Method | Path                                | Auth  | Schema / note                                                                                                                                                                                 |
+| ------ | ----------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/reports`                      | user  | `reportRequest` → `reportCreated`. Rate-limited (`limits.reportCreate`); 404 unknown target, 400 own target, 409 `already_reported` (one open report per reporter per target)                 |
+| GET    | `/api/mod/users`                    | mod   | `modUsersQuery` (`q` = username prefix, cursor) → `modUserPage`. Handle and state only: no student ID, email or name                                                                          |
+| POST   | `/api/mod/users/:id/ban`            | mod   | `reasonBody`. Deletes the user's sessions. 409 if already banned                                                                                                                              |
+| POST   | `/api/mod/users/:id/unban`          | mod   | `reasonBody`. 409 if not banned                                                                                                                                                               |
+| POST   | `/api/mod/users/:id/reset-password` | mod   | `reasonBody` → `temporaryPassword` (shown once, `no-store`). Sets `must_change_password`, deletes sessions                                                                                    |
+| GET    | `/api/mod/id-conflict?key=`         | mod   | `idConflictQuery` → `idConflictResult`. The only response with a student ID; a hit is logged (`id_lookup`)                                                                                    |
+| POST   | `/api/mod/id-conflict/release`      | mod   | `releaseKeyRequest`. Bans the holder and replaces the key with `released:<id>` so its owner can sign up                                                                                       |
+| POST   | `/api/mod/users/:id/clear-probing`  | mod   | `reasonBody`. Clears the probing flag and any running cooldown, and restarts the rejection count. Reversible by an admin. 409 `not_flagged`                                                   |
+| GET    | `/api/mod/queue`                    | mod   | `pageQuery` → `modQueuePage`. Held posts (`pending_review`) then open reports in one list, oldest first within each; `total` is the whole queue. 400 on a cursor that is not from this list   |
+| POST   | `/api/mod/posts/:type/:id/approve`  | mod   | `approvePostRequest` (reason optional). Publishes a held post, audits it and notifies the author (`post_approved`). 404 unknown post type, 409 `not_held`                                     |
+| POST   | `/api/mod/posts/:type/:id/reject`   | mod   | `rejectPostRequest` (`reason` for the audit log, `category` for the author). Rejects a held post, audits it and notifies the author (`post_rejected`, with the category). 404, 409 `not_held` |
+| GET    | `/api/mod/reports`                  | mod   | `modReportsQuery` (`status`, default `open`; open runs oldest first) → `modReportPage`                                                                                                        |
+| POST   | `/api/mod/reports/:id/resolve`      | mod   | `resolveReportRequest` (`resolved` or `dismissed`). 409 if already closed                                                                                                                     |
+| GET    | `/api/mod/queue`                    | mod   | held posts merged into the report list (not built yet)                                                                                                                                        |
+| POST   | `/api/mod/queue/:id/approve`        | mod   | – (not built yet)                                                                                                                                                                             |
+| POST   | `/api/mod/queue/:id/reject`         | mod   | – (not built yet)                                                                                                                                                                             |
+| POST   | `/api/admin/users/:id/role`         | admin | `roleChangeRequest`: student to mod or mod to student                                                                                                                                         |
+| GET    | `/api/admin/audit`                  | admin | `auditQuery` (filters: `actor`, `targetType`, `targetId`) → `auditPage`. Never returns the snapshot                                                                                           |
+| POST   | `/api/admin/audit/:id/reverse`      | admin | `reasonBody` → `reverseResult`                                                                                                                                                                |
 
 Who may be acted on (`src/shared/modPolicy.ts`, enforced on the server, mirrored on the screens): nobody acts on themselves or on an admin; a mod acts on students only; an admin acts on students and mods (403 `forbidden_target`).
 
@@ -147,8 +151,20 @@ notify(db: Db, userIds: number[], type: NotificationType, payload: Record<string
 // Pass `push: pushSenderFromEnv(c.env)` (src/server/adapters/push.ts) to also push to the targets' devices.
 // A push failure never throws; at most `limits.pushFanoutMax` devices are pushed per call.
 
+// src/server/moderation/submit.ts — what every post type calls on create and on an edit of screened text.
+// mayPost (new-account wait, probing cooldown) → screen() → save(values) → audit as automod → count a rejection.
+submitPost(db: Db, env: { SCREEN_FORCE_REVIEW?: string }, args: { user; targetType: string; input: ScreenInput; save: (values) => Promise<number> }): Promise<SubmitResult>
+// SubmitResult = { ok: false; reason: "new_account" | "cooldown"; retryAfterMs } | { ok: true; id; outcome; cooldownStarted }
+
 // src/server/moderation/screen.ts — Chain of Responsibility: rules → model step → verdict.
-// Any model error, timeout or cap yields `review` (never auto-publish, never auto-reject).
-screen(input: { kind: ReportTargetType; text: Record<string, string> }): Promise<ScreenResult>
-// ScreenResult = { verdict: "approve" | "review" | "reject"; category: ReasonCategory }
+// A rule violation rejects without calling the model. Any model error, timeout, malformed answer or cap
+// yields review (never auto-publish, never auto-reject). SCREEN_FORCE_REVIEW=1 (test only) forces review.
+screen(input: { texts: string[]; images?: Uint8Array[]; contacts?: Contacts }, deps: { model: ModelStep; forceReview?: boolean }): Promise<ScreenOutcome>
+// ScreenOutcome = { verdict: "approve" | "review" | "reject"; status: PostStatus; category: ReasonCategory; source; flags; confidence; scores; modelName; failure; snapshot }
+
+// src/server/moderation/appeal.ts — "Ask a moderator to look" on the author's own rejected post (rate-limited).
+askModerator(db: Db, input: { userId: number; targetType: string; targetId: number }): Promise<AskModeratorResult>
+
+// src/server/repos/visibility.ts — the one filter on every post query: published, or own post, or viewer is a mod.
+visibleTo(table: ModeratedTable, viewer: { id: number; role: Role } | null): SQL | undefined
 ```

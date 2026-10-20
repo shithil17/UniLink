@@ -1,4 +1,4 @@
-# Class diagram (Phases 0 to 7)
+# Class diagram (Phases 0 to 8)
 
 Domain model from `src/server/db/schema.ts`, plus the shared strategy objects and helpers. Times are UTC epoch ms. "Private" fields never appear in a response to anyone but the owner.
 
@@ -17,6 +17,8 @@ classDiagram
     +bool mustChangePassword
     +string fullName?  «private»
     +string email?  «private, unique»
+    +int postingBlockedUntil?
+    +int probingFlaggedAt?
     +int createdAt
   }
   class Session {
@@ -103,7 +105,21 @@ classDiagram
     +int count
   }
 
+  class ModeratedPost {
+    <<abstract>>
+    +int id
+    +int authorId
+    +PostStatus status  «published | pending_review | rejected»
+    +ReasonCategory moderationCategory?
+    +string moderationFlags?  «JSON rule names»
+    +real moderationConfidence?
+    +string moderationModel?
+    +int moderationAppealedAt?
+    +int deletedAt?
+  }
+
   User "1" --> "*" Session
+  User "1" --> "*" ModeratedPost : writes
   User "1" --> "*" Attempt : owns
   User "1" --> "*" StudentCourse : owns
   User "1" --> "*" Notification : receives
@@ -118,7 +134,7 @@ classDiagram
   User ..> Curriculum : program + admission year
 ```
 
-An attempt refers to a course by code, not by key: the code is a curriculum slot, one of its alternatives, or one of the user's student courses. A report's target is a `(targetType, targetId)` pair so a new post type needs no migration.
+An attempt refers to a course by code, not by key: the code is a curriculum slot, one of its alternatives, or one of the user's student courses. A report's target is a `(targetType, targetId)` pair so a new post type needs no migration. `ModeratedPost` is the shared column set (`moderationColumns`) every post table spreads in; no concrete post table exists yet, the first is rides.
 
 ## Behaviour: strategies and helpers
 
@@ -182,6 +198,49 @@ classDiagram
   PushSender <|.. FakePushSender
   Notify ..> PushSender : best effort
   Reverse ..> Audit : writes reversal row
+  class Screen {
+    <<chain of responsibility>>
+    +screen(input, deps) ScreenOutcome
+  }
+  class Rules {
+    +runRules(input) RuleResult
+    +redactText(text) string
+  }
+  class ModelStep {
+    <<interface>>
+    +name
+    +review(input, signal) ModelStepResult
+  }
+  class StubModelStep
+  class FakeModelStep
+  class SubmitPost {
+    +submitPost(db, env, args) SubmitResult
+  }
+  class Probing {
+    +mayPost(db, user) MayPost
+    +recordRejection(db, userId) bool
+  }
+  class RecordScreening {
+    +recordScreening(db, outcome, target)
+  }
+  class ModQueue {
+    +modQueue(db, params) QueuePage
+    +decidePost(db, actor, target, decision)
+  }
+  class VisibleTo {
+    +visibleTo(table, viewer) SQL
+  }
+  ModelStep <|.. StubModelStep
+  ModelStep <|.. FakeModelStep
+  Screen ..> Rules : first link
+  Screen ..> ModelStep : second link
+  SubmitPost ..> Probing
+  SubmitPost ..> Screen
+  SubmitPost ..> RecordScreening
+  RecordScreening ..> Audit : actor automod
+  ModQueue ..> Rules : redacts text
+  ModQueue ..> Audit
+  ModQueue ..> Notify : tells the author
 ```
 
-Patterns in use: Strategy (grade scale, retake policy), Composite (prerequisite rules), Observer entry point (`notify`), adapter plus fake (push sender). Class names above are conceptual where the code uses plain objects and functions.
+Patterns in use: Strategy (grade scale, retake policy), Composite (prerequisite rules), Observer entry point (`notify`), Chain of Responsibility (`screen`: rules, then the model step, then a verdict), adapter plus fake (push sender, model step), Repository (`visibleTo` and the post repos). Class names above are conceptual where the code uses plain objects and functions.

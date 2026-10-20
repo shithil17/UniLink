@@ -1,6 +1,6 @@
 # Software Requirements Specification (draft)
 
-UniLink is an unofficial, student-run companion app for North South University (NSU) students. This draft covers what is built through Phase 7: accounts, the installable app shell, the course map, the inbox and web push, CGPA and attempts, and moderation. Later features (screening, routine, resources, rides, lost and found, marketplace, faculty profiles) are listed under [Planned](#planned) and get requirements as they land.
+UniLink is an unofficial, student-run companion app for North South University (NSU) students. This draft covers what is built through Phase 8: accounts, the installable app shell, the course map, the inbox and web push, CGPA and attempts, moderation, and content screening with the review queue. Later features (routine, resources, rides, lost and found, marketplace, faculty profiles) are listed under [Planned](#planned) and get requirements as they land.
 
 Requirement IDs (`FR-*`, `NFR-*`) are stable. Test cases in [`test-cases.md`](test-cases.md) cite them. The build rules behind each requirement live in `build_plan_pwa.md`; the endpoints in [`api-contracts.md`](api-contracts.md).
 
@@ -95,6 +95,20 @@ Mods and admins cannot read any student's attempts or CGPA.
 | FR-37 | Mods only soft-delete. Every mod and automatic action writes an audit row with a before-snapshot and a reason.                                                                    |
 | FR-38 | An admin can view the audit log (filter by actor, target type, target id) and reverse a ban, unban, role change, key release or soft delete. A row is reversed once.              |
 
+### Content screening and review queue
+
+| ID    | Requirement                                                                                                                                                                                                                                                                                                                            |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-39 | Every user-written post is screened on create and on every edit that changes screened text or photos. The result is `published`, `pending_review` or `rejected`, with a reason category: prohibited item, personal data, scam or spam, abuse or harassment, off-topic, fine.                                                           |
+| FR-40 | Deterministic rules run first and reject without calling the model: student IDs (spaces and dashes ignored), card numbers (13 to 19 digits passing Luhn, Bangladeshi phone numbers excluded), links not on the allowlist, malformed contacts, over-long text, banned words, and photos that are not clean WebP within the size limits. |
+| FR-41 | The model step sees only post text and photos, never usernames, student IDs, contact details, grades or the routine. A model error, timeout, malformed answer or the daily cap holds the post for review: unscreened text is never published or rejected automatically.                                                                |
+| FR-42 | A post that is not published is visible only to its author ("Waiting for a moderator" or the rejection message) and to mods. A rejection shows a category-level message only, never scores or matched text.                                                                                                                            |
+| FR-43 | The author of a rejected post can edit and resubmit, or ask a moderator to look (5 asks per hour), which moves it to the review queue.                                                                                                                                                                                                 |
+| FR-44 | Three automatic rejections within an hour block the user from posting for one hour and flag them in the mod panel. A mod can clear the flag with a reason; an admin can reverse that.                                                                                                                                                  |
+| FR-45 | Mods see held posts and open reports in one queue with its size at the top. A held post shows its text (student IDs and card numbers redacted), the author's username, the model category and confidence, and the rule flags.                                                                                                          |
+| FR-46 | A mod approves or rejects a held post (a rejection needs a category and a reason). The mod's decision overrides the model, is decided once even if two mods act together, writes an audit row, and sends the author an inbox message.                                                                                                  |
+| FR-47 | Every automatic decision writes an audit row with actor `automod`, the model name, the category, the scores and a redacted text snapshot.                                                                                                                                                                                              |
+
 ## 4. Non-functional requirements
 
 | ID    | Requirement                                                                                                                                |
@@ -113,9 +127,10 @@ Mods and admins cannot read any student's attempts or CGPA.
 - Email is format-checked, not verified. Mitigations: unique ID key, signup limits, posting cooldown, mod ID-conflict tool.
 - The student ID check rejects obviously fake IDs; it does not prove ownership.
 - No dark mode follows the OS; Night is a manual palette.
-- Faculty data is placeholder until D supplies the list.
+- The faculty list comes from the public ECE department listing (2026-10-20); Scholar, ORCID and OpenAlex IDs are added with faculty profiles.
+- Screening runs a stub model step (approves text, holds photos) until the real model is wired in; no post type ships yet, so FR-39 to FR-47 are exercised by tests and the forced-review flag.
 - Curricula exist for 13 undergraduate programs; graduate programs are out of scope.
 
 ## Planned
 
-Content screening and the review queue (held posts merge into the mod report queue), class routine, resource sharing, rides, lost and found, marketplace, faculty profiles and research sync. See `build_plan_pwa.md` phases 8 onward.
+Class routine, resource sharing, rides, lost and found, marketplace, faculty profiles and research sync. See `build_plan_pwa.md` phases 9 onward.

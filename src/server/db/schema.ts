@@ -50,6 +50,10 @@ export const users = sqliteTable(
     // `email_verified_at` stays null until verification is added. Unique: one account per email.
     email: text("email").unique(),
     emailVerifiedAt: integer("email_verified_at"),
+    // Probing cooldown: no posting or editing until this instant (UTC epoch ms). Null when none was set.
+    postingBlockedUntil: integer("posting_blocked_until"),
+    // Set when the probing cooldown last triggered, and kept until a mod clears it. The mod panel shows it.
+    probingFlaggedAt: integer("probing_flagged_at"),
     createdAt: integer("created_at").notNull(),
   },
   (t) => [check("users_role_check", sql`${t.role} in ('student', 'mod', 'admin')`)],

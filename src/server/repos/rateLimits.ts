@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { Db } from "../db/client";
 import { rateLimits } from "../db/schema";
 
@@ -16,6 +16,10 @@ export function rateLimitsRepo(db: Db) {
         .returning({ count: rateLimits.count })
         .get();
       return row.count;
+    },
+    /** Forgets every window of a key, so its count starts from zero. */
+    async reset(key: string): Promise<void> {
+      await db.delete(rateLimits).where(eq(rateLimits.key, key));
     },
   };
 }

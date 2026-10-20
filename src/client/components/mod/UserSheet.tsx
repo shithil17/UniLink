@@ -1,9 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import type { z } from "zod";
-import { FormError } from "@/components/auth/AuthForm";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
 import {
@@ -59,16 +58,16 @@ function UserActions({
     resolver: zodResolver(reasonBody),
     defaultValues: { reason: "" },
   });
-  const [serverError, setServerError] = useState<string | null>(null);
   const [temporary, setTemporary] = useState<string | null>(null);
+  // Read once when the sheet opens: the pause is shown in whole minutes, so no ticking is needed.
+  const [openedAt] = useState(() => Date.now());
   const pending = userAction.isPending || changeRole.isPending;
   const allowed = canActOn(me, user);
 
-  const fail = (err: unknown) => setServerError(errorMessage(err));
+  const fail = (err: unknown) => toast.error(errorMessage(err));
 
   const run = (action: UserAction, done: string) =>
     form.handleSubmit(({ reason }) => {
-      setServerError(null);
       userAction.mutate(
         { id: user.id, action, reason },
         {
@@ -87,7 +86,6 @@ function UserActions({
 
   const setRole = (role: "mod" | "student", done: string) =>
     form.handleSubmit(({ reason }) => {
-      setServerError(null);
       changeRole.mutate(
         { id: user.id, role, reason },
         {
@@ -100,9 +98,18 @@ function UserActions({
       );
     });
 
-  const state = [roleName[user.role], user.bannedAt === null ? null : "Banned"]
+  const flagged = user.probingFlaggedAt !== null;
+  const state = [
+    roleName[user.role],
+    user.bannedAt === null ? null : "Banned",
+    flagged ? "Flagged" : null,
+  ]
     .filter(Boolean)
     .join(", ");
+  const pausedMinutes =
+    user.postingBlockedUntil === null
+      ? 0
+      : Math.max(0, Math.ceil((user.postingBlockedUntil - openedAt) / 60_000));
 
   return (
     <>
@@ -111,6 +118,19 @@ function UserActions({
         <SheetDescription>{state}</SheetDescription>
       </SheetHeader>
       <div className="space-y-4 px-4 pb-4">
+        {flagged ? (
+          <p className="text-sm text-soft">
+            Flagged for several rejected posts in a short time.{" "}
+            {pausedMinutes > 0 ? (
+              <>
+                Posting is paused for another <span className="tabular-nums">{pausedMinutes}</span>{" "}
+                min.
+              </>
+            ) : (
+              "The pause on posting is over."
+            )}
+          </p>
+        ) : null}
         {temporary ? (
           <TemporaryPassword password={temporary} onDone={onClose} />
         ) : !allowed ? (
@@ -129,7 +149,6 @@ function UserActions({
                 register={form.register("reason")}
                 error={form.formState.errors.reason}
               />
-              <FormError message={serverError} />
               <div className="grid gap-2 sm:grid-cols-2">
                 {user.bannedAt === null ? (
                   <Button
@@ -161,6 +180,17 @@ function UserActions({
                 >
                   Reset password
                 </Button>
+                {flagged ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    disabled={pending}
+                    onClick={() => void run("clear-probing", "Flag cleared")()}
+                  >
+                    Clear flag
+                  </Button>
+                ) : null}
                 {me.role === "admin" ? (
                   user.role === "student" ? (
                     <Button

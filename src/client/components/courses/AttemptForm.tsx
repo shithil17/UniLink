@@ -1,13 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
 import { Controller, useForm, useWatch, type Resolver } from "react-hook-form";
-import { toast } from "sonner";
-import { FormError } from "@/components/auth/AuthForm";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { errorMessage } from "@/lib/api";
 import { termLabel, termOptions, termValue } from "@/lib/courseMap";
-import { isToastError, useRecordAttempt, useUpdateAttempt } from "@/lib/courses";
+import { useRecordAttempt, useUpdateAttempt } from "@/lib/courses";
 import { ATTEMPT_GRADES, gradeLabel, WAIVED } from "../../../shared/grading";
 import {
   attemptFullInput,
@@ -43,7 +41,6 @@ export function AttemptForm({
   const record = useRecordAttempt();
   const update = useUpdateAttempt(attempt?.id ?? 0);
   const pending = attempt ? update.isPending : record.isPending;
-  const [serverError, setServerError] = useState<string | null>(null);
   const termRequired = mode === "full" && !attempt;
   const showFaculty = mode === "full" || Boolean(attempt);
   const terms = termOptions();
@@ -70,16 +67,12 @@ export function AttemptForm({
   const grade = useWatch({ control: form.control, name: "grade" });
 
   const submit = form.handleSubmit((values) => {
-    setServerError(null);
     const done = {
       onSuccess: () => {
         toast.success(attempt ? "Attempt updated" : "Grade saved");
         onSaved();
       },
-      onError: (err: unknown) => {
-        if (isToastError(err)) toast.error(errorMessage(err));
-        else setServerError(errorMessage(err));
-      },
+      onError: (err: unknown) => toast.error(errorMessage(err)),
     };
     if (attempt) {
       update.mutate(
@@ -172,7 +165,6 @@ export function AttemptForm({
             />
           </Field>
         ) : null}
-        <FormError message={serverError} />
         <div className="flex flex-col gap-2">
           <Button type="submit" size="lg" className="w-full" disabled={pending}>
             {pending

@@ -59,14 +59,14 @@ Programs with data: Architecture (10), LLB (11), MCJ (12), Public Health (18), E
 
 ## Faculty list
 
-Seeded from `data/faculty.json` (currently six placeholder rows). The attempt picker needs the first three columns. Phase 11 (faculty profiles) needs the rest, so collect them now.
+Seeded from `data/faculty.json`: 87 ECE faculty (CSE and EEE share the department) taken from the public listing at `ece.northsouth.edu/people` on 2026-10-20, with honorifics dropped. Two professors share the name Atiqur Rahman, so both carry their initials in the name to stay unique. Five entries have no published initials and keep an empty `initials`. The attempt picker needs the first three columns. Phase 11 (faculty profiles) needs the rest, so collect them now.
 
 | Column             | In `faculty.json` today | Notes                                                                  |
 | ------------------ | ----------------------- | ---------------------------------------------------------------------- |
 | Name               | `name`                  | Unique; the seed upserts on name                                       |
 | Initials           | `initials`              | The short form students use, such as three letters                     |
 | Designation        | `designation`           | Professor, Associate Professor, Assistant Professor, Lecturer          |
-| NSU page URL       | later                   | Public faculty page                                                    |
+| NSU page URL       | `nsuPage`               | Public faculty page                                                    |
 | Google Scholar URL | later                   | Optional                                                               |
 | ORCID              | later                   | Optional                                                               |
 | OpenAlex author ID | later                   | Checked by hand against the person's papers, not guessed from the name |
@@ -76,5 +76,12 @@ Only public information. Do not collect phone numbers, personal emails or anythi
 Example of the current file shape:
 
 ```json
-[{ "name": "Full Name", "initials": "FN", "designation": "Assistant Professor" }]
+[
+  {
+    "name": "Full Name",
+    "initials": "FN",
+    "designation": "Assistant Professor",
+    "nsuPage": "https://ece.northsouth.edu/people/full-name/"
+  }
+]
 ```

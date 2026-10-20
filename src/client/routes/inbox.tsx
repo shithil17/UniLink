@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { focusRingInset } from "@/components/ui/focus";
 import { apiPost, errorMessage } from "@/lib/api";
@@ -107,7 +107,7 @@ function Inbox() {
 }
 
 function Row({ n, now, onOpen }: { n: Notification; now: number; onOpen: () => void }) {
-  const { title, detail } = notificationCopy(n.type);
+  const { title, detail } = notificationCopy(n.type, n.payload);
   const unread = n.readAt === null;
   const body = (
     <>

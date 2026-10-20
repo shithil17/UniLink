@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { ReasonForm } from "@/components/mod/ReasonForm";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/mod/audit")({
   // Only admins read the log and reverse from it; mods are sent back to the queue.
   beforeLoad: async ({ context }) => {
     const user = await context.queryClient.ensureQueryData(meQuery).catch(() => null);
-    if (user?.role !== "admin") throw redirect({ to: "/mod/reports" });
+    if (user?.role !== "admin") throw redirect({ to: "/mod/queue" });
   },
   component: AuditPage,
 });
@@ -145,10 +145,8 @@ function EntryRow({
 
 function ReverseDialog({ entry, onClose }: { entry: AuditEntry | null; onClose: () => void }) {
   const reverse = useReverse();
-  const [serverError, setServerError] = useState<string | null>(null);
 
   const close = () => {
-    setServerError(null);
     reverse.reset();
     onClose();
   };
@@ -172,10 +170,8 @@ function ReverseDialog({ entry, onClose }: { entry: AuditEntry | null; onClose: 
               submitLabel="Reverse"
               pendingLabel="Reversing"
               pending={reverse.isPending}
-              serverError={serverError}
               onCancel={close}
               onSubmit={(reason) => {
-                setServerError(null);
                 reverse.mutate(
                   { id: entry.id, reason },
                   {
@@ -183,7 +179,7 @@ function ReverseDialog({ entry, onClose }: { entry: AuditEntry | null; onClose: 
                       toast.success("Action reversed");
                       close();
                     },
-                    onError: (err) => setServerError(errorMessage(err)),
+                    onError: (err) => toast.error(errorMessage(err)),
                   },
                 );
               }}

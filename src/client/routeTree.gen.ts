@@ -22,7 +22,7 @@ import { Route as ModIndexRouteImport } from './routes/mod.index'
 import { Route as ModAuditRouteImport } from './routes/mod.audit'
 import { Route as ModIdConflictRouteImport } from './routes/mod.id-conflict'
 import { Route as ModImportRouteImport } from './routes/mod.import'
-import { Route as ModReportsRouteImport } from './routes/mod.reports'
+import { Route as ModQueueRouteImport } from './routes/mod.queue'
 import { Route as ModUsersRouteImport } from './routes/mod.users'
 
 const IndexRoute = IndexRouteImport.update({
@@ -90,9 +90,9 @@ const ModImportRoute = ModImportRouteImport.update({
   path: '/import',
   getParentRoute: () => ModRoute,
 } as any)
-const ModReportsRoute = ModReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
+const ModQueueRoute = ModQueueRouteImport.update({
+  id: '/queue',
+  path: '/queue',
   getParentRoute: () => ModRoute,
 } as any)
 const ModUsersRoute = ModUsersRouteImport.update({
@@ -114,7 +114,7 @@ export interface FileRoutesByFullPath {
   '/mod/audit': typeof ModAuditRoute
   '/mod/id-conflict': typeof ModIdConflictRoute
   '/mod/import': typeof ModImportRoute
-  '/mod/reports': typeof ModReportsRoute
+  '/mod/queue': typeof ModQueueRoute
   '/mod/users': typeof ModUsersRoute
   '/mod/': typeof ModIndexRoute
 }
@@ -130,7 +130,7 @@ export interface FileRoutesByTo {
   '/mod/audit': typeof ModAuditRoute
   '/mod/id-conflict': typeof ModIdConflictRoute
   '/mod/import': typeof ModImportRoute
-  '/mod/reports': typeof ModReportsRoute
+  '/mod/queue': typeof ModQueueRoute
   '/mod/users': typeof ModUsersRoute
   '/mod': typeof ModIndexRoute
 }
@@ -148,7 +148,7 @@ export interface FileRoutesById {
   '/mod/audit': typeof ModAuditRoute
   '/mod/id-conflict': typeof ModIdConflictRoute
   '/mod/import': typeof ModImportRoute
-  '/mod/reports': typeof ModReportsRoute
+  '/mod/queue': typeof ModQueueRoute
   '/mod/users': typeof ModUsersRoute
   '/mod/': typeof ModIndexRoute
 }
@@ -167,7 +167,7 @@ export interface FileRouteTypes {
     | '/mod/audit'
     | '/mod/id-conflict'
     | '/mod/import'
-    | '/mod/reports'
+    | '/mod/queue'
     | '/mod/users'
     | '/mod/'
   fileRoutesByTo: FileRoutesByTo
@@ -183,7 +183,7 @@ export interface FileRouteTypes {
     | '/mod/audit'
     | '/mod/id-conflict'
     | '/mod/import'
-    | '/mod/reports'
+    | '/mod/queue'
     | '/mod/users'
     | '/mod'
   id:
@@ -200,7 +200,7 @@ export interface FileRouteTypes {
     | '/mod/audit'
     | '/mod/id-conflict'
     | '/mod/import'
-    | '/mod/reports'
+    | '/mod/queue'
     | '/mod/users'
     | '/mod/'
   fileRoutesById: FileRoutesById
@@ -310,11 +310,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModImportRouteImport
       parentRoute: typeof ModRoute
     }
-    '/mod/reports': {
-      id: '/mod/reports'
-      path: '/reports'
-      fullPath: '/mod/reports'
-      preLoaderRoute: typeof ModReportsRouteImport
+    '/mod/queue': {
+      id: '/mod/queue'
+      path: '/queue'
+      fullPath: '/mod/queue'
+      preLoaderRoute: typeof ModQueueRouteImport
       parentRoute: typeof ModRoute
     }
     '/mod/users': {
@@ -331,7 +331,7 @@ interface ModRouteChildren {
   ModAuditRoute: typeof ModAuditRoute
   ModIdConflictRoute: typeof ModIdConflictRoute
   ModImportRoute: typeof ModImportRoute
-  ModReportsRoute: typeof ModReportsRoute
+  ModQueueRoute: typeof ModQueueRoute
   ModUsersRoute: typeof ModUsersRoute
   ModIndexRoute: typeof ModIndexRoute
 }
@@ -340,7 +340,7 @@ const ModRouteChildren: ModRouteChildren = {
   ModAuditRoute: ModAuditRoute,
   ModIdConflictRoute: ModIdConflictRoute,
   ModImportRoute: ModImportRoute,
-  ModReportsRoute: ModReportsRoute,
+  ModQueueRoute: ModQueueRoute,
   ModUsersRoute: ModUsersRoute,
   ModIndexRoute: ModIndexRoute,
 }
