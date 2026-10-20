@@ -1,6 +1,6 @@
 # UniLink
 
-An unofficial, student-run companion PWA for NSU CSE students. It brings course planning, CGPA tracking, class routines, resource sharing, faculty research profiles, rides, lost and found, and a marketplace into one installable app.
+An unofficial, student-run companion PWA for NSU students, whatever their program. It brings course planning, CGPA tracking, class routines, resource sharing, faculty research profiles, rides, lost and found, and a marketplace into one installable app.
 
 ## Features
 

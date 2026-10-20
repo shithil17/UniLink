@@ -11,18 +11,24 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { focusRingInset } from "@/components/ui/focus";
 import { useTheme } from "./themeContext";
 
-function Swatches({ theme }: { theme: ThemeMeta }) {
+/**
+ * A palette's ground, ink and accent. Colors come from the registry, not from tokens, because the
+ * preview must keep showing its own palette whichever one is active.
+ */
+function Preview({ theme }: { theme: ThemeMeta }) {
   return (
-    <span className="flex shrink-0 -space-x-1.5" aria-hidden>
-      {theme.swatches.map((color) => (
-        <span
-          key={color}
-          className="size-5 rounded-full border border-line"
-          style={{ backgroundColor: color }}
-        />
-      ))}
+    <span
+      className="flex h-9 w-14 shrink-0 items-center justify-between rounded-control border border-line px-2"
+      style={{ backgroundColor: theme.bar }}
+      aria-hidden
+    >
+      <span className="text-sm leading-none font-semibold" style={{ color: theme.ink }}>
+        Aa
+      </span>
+      <span className="size-3 rounded-full" style={{ backgroundColor: theme.accent }} />
     </span>
   );
 }
@@ -30,7 +36,6 @@ function Swatches({ theme }: { theme: ThemeMeta }) {
 /** All palettes as a radio group: arrow keys move the choice, Tab enters and leaves the group. */
 export function ThemePicker() {
   const { theme, setTheme } = useTheme();
-
   return (
     <RadioGroup
       aria-label="Color theme"
@@ -38,7 +43,7 @@ export function ThemePicker() {
       onValueChange={(id) => {
         setTheme(resolveTheme(id).id);
       }}
-      className="gap-1.5"
+      className="gap-0 divide-y divide-line overflow-hidden rounded-panel border border-line bg-surface"
     >
       {themes.map((t) => {
         const active = t.id === theme;
@@ -47,18 +52,16 @@ export function ThemePicker() {
             key={t.id}
             value={t.id}
             className={cn(
-              "flex w-full cursor-pointer items-center gap-2.5 rounded-xl border px-2.5 py-2 text-left transition outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-              active ? "border-brand bg-tint" : "border-line bg-surface hover:bg-tint/60",
+              `flex min-h-14 w-full cursor-pointer items-center gap-3 px-4 py-2 text-left transition-colors ${focusRingInset}`,
+              active ? "bg-brand-soft" : "hover:bg-tint",
             )}
           >
-            <Swatches theme={t} />
+            <Preview theme={t} />
             <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-1.5 text-xs font-bold text-ink">
-                {t.name}
-                {active && <CheckIcon className="size-3.5 shrink-0 text-brand" aria-hidden />}
-              </span>
-              <span className="block truncate text-[11px] text-soft">{t.blurb}</span>
+              <span className="block text-sm font-medium text-ink">{t.name}</span>
+              <span className="block truncate text-xs text-soft">{t.blurb}</span>
             </span>
+            {active && <CheckIcon className="size-4 shrink-0 text-brand" aria-hidden />}
           </Radio.Root>
         );
       })}
@@ -78,22 +81,20 @@ export function ThemePickerTrigger() {
         type="button"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className="flex w-full items-center gap-2.5 rounded-xl border border-line bg-surface px-3 py-2.5 text-left transition hover:bg-tint/60 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+        className={`flex min-h-14 w-full items-center gap-3 rounded-panel border border-line bg-surface px-4 py-2 text-left transition-colors hover:bg-tint ${focusRingInset}`}
       >
-        <Swatches theme={current} />
+        <Preview theme={current} />
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-ink">{current.name}</span>
-          <span className="block truncate text-[11px] text-soft">
-            {current.blurb} · tap to change
-          </span>
+          <span className="block text-sm font-medium text-ink">{current.name}</span>
+          <span className="block truncate text-xs text-soft">{current.blurb}</span>
         </span>
         <ChevronRightIcon className="size-4 shrink-0 text-faint" aria-hidden />
       </button>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="bottom">
           <SheetHeader>
-            <SheetTitle>Choose theme</SheetTitle>
-            <SheetDescription>Colors only. Your choice is saved on this device.</SheetDescription>
+            <SheetTitle>Color theme</SheetTitle>
+            <SheetDescription>Just colors. Your pick is saved on this device.</SheetDescription>
           </SheetHeader>
           <div className="px-4">
             <ThemePicker />

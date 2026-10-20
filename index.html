@@ -4,28 +4,33 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#08443b" />
+    <meta name="theme-color" content="#f4f6f5" />
     <script>
-      // No-flash theme: runs before first paint. Keep the key, ids and hero colors in step with
+      // No-flash theme: runs before first paint. Keep the key, ids and bar colors in step with
       // src/shared/themes.ts (themes.test.ts checks this). Unknown or unreadable value = ocean.
       (function () {
-        var heroes = {
-          ocean: "#08443b",
-          "red-gradient": "#641220",
-          "cherry-blossom": "#590d22",
-          "cherry-red": "#1a1a1a",
+        var bars = {
+          ocean: "#f4f6f5",
+          "red-gradient": "#f7f3f3",
+          "cherry-blossom": "#fbf4f5",
+          "cherry-red": "#f3f4f4",
+          night: "#121716",
         };
         var id = "ocean";
         try {
           var saved = localStorage.getItem("unilink-theme");
-          if (saved && Object.prototype.hasOwnProperty.call(heroes, saved)) id = saved;
+          if (saved && Object.prototype.hasOwnProperty.call(bars, saved)) id = saved;
         } catch (e) {}
         document.documentElement.dataset.theme = id;
         var meta = document.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute("content", heroes[id]);
+        if (meta) meta.setAttribute("content", bars[id]);
       })();
     </script>
     <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
+    <meta
+      name="description"
+      content="An unofficial, student-run companion for NSU students: your course map and degree progress in one app."
+    />
     <title>UniLink</title>
   </head>
   <body>

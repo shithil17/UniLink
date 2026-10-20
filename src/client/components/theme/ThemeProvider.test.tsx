@@ -44,7 +44,7 @@ describe("ThemeProvider", () => {
     const { getByTestId } = mount();
     expect(getByTestId("theme").textContent).toBe("cherry-blossom");
     expect(document.documentElement.dataset.theme).toBe("cherry-blossom");
-    expect(meta()?.content).toBe(resolveTheme("cherry-blossom").hero);
+    expect(meta()?.content).toBe(resolveTheme("cherry-blossom").bar);
   });
 
   it("ignores an unknown saved value and falls back to the default", () => {
@@ -70,16 +70,16 @@ describe("ThemeProvider", () => {
 
   it("saves a change and updates data-theme and the meta", () => {
     const { getByText } = mount();
-    expect(meta()?.content).toBe(resolveTheme(DEFAULT_THEME_ID).hero);
+    expect(meta()?.content).toBe(resolveTheme(DEFAULT_THEME_ID).bar);
     act(() => getByText("pick").click());
     expect(document.documentElement.dataset.theme).toBe("cherry-red");
     expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("cherry-red");
-    expect(meta()?.content).toBe(resolveTheme("cherry-red").hero);
+    expect(meta()?.content).toBe(resolveTheme("cherry-red").bar);
   });
 
   it("creates the theme-color meta when the page has none", () => {
     document.head.innerHTML = "";
     mount();
-    expect(meta()?.content).toBe(resolveTheme(DEFAULT_THEME_ID).hero);
+    expect(meta()?.content).toBe(resolveTheme(DEFAULT_THEME_ID).bar);
   });
 });

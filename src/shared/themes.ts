@@ -1,9 +1,15 @@
 /**
  * Theme registry. Adding a palette = one entry here + one `:root[data-theme="<id>"]` block in
- * `src/client/index.css`. The inline script in `index.html` keeps a copy of the ids and hero
+ * `src/client/index.css`. The inline script in `index.html` keeps a copy of the ids and bar
  * colors (it cannot import this file); `themes.test.ts` stops the copies drifting apart.
  */
-export const THEME_IDS = ["ocean", "red-gradient", "cherry-blossom", "cherry-red"] as const;
+export const THEME_IDS = [
+  "ocean",
+  "red-gradient",
+  "cherry-blossom",
+  "cherry-red",
+  "night",
+] as const;
 
 export type ThemeId = (typeof THEME_IDS)[number];
 
@@ -11,10 +17,14 @@ export type ThemeMeta = {
   id: ThemeId;
   name: string;
   blurb: string;
-  /** Hero gradient start color, used for `<meta name="theme-color">`. */
-  hero: string;
-  /** Palette preview dots shown in the picker. */
-  swatches: readonly [string, string, string, string, string];
+  /** The palette's ground (`--color-bar`, same as `--color-app`), used for `<meta name="theme-color">`. */
+  bar: string;
+  /**
+   * Picker preview, the palette's ground, ink and accent. Copies of `--color-bar`, `--color-ink` and
+   * `--color-brand`, because the preview must not follow the active theme (`themes.test.ts` checks them).
+   */
+  ink: string;
+  accent: string;
 };
 
 export const DEFAULT_THEME_ID: ThemeId = "ocean";
@@ -26,30 +36,42 @@ export const themes: readonly ThemeMeta[] = [
   {
     id: "ocean",
     name: "Ocean Teal",
-    blurb: "Current base look",
-    hero: "#08443b",
-    swatches: ["#f7f8f5", "#08443b", "#0e7367", "#e4e9e5", "#172421"],
+    blurb: "Calm teal on a cool neutral",
+    bar: "#f4f6f5",
+    ink: "#14201e",
+    accent: "#0e7367",
   },
   {
     id: "red-gradient",
-    name: "Red Gradient",
-    blurb: "Bordeaux to scarlet",
-    hero: "#641220",
-    swatches: ["#641220", "#85182a", "#a71e34", "#c71f37", "#e01e37"],
+    name: "Bordeaux",
+    blurb: "Deep wine red on warm grey",
+    bar: "#f7f3f3",
+    ink: "#2e1014",
+    accent: "#9b1b30",
   },
   {
     id: "cherry-blossom",
-    name: "Cherry Blossom Bloom",
-    blurb: "Bordeaux to blush",
-    hero: "#590d22",
-    swatches: ["#590d22", "#a4133c", "#ff4d6d", "#ffb3c1", "#fff0f3"],
+    name: "Cherry Blossom",
+    blurb: "Rose crimson on blush",
+    bar: "#fbf4f5",
+    ink: "#3a0f1c",
+    accent: "#b0123f",
   },
   {
     id: "cherry-red",
     name: "Cherry Red",
-    blurb: "Pinterest red",
-    hero: "#1a1a1a",
-    swatches: ["#f1f3f4", "#1a1a1a", "#e60023", "#7c8085", "#ffffff"],
+    blurb: "Bright red, near-black ink",
+    bar: "#f3f4f4",
+    ink: "#1a1a1a",
+    accent: "#d6001f",
+  },
+  {
+    id: "night",
+    name: "Night",
+    blurb: "Dark mode: mint teal on charcoal",
+    bar: "#121716",
+    ink: "#e6edeb",
+    accent: "#5cc4b4",
   },
 ];
 

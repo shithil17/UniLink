@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { ChevronRightIcon } from "lucide-react";
+import type { ReactNode } from "react";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { SectionHeader } from "@/components/layout/SectionHeader";
 import { ThemePickerTrigger } from "@/components/theme/ThemePicker";
-import { buttonVariants } from "@/components/ui/button";
+import { focusRingInset } from "@/components/ui/focus";
 import { meQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/settings")({
@@ -14,40 +17,53 @@ export const Route = createFileRoute("/settings")({
   component: Settings,
 });
 
+const panel = "overflow-hidden rounded-panel border border-line bg-surface";
+const row = "flex min-h-14 items-center gap-3 border-b border-line px-4 py-3 last:border-b-0";
+const linkRow = `${row} w-full text-left text-ink transition-colors hover:bg-tint ${focusRingInset}`;
+
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section aria-label={title} className="space-y-3">
+      <SectionHeader title={title} />
+      {children}
+    </section>
+  );
+}
+
 function Settings() {
   const { data: user } = useQuery(meQuery);
 
   return (
-    <section className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-semibold text-ink">Settings</h1>
-      <div className="space-y-2">
-        <h2 className="text-sm font-semibold text-soft">Appearance</h2>
+    <div className="max-w-2xl space-y-8">
+      <h1 className="text-xl font-semibold text-ink">Settings</h1>
+      <Group title="Appearance">
         <ThemePickerTrigger />
-      </div>
-      <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-soft">Account</h2>
-        {user ? <p className="text-body">Signed in as {user.username}</p> : null}
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Link
-            to="/change-password"
-            className={buttonVariants({ variant: "outline", className: "h-11" })}
-          >
-            Change password
+      </Group>
+      <Group title="Account">
+        <div className={panel}>
+          {user ? (
+            <div className={row}>
+              <span className="flex-1 text-sm text-soft">Signed in as</span>
+              <span className="font-medium text-ink">{user.username}</span>
+            </div>
+          ) : null}
+          <Link to="/change-password" className={linkRow}>
+            <span className="flex-1">Change password</span>
+            <ChevronRightIcon className="size-4 shrink-0 text-faint" aria-hidden="true" />
           </Link>
-          <LogoutButton />
         </div>
-      </div>
+        <LogoutButton />
+      </Group>
       {user && user.role !== "student" ? (
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-soft">Moderation</h2>
-          <Link
-            to="/mod/import"
-            className={buttonVariants({ variant: "outline", className: "h-11" })}
-          >
-            Import a curriculum
-          </Link>
-        </div>
+        <Group title="Moderation">
+          <div className={panel}>
+            <Link to="/mod/import" className={linkRow}>
+              <span className="flex-1">Import a curriculum</span>
+              <ChevronRightIcon className="size-4 shrink-0 text-faint" aria-hidden="true" />
+            </Link>
+          </div>
+        </Group>
       ) : null}
-    </section>
+    </div>
   );
 }

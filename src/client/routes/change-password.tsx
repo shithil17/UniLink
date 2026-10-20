@@ -39,9 +39,10 @@ function ChangePasswordPage() {
       title="Change password"
       intro={
         user?.mustChangePassword
-          ? "You are using a temporary password. Choose your own to continue."
-          : "Changing it signs you out of your other devices."
+          ? "You're on a temporary password. Pick your own to keep going."
+          : "This signs you out of your other devices."
       }
+      footer={<LogoutButton />}
     >
       <form onSubmit={form.handleSubmit((values) => change.mutate(values))} noValidate>
         <FieldGroup>
@@ -71,12 +72,11 @@ function ChangePasswordPage() {
             <FieldError errors={[errors.newPassword]} />
           </Field>
           <FormError message={change.isError ? errorMessage(change.error) : null} />
-          <Button type="submit" className="h-11 w-full" disabled={change.isPending}>
+          <Button type="submit" size="lg" className="w-full" disabled={change.isPending}>
             {change.isPending ? "Saving..." : "Change password"}
           </Button>
         </FieldGroup>
       </form>
-      <LogoutButton />
     </AuthScreen>
   );
 }

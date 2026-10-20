@@ -60,7 +60,7 @@ export function StudentCourseForm({
     setServerError(null);
     mutation.mutate(values, {
       onSuccess: () => {
-        toast.success("Saved");
+        toast.success("Course saved");
         onSaved();
       },
       onError: (err) => {
@@ -149,7 +149,7 @@ export function StudentCourseForm({
               <div className="space-y-1">
                 <FieldLabel htmlFor="sc-excluded">Exclude from transcript</FieldLabel>
                 <FieldDescription>
-                  An excluded course stays on your map but counts toward no total.
+                  It stays on your map but doesn't count toward any total.
                 </FieldDescription>
               </div>
             </Field>
@@ -157,10 +157,10 @@ export function StudentCourseForm({
         />
         <FormError message={serverError} />
         <div className="flex flex-col gap-2 sm:flex-row-reverse">
-          <Button type="submit" className="h-11 sm:flex-1" disabled={mutation.isPending}>
+          <Button type="submit" size="lg" className="sm:flex-1" disabled={mutation.isPending}>
             {mutation.isPending ? "Saving..." : existing ? "Save changes" : "Add course"}
           </Button>
-          <Button type="button" variant="outline" className="h-11" onClick={onCancel}>
+          <Button type="button" variant="outline" size="lg" onClick={onCancel}>
             Cancel
           </Button>
         </div>

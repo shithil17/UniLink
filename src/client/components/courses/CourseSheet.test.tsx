@@ -36,7 +36,7 @@ describe("CourseSheet", () => {
     renderSheet({ type: "slot", slot });
     expect(screen.getByText("CSE115 and (MAT120 or 30 credits completed)")).toBeTruthy();
     expect(screen.getByText("CSE226 Data Structures II")).toBeTruthy();
-    expect(screen.getByText("Prerequisites are not met yet.")).toBeTruthy();
+    expect(screen.getByText("You haven't met the prerequisites yet.")).toBeTruthy();
     expect(screen.getByLabelText("Grade")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save grade" })).toBeTruthy();
   });
