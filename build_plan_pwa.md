@@ -464,8 +464,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 - [x] **Prereq and course API tests pass.**
 - [x] **Every file in `data/curricula/` passes the curriculum data test.**
-- [ ] **On staging, a seeded student records a grade from the map, and the course turns done and unlocks its dependants.**
-- [ ] **(Manual) On staging, a student fills an elective slot with their own course, adds an extra course that takes them over the degree total, then excludes it, and the totals update each time.**
+- [x] **On staging, a seeded student records a grade from the map, and the course turns done and unlocks its dependants.**
+- [x] **(Manual) On staging, a student fills an elective slot with their own course, adds an extra course that takes them over the degree total, then excludes it, and the totals update each time.**
 
 ---
 
@@ -692,8 +692,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist
 
-- [ ] `src/server/moderation/rules.ts` and `screen.ts` with a `ModelStep` interface and a `StubModelStep`.
-- [ ] Shared column set and helpers for moderation status. `visibleTo(user)` filter in the repo layer.
+- [x] `src/server/moderation/rules.ts` and `screen.ts` with a `ModelStep` interface and a `StubModelStep`.
+- [x] Shared column set and helpers for moderation status. `visibleTo(user)` filter in the repo layer.
 - [ ] Probing counter through `rateLimit()`, and the mod-panel flag.
 - [ ] Mod queue: held posts and reports in one list, showing the text, the author's username, the model category and confidence, the rule flags, and the queue size at the top. Approve and reject actions notify the author.
 - [ ] Reject-reason messages from D, mapped per category.
@@ -705,8 +705,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/server/moderation/rules.test.ts`: student IDs with and without spaces, a Luhn card number is caught, a BD phone number in text is not, a non-allowlisted URL, length limits, banned words.
-- [ ] `src/server/moderation/screen.test.ts`: a rule violation never calls the model step (spy), a stub approve publishes, the stub with images gives review, an invalid image is rejected by the rules, the forced flag gives review, a model error or timeout gives review, the audit row has actor `automod`.
+- [x] `src/server/moderation/rules.test.ts`: student IDs with and without spaces, a Luhn card number is caught, a BD phone number in text is not, a non-allowlisted URL, length limits, banned words, bad images.
+- [x] `src/server/moderation/screen.test.ts`: a rule violation never calls the model step (spy), a stub approve publishes, the stub with images gives review, an invalid image is rejected by the rules, the forced flag gives review, a model error or timeout gives review, the audit row has actor `automod`. (The audit row and the daily cap need D1, so they are in `record.api.test.ts`.)
 - [ ] `src/server/moderation/queue.api.test.ts`: a pending post is hidden from other students, the mod decision overrides and notifies the author, 3 rejections trigger the cooldown, an edit is screened again.
 - [ ] Run: `vp test moderation`
 

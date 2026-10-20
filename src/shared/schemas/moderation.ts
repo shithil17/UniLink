@@ -6,6 +6,25 @@ export const verdict = z.enum(["approve", "review", "reject"]);
 
 export const screenResult = z.object({ verdict, category: reasonCategory });
 
+/** The deterministic rules that can flag a post. The queue shows these next to the model's category. */
+export const ruleName = z.enum([
+  "student_id",
+  "card_number",
+  "url",
+  "contact_format",
+  "length",
+  "banned_word",
+  "image",
+]);
+
+/** What a model step returns. Validated before use: model output is never trusted as it comes. */
+export const modelStepResult = screenResult.extend({
+  /** 0 to 1: how sure the model is of its verdict. */
+  confidence: z.number().min(0).max(1).nullable(),
+  /** Per-category scores, kept in the audit row only. Never shown to the author. */
+  scores: z.record(z.string(), z.number()),
+});
+
 // These lengths are shared with the client forms, so they live here rather than in `limits.ts`.
 export const REASON_MIN_LENGTH = 3;
 // ceiling: a mod reason is one or two sentences in the audit log. Revisit if mods ask for longer notes.

@@ -1,5 +1,5 @@
 // The audit actions the moderation tools write, shared so the server and the audit screen agree.
-// Other phases write their own action strings (for example automod holds); the screen prints those as is.
+// Other phases write their own action strings; the screen prints those as is.
 
 export const auditActions = {
   ban: "ban",
@@ -11,6 +11,9 @@ export const auditActions = {
   resolveReport: "resolve_report",
   idLookup: "id_lookup",
   reverse: "reverse",
+  automodApprove: "automod_approve",
+  automodHold: "automod_hold",
+  automodReject: "automod_reject",
 } as const;
 
 export type AuditAction = (typeof auditActions)[keyof typeof auditActions];
@@ -38,6 +41,9 @@ const LABELS: Record<AuditAction, string> = {
   resolve_report: "Closed a report",
   id_lookup: "Looked up a student ID",
   reverse: "Reversed an action",
+  automod_approve: "Published a post",
+  automod_hold: "Held a post for review",
+  automod_reject: "Rejected a post",
 };
 
 /** Plain words for an audit action; an action from another phase falls back to its raw name. */

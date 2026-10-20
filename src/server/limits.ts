@@ -68,4 +68,32 @@ export const limits = {
   auditFilterMaxLength: AUDIT_FILTER_MAX_LENGTH,
   // ceiling: 12 characters from a 32-letter alphabet is about 60 bits, plenty for a password that must be replaced at the next login. Revisit if the alphabet or the login rules change.
   tempPasswordLength: 12,
+  /** The screening pipeline: what the rules accept and how long the model step may take. */
+  screen: {
+    // ceiling: the longest screened field (a description or note) is a few paragraphs; a wall of text is spam. Per-post-type schemas set tighter caps. Revisit if honest posts are rejected for length.
+    textMaxLength: 2000,
+    // ceiling: matches the 3-photo cap on lost-and-found and marketplace posts. Revisit with that cap.
+    imagesMax: 3,
+    // ceiling: the browser re-encodes to WebP at quality 0.8 with a 1600px longest side, which lands well under this. The Worker never converts images. Revisit if honest photos are rejected.
+    imageMaxBytes: 512 * 1024,
+    // ceiling: the browser resizes the longest side to this before encoding. Revisit with the client encoder.
+    imageMaxSidePx: 1600,
+    // ceiling: a post waits on this call, so a slow model must not hold the request open. A timeout means pending_review. Revisit once Clef latency is measured.
+    modelTimeoutMs: 8 * SECOND,
+    // ceiling: keeps a day of model calls inside the free Workers AI allowance (the window is the UTC day, which is when Cloudflare resets it). Over this, posts wait for a moderator. Revisit with real traffic.
+    modelDailyCap: 2000,
+    modelCapWindowMs: DAY,
+    // ceiling: the audit row keeps enough text for a mod to see what was judged, not a whole essay. Revisit if mods need more.
+    snapshotMaxLength: 1000,
+    // ceiling: a student ID typed in groups ("22 1 2345 0 42") spans at most this many digit groups, and a card at most five. Bounds the scan so a long run of numbers stays cheap. Revisit if people split IDs further.
+    digitGroupsMax: 6,
+  },
+  /** Probing: someone resubmitting a post until the screen lets it through. */
+  probing: {
+    // ceiling: three rejections in an hour is more than an honest mistake or two. Revisit if mods see honest students flagged.
+    rejections: 3,
+    windowMs: HOUR,
+    // ceiling: long enough to stop a retry loop, short enough not to punish a real mistake. Revisit if probing continues after the cooldown.
+    cooldownMs: HOUR,
+  },
 } as const;

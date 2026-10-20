@@ -218,6 +218,28 @@ export function usersRepo(db: Db) {
         .set({ ...passwordColumns(password), mustChangePassword: true })
         .where(eq(users.id, id));
     },
+    /** The probing columns: when posting is blocked until, and when the user was last flagged. */
+    async probingState(
+      id: number,
+    ): Promise<Pick<UserRow, "postingBlockedUntil" | "probingFlaggedAt"> | null> {
+      return (
+        (await db
+          .select({
+            postingBlockedUntil: users.postingBlockedUntil,
+            probingFlaggedAt: users.probingFlaggedAt,
+          })
+          .from(users)
+          .where(eq(users.id, id))
+          .get()) ?? null
+      );
+    },
+    /** Starts a posting cooldown and sets the persistent flag. The flag stays until a mod clears it. */
+    async blockPosting(id: number, until: number, now: number) {
+      await db
+        .update(users)
+        .set({ postingBlockedUntil: until, probingFlaggedAt: now })
+        .where(eq(users.id, id));
+    },
     /**
      * The update that puts a snapshot back (not run here, so a reversal can batch it with its audit
      * row). Only the columns in the snapshot are written.
