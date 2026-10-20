@@ -4,8 +4,22 @@ import { activeModSection, mainTabs, modSectionsFor } from "./nav";
 const student = { role: "student", mustChangePassword: false } as const;
 
 describe("mainTabs", () => {
-  it("gives a student four tabs and no Mod tab", () => {
-    expect(mainTabs(student).map((t) => t.label)).toEqual(["Home", "Courses", "Inbox", "Settings"]);
+  it("gives a student five tabs, with Routine and no Mod tab", () => {
+    expect(mainTabs(student).map((t) => t.label)).toEqual([
+      "Home",
+      "Courses",
+      "Routine",
+      "Inbox",
+      "Settings",
+    ]);
+  });
+
+  it("keeps the Routine tab away from mods and admins, who have no routine", () => {
+    for (const role of ["mod", "admin"] as const) {
+      expect(mainTabs({ role, mustChangePassword: false }).map((t) => t.label)).not.toContain(
+        "Routine",
+      );
+    }
   });
 
   it("adds the Mod tab for mods and admins, and stays within five", () => {

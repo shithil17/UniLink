@@ -18,3 +18,9 @@ export function dhakaDate(now: number = Date.now()): { year: number; month: numb
 export function dhakaWeekday(now: number = Date.now()): number {
   return new Date(now + DHAKA_OFFSET_MS).getUTCDay();
 }
+
+/** Minutes after midnight in Asia/Dhaka at the instant `now` (UTC epoch ms). */
+export function dhakaMinutes(now: number = Date.now()): number {
+  const d = new Date(now + DHAKA_OFFSET_MS);
+  return d.getUTCHours() * 60 + d.getUTCMinutes();
+}

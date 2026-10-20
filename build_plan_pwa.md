@@ -738,7 +738,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 - [x] `routine_entries` table and API (owner only).
 - [x] `src/shared/routine.ts`: `overlaps(entries)`.
-- [ ] Home "Today" list (time order, Asia/Dhaka) with a link to the full routine. A full-week screen with "No classes" on empty days. An add/edit form showing the overlap warning.
+- [x] Home "Today" list (time order, Asia/Dhaka) with a link to the full routine. A full-week screen with "No classes" on empty days. An add/edit form showing the overlap warning.
 
 ### Checklist — Docs & QA (C, D)
 

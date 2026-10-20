@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
   dhakaDayLetter,
+  entryStatus,
   joinDays,
+  nextEntry,
   overlaps,
   overlapsWith,
   parseDays,
@@ -102,5 +104,35 @@ describe("helpers", () => {
     expect(timeToMinutes("24:00")).toBeNull();
     expect(timeToMinutes("10:60")).toBeNull();
     expect(timeToMinutes("noon")).toBeNull();
+  });
+});
+
+describe("entryStatus and nextEntry", () => {
+  const classes = [
+    slot(1, ["T"], "08:00", "09:30"),
+    slot(2, ["T"], "09:30", "11:00"),
+    slot(3, ["T"], "14:00", "15:30"),
+  ];
+  // Dhaka is UTC+6: 03:00 UTC is 09:00 in Dhaka.
+  const at = (h: number, m = 0) => Date.UTC(2026, 9, 20, h - 6, m);
+
+  it("is upcoming before the start, current from the start, done from the end", () => {
+    expect(entryStatus(classes[0], at(7, 59))).toBe("upcoming");
+    expect(entryStatus(classes[0], at(8, 0))).toBe("current");
+    expect(entryStatus(classes[0], at(9, 29))).toBe("current");
+    expect(entryStatus(classes[0], at(9, 30))).toBe("done");
+  });
+
+  it("reads the Dhaka clock, not UTC", () => {
+    // 03:00 UTC is 09:00 in Dhaka: class 1 is in progress, though UTC says it has not started.
+    expect(entryStatus(classes[0], Date.UTC(2026, 9, 20, 3, 0))).toBe("current");
+  });
+
+  it("picks the class in progress, else the next one, else nothing", () => {
+    expect(nextEntry(classes, at(7, 0))?.id).toBe(1);
+    expect(nextEntry(classes, at(9, 30))?.id).toBe(2);
+    expect(nextEntry(classes, at(12, 0))?.id).toBe(3);
+    expect(nextEntry(classes, at(16, 0))).toBeNull();
+    expect(nextEntry([], at(9, 0))).toBeNull();
   });
 });

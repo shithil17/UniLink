@@ -1,4 +1,4 @@
-import { dhakaWeekday } from "./time.ts";
+import { dhakaMinutes, dhakaWeekday } from "./time.ts";
 
 // Day letters as printed on the NSU routine. Index = JS weekday (0 is Sunday), so the list is
 // also the order of the week.
@@ -73,15 +73,44 @@ export function overlaps(entries: readonly Slot[]): [number, number][] {
   return pairs.map(([x, y]) => (x < y ? [x, y] : [y, x]));
 }
 
-/** The entries held on the Asia/Dhaka weekday of `now`, earliest start first (ties by earlier end, then id). */
-export function todayEntries<T extends Slot>(entries: readonly T[], now: number = Date.now()): T[] {
-  const today = dhakaDayLetter(now);
+/** The entries held on `day`, earliest start first (ties by earlier end, then id). */
+export function entriesOn<T extends Slot>(entries: readonly T[], day: RoutineDay): T[] {
   return entries
-    .filter((e) => e.days.includes(today))
+    .filter((e) => e.days.includes(day))
     .toSorted(
       (a, b) =>
         (timeToMinutes(a.start) ?? 0) - (timeToMinutes(b.start) ?? 0) ||
         (timeToMinutes(a.end) ?? 0) - (timeToMinutes(b.end) ?? 0) ||
         a.id - b.id,
     );
+}
+
+/** The entries held on the Asia/Dhaka weekday of `now`, in time order. */
+export function todayEntries<T extends Slot>(entries: readonly T[], now: number = Date.now()): T[] {
+  return entriesOn(entries, dhakaDayLetter(now));
+}
+
+export type ClassStatus = "upcoming" | "current" | "done";
+
+/**
+ * Where a class held today stands at `now`, in Asia/Dhaka minutes: before its start it is upcoming,
+ * from its start until its end (exclusive) it is current, after that done. Only call it for an
+ * entry from `todayEntries`; the day is not checked here.
+ */
+export function entryStatus(
+  entry: Pick<Slot, "start" | "end">,
+  now: number = Date.now(),
+): ClassStatus {
+  const minutes = dhakaMinutes(now);
+  if (minutes < (timeToMinutes(entry.start) ?? 0)) return "upcoming";
+  return minutes < (timeToMinutes(entry.end) ?? 0) ? "current" : "done";
+}
+
+/** The class in progress, else the next one to start, from today's entries in time order. Null when none is left. */
+export function nextEntry<T extends Slot>(today: readonly T[], now: number = Date.now()): T | null {
+  return (
+    today.find((e) => entryStatus(e, now) === "current") ??
+    today.find((e) => entryStatus(e, now) === "upcoming") ??
+    null
+  );
 }

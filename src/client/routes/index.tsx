@@ -4,11 +4,19 @@ import type { ReactNode } from "react";
 import { CreditBar } from "@/components/courses/CreditBar";
 import { StateMark } from "@/components/courses/StateMark";
 import { SectionHeader } from "@/components/layout/SectionHeader";
+import {
+  NextClassPanel,
+  NextClassSkeleton,
+  TodaySection,
+  type RoutineView,
+} from "@/components/routine/TodaySection";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { focusRing } from "@/components/ui/focus";
 import { formatCredits, overNote } from "@/lib/courseMap";
 import { selectHomeState, unlockedNext, UNLOCKED_NEXT_MAX } from "@/lib/home";
-import { courseMapQuery, meQuery } from "@/lib/queries";
+import { courseMapQuery, meQuery, routineQuery } from "@/lib/queries";
+import { nextClassOf, routineCourseChoices, titleByCode } from "@/lib/routine";
+import { useNow } from "@/lib/useNow";
 import type { CourseMap } from "../../shared/schemas/courses";
 import { slotLabel } from "../../shared/slotChoice";
 
@@ -24,6 +32,10 @@ function Home() {
   const me = useQuery(meQuery);
   const map = useQuery({ ...courseMapQuery, enabled: me.data != null });
   const state = selectHomeState(me, map);
+  // The routine is a student feature: mods and admins never ask for it (the API would answer 403).
+  const isStudent = me.data?.role === "student";
+  const routine = useQuery({ ...routineQuery, enabled: isStudent });
+  const now = useNow();
 
   const retry = () => {
     void (me.isError ? me.refetch() : map.refetch());
@@ -34,39 +46,50 @@ function Home() {
       {state === "loading" ? <HomeLoading /> : null}
       {state === "signedOut" ? <SignedOut /> : null}
       {state === "error" ? <HomeError onRetry={retry} /> : null}
-      {state === "empty" ? <NoCurriculum /> : null}
-      {state === "ready" && map.data ? <HomeReady map={map.data} /> : null}
+      {state === "empty" ? (
+        <>
+          <NoCurriculum />
+          {isStudent ? <TodaySection routine={routine} titles={new Map()} now={now} /> : null}
+        </>
+      ) : null}
+      {state === "ready" && map.data ? (
+        <HomeReady map={map.data} routine={isStudent ? routine : null} now={now} />
+      ) : null}
     </div>
   );
 }
 
-function HomeReady({ map }: { map: CourseMap }) {
-  const { curriculum, degree } = map;
-  const over = overNote(degree.earned, degree.required);
+function HomeReady({
+  map,
+  routine,
+  now,
+}: {
+  map: CourseMap;
+  /** The student's routine, or null for a mod or admin, who have none. */
+  routine: RoutineView | null;
+  now: number;
+}) {
   const { items, total } = unlockedNext(map);
+  const titles = titleByCode(routineCourseChoices(map));
+  // The panel shows the class in progress or the next one today. With none left, or no routine, it
+  // falls back to the degree standing. It waits for the routine so it does not swap after loading.
+  const nextClass = nextClassOf(routine?.data, now);
 
   return (
     <>
-      <section className={panel} aria-labelledby="standing-title">
-        <h1 id="standing-title" className="text-sm text-soft">
-          {curriculum?.programName}
-        </h1>
-        <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
-          <span className="text-4xl font-semibold text-ink tabular-nums">
-            {formatCredits(degree.earned)}
-          </span>
-          <span className="text-sm text-soft tabular-nums">
-            of {formatCredits(degree.required)} credits{over ? `, ${over}` : ""}
-          </span>
-        </p>
-        <CreditBar earned={degree.earned} required={degree.required} className="mt-4" />
-        <Link
-          to="/courses"
-          className={buttonVariants({ size: "lg", className: "mt-5 w-full md:w-auto" })}
-        >
-          Record a grade
-        </Link>
-      </section>
+      {routine?.isPending ? (
+        <NextClassSkeleton className={panel} />
+      ) : nextClass ? (
+        <NextClassPanel
+          className={panel}
+          entry={nextClass}
+          title={titles.get(nextClass.courseCode)}
+          now={now}
+        />
+      ) : (
+        <StandingPanel map={map} />
+      )}
+      {routine ? <TodaySection routine={routine} titles={titles} now={now} /> : null}
 
       <section aria-label="Unlocked next">
         <SectionHeader
@@ -129,6 +152,33 @@ function HomeReady({ map }: { map: CourseMap }) {
         ) : null}
       </section>
     </>
+  );
+}
+
+function StandingPanel({ map }: { map: CourseMap }) {
+  const { curriculum, degree } = map;
+  const over = overNote(degree.earned, degree.required);
+  return (
+    <section className={panel} aria-labelledby="standing-title">
+      <h1 id="standing-title" className="text-sm text-soft">
+        {curriculum?.programName}
+      </h1>
+      <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
+        <span className="text-4xl font-semibold text-ink tabular-nums">
+          {formatCredits(degree.earned)}
+        </span>
+        <span className="text-sm text-soft tabular-nums">
+          of {formatCredits(degree.required)} credits{over ? `, ${over}` : ""}
+        </span>
+      </p>
+      <CreditBar earned={degree.earned} required={degree.required} className="mt-4" />
+      <Link
+        to="/courses"
+        className={buttonVariants({ size: "lg", className: "mt-5 w-full md:w-auto" })}
+      >
+        Record a grade
+      </Link>
+    </section>
   );
 }
 

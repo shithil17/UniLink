@@ -5,6 +5,7 @@ import { courseMap } from "../../shared/schemas/courses";
 import { facultyOption } from "../../shared/schemas/faculty";
 import { healthResponse } from "../../shared/schemas/health";
 import { notificationPage, unreadCount } from "../../shared/schemas/inbox";
+import { routineEntry } from "../../shared/schemas/routine";
 import { z } from "zod";
 import { ApiError, apiGet } from "./api";
 import { INBOX_POLL_MS } from "./inbox";
@@ -89,4 +90,10 @@ export const facultyQuery = queryOptions({
   queryKey: ["faculty"],
   queryFn: () => apiGet("/api/faculty", z.array(facultyOption)),
   staleTime: Infinity,
+});
+
+/** The signed-in student's classes for the current term. Any routine write invalidates the `routine` prefix. */
+export const routineQuery = queryOptions({
+  queryKey: ["routine", "list"],
+  queryFn: () => apiGet("/api/routine", z.array(routineEntry)),
 });

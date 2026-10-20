@@ -2,25 +2,31 @@ import type { Me } from "../../shared/schemas/auth";
 
 type Role = Me["role"];
 
-export type MainTab = { to: "/" | "/courses" | "/inbox" | "/mod" | "/settings"; label: string };
+export type MainTab = {
+  to: "/" | "/courses" | "/routine" | "/inbox" | "/mod" | "/settings";
+  label: string;
+};
 
-const baseTabs: readonly MainTab[] = [
-  { to: "/", label: "Home" },
-  { to: "/courses", label: "Courses" },
-  { to: "/inbox", label: "Inbox" },
-];
+const homeTab: MainTab = { to: "/", label: "Home" };
+const coursesTab: MainTab = { to: "/courses", label: "Courses" };
+const routineTab: MainTab = { to: "/routine", label: "Routine" };
+const inboxTab: MainTab = { to: "/inbox", label: "Inbox" };
+const modTab: MainTab = { to: "/mod", label: "Mod" };
+const settingsTab: MainTab = { to: "/settings", label: "Settings" };
 
 /**
  * The top-level destinations, in bar order. Signed-out users and anyone forced to change their
  * password get none: every tab would just bounce them back, so the shell shows the wordmark only.
- * Mods and admins get a fifth tab for the moderation panel, which keeps the bar at five or fewer.
+ * Students get the Routine tab; mods and admins get the Mod tab instead, because the routine is
+ * private to students. That keeps the bar at five.
  */
 export function mainTabs(
   user: { role: Role; mustChangePassword: boolean } | null | undefined,
 ): MainTab[] {
   if (!user || user.mustChangePassword) return [];
-  const mod: MainTab[] = user.role === "student" ? [] : [{ to: "/mod", label: "Mod" }];
-  return [...baseTabs, ...mod, { to: "/settings", label: "Settings" }];
+  return user.role === "student"
+    ? [homeTab, coursesTab, routineTab, inboxTab, settingsTab]
+    : [homeTab, coursesTab, inboxTab, modTab, settingsTab];
 }
 
 export type ModSection = {
