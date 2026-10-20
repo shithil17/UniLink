@@ -17,6 +17,15 @@ const router = createRouter({
   scrollRestoration: true,
 });
 
+// The service worker asks the open app to show a page when a notification is tapped
+// (public/push-sw.js). Only same-origin paths are followed.
+navigator.serviceWorker?.addEventListener("message", (event: MessageEvent) => {
+  const { type, url } = (event.data ?? {}) as { type?: unknown; url?: unknown };
+  if (type !== "unilink:navigate" || typeof url !== "string") return;
+  if (!url.startsWith("/") || url.startsWith("//")) return;
+  router.history.push(url);
+});
+
 declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;

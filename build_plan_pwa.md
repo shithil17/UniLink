@@ -578,7 +578,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Test Gate 5
 
 - [x] **Inbox tests pass, and the `notify()` signature matches `docs/api-contracts.md`.**
-- [ ] **(Manual) On staging, with the VAPID secrets set, a test push from Settings (signed in as the admin) arrives on Android Chrome and on iOS after Add to Home Screen, tapping it opens the inbox, and logging out stops pushes to that device.**
+- [x] **(Manual) On staging, with the VAPID secrets set, a test push from Settings (signed in as the admin) arrives on Android Chrome and on iOS after Add to Home Screen, tapping it opens the inbox, and logging out stops pushes to that device.**
 
 ---
 

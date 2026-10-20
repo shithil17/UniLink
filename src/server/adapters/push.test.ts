@@ -105,7 +105,7 @@ describe("webPushSender", () => {
     const headers = seen!.init.headers as Record<string, string>;
     expect(headers["content-encoding"]).toBe("aes128gcm");
     expect(headers.ttl).toBe(String(limits.pushTtlSeconds));
-    expect(headers.urgency).toBe("normal");
+    expect(headers.urgency).toBe("high");
 
     // The device can decrypt exactly what was sent.
     expect(JSON.parse(await receiver.decrypt(seen!.init.body as Uint8Array))).toEqual(message);

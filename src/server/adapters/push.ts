@@ -53,8 +53,10 @@ export function webPushSender(
   return {
     async send(target, message) {
       try {
+        // "high" asks the push service to wake a dozing phone now; every push here is one a
+        // person is waiting to see, and there are few of them.
         const payload = await buildPushPayload(
-          { data: message, options: { ttl: limits.pushTtlSeconds, urgency: "normal" } },
+          { data: message, options: { ttl: limits.pushTtlSeconds, urgency: "high" } },
           {
             endpoint: target.endpoint,
             expirationTime: null,
