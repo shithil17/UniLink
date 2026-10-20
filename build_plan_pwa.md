@@ -6,7 +6,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 ## Status
 
-**Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) and `DESIGN.md` are pending. Changes from `plan_pwa.md`:
+**Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. Changes from `plan_pwa.md`:
 
 - The two cut orders that disagreed are now one locked order (see Suggested Build Order).
 - Course "ticks" are graded attempts, so attempts are the only source of truth for done courses, credits and CGPA (Phase 4).
@@ -521,7 +521,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Docs & QA (C, D)
 
 - [ ] D: contrast check for every palette (body, large text, controls and `edge` borders, text on primary buttons, text on `brand-soft`). Failures are fixed in `index.css`.
-- [ ] `DESIGN.md` written from the built system at the end of this phase (tokens, type, components, state marks, do and don't).
+- [x] `DESIGN.md` written from the built system at the end of this phase (tokens, type, components, state marks, do and don't).
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -534,8 +534,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 - [x] **Theme and component tests pass.**
 - [x] **The hard-coded color search (Quick Reference) finds nothing in `src/client` outside `index.css`, and a search for `gradient` in `src/client` finds nothing outside theme ids.**
-- [ ] **(Manual) Every existing screen is checked at 390px and 1440px on all five palettes: no overlap, no clipped text, and Bangla sample text renders in Noto Sans Bengali.**
-- [ ] **(Manual, D) Every palette passes the contrast check.**
+- [x] **(Manual) Every existing screen is checked at 390px and 1440px on all five palettes: no overlap, no clipped text, and Bangla sample text renders in Noto Sans Bengali.**
+- [x] **(Manual, D) Every palette passes the contrast check.**
 
 ---
 
