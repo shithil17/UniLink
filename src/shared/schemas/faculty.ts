@@ -11,6 +11,17 @@ export const facultySummary = z.object({
   limitedData: z.boolean(),
 });
 
+/** What the attempt picker needs to show a faculty member. */
+export const facultyOption = facultySummary.pick({
+  id: true,
+  name: true,
+  initials: true,
+  designation: true,
+});
+
+/** One entry of `data/faculty.json`. */
+export const facultySeedEntry = facultyOption.omit({ id: true });
+
 export const facultySummaryUpdate = z.object({
   summary: z.string(),
   tags: z.array(z.string()),
@@ -38,3 +49,6 @@ export const finderMatchResponse = z.object({
     }),
   ),
 });
+
+export type FacultyOption = z.infer<typeof facultyOption>;
+export type FacultySeedEntry = z.infer<typeof facultySeedEntry>;

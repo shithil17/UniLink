@@ -326,8 +326,8 @@ describe("GET /api/courses/map", () => {
     const mod = await signedIn({ role: "mod" });
     await importFixture(mod.token);
     const { token } = await signedIn();
-    await attempt(token, "BBB101");
-    await attempt(token, "BBB101", "A"); // the same course twice is still one course
+    await attempt(token, "BBB101", "C");
+    await attempt(token, "BBB101", "B"); // a retake below B+: the same course twice is still one course
     await attempt(token, "AAA101");
     const map = await getMap(token);
     expect(slot(map, "CHO101")).toMatchObject({ status: "done", filledBy: "AAA101" });

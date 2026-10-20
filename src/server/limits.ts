@@ -35,6 +35,8 @@ export const limits = {
   courseImportMaxRows: 300,
   // ceiling: bounds D1 rows per user; a degree has around a dozen elective slots. Revisit if students report hitting it.
   studentCoursesMax: 40,
+  // ceiling: the CSE faculty list is around a hundred people, so the picker loads it in one go. Revisit if the list grows past this.
+  facultyListMax: 500,
   // ceiling: a whole transcript entered in one sitting is roughly 50 attempts. Revisit if students hit it.
   attemptWrites: { limit: 200, windowMs: HOUR },
   // ceiling: a student has a phone, a laptop and a spare browser or two. Past this, subscribing is a 409 until a device is switched off. Revisit if students report hitting it.

@@ -601,10 +601,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist
 
-- [ ] `faculty` table and a seeded list (D). Faculty picker component.
-- [ ] Migration: `attempts.faculty_id` (nullable). The full attempt form makes term required for new attempts.
-- [ ] `grading.ts`: grade points, `bestAttempt()`, `cgpa()`, `earnedCredits()`, `canRetake()`.
-- [ ] Attempt API: create, edit, delete. Create and edit run `canRetake()` and return a clear error when a retake is not allowed.
+- [x] `faculty` table and a seeded list (D) (`data/faculty.json`, placeholder data; `GET /api/faculty`).
+- [ ] Faculty picker component.
+- [x] Migration: `attempts.faculty_id` (nullable). The full attempt form makes term required for new attempts (`attemptFullInput`; the API keeps term optional for the map's quick form).
+- [x] `grading.ts`: grade points, `bestAttempt()`, `cgpa()`, `earnedCredits()`, `canRetake()`.
+- [x] Attempt API: create, edit, delete (plus list and `GET /api/attempts/summary`). Create and edit run `canRetake()` and return a clear error when a retake is not allowed.
 - [ ] Screens: attempt history per course, CGPA summary, credits remaining by category, a retake badge.
 
 ### Checklist — Docs & QA (C, D)
@@ -614,13 +615,13 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/grading.test.ts`: every grade point, best of several attempts, F then a pass, F only, I and W only, a waived course (credits, no CGPA), a non-credit course, the retake blocked at B+ and above, allowed below it, I and W never block, credits counted once.
-- [ ] `src/server/features/attempts/attempts.api.test.ts`: retake validation on create and edit, a mod gets 403 on another user's attempts and CGPA.
-- [ ] Run: `vp test grading attempts`
+- [x] `src/shared/grading.test.ts`: every grade point, best of several attempts, F then a pass, F only, I and W only, a waived course (credits, no CGPA), a non-credit course, the retake blocked at B+ and above, allowed below it, I and W never block, credits counted once.
+- [x] `src/server/features/attempts/attempts.api.test.ts`: retake validation on create and edit, a mod gets 403 on another user's attempts and CGPA (implemented as 404: no route names another user, and another user's attempt id is not found).
+- [x] Run: `vp test grading attempts`
 
 ### Test Gate 6
 
-- [ ] **Grading and attempt tests pass.**
+- [x] **Grading and attempt tests pass.**
 - [ ] **(Manual) A seeded student's CGPA on staging matches a hand calculation done by D.**
 
 ---
