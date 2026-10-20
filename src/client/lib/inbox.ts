@@ -1,5 +1,3 @@
-import type { Notification } from "../../shared/schemas/inbox";
-
 // ceiling: the nav badge reads "9+" past this count so it never outgrows the tab. Revisit if
 // students ask for exact counts.
 export const INBOX_BADGE_MAX = 9;
@@ -14,39 +12,8 @@ export function badgeLabel(count: number): string {
   return count > INBOX_BADGE_MAX ? `${INBOX_BADGE_MAX}+` : String(count);
 }
 
-export type NotificationCopy = { title: string; detail: string };
-
-const COPY: Record<Notification["type"], NotificationCopy> = {
-  post_approved: {
-    title: "Your post is live",
-    detail: "A moderator approved it, so other students can see it now.",
-  },
-  post_rejected: {
-    title: "Your post wasn't approved",
-    detail: "A moderator held it back. You can edit it and send it again.",
-  },
-  resource_requested: {
-    title: "A student is looking for a resource",
-    detail: "It matches a course you have taken. Have a look and share a link if you can help.",
-  },
-  resource_submitted: {
-    title: "Someone sent a link for your request",
-    detail: "Open your request to accept it or turn it down.",
-  },
-  resource_accepted: {
-    title: "Your link was accepted",
-    detail: "The student who asked found it useful.",
-  },
-  lost_found_possible_match: {
-    title: "A found post may match your lost item",
-    detail: "Someone posted something similar. Check whether it's yours.",
-  },
-};
-
-/** Words for a notification, built here from its type. Free text from a payload is never shown. */
-export function notificationCopy(type: Notification["type"]): NotificationCopy {
-  return COPY[type];
-}
+// The words for each notification type live in shared code so web push uses the same text.
+export { notificationCopy, type NotificationCopy } from "../../shared/notificationCopy";
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;

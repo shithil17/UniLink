@@ -8,6 +8,7 @@ import {
   type SignupRequest,
 } from "../../shared/schemas/auth";
 import { ApiError, apiPost } from "./api";
+import { disablePushBeforeLogout } from "./push";
 import { meQuery } from "./queries";
 
 /** Where a signed-in user lands: the forced password change first, otherwise Home. */
@@ -54,7 +55,11 @@ export function useLogout() {
     await navigate({ to: "/login" });
   };
   return useMutation({
-    mutationFn: () => apiPost("/api/auth/logout", z.object({ ok: z.boolean() })),
+    mutationFn: async () => {
+      // Needs the session, so it runs first. Best effort: it never blocks logging out.
+      await disablePushBeforeLogout();
+      return apiPost("/api/auth/logout", z.object({ ok: z.boolean() }));
+    },
     onSuccess: finish,
     // A 401 means the session was already gone, which is what logging out wanted anyway.
     onError: async (err) => {

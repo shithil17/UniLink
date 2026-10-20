@@ -551,6 +551,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 >
 > - The in-app inbox is the source of truth. `ceiling:` web push is stretch (S3).
 > - `notify(userIds, type, payload)` is the single **Observer** entry point. Types are an enum in `src/shared/schemas/inbox.ts`. A payload never contains another user's identity.
+>
+> Note (2026-10-20): web push (S3) is pulled forward into this phase. The inbox stays the source of truth and push is best effort. A user turns it on per device in Settings (iOS only after Add to Home Screen). `notify()` also pushes to the user's subscribed devices through a push adapter with a fake. A push carries only a title and body built on the server from the notification type (shared copy) and a link to `/inbox`, never payload text or anyone's identity. Push endpoints must be on a known push service host. Expired subscriptions (404/410) are deleted. Logging out removes the device's subscription. VAPID keys live in Worker secrets.
 
 ### Checklist
 
@@ -558,6 +560,14 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] `src/server/notify.ts` with batched inserts.
 - [x] `GET /api/inbox` (paginated), `GET /api/inbox/unread-count`, `POST /api/inbox/:id/read`, `POST /api/inbox/read-all`.
 - [x] Inbox screen and an unread badge in the navigation.
+
+### Checklist — Web push
+
+- [x] `push_subscriptions` table (user, endpoint unique, keys, `created_at`), capped per user by `limits`.
+- [x] Push adapter in `src/server/adapters/` (VAPID + payload encryption with WebCrypto) and a fake. `notify()` sends to the targets' subscriptions and deletes expired ones; a push failure never fails `notify()`.
+- [x] `GET /api/push/public-key`, `POST /api/push/subscribe`, `POST /api/push/unsubscribe`; a script to generate VAPID keys.
+- [x] Service worker shows the push and opens `/inbox` on tap. Settings has a per-device "Notifications" switch with the iOS install and blocked-permission states; logout unsubscribes the device.
+- [x] `src/server/features/push/push.api.test.ts`: subscribe and unsubscribe, a foreign host is rejected, the cap holds, `notify()` pushes only to targets through the fake, an expired subscription is deleted, push text never contains payload values.
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -1129,11 +1139,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ## Stretch phases (parked until the Sprint 4 go/no-go)
 
-| Phase | Work                                                                                                  | Owner |
-| ----- | ----------------------------------------------------------------------------------------------------- | ----- |
-| S1    | Probation tracker (CGPA below threshold warning per term)                                             | Dev A |
-| S2    | Retake improvement planner (which retakes raise CGPA the most)                                        | Dev A |
-| S3    | Web push (Android Chrome, and iOS only after Add to Home Screen). The inbox stays the source of truth | Dev B |
+| Phase | Work                                                                                                                                   | Owner |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| S1    | Probation tracker (CGPA below threshold warning per term)                                                                              | Dev A |
+| S2    | Retake improvement planner (which retakes raise CGPA the most)                                                                         | Dev A |
+| S3    | Web push (Android Chrome, and iOS only after Add to Home Screen). The inbox stays the source of truth. Moved into Phase 5 (2026-10-20) | Dev B |
 
 ---
 
