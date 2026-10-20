@@ -13,3 +13,8 @@ export function dhakaDate(now: number = Date.now()): { year: number; month: numb
   const d = new Date(now + DHAKA_OFFSET_MS);
   return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, day: d.getUTCDate() };
 }
+
+/** Day of the week in Asia/Dhaka at the instant `now` (UTC epoch ms): 0 is Sunday, 6 is Saturday. */
+export function dhakaWeekday(now: number = Date.now()): number {
+  return new Date(now + DHAKA_OFFSET_MS).getUTCDay();
+}

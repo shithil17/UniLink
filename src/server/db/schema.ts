@@ -267,6 +267,36 @@ export const studentCourses = sqliteTable(
   (t) => [uniqueIndex("student_courses_user_code_idx").on(t.userId, t.code)],
 );
 
+// A class a student attends in a term. Owner only: never read for another user, mods and admins
+// included, and never used in a notification.
+export const routineEntries = sqliteTable(
+  "routine_entries",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    termYear: integer("term_year").notNull(),
+    termSeason: text("term_season", { enum: ["spring", "summer", "fall"] }).notNull(),
+    // A curriculum slot code, an alternative code, or one of the user's student course codes.
+    courseCode: text("course_code").notNull(),
+    section: integer("section").notNull(),
+    // NSU day letters in week order, for example "MW". See src/shared/routine.ts.
+    days: text("days").notNull(),
+    // Minutes after midnight, Asia/Dhaka local time.
+    startMinutes: integer("start_minutes").notNull(),
+    endMinutes: integer("end_minutes").notNull(),
+    room: text("room").notNull().default(""),
+    // Faculty initials as printed on the routine; free text, not a link to the faculty table.
+    facultyInitials: text("faculty_initials").notNull().default(""),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [
+    index("routine_entries_user_term_idx").on(t.userId, t.termYear, t.termSeason),
+    check("routine_entries_times_check", sql`${t.endMinutes} > ${t.startMinutes}`),
+  ],
+);
+
 // In-app notifications, one row per recipient. Owner only: every read and write is scoped to the user.
 export const notifications = sqliteTable(
   "notifications",

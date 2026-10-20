@@ -736,8 +736,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist
 
-- [ ] `routine_entries` table and API (owner only).
-- [ ] `src/shared/routine.ts`: `overlaps(entries)`.
+- [x] `routine_entries` table and API (owner only).
+- [x] `src/shared/routine.ts`: `overlaps(entries)`.
 - [ ] Home "Today" list (time order, Asia/Dhaka) with a link to the full routine. A full-week screen with "No classes" on empty days. An add/edit form showing the overlap warning.
 
 ### Checklist — Docs & QA (C, D)
@@ -746,9 +746,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/routine.test.ts`: overlap, touching end and start (no overlap), different days, "today" correct across UTC midnight.
-- [ ] `src/server/features/routine/routine.api.test.ts`: owner only, a mod gets 403, clear term.
-- [ ] Run: `vp test routine`
+- [x] `src/shared/routine.test.ts`: overlap, touching end and start (no overlap), different days, "today" correct across UTC midnight.
+- [x] `src/server/features/routine/routine.api.test.ts`: owner only, a mod gets 403, clear term.
+- [x] Run: `vp test routine`
 
 ### Test Gate 9
 
