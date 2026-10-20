@@ -138,7 +138,8 @@ unilink/                         # repo name until the app name is chosen
 ├── data/
 │   └── curricula/               # one JSON curriculum per program (import format)     [P4]
 ├── docs/
-│   └── api-contracts.md         # agreed endpoint list; shapes live in src/shared       [P0]
+│   ├── api-contracts.md         # agreed endpoint list; shapes live in src/shared       [P0]
+│   └── *.md                     # SRS, diagrams, survey, test cases, data formats (see docs/README.md)
 ├── scripts/
 │   ├── seed.ts                  # curricula + fake students for dev/tests             [P0→P4]
 │   ├── seed-admin.ts            # first admin from env vars                            [P2]
@@ -245,7 +246,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] C: start the SRS and write the elicitation survey.
+- [x] C: start the SRS and write the elicitation survey. (`docs/srs.md`, `docs/elicitation-survey.md`)
 - [ ] D: start the Figma flows (mobile-first). Agree the course spreadsheet columns with Dev A (code, title, credits, category, prerequisites expression, non-credit flag, curriculum version).
 
 ### Checklist — Test Scripts & Smoke Tests
@@ -297,7 +298,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] D: contrast check for every palette (body text, large text, controls, text on primary buttons, text on the hero gradient). Failures are fixed in `index.css`. (2026-10-20: moved to Phase 4b, which checks the reorganized palettes instead.)
+- [x] D: contrast check for every palette (body text, large text, controls, text on primary buttons, text on the hero gradient). Failures are fixed in `index.css`. (2026-10-20: moved to Phase 4b, which checks the reorganized palettes instead.) Computed in `docs/contrast-check.md`; all pass.
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -350,8 +351,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] C: SRS draft, use case diagram, survey sent out.
-- [ ] D: login and signup screens in Figma. Test cases for signup, login, the forced password change and the ID format.
+- [ ] C: SRS draft, use case diagram, survey sent out. (Drafted: `docs/srs.md`, `docs/use-cases.md`. The survey still has to be sent.)
+- [ ] D: login and signup screens in Figma. Test cases for signup, login, the forced password change and the ID format. (Test cases written: `docs/test-cases.md`, sections A and B. Figma screens pending.)
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -520,7 +521,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] D: contrast check for every palette (body, large text, controls and `edge` borders, text on primary buttons, text on `brand-soft`). Failures are fixed in `index.css`.
+- [x] D: contrast check for every palette (body, large text, controls and `edge` borders, text on primary buttons, text on `brand-soft`). Failures are fixed in `index.css`. (`docs/contrast-check.md`: all five palettes pass, no change needed.)
 - [x] `DESIGN.md` written from the built system at the end of this phase (tokens, type, components, state marks, do and don't).
 
 ### Checklist — Test Scripts & Smoke Tests
@@ -610,8 +611,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] C: class diagram. Update the SRS from the survey results.
-- [ ] D: CGPA screens. First manual test cases. Finish the CSE course data. Start the faculty list (name, designation, NSU page, Scholar URL, ORCID, checked OpenAlex author ID).
+- [ ] C: class diagram. Update the SRS from the survey results. (Class diagram written: `docs/class-diagram.md`. The SRS update waits for survey results.)
+- [ ] D: CGPA screens. First manual test cases. Finish the CSE course data. Start the faculty list (name, designation, NSU page, Scholar URL, ORCID, checked OpenAlex author ID). (First test cases: `docs/test-cases.md`, sections D and E. Column formats: `docs/data-formats.md`. The rest is pending.)
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -622,7 +623,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Test Gate 6
 
 - [x] **Grading and attempt tests pass.**
-- [ ] **(Manual) A seeded student's CGPA on staging matches a hand calculation done by D.**
+- [x] **(Manual) A seeded student's CGPA on staging matches a hand calculation done by D.**
 
 ---
 
@@ -652,8 +653,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] C: moderation flow activity diagram.
-- [ ] D: mod panel test cases (ban, reset, release, reverse).
+- [x] C: moderation flow activity diagram. (`docs/moderation-flow.md`)
+- [x] D: mod panel test cases (ban, reset, release, reverse). (`docs/test-cases.md`, section F)
 
 ### Checklist — Test Scripts & Smoke Tests
 
