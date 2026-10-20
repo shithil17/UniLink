@@ -130,6 +130,10 @@ export default defineConfig({
             workbox: {
               // Precache the hashed shell only. index.html is left out so it can be network-first.
               globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
+              // The push handlers are loaded with importScripts, not precached, so the browser's own
+              // service worker update check sees any change to them.
+              globIgnores: ["push-sw.js"],
+              importScripts: ["push-sw.js"],
               navigateFallback: null,
               runtimeCaching: [
                 // API data is never cached.

@@ -1,14 +1,18 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { BookOpenIcon, HouseIcon, SettingsIcon } from "lucide-react";
+import { BellIcon, BookOpenIcon, HouseIcon, SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { InstallHint } from "@/components/pwa/InstallHint";
 import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
 import { focusRing } from "@/components/ui/focus";
 import { Toaster } from "@/components/ui/sonner";
+import { badgeLabel } from "@/lib/inbox";
+import { meQuery, unreadCountQuery } from "@/lib/queries";
 
 const navItems = [
   { to: "/", label: "Home", icon: HouseIcon },
   { to: "/courses", label: "Courses", icon: BookOpenIcon },
+  { to: "/inbox", label: "Inbox", icon: BellIcon },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ] as const;
 
@@ -17,6 +21,10 @@ const navItems = [
  * tabs sit in the top bar. The active tab shows by weight and ink, never by a fill.
  */
 export function AppLayout({ children }: { children: ReactNode }) {
+  const me = useQuery(meQuery);
+  // Only ask for the count once signed in; a failed poll just hides the badge.
+  const unread = useQuery({ ...unreadCountQuery, enabled: me.data != null }).data?.count ?? 0;
+
   return (
     <div className="min-h-dvh bg-app pb-[calc(3.5rem+env(safe-area-inset-bottom))] text-body md:pb-0">
       <header className="sticky top-0 z-10 border-b border-line bg-app pt-[env(safe-area-inset-top)]">
@@ -38,10 +46,25 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 activeOptions={{ exact: to === "/" }}
                 className={`flex h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs text-soft transition-colors hover:text-ink md:h-9 md:flex-none md:flex-row md:gap-2 md:rounded-control md:px-3 md:text-sm ${focusRing} [&.active]:font-semibold [&.active]:text-ink`}
               >
-                <Icon className="size-5 md:size-4" aria-hidden="true" />
+                <span className="relative">
+                  <Icon className="size-5 md:size-4" aria-hidden="true" />
+                  {to === "/inbox" && unread > 0 ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute -top-1.5 left-3 flex h-4 min-w-4 items-center justify-center rounded-control bg-ink px-1 text-xs leading-none font-semibold text-app tabular-nums md:left-2.5"
+                    >
+                      {badgeLabel(unread)}
+                    </span>
+                  ) : null}
+                </span>
                 {/* The bold copy reserves the width, so the row does not shift when a tab turns active. */}
                 <span className="grid">
-                  <span className="col-start-1 row-start-1">{label}</span>
+                  <span className="col-start-1 row-start-1">
+                    {label}
+                    {to === "/inbox" && unread > 0 ? (
+                      <span className="sr-only">, {unread} unread</span>
+                    ) : null}
+                  </span>
                   <span
                     aria-hidden="true"
                     className="invisible col-start-1 row-start-1 font-semibold"

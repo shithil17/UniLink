@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { id, instant } from "./common";
+import { id, instant, page } from "./common";
 
 // Every notification type. A payload never carries another user's identity.
 export const notificationType = z.enum([
@@ -11,6 +11,8 @@ export const notificationType = z.enum([
   "lost_found_possible_match",
 ]);
 
+export type NotificationType = z.infer<typeof notificationType>;
+
 export const notification = z.object({
   id,
   type: notificationType,
@@ -19,4 +21,11 @@ export const notification = z.object({
   createdAt: instant,
 });
 
+export type Notification = z.infer<typeof notification>;
+
+export const notificationPage = page(notification);
+
 export const unreadCount = z.object({ count: z.number().int().nonnegative() });
+
+/** The answer to "mark all read": how many notifications that changed. */
+export const readAllResult = z.object({ updated: z.number().int().nonnegative() });

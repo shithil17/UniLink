@@ -184,3 +184,43 @@ export const studentCourses = sqliteTable(
   },
   (t) => [uniqueIndex("student_courses_user_code_idx").on(t.userId, t.code)],
 );
+
+// In-app notifications, one row per recipient. Owner only: every read and write is scoped to the user.
+export const notifications = sqliteTable(
+  "notifications",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // A value of `notificationType` (src/shared/schemas/inbox.ts).
+    type: text("type").notNull(),
+    // Never names another user.
+    payload: text("payload", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    readAt: integer("read_at"),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [
+    // Unread count and mark-all-read.
+    index("notifications_user_read_idx").on(t.userId, t.readAt),
+    // The newest-first feed pages by id within one user.
+    index("notifications_user_id_idx").on(t.userId, t.id),
+  ],
+);
+
+// Web Push subscriptions, one row per browser/device. The endpoint is unique: signing in on a shared
+// device moves the row to the new user. `p256dh` and `auth` are the device's encryption keys. Private.
+export const pushSubscriptions = sqliteTable(
+  "push_subscriptions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [index("push_subscriptions_user_idx").on(t.userId)],
+);

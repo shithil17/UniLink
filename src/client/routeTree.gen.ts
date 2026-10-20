@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ChangePasswordRouteImport } from './routes/change-password'
 import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as DemoRouteImport } from './routes/demo'
+import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
@@ -36,6 +37,11 @@ const CoursesRoute = CoursesRouteImport.update({
 const DemoRoute = DemoRouteImport.update({
   id: '/demo',
   path: '/demo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InboxRoute = InboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/change-password': typeof ChangePasswordRoute
   '/courses': typeof CoursesRoute
   '/demo': typeof DemoRoute
+  '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/change-password': typeof ChangePasswordRoute
   '/courses': typeof CoursesRoute
   '/demo': typeof DemoRoute
+  '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/change-password': typeof ChangePasswordRoute
   '/courses': typeof CoursesRoute
   '/demo': typeof DemoRoute
+  '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/courses'
     | '/demo'
+    | '/inbox'
     | '/login'
     | '/settings'
     | '/signup'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/courses'
     | '/demo'
+    | '/inbox'
     | '/login'
     | '/settings'
     | '/signup'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/change-password'
     | '/courses'
     | '/demo'
+    | '/inbox'
     | '/login'
     | '/settings'
     | '/signup'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   ChangePasswordRoute: typeof ChangePasswordRoute
   CoursesRoute: typeof CoursesRoute
   DemoRoute: typeof DemoRoute
+  InboxRoute: typeof InboxRoute
   LoginRoute: typeof LoginRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/demo'
       fullPath: '/demo'
       preLoaderRoute: typeof DemoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inbox': {
+      id: '/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChangePasswordRoute: ChangePasswordRoute,
   CoursesRoute: CoursesRoute,
   DemoRoute: DemoRoute,
+  InboxRoute: InboxRoute,
   LoginRoute: LoginRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,

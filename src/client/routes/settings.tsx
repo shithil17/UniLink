@@ -2,11 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { ChevronRightIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { PushSwitch } from "@/components/push/PushSwitch";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { SectionHeader } from "@/components/layout/SectionHeader";
 import { ThemePickerTrigger } from "@/components/theme/ThemePicker";
 import { focusRingInset } from "@/components/ui/focus";
-import { meQuery } from "@/lib/queries";
+import { meQuery, pushPublicKeyQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/settings")({
   beforeLoad: async ({ context }) => {
@@ -32,6 +33,8 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 
 function Settings() {
   const { data: user } = useQuery(meQuery);
+  // No key means the server has push switched off, so the row would only be a dead end.
+  const { data: push } = useQuery(pushPublicKeyQuery);
 
   return (
     <div className="max-w-2xl space-y-8">
@@ -39,6 +42,13 @@ function Settings() {
       <Group title="Appearance">
         <ThemePickerTrigger />
       </Group>
+      {push ? (
+        <Group title="Notifications">
+          <div className={panel}>
+            <PushSwitch />
+          </div>
+        </Group>
+      ) : null}
       <Group title="Account">
         <div className={panel}>
           {user ? (
