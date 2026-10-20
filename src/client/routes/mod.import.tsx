@@ -50,7 +50,7 @@ function ImportPage() {
   };
 
   return (
-    <section className="max-w-3xl space-y-6">
+    <section className="space-y-6">
       <header className="space-y-1">
         <h1 className="text-xl font-semibold text-ink">Import a curriculum</h1>
         <p className="text-sm text-soft">

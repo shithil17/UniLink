@@ -29,14 +29,8 @@ export const reasonCategory = z.enum([
   "fine",
 ]);
 
-export const reportTargetType = z.enum([
-  "resource_request",
-  "resource_submission",
-  "faculty",
-  "ride",
-  "lost_found",
-  "listing",
-]);
+/** What a report can point at. Each post type adds one value here when it ships. */
+export const reportTargetType = z.enum(["user"]);
 
 /** Contact details; only ever returned by the per-post contact endpoint, never in feeds. */
 export const contacts = z.object({

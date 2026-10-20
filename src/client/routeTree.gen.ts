@@ -15,9 +15,15 @@ import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as DemoRouteImport } from './routes/demo'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ModRouteImport } from './routes/mod'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ModIndexRouteImport } from './routes/mod.index'
+import { Route as ModAuditRouteImport } from './routes/mod.audit'
+import { Route as ModIdConflictRouteImport } from './routes/mod.id-conflict'
 import { Route as ModImportRouteImport } from './routes/mod.import'
+import { Route as ModReportsRouteImport } from './routes/mod.reports'
+import { Route as ModUsersRouteImport } from './routes/mod.users'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -49,6 +55,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ModRoute = ModRouteImport.update({
+  id: '/mod',
+  path: '/mod',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -59,10 +70,35 @@ const SignupRoute = SignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ModIndexRoute = ModIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ModRoute,
+} as any)
+const ModAuditRoute = ModAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => ModRoute,
+} as any)
+const ModIdConflictRoute = ModIdConflictRouteImport.update({
+  id: '/id-conflict',
+  path: '/id-conflict',
+  getParentRoute: () => ModRoute,
+} as any)
 const ModImportRoute = ModImportRouteImport.update({
-  id: '/mod/import',
-  path: '/mod/import',
-  getParentRoute: () => rootRouteImport,
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => ModRoute,
+} as any)
+const ModReportsRoute = ModReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => ModRoute,
+} as any)
+const ModUsersRoute = ModUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => ModRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -72,9 +108,15 @@ export interface FileRoutesByFullPath {
   '/demo': typeof DemoRoute
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
+  '/mod': typeof ModRouteWithChildren
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/mod/audit': typeof ModAuditRoute
+  '/mod/id-conflict': typeof ModIdConflictRoute
   '/mod/import': typeof ModImportRoute
+  '/mod/reports': typeof ModReportsRoute
+  '/mod/users': typeof ModUsersRoute
+  '/mod/': typeof ModIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -85,7 +127,12 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/mod/audit': typeof ModAuditRoute
+  '/mod/id-conflict': typeof ModIdConflictRoute
   '/mod/import': typeof ModImportRoute
+  '/mod/reports': typeof ModReportsRoute
+  '/mod/users': typeof ModUsersRoute
+  '/mod': typeof ModIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,9 +142,15 @@ export interface FileRoutesById {
   '/demo': typeof DemoRoute
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
+  '/mod': typeof ModRouteWithChildren
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/mod/audit': typeof ModAuditRoute
+  '/mod/id-conflict': typeof ModIdConflictRoute
   '/mod/import': typeof ModImportRoute
+  '/mod/reports': typeof ModReportsRoute
+  '/mod/users': typeof ModUsersRoute
+  '/mod/': typeof ModIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -108,9 +161,15 @@ export interface FileRouteTypes {
     | '/demo'
     | '/inbox'
     | '/login'
+    | '/mod'
     | '/settings'
     | '/signup'
+    | '/mod/audit'
+    | '/mod/id-conflict'
     | '/mod/import'
+    | '/mod/reports'
+    | '/mod/users'
+    | '/mod/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -121,7 +180,12 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/signup'
+    | '/mod/audit'
+    | '/mod/id-conflict'
     | '/mod/import'
+    | '/mod/reports'
+    | '/mod/users'
+    | '/mod'
   id:
     | '__root__'
     | '/'
@@ -130,9 +194,15 @@ export interface FileRouteTypes {
     | '/demo'
     | '/inbox'
     | '/login'
+    | '/mod'
     | '/settings'
     | '/signup'
+    | '/mod/audit'
+    | '/mod/id-conflict'
     | '/mod/import'
+    | '/mod/reports'
+    | '/mod/users'
+    | '/mod/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -142,9 +212,9 @@ export interface RootRouteChildren {
   DemoRoute: typeof DemoRoute
   InboxRoute: typeof InboxRoute
   LoginRoute: typeof LoginRoute
+  ModRoute: typeof ModRouteWithChildren
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
-  ModImportRoute: typeof ModImportRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -191,6 +261,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mod': {
+      id: '/mod'
+      path: '/mod'
+      fullPath: '/mod'
+      preLoaderRoute: typeof ModRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -205,15 +282,70 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mod/': {
+      id: '/mod/'
+      path: '/'
+      fullPath: '/mod/'
+      preLoaderRoute: typeof ModIndexRouteImport
+      parentRoute: typeof ModRoute
+    }
+    '/mod/audit': {
+      id: '/mod/audit'
+      path: '/audit'
+      fullPath: '/mod/audit'
+      preLoaderRoute: typeof ModAuditRouteImport
+      parentRoute: typeof ModRoute
+    }
+    '/mod/id-conflict': {
+      id: '/mod/id-conflict'
+      path: '/id-conflict'
+      fullPath: '/mod/id-conflict'
+      preLoaderRoute: typeof ModIdConflictRouteImport
+      parentRoute: typeof ModRoute
+    }
     '/mod/import': {
       id: '/mod/import'
-      path: '/mod/import'
+      path: '/import'
       fullPath: '/mod/import'
       preLoaderRoute: typeof ModImportRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof ModRoute
+    }
+    '/mod/reports': {
+      id: '/mod/reports'
+      path: '/reports'
+      fullPath: '/mod/reports'
+      preLoaderRoute: typeof ModReportsRouteImport
+      parentRoute: typeof ModRoute
+    }
+    '/mod/users': {
+      id: '/mod/users'
+      path: '/users'
+      fullPath: '/mod/users'
+      preLoaderRoute: typeof ModUsersRouteImport
+      parentRoute: typeof ModRoute
     }
   }
 }
+
+interface ModRouteChildren {
+  ModAuditRoute: typeof ModAuditRoute
+  ModIdConflictRoute: typeof ModIdConflictRoute
+  ModImportRoute: typeof ModImportRoute
+  ModReportsRoute: typeof ModReportsRoute
+  ModUsersRoute: typeof ModUsersRoute
+  ModIndexRoute: typeof ModIndexRoute
+}
+
+const ModRouteChildren: ModRouteChildren = {
+  ModAuditRoute: ModAuditRoute,
+  ModIdConflictRoute: ModIdConflictRoute,
+  ModImportRoute: ModImportRoute,
+  ModReportsRoute: ModReportsRoute,
+  ModUsersRoute: ModUsersRoute,
+  ModIndexRoute: ModIndexRoute,
+}
+
+const ModRouteWithChildren = ModRoute._addFileChildren(ModRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -222,9 +354,9 @@ const rootRouteChildren: RootRouteChildren = {
   DemoRoute: DemoRoute,
   InboxRoute: InboxRoute,
   LoginRoute: LoginRoute,
+  ModRoute: ModRouteWithChildren,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
-  ModImportRoute: ModImportRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,3 +1,10 @@
+import {
+  AUDIT_FILTER_MAX_LENGTH,
+  REASON_MAX_LENGTH,
+  REASON_MIN_LENGTH,
+  USER_SEARCH_MAX_LENGTH,
+  USER_SEARCH_MIN_LENGTH,
+} from "../shared/schemas/moderation.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
 
 // Every limit, cap, cooldown, expiry and threshold lives here. Feature code imports these, never inlines numbers.
@@ -49,4 +56,16 @@ export const limits = {
   pushFanoutMax: 40,
   /** Test pushes an admin may send to their own devices. Enough to check a few phones, not a spam loop. */
   pushTest: { limit: 10, windowMs: HOUR },
+  // ceiling: a student reports a handful of things a day; this stops a loop from flooding the queue. Revisit if mods say honest reporters are blocked.
+  reportCreate: { limit: 10, windowMs: HOUR },
+  // ceiling: a phone screen shows about this many rows; more arrive through the cursor. Revisit if mods find the lists short.
+  modPage: { defaultSize: 20, maxSize: 50 },
+  // ceiling: a reason is one or two sentences in the audit log and the report queue. Defined in shared code for the client forms. Revisit if mods ask for longer notes.
+  modReasonLength: { min: REASON_MIN_LENGTH, max: REASON_MAX_LENGTH },
+  // ceiling: a two-letter minimum keeps the username prefix scan small; usernames are at most 20 characters. Defined in shared code for the client forms. Revisit if mods can't find short usernames.
+  userSearchLength: { min: USER_SEARCH_MIN_LENGTH, max: USER_SEARCH_MAX_LENGTH },
+  // ceiling: audit target types and ids are short keys; this bounds the filter text. Defined in shared code. Revisit if a key outgrows it.
+  auditFilterMaxLength: AUDIT_FILTER_MAX_LENGTH,
+  // ceiling: 12 characters from a 32-letter alphabet is about 60 bits, plenty for a password that must be replaced at the next login. Revisit if the alphabet or the login rules change.
+  tempPasswordLength: 12,
 } as const;

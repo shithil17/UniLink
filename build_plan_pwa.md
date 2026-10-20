@@ -643,12 +643,12 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist
 
-- [ ] `reports` table. `audit_log` gets an index on target and actor.
-- [ ] `softDelete()`, `reverse()` and the reversal rules for each action type (soft delete, ban, role change, key release).
-- [ ] Mod API: user list and search by username, ban and unban, ID-conflict release, temporary password reset, report list and resolve.
-- [ ] Admin API: promote and demote mods, the audit log list, reverse.
-- [ ] `POST /api/reports` (rate-limited).
-- [ ] Mod panel screens: users, reports queue (Phase 8 merges held posts into it), audit log with a reverse button (admin only).
+- [x] `reports` table. `audit_log` gets an index on target and actor.
+- [x] `softDelete()`, `reverse()` and the reversal rules for each action type (soft delete, ban, role change, key release).
+- [x] Mod API: user list and search by username, ban and unban, ID-conflict release, temporary password reset, report list and resolve.
+- [x] Admin API: promote and demote mods, the audit log list, reverse.
+- [x] `POST /api/reports` (rate-limited).
+- [x] Mod panel screens: users, reports queue (Phase 8 merges held posts into it), audit log with a reverse button (admin only).
 
 ### Checklist — Docs & QA (C, D)
 
