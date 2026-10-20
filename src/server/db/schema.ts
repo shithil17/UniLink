@@ -73,18 +73,63 @@ export const sessions = sqliteTable(
   ],
 );
 
-export const auditLog = sqliteTable("audit_log", {
-  id: integer("id").primaryKey({ autoIncrement: true }),
-  // A user id as a decimal string, or "automod" / "system".
-  actor: text("actor").notNull(),
-  action: text("action").notNull(),
-  targetType: text("target_type").notNull(),
-  targetId: text("target_id").notNull(),
-  // JSON snapshot of the target before the action, used to reverse it.
-  before: text("before"),
-  reason: text("reason"),
-  createdAt: integer("created_at").notNull(),
-});
+export const auditLog = sqliteTable(
+  "audit_log",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    // A user id as a decimal string, or "automod" / "system".
+    actor: text("actor").notNull(),
+    action: text("action").notNull(),
+    targetType: text("target_type").notNull(),
+    targetId: text("target_id").notNull(),
+    // JSON snapshot of the target before the action, used to reverse it. Never holds a password or hash.
+    before: text("before"),
+    reason: text("reason"),
+    // Set on a reversal row: the audit row it undoes. Unique, so a row is reversed at most once.
+    reversesId: integer("reverses_id"),
+    createdAt: integer("created_at").notNull(),
+  },
+  (t) => [
+    // "What happened to this target" and "what did this actor do", newest first.
+    index("audit_log_target_idx").on(t.targetType, t.targetId, t.id),
+    index("audit_log_actor_idx").on(t.actor, t.id),
+    uniqueIndex("audit_log_reverses_idx")
+      .on(t.reversesId)
+      .where(sql`${t.reversesId} is not null`),
+  ],
+);
+
+// Reports on any kind of target. `targetType` is checked against the shared enum in code, not in the
+// database, so a new post type needs no migration. `targetId` is text so any key shape fits.
+export const reports = sqliteTable(
+  "reports",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    targetType: text("target_type").notNull(),
+    targetId: text("target_id").notNull(),
+    reporterId: integer("reporter_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    reason: text("reason").notNull(),
+    status: text("status", { enum: ["open", "resolved", "dismissed"] })
+      .notNull()
+      .default("open"),
+    createdAt: integer("created_at").notNull(),
+    resolvedBy: integer("resolved_by").references(() => users.id, { onDelete: "set null" }),
+    resolvedAt: integer("resolved_at"),
+    resolveNote: text("resolve_note"),
+  },
+  (t) => [
+    check("reports_status_check", sql`${t.status} in ('open', 'resolved', 'dismissed')`),
+    // One open report per reporter per target. A resolved one does not block a new report.
+    uniqueIndex("reports_open_unique_idx")
+      .on(t.reporterId, t.targetType, t.targetId)
+      .where(sql`${t.status} = 'open'`),
+    // The queue pages by id within one status.
+    index("reports_status_id_idx").on(t.status, t.id),
+    index("reports_target_idx").on(t.targetType, t.targetId),
+  ],
+);
 
 export const rateLimits = sqliteTable(
   "rate_limits",

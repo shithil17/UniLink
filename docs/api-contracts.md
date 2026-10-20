@@ -68,20 +68,29 @@ An endpoint must be on a known push service host (400 `unknown_push_service`). S
 
 ## Reports and moderation
 
-| Method | Path                                | Auth  | Schema                            |
-| ------ | ----------------------------------- | ----- | --------------------------------- |
-| POST   | `/api/reports`                      | user  | `moderation.ts` → `reportRequest` |
-| GET    | `/api/mod/queue`                    | mod   | reports + held posts              |
-| POST   | `/api/mod/queue/:id/approve`        | mod   | –                                 |
-| POST   | `/api/mod/queue/:id/reject`         | mod   | –                                 |
-| GET    | `/api/mod/users`                    | mod   | search by username                |
-| POST   | `/api/mod/users/:id/ban`            | mod   | –                                 |
-| POST   | `/api/mod/users/:id/unban`          | mod   | –                                 |
-| POST   | `/api/mod/users/:id/reset-password` | mod   | –                                 |
-| POST   | `/api/mod/id-conflict/release`      | mod   | –                                 |
-| POST   | `/api/admin/users/:id/role`         | admin | –                                 |
-| GET    | `/api/admin/audit`                  | admin | –                                 |
-| POST   | `/api/admin/audit/:id/reverse`      | admin | –                                 |
+Schemas are in `moderation.ts`. Mod routes need the mod role (admins pass too); admin routes need the admin role. Every action takes a `reason` (3 to 300 characters) and writes an audit row with a before-snapshot.
+
+| Method | Path                                | Auth  | Schema / note                                                                                                                                                                 |
+| ------ | ----------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/reports`                      | user  | `reportRequest` → `reportCreated`. Rate-limited (`limits.reportCreate`); 404 unknown target, 400 own target, 409 `already_reported` (one open report per reporter per target) |
+| GET    | `/api/mod/users`                    | mod   | `modUsersQuery` (`q` = username prefix, cursor) → `modUserPage`. Handle and state only: no student ID, email or name                                                          |
+| POST   | `/api/mod/users/:id/ban`            | mod   | `reasonBody`. Deletes the user's sessions. 409 if already banned                                                                                                              |
+| POST   | `/api/mod/users/:id/unban`          | mod   | `reasonBody`. 409 if not banned                                                                                                                                               |
+| POST   | `/api/mod/users/:id/reset-password` | mod   | `reasonBody` → `temporaryPassword` (shown once, `no-store`). Sets `must_change_password`, deletes sessions                                                                    |
+| GET    | `/api/mod/id-conflict?key=`         | mod   | `idConflictQuery` → `idConflictResult`. The only response with a student ID; a hit is logged (`id_lookup`)                                                                    |
+| POST   | `/api/mod/id-conflict/release`      | mod   | `releaseKeyRequest`. Bans the holder and replaces the key with `released:<id>` so its owner can sign up                                                                       |
+| GET    | `/api/mod/reports`                  | mod   | `modReportsQuery` (`status`, default `open`; open runs oldest first) → `modReportPage`                                                                                        |
+| POST   | `/api/mod/reports/:id/resolve`      | mod   | `resolveReportRequest` (`resolved` or `dismissed`). 409 if already closed                                                                                                     |
+| GET    | `/api/mod/queue`                    | mod   | held posts merged into the report list (not built yet)                                                                                                                        |
+| POST   | `/api/mod/queue/:id/approve`        | mod   | – (not built yet)                                                                                                                                                             |
+| POST   | `/api/mod/queue/:id/reject`         | mod   | – (not built yet)                                                                                                                                                             |
+| POST   | `/api/admin/users/:id/role`         | admin | `roleChangeRequest`: student to mod or mod to student                                                                                                                         |
+| GET    | `/api/admin/audit`                  | admin | `auditQuery` (filters: `actor`, `targetType`, `targetId`) → `auditPage`. Never returns the snapshot                                                                           |
+| POST   | `/api/admin/audit/:id/reverse`      | admin | `reasonBody` → `reverseResult`                                                                                                                                                |
+
+Who may be acted on (`src/shared/modPolicy.ts`, enforced on the server, mirrored on the screens): nobody acts on themselves or on an admin; a mod acts on students only; an admin acts on students and mods (403 `forbidden_target`).
+
+Reversal rules (`src/server/reverse.ts`): ban, unban, role change, key release and soft delete put the snapshot back and log a `reverse` row. A password reset, a report resolution, an ID lookup and a reversal are not reversible (409 `not_reversible` / `is_reversal`); a row is reversed once (409 `already_reversed`); a released key someone has taken since is 409 `key_in_use`; a user who is an admin now is 403 `target_protected`.
 
 ## Resources
 
