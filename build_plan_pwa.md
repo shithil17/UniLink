@@ -602,11 +602,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist
 
 - [x] `faculty` table and a seeded list (D) (`data/faculty.json`, placeholder data; `GET /api/faculty`).
-- [ ] Faculty picker component.
+- [x] Faculty picker component.
 - [x] Migration: `attempts.faculty_id` (nullable). The full attempt form makes term required for new attempts (`attemptFullInput`; the API keeps term optional for the map's quick form).
 - [x] `grading.ts`: grade points, `bestAttempt()`, `cgpa()`, `earnedCredits()`, `canRetake()`.
 - [x] Attempt API: create, edit, delete (plus list and `GET /api/attempts/summary`). Create and edit run `canRetake()` and return a clear error when a retake is not allowed.
-- [ ] Screens: attempt history per course, CGPA summary, credits remaining by category, a retake badge.
+- [x] Screens: attempt history per course, CGPA summary, credits remaining by category, a retake badge.
 
 ### Checklist — Docs & QA (C, D)
 

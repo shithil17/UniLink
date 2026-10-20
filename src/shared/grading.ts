@@ -176,3 +176,15 @@ export function canRetake(
   const cutoff = gradePoints(policy.blockedFrom, scale) ?? Number.POSITIVE_INFINITY;
   return (gradePoints(best.grade, scale) ?? 0) < cutoff;
 }
+
+/** Why one more attempt at `code` is refused, or null when it is allowed. The one place this sentence is written. */
+export function retakeRefusal(
+  code: string,
+  attempts: readonly { grade: string }[],
+  policy: RetakePolicy = BELOW_B_PLUS_POLICY,
+  scale: GradeScale = NSU_SCALE,
+): string | null {
+  if (canRetake(attempts, policy, scale)) return null;
+  const best = bestAttempt(attempts, scale)?.grade;
+  return `Your best grade for ${code} is ${best}. A course can be retaken only while your best grade is below ${policy.blockedFrom}.`;
+}

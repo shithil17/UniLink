@@ -10,6 +10,7 @@ import {
   gradePoints,
   isPassingGrade,
   NSU_SCALE,
+  retakeRefusal,
   WAIVED,
   type CourseRecord,
   type RetakePolicy,
@@ -169,5 +170,22 @@ describe("canRetake", () => {
     const strict: RetakePolicy = { name: "below-b", blockedFrom: "B" };
     expect(canRetake(grades("B"), strict)).toBe(false);
     expect(canRetake(grades("B-"), strict)).toBe(true);
+  });
+});
+
+describe("retakeRefusal", () => {
+  it("is null while a retake is allowed", () => {
+    expect(retakeRefusal("CSE115", grades("C", "W"))).toBeNull();
+  });
+
+  it("names the course, the best grade and the cutoff when blocked", () => {
+    expect(retakeRefusal("CSE115", grades("C", "A-"))).toBe(
+      "Your best grade for CSE115 is A-. A course can be retaken only while your best grade is below B+.",
+    );
+  });
+
+  it("uses the policy's cutoff", () => {
+    const strict: RetakePolicy = { name: "below-b", blockedFrom: "B" };
+    expect(retakeRefusal("CSE115", grades("B"), strict)).toContain("below B.");
   });
 });

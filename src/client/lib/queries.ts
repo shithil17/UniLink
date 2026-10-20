@@ -1,8 +1,11 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
+import { attempt, cgpaSummary } from "../../shared/schemas/attempts";
 import { me } from "../../shared/schemas/auth";
 import { courseMap } from "../../shared/schemas/courses";
+import { facultyOption } from "../../shared/schemas/faculty";
 import { healthResponse } from "../../shared/schemas/health";
 import { notificationPage, unreadCount } from "../../shared/schemas/inbox";
+import { z } from "zod";
 import { ApiError, apiGet } from "./api";
 import { INBOX_POLL_MS } from "./inbox";
 import { fetchPublicKey, readPushState } from "./push";
@@ -67,4 +70,23 @@ export const pushStateQuery = queryOptions({
   // The browser is the source of truth, and the user can change the permission in its settings.
   staleTime: 0,
   refetchOnWindowFocus: true,
+});
+
+/** Every attempt the student has recorded, oldest first. Any attempt change invalidates the `attempts` prefix. */
+export const attemptsQuery = queryOptions({
+  queryKey: ["attempts", "list"],
+  queryFn: () => apiGet("/api/attempts", z.array(attempt)),
+});
+
+/** CGPA, graded and earned credits and what is left per category. */
+export const cgpaSummaryQuery = queryOptions({
+  queryKey: ["attempts", "summary"],
+  queryFn: () => apiGet("/api/attempts/summary", cgpaSummary),
+});
+
+/** The faculty list for the picker. It changes rarely, so it is kept for the session. */
+export const facultyQuery = queryOptions({
+  queryKey: ["faculty"],
+  queryFn: () => apiGet("/api/faculty", z.array(facultyOption)),
+  staleTime: Infinity,
 });

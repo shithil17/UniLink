@@ -1,7 +1,8 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CategorySection, ExtrasSection } from "@/components/courses/CategorySection";
+import { CgpaSummary } from "@/components/courses/CgpaSummary";
 import { CreditBar } from "@/components/courses/CreditBar";
 import { CourseSheet, type SheetTarget } from "@/components/courses/CourseSheet";
 import {
@@ -12,7 +13,8 @@ import {
   overNote,
 } from "@/lib/courseMap";
 import { focusRing } from "@/components/ui/focus";
-import { courseMapQuery, meQuery } from "@/lib/queries";
+import { retakeCodes } from "@/lib/attempts";
+import { attemptsQuery, courseMapQuery, meQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/courses")({
   beforeLoad: async ({ context }) => {
@@ -27,6 +29,8 @@ export const Route = createFileRoute("/courses")({
 
 function CourseMapPage() {
   const { data: map } = useSuspenseQuery(courseMapQuery);
+  const { data: attempts } = useQuery(attemptsQuery);
+  const retake = useMemo(() => (attempts ? retakeCodes(attempts) : undefined), [attempts]);
   const [target, setTarget] = useState<SheetTarget | null>(null);
   const close = () => setTarget(null);
 
@@ -93,18 +97,23 @@ function CourseMapPage() {
             </ul>
           </nav>
         </section>
+        <div className="mt-4">
+          <CgpaSummary />
+        </div>
       </aside>
       <div className="xl:columns-2 xl:gap-6">
         {map.categories.map((category) => (
           <CategorySection
             key={category.name}
             category={category}
+            retake={retake}
             onOpenSlot={(slot) => setTarget({ type: "slot", slot })}
             onAdd={(name) => setTarget({ type: "add", category: name })}
           />
         ))}
         <ExtrasSection
           extras={map.extras}
+          retake={retake}
           onOpen={(course) => setTarget({ type: "extra", course })}
           onAdd={() => setTarget({ type: "add", category: electiveCategory })}
         />

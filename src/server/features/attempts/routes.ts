@@ -1,5 +1,5 @@
 import { Hono, type Context } from "hono";
-import { BELOW_B_PLUS_POLICY, bestAttempt, canRetake } from "../../../shared/grading";
+import { retakeRefusal } from "../../../shared/grading";
 import {
   attemptInput,
   attemptListQuery,
@@ -42,16 +42,9 @@ function paramId(c: Context): number | null {
 }
 
 /** The 409 for a retake the policy refuses, or null when it is allowed. `others` are the course's other attempts. */
-function retakeRefusal(c: Context, courseCode: string, others: readonly AttemptRow[]) {
-  if (canRetake(others)) return null;
-  const best = bestAttempt(others)?.grade;
-  return c.json(
-    {
-      error: "retake_not_allowed",
-      message: `Your best grade for ${courseCode} is ${best}. A course can be retaken only while your best grade is below ${BELOW_B_PLUS_POLICY.blockedFrom}.`,
-    },
-    409,
-  );
+function retakeRefused(c: Context, courseCode: string, others: readonly AttemptRow[]) {
+  const message = retakeRefusal(courseCode, others);
+  return message ? c.json({ error: "retake_not_allowed", message }, 409) : null;
 }
 
 const facultyMissing = (c: Context) =>
@@ -117,7 +110,7 @@ export const attemptRoutes = new Hono<AppEnv>()
       return facultyMissing(c);
     }
     const repo = attemptsRepo(db, userId(c));
-    const refused = retakeRefusal(c, body.courseCode, await repo.listOwn(body.courseCode));
+    const refused = retakeRefused(c, body.courseCode, await repo.listOwn(body.courseCode));
     if (refused) return refused;
 
     const row = await repo.create({
@@ -147,7 +140,7 @@ export const attemptRoutes = new Hono<AppEnv>()
     // Only a new grade can change what is allowed, so fixing a term or faculty is never refused.
     if (patch.grade !== undefined && patch.grade !== current.grade) {
       const others = (await repo.listOwn(current.courseCode)).filter((a) => a.id !== id);
-      const refused = retakeRefusal(c, current.courseCode, others);
+      const refused = retakeRefused(c, current.courseCode, others);
       if (refused) return refused;
     }
     const row = await repo.update(id, {
