@@ -6,7 +6,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 ## Status
 
-**Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty.json` holds placeholder faculty until D supplies the list. Changes from `plan_pwa.md`:
+**Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty.json` holds placeholder faculty until D supplies the list. Phase 7 automated gate passed (2026-10-20): mod tests pass; the staging check (an admin reverses a ban and a soft delete and both reversals appear in the audit log) is pending, and needs a content type with `deleted_at` registered in `softDeleteTargets` before a soft delete can happen on staging. Report reasons are not screened until `screen()` lands (Phase 8). Changes from `plan_pwa.md`:
 
 - The two cut orders that disagreed are now one locked order (see Suggested Build Order).
 - Course "ticks" are graded attempts, so attempts are the only source of truth for done courses, credits and CGPA (Phase 4).
@@ -657,12 +657,12 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/server/features/mod/mod.api.test.ts`: students get 403 on mod routes and mods get 403 on admin routes, every action writes an audit row with a snapshot, reverse restores the exact state and logs itself, a duplicate open report is refused, the temporary password forces a change, mods cannot read attempts.
-- [ ] Run: `vp test mod`
+- [x] `src/server/features/mod/mod.api.test.ts`: students get 403 on mod routes and mods get 403 on admin routes, every action writes an audit row with a snapshot, reverse restores the exact state and logs itself, a duplicate open report is refused, the temporary password forces a change, mods cannot read attempts (no mod route reads them, so another user's attempts are a 404; soft delete and its reversal are covered in `src/server/softDelete.api.test.ts`).
+- [x] Run: `vp test mod`
 
 ### Test Gate 7
 
-- [ ] **Mod tests pass.**
+- [x] **Mod tests pass.**
 - [ ] **On staging, an admin reverses a ban and a soft delete, and both reversals appear in the audit log.**
 
 ---
