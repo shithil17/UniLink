@@ -174,7 +174,7 @@ function CourseEditor({
             : "It goes at the end of its category and shows for students right away."}
         </SheetDescription>
       </SheetHeader>
-      <div className="space-y-4 px-5 pb-4">
+      <div className="space-y-5 px-5 pb-4">
         <form onSubmit={submit} noValidate>
           <FieldGroup>
             <Field data-invalid={Boolean(errors.kind)}>
@@ -205,7 +205,7 @@ function CourseEditor({
               <FieldLabel htmlFor="course-code">Code</FieldLabel>
               <Input
                 id="course-code"
-                className="h-11 uppercase"
+                className="uppercase"
                 placeholder={kind === "course" ? "CSE115" : "ELECT1"}
                 autoCapitalize="characters"
                 autoComplete="off"
@@ -224,7 +224,6 @@ function CourseEditor({
               <FieldLabel htmlFor="course-title">Title</FieldLabel>
               <Input
                 id="course-title"
-                className="h-11"
                 autoComplete="off"
                 aria-invalid={Boolean(errors.title)}
                 {...form.register("title")}
@@ -239,7 +238,6 @@ function CourseEditor({
                 inputMode="decimal"
                 step="0.5"
                 min="0"
-                className="h-11"
                 aria-invalid={Boolean(errors.credits)}
                 {...form.register("credits", { valueAsNumber: true })}
               />
@@ -273,7 +271,6 @@ function CourseEditor({
                 <>
                   <Input
                     id="course-category"
-                    className="h-11"
                     placeholder="New category name"
                     autoComplete="off"
                     aria-invalid={Boolean(errors.category)}
@@ -328,7 +325,6 @@ function CourseEditor({
                 min="0"
                 max={SEMESTER_MAX}
                 step="1"
-                className="h-11"
                 aria-invalid={Boolean(errors.semester)}
                 {...form.register("semester", {
                   setValueAs: (v) => (v === "" || v == null ? null : Number(v)),
@@ -355,7 +351,7 @@ function CourseEditor({
                         <div className="space-y-1">
                           <Input
                             aria-label={`Alternative ${i + 1} code`}
-                            className="h-11 uppercase"
+                            className="uppercase"
                             placeholder="BEN205"
                             autoCapitalize="characters"
                             autoComplete="off"
@@ -368,7 +364,6 @@ function CourseEditor({
                         <div className="space-y-1">
                           <Input
                             aria-label={`Alternative ${i + 1} title`}
-                            className="h-11"
                             placeholder="Title"
                             autoComplete="off"
                             aria-invalid={Boolean(rowErrors?.title)}
@@ -408,7 +403,6 @@ function CourseEditor({
               <Textarea
                 id="course-prereq"
                 rows={2}
-                className="min-h-11"
                 placeholder="CSE215 and (MAT120 or MAT125)"
                 autoCapitalize="characters"
                 autoComplete="off"
@@ -432,10 +426,10 @@ function CourseEditor({
           <>
             <Separator />
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-ink">
+              <h3 className="text-lg leading-[1.3] font-semibold text-ink">
                 {course.hidden ? "Hidden from students" : "Visibility"}
               </h3>
-              <p className="text-sm text-soft">
+              <p className="text-[15px] text-soft">
                 {course.hidden
                   ? "Students without a grade on it don't see this course. Grades already recorded still count."
                   : "Hiding removes this course from students' maps unless they already have a grade on it. Grades are never deleted. A course whose prerequisite names this one stays locked until you change that prerequisite."}

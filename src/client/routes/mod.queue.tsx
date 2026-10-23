@@ -1,9 +1,14 @@
 import { useInfiniteQuery, type UseInfiniteQueryResult } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
+import { InboxIcon } from "lucide-react";
+import { modPanel as panel, modRowLine, modTitle } from "@/components/mod/modStyles";
 import { PostRow, ReportRow } from "@/components/mod/QueueRows";
 import { RejectPostSheet } from "@/components/mod/RejectPostSheet";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorBlock } from "@/components/ui/error-block";
+import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorMessage } from "@/lib/api";
 import { modQueueList, modReportsList, useDecidePost } from "@/lib/mod";
@@ -14,8 +19,14 @@ export const Route = createFileRoute("/mod/queue")({
   component: QueuePage,
 });
 
-const panel = "overflow-hidden rounded-panel border border-line bg-surface";
-const flat = "rounded-control bg-tint";
+/** The loading row in the final layout: author and kind on one line, then two lines of text. */
+const skeletonRow = (
+  <div className="grid min-w-0 flex-1 gap-2 py-1">
+    <Skeleton className="h-4 w-1/3" />
+    <Skeleton className="h-4 w-full" />
+    <Skeleton className="h-4 w-2/3" />
+  </div>
+);
 
 type View = "queue" | Exclude<ModReport["status"], "open">;
 
@@ -23,9 +34,9 @@ function QueuePage() {
   const [view, setView] = useState<View>("queue");
   return (
     <section className="space-y-4">
-      <h1 className="min-h-9 text-xl font-semibold text-ink">Review queue</h1>
+      <h1 className={modTitle}>Review queue</h1>
       <Tabs value={view} onValueChange={(value) => setView(value as View)}>
-        <TabsList aria-label="Queue view">
+        <TabsList aria-label="Queue view" className="w-full md:w-80">
           <TabsTrigger value="queue">Waiting</TabsTrigger>
           <TabsTrigger value="resolved">Handled</TabsTrigger>
           <TabsTrigger value="dismissed">Dismissed</TabsTrigger>
@@ -48,8 +59,8 @@ function WaitingList() {
   return (
     <>
       {total === undefined ? null : (
-        <p className="text-sm text-soft tabular-nums" aria-live="polite">
-          <span className="font-medium text-ink">{total}</span> waiting for a moderator
+        <p className="text-soft tabular-nums" aria-live="polite">
+          <span className="font-semibold text-ink">{total}</span> waiting for a moderator
         </p>
       )}
       <ListShell list={list} label="queue" empty="Nothing is waiting for you." count={items.length}>
@@ -57,7 +68,7 @@ function WaitingList() {
           {items.map((item) => (
             <li
               key={item.kind === "post" ? `${item.targetType}:${item.id}` : `report:${item.id}`}
-              className="border-b border-line last:border-b-0"
+              className={modRowLine}
             >
               {item.kind === "post" ? (
                 <PostRow post={item} onReject={setRejecting} />
@@ -110,7 +121,7 @@ function HistoryList({ status }: { status: keyof typeof emptyHistory }) {
     <ListShell list={list} label="reports" empty={emptyHistory[status]} count={reports.length}>
       <ul className={panel}>
         {reports.map((r) => (
-          <li key={r.id} className="border-b border-line last:border-b-0">
+          <li key={r.id} className={modRowLine}>
             <ReportRow report={r} now={now} />
           </li>
         ))}
@@ -134,32 +145,22 @@ function ListShell({
   children: ReactNode;
 }) {
   if (list.isPending) {
-    return (
-      <div className={panel} aria-busy="true" aria-label={`Loading ${label}`}>
-        {[0, 1, 2].map((n) => (
-          <div key={n} className="space-y-2 border-b border-line px-4 py-3 last:border-b-0">
-            <div className={`${flat} h-4 w-1/3`} />
-            <div className={`${flat} h-4 w-full`} />
-          </div>
-        ))}
-      </div>
-    );
+    return <SkeletonRows rows={3} row={skeletonRow} label={`Loading ${label}`} />;
   }
   if (list.isError) {
     return (
-      <div className="rounded-panel border border-line bg-surface p-6 text-center">
-        <p className="font-medium text-ink">The {label} didn't load</p>
-        <p className="mt-1 text-sm text-soft">{errorMessage(list.error)}</p>
-        <Button variant="outline" className="mt-4" onClick={() => void list.refetch()}>
-          Try again
-        </Button>
-      </div>
+      <ErrorBlock
+        title={`The ${label} didn't load`}
+        message={errorMessage(list.error)}
+        onRetry={() => void list.refetch()}
+        retrying={list.isRefetching}
+      />
     );
   }
   if (count === 0) {
     return (
-      <div className="rounded-panel border border-line bg-surface p-6 text-center">
-        <p className="text-sm text-soft">{empty}</p>
+      <div className={panel}>
+        <EmptyState icon={InboxIcon} title={empty} />
       </div>
     );
   }
@@ -170,10 +171,10 @@ function ListShell({
         <Button
           variant="outline"
           className="w-full"
-          disabled={list.isFetchingNextPage}
+          loading={list.isFetchingNextPage}
           onClick={() => void list.fetchNextPage()}
         >
-          {list.isFetchingNextPage ? "Loading" : "Show more"}
+          Show more
         </Button>
       ) : null}
     </>

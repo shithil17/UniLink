@@ -10,7 +10,12 @@ const departmentChoices = [
   ...DEPARTMENTS.map((d) => ({ value: d.code, label: `${d.code} · ${d.name}` })),
 ];
 
-/** The search box and department filter shared by the student picker and the moderator list. */
+/**
+ * The search box and department filter shared by the student picker and the moderator list.
+ *
+ * ceiling: the department filter stays a select. There are 18 departments, which as chips would be
+ * a wall of wrapped pills on a phone; revisit if the list shrinks to a handful of schools.
+ */
 export function FacultyFilters({
   idPrefix,
   query,
@@ -35,16 +40,16 @@ export function FacultyFilters({
   autoFocus?: boolean;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="relative">
         <SearchIcon
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-faint"
+          className="pointer-events-none absolute top-1/2 left-3.5 size-[18px] -translate-y-1/2 text-faint"
         />
         <Input
           id={`${idPrefix}-search`}
           type="search"
-          className="h-11 pl-9"
+          className="pl-10"
           placeholder="Search by name or initials"
           aria-label="Search by name or initials"
           autoComplete="off"

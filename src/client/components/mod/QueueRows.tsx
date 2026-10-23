@@ -6,6 +6,7 @@ import { timeAgo } from "@/lib/inbox";
 import { confidenceLabel, categoryLabel, postTypeLabel, ruleLabel } from "@/lib/modQueue";
 import { useDecidePost, useResolveReport } from "@/lib/mod";
 import { toast } from "@/lib/toast";
+import { modRowMin } from "./modStyles";
 import type { ModQueuePost, ModReport } from "../../../shared/schemas/moderation";
 
 /** A held post: what was written, who wrote it, what the screen made of it, and approve or reject. */
@@ -29,18 +30,20 @@ export function PostRow({
     );
 
   return (
-    <div className="space-y-3 px-4 py-3">
+    <div className={`space-y-3 px-4 py-3.5 ${modRowMin}`}>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="min-w-0 truncate font-medium text-ink">{post.author ?? "Removed account"}</p>
-        <p className="shrink-0 text-xs text-faint">{postTypeLabel(post.targetType)} post</p>
+        <p className="min-w-0 truncate text-[15px] font-semibold text-ink">
+          {post.author ?? "Removed account"}
+        </p>
+        <p className="shrink-0 text-[13px] text-faint">{postTypeLabel(post.targetType)} post</p>
       </div>
-      <div className="space-y-1 text-sm break-words whitespace-pre-wrap text-body">
+      <div className="space-y-1 text-[15px] leading-[1.4] break-words whitespace-pre-wrap text-ink">
         {post.text.map((field, i) => (
           <p key={i}>{field}</p>
         ))}
       </div>
       <div className="space-y-2">
-        <p className="text-xs text-soft">
+        <p className="text-[13px] text-soft">
           {categoryLabel(post.category)}
           {confidence ? (
             <>
@@ -60,7 +63,7 @@ export function PostRow({
           </ul>
         ) : null}
         {post.appealed ? (
-          <p className="text-xs text-soft">The author asked a moderator to look at this.</p>
+          <p className="text-[13px] text-soft">The author asked a moderator to look at this.</p>
         ) : null}
       </div>
       <div className="flex flex-wrap gap-2">
@@ -90,21 +93,23 @@ export function ReportRow({ report, now }: { report: ModReport; now: number }) {
     );
 
   return (
-    <div className="space-y-3 px-4 py-3">
+    <div className={`space-y-3 px-4 py-3.5 ${modRowMin}`}>
       <div className="flex items-baseline justify-between gap-3">
-        <p className="min-w-0 truncate font-medium text-ink">
+        <p className="min-w-0 truncate text-[15px] font-semibold text-ink">
           {report.targetLabel ?? "Removed account"}
         </p>
         <time
           dateTime={new Date(report.createdAt).toISOString()}
-          className="shrink-0 text-xs text-faint tabular-nums"
+          className="shrink-0 text-[13px] text-faint tabular-nums"
         >
           {timeAgo(report.createdAt, now)}
         </time>
       </div>
-      <p className="text-sm break-words text-body">{report.reason}</p>
-      <p className="text-xs text-faint">Reported by {report.reporter ?? "a removed account"}</p>
-      {report.resolveNote ? <p className="text-sm text-soft">Note: {report.resolveNote}</p> : null}
+      <p className="text-[15px] leading-[1.4] break-words text-ink">{report.reason}</p>
+      <p className="text-[13px] text-faint">Reported by {report.reporter ?? "a removed account"}</p>
+      {report.resolveNote ? (
+        <p className="text-[13px] text-soft">Note: {report.resolveNote}</p>
+      ) : null}
       {report.status === "open" ? (
         <div className="flex flex-wrap gap-2">
           {report.targetLabel ? (

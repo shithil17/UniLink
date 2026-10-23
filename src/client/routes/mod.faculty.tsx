@@ -1,25 +1,34 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, UsersIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { FacultyFilters } from "@/components/faculty/FacultyFilters";
 import { FacultyRowText } from "@/components/faculty/FacultyRowText";
 import { FacultySheet, type FacultySheetTarget } from "@/components/mod/FacultySheet";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorBlock } from "@/components/ui/error-block";
 import { focusRingInset } from "@/components/ui/focus";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { press } from "@/components/ui/press";
+import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/api";
 import { modFacultyQuery } from "@/lib/faculty";
 import { searchFaculty } from "../../shared/facultySearch";
+import { modPanel as panel, modTitle } from "@/components/mod/modStyles";
 
 export const Route = createFileRoute("/mod/faculty")({
   component: FacultyPage,
 });
 
-const panel = "overflow-hidden rounded-panel border border-line bg-surface";
-const flat = "rounded-control bg-tint";
+/** The loading row in the final layout: a name, a muted line and no trailing badge. */
+const skeletonRow = (
+  <div className="grid min-w-0 flex-1 gap-1.5">
+    <Skeleton className="h-4 w-2/5" />
+    <Skeleton className="h-3.5 w-3/5" />
+  </div>
+);
 
 function FacultyPage() {
   const list = useQuery(modFacultyQuery);
@@ -35,72 +44,67 @@ function FacultyPage() {
   const hiddenCount = (list.data ?? []).filter((f) => f.hidden).length;
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-5">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-ink">Faculty</h1>
-        <Button size="lg" onClick={() => setTarget("new")}>
+        <h1 className={modTitle}>Faculty</h1>
+        <Button onClick={() => setTarget("new")}>
           <PlusIcon data-icon="inline-start" />
           Add faculty
         </Button>
       </div>
 
-      <FacultyFilters
-        idPrefix="mod-faculty"
-        query={query}
-        onQuery={setQuery}
-        department={department}
-        onDepartment={setDepartment}
-      />
-      <div className="flex min-h-11 items-center gap-3">
-        <Switch id="show-hidden" checked={showHidden} onCheckedChange={setShowHidden} />
-        <Label htmlFor="show-hidden" className="text-sm text-body">
+      <div className="space-y-3">
+        <FacultyFilters
+          idPrefix="mod-faculty"
+          query={query}
+          onQuery={setQuery}
+          department={department}
+          onDepartment={setDepartment}
+        />
+        <Chip pressed={showHidden} onPressedChange={setShowHidden}>
           Show hidden
           {hiddenCount > 0 ? (
-            <span className="text-faint tabular-nums"> ({hiddenCount})</span>
+            <span className="text-faint tabular-nums">({hiddenCount})</span>
           ) : null}
-        </Label>
+        </Chip>
       </div>
 
       {list.isPending ? (
-        <div className={panel} aria-busy="true" aria-label="Loading faculty">
-          {[0, 1, 2, 3].map((n) => (
-            <div key={n} className="border-b border-line px-4 py-3 last:border-b-0">
-              <div className={`${flat} h-4 w-1/3`} />
-            </div>
-          ))}
-        </div>
+        <SkeletonRows rows={4} row={skeletonRow} label="Loading faculty" />
       ) : list.isError ? (
-        <div className="rounded-panel border border-line bg-surface p-6 text-center">
-          <p className="font-medium text-ink">The list didn't load</p>
-          <p className="mt-1 text-sm text-soft">{errorMessage(list.error)}</p>
-          <Button variant="outline" className="mt-4" onClick={() => void list.refetch()}>
-            Try again
-          </Button>
-        </div>
+        <ErrorBlock
+          title="The list didn't load"
+          message={errorMessage(list.error)}
+          onRetry={() => void list.refetch()}
+          retrying={list.isRefetching}
+        />
       ) : rows.length === 0 ? (
-        <div className="rounded-panel border border-line bg-surface p-6 text-center">
-          <p className="font-medium text-ink">No faculty found</p>
-          <p className="mt-1 text-sm text-soft">
-            {query || department || showHidden
-              ? "No faculty match that search."
-              : "No faculty have been added yet."}
-          </p>
+        <div className={panel}>
+          <EmptyState
+            icon={UsersIcon}
+            title="No faculty found"
+            description={
+              query || department || showHidden
+                ? "No faculty match that search."
+                : "No faculty have been added yet."
+            }
+          />
         </div>
       ) : (
         <>
-          <p className="text-sm text-soft">
+          <p className="text-[13px] leading-[1.3] font-medium text-soft">
             <span className="tabular-nums">{rows.length}</span> faculty
           </p>
           <ul className={panel}>
             {rows.map((f) => (
-              <li key={f.id} className="border-b border-line last:border-b-0">
+              <li key={f.id} className="border-t border-line first:border-t-0">
                 <button
                   type="button"
                   onClick={() => setTarget(f)}
-                  className={`flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left transition-colors hover:bg-tint ${focusRingInset}`}
+                  className={`flex min-h-[60px] w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-tint active:bg-tint ${press} ${focusRingInset}`}
                 >
                   <FacultyRowText faculty={f} />
-                  {f.hidden ? <Badge>Hidden</Badge> : null}
+                  {f.hidden ? <Badge className="shrink-0">Hidden</Badge> : null}
                 </button>
               </li>
             ))}
