@@ -12,7 +12,18 @@ const isTest = Boolean(process.env.VITEST);
 // https://vite.dev/config/
 export default defineConfig({
   resolve: {
-    alias: { "@": path.resolve(import.meta.dirname, "src/client") },
+    alias: {
+      "@": path.resolve(import.meta.dirname, "src/client"),
+      // vite-plugin-pwa is off under Vitest, so its virtual module needs a stand-in there.
+      ...(isTest
+        ? {
+            "virtual:pwa-register/react": path.resolve(
+              import.meta.dirname,
+              "src/client/test/pwa-register-stub.ts",
+            ),
+          }
+        : {}),
+    },
   },
   staged: {
     "*": "vp check --fix",

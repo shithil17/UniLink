@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
+import { FloatingNotes } from "@/components/pwa/FloatingNotes";
 import { InstallHint } from "@/components/pwa/InstallHint";
 import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
 import { focusRing } from "@/components/ui/focus";
@@ -119,7 +120,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
       ) : null}
       <div className="min-w-0 flex-1">
         {hasTabs ? null : (
-          <header className="mx-auto max-w-lg px-4 pt-[calc(1.75rem+env(safe-area-inset-top))] md:px-8">
+          // 420px content box plus the 16px insets: the same width as the auth column below.
+          <header className="mx-auto max-w-[calc(420px+2rem)] px-4 pt-[calc(1.75rem+env(safe-area-inset-top))]">
             <Link
               to="/"
               className={`-mx-3 inline-flex h-11 items-center rounded-control px-3 ${wordmark} ${focusRing}`}
@@ -139,11 +141,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
               : "pt-6 pb-12"
           }`}
         >
-          <InstallHint />
           <ScreenSwap pathname={pathname}>{children}</ScreenSwap>
         </main>
       </div>
-      <UpdatePrompt />
+      <FloatingNotes>
+        <UpdatePrompt />
+        <InstallHint />
+      </FloatingNotes>
       <Toaster />
     </div>
   );

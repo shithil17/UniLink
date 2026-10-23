@@ -1,10 +1,12 @@
-import { useEffect } from "react";
-import { toast } from "@/lib/toast";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import { useRegisterSW } from "virtual:pwa-register/react";
+import { FloatingNote } from "./FloatingNotes";
 
-const UPDATE_TOAST_ID = "pwa-update";
-
-/** Checks for a new service worker on launch and offers a reload when one is waiting. */
+/**
+ * Checks for a new service worker on launch and offers a reload when one is waiting, as a floating
+ * pill above the tab bar. Dismissing hides it for this session; the next launch asks again.
+ */
 export function UpdatePrompt() {
   const {
     needRefresh: [needRefresh],
@@ -15,15 +17,15 @@ export function UpdatePrompt() {
       void registration?.update().catch(() => {});
     },
   });
+  const [dismissed, setDismissed] = useState(false);
+  if (!needRefresh || dismissed) return null;
 
-  useEffect(() => {
-    if (!needRefresh) return;
-    toast("A new version is ready", {
-      id: UPDATE_TOAST_ID,
-      duration: Infinity,
-      action: { label: "Reload", onClick: () => void updateServiceWorker(true) },
-    });
-  }, [needRefresh, updateServiceWorker]);
-
-  return null;
+  return (
+    <FloatingNote role="status" className="rounded-full" onDismiss={() => setDismissed(true)}>
+      <span className="font-semibold text-ink">A new version is ready</span>
+      <Button variant="ghost" size="sm" onClick={() => void updateServiceWorker(true)}>
+        Reload
+      </Button>
+    </FloatingNote>
+  );
 }
