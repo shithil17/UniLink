@@ -473,6 +473,49 @@
 }
 
 /*
+ * List entrance. Put `stagger` on a list and `style={{ "--k": i }}` on each row (`staggerRow(i)`):
+ * a row rises 8px and fades in over 320ms, 50ms later per row, capped at row 9 so a long list never
+ * waits more than 450ms. `backwards` fill hides a row only until its turn and leaves no animation
+ * state behind, and nothing disables pointer events, so a tap is never blocked. The list should get
+ * the class on a screen's first visit only (`useStagger`). Reduced motion keeps the fade, drops the rise.
+ */
+@utility stagger {
+  & > * {
+    animation: stagger-rise 320ms var(--ease-ui-out) backwards;
+    animation-delay: calc(min(var(--k, 0), 9) * 50ms);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    & > * {
+      animation-name: stagger-fade;
+    }
+  }
+}
+@keyframes stagger-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes stagger-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
+ * Screen swap: the new top-level screen fades in over 120ms (opacity only, no slide). Kept under
+ * reduced motion, since opacity is the variant that stays.
+ */
+.screen-swap {
+  animation: screen-swap 120ms var(--ease-ui-out);
+}
+@keyframes screen-swap {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
  * Shared motion pieces stop under reduced motion: spinners, skeleton pulses and the press scale.
  * `.press` is the class the shared press utility uses.
  */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { activeModSection, mainTabs, modSectionsFor } from "./nav";
+import { activeModSection, activeTabIndex, mainTabs, modSectionsFor } from "./nav";
 
 const student = { role: "student", mustChangePassword: false } as const;
 
@@ -55,5 +55,27 @@ describe("activeModSection", () => {
   it("does not match a path that only shares a prefix, or a hidden section", () => {
     expect(activeModSection("/mod/facultyx", sections)).toBeUndefined();
     expect(activeModSection("/mod/audit", modSectionsFor("mod"))).toBeUndefined();
+  });
+});
+
+describe("activeTabIndex", () => {
+  const modUser = { role: "mod", mustChangePassword: false } as const;
+
+  it("is the tab's position in the bar, so the pill follows the role's tab list", () => {
+    expect(activeTabIndex(mainTabs(student), "/")).toBe(0);
+    expect(activeTabIndex(mainTabs(student), "/routine")).toBe(2);
+    expect(activeTabIndex(mainTabs(student), "/settings")).toBe(4);
+    expect(activeTabIndex(mainTabs(modUser), "/inbox")).toBe(2);
+    expect(activeTabIndex(mainTabs(modUser), "/mod/queue")).toBe(3);
+  });
+
+  it("keeps a tab active below its path, and never lets Home match everything", () => {
+    expect(activeTabIndex(mainTabs(student), "/courses/CSE115")).toBe(1);
+    expect(activeTabIndex(mainTabs(student), "/coursesx")).toBe(-1);
+  });
+
+  it("is -1 on a screen with no tab, or with no tabs at all", () => {
+    expect(activeTabIndex(mainTabs(modUser), "/routine")).toBe(-1);
+    expect(activeTabIndex(mainTabs(null), "/")).toBe(-1);
   });
 });
