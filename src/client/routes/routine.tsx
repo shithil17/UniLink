@@ -110,9 +110,9 @@ function RoutinePage() {
 
       <div className="flex items-center justify-between gap-3">
         <Tabs value={view} onValueChange={(v) => show({ view: v as CalendarView })}>
-          <TabsList aria-label="Calendar view" className="h-11!">
+          <TabsList aria-label="Calendar view">
             {CALENDAR_VIEWS.map((v) => (
-              <TabsTrigger key={v} value={v} className="px-3.5">
+              <TabsTrigger key={v} value={v}>
                 {VIEW_LABELS[v]}
               </TabsTrigger>
             ))}
