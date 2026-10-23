@@ -1,39 +1,30 @@
-import { CheckIcon, ChevronRightIcon } from "lucide-react";
-import { useState } from "react";
+import { CheckIcon } from "lucide-react";
 import { cn } from "cn";
 import { resolveTheme, themes, type ThemeMeta } from "../../../shared/themes";
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup } from "@/components/ui/radio-group";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { focusRingInset } from "@/components/ui/focus";
+import { focusRing } from "@/components/ui/focus";
+import { press } from "@/components/ui/press";
 import { useTheme } from "./themeContext";
 
 /**
- * A palette's ground, ink and accent. Colors come from the registry, not from tokens, because the
- * preview must keep showing its own palette whichever one is active.
+ * A palette's accent as a 28px dot (Night shows its ink instead). Colors come from the registry,
+ * not from tokens, because the swatch must keep showing its own palette whichever one is active.
  */
-function Preview({ theme }: { theme: ThemeMeta }) {
+function Swatch({ theme }: { theme: ThemeMeta }) {
   return (
     <span
-      className="flex h-9 w-14 shrink-0 items-center justify-between rounded-control border border-line px-2"
-      style={{ backgroundColor: theme.bar }}
+      className="size-7 shrink-0 rounded-full"
+      style={{ backgroundColor: theme.id === "night" ? theme.ink : theme.accent }}
       aria-hidden
-    >
-      <span className="text-sm leading-none font-semibold" style={{ color: theme.ink }}>
-        Aa
-      </span>
-      <span className="size-3 rounded-full" style={{ backgroundColor: theme.accent }} />
-    </span>
+    />
   );
 }
 
-/** All palettes as a radio group: arrow keys move the choice, Tab enters and leaves the group. */
+/**
+ * All palettes as a radio group inside a flat panel: arrow keys move the choice, Tab enters and
+ * leaves the group. The chosen row carries a check, so selection is never color alone.
+ */
 export function ThemePicker() {
   const { theme, setTheme } = useTheme();
   return (
@@ -43,7 +34,7 @@ export function ThemePicker() {
       onValueChange={(id) => {
         setTheme(resolveTheme(id).id);
       }}
-      className="gap-0 divide-y divide-line overflow-hidden rounded-panel border border-line bg-surface"
+      className="gap-0 overflow-hidden rounded-panel bg-surface md:rounded-[24px]"
     >
       {themes.map((t) => {
         const active = t.id === theme;
@@ -52,55 +43,23 @@ export function ThemePicker() {
             key={t.id}
             value={t.id}
             className={cn(
-              `flex min-h-14 w-full cursor-pointer items-center gap-3 px-4 py-2 text-left transition-colors ${focusRingInset}`,
-              active ? "bg-brand-soft" : "hover:bg-tint",
+              "flex min-h-14 w-full cursor-pointer items-center gap-3 border-t border-line px-4 py-2 text-left outline-none first:border-t-0 hover:bg-tint active:bg-tint",
+              focusRing,
+              "focus-visible:-outline-offset-2",
+              press,
             )}
           >
-            <Preview theme={t} />
+            <Swatch theme={t} />
             <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium text-ink">{t.name}</span>
-              <span className="block truncate text-xs text-soft">{t.blurb}</span>
+              <span className="block text-[15px] leading-[1.2] font-medium text-ink">{t.name}</span>
+              <span className="mt-0.5 block truncate text-[13px] leading-[1.3] text-faint">
+                {t.blurb}
+              </span>
             </span>
-            {active && <CheckIcon className="size-4 shrink-0 text-brand" aria-hidden />}
+            {active ? <CheckIcon className="size-5 shrink-0 text-brand-ink" aria-hidden /> : null}
           </Radio.Root>
         );
       })}
     </RadioGroup>
-  );
-}
-
-/** Shows the current palette and opens the sheet with every palette. */
-export function ThemePickerTrigger() {
-  const { theme } = useTheme();
-  const [open, setOpen] = useState(false);
-  const current = resolveTheme(theme);
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-haspopup="dialog"
-        className={`flex min-h-14 w-full items-center gap-3 rounded-panel border border-line bg-surface px-4 py-2 text-left transition-colors hover:bg-tint ${focusRingInset}`}
-      >
-        <Preview theme={current} />
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium text-ink">{current.name}</span>
-          <span className="block truncate text-xs text-soft">{current.blurb}</span>
-        </span>
-        <ChevronRightIcon className="size-4 shrink-0 text-faint" aria-hidden />
-      </button>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom">
-          <SheetHeader>
-            <SheetTitle>Color theme</SheetTitle>
-            <SheetDescription>Just colors. Your pick is saved on this device.</SheetDescription>
-          </SheetHeader>
-          <div className="px-5">
-            <ThemePicker />
-          </div>
-        </SheetContent>
-      </Sheet>
-    </>
   );
 }
