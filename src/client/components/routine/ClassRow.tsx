@@ -1,62 +1,69 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
+import { CheckIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { classDetails, formatClock } from "@/lib/routine";
+import { courseHue } from "@/lib/courseHue";
+import { classDetails, formatRange } from "@/lib/routine";
 import type { ClassStatus } from "../../../shared/routine";
 import type { RoutineEntry } from "../../../shared/schemas/routine";
 
 /**
- * One class on the time rail: start and end on the left, a hairline, then the course. The class in
- * progress sits on `brand-soft` and says "Now"; a finished one is printed in `faint` ink and says
- * "Finished" to screen readers, so neither state is color alone.
+ * One class as a block on the day timeline, in its course hue. The parent sets the hour height
+ * (`--hh`); `top` and `span` are in hours from the timeline's first line, so the block sits where
+ * its time is. The class in progress wears an inverted "In class now" tag, the next one an
+ * outlined "Next" tag, and a finished one drops the hue for `faint` ink with a check and the word
+ * "Finished", so no state is color alone. Blocks are flat: no border, no shadow.
  */
 export function ClassRow({
   entry,
   title,
   status = "upcoming",
-  note,
-  action,
+  next = false,
+  top,
+  span,
 }: {
   entry: RoutineEntry;
   title?: string;
   status?: ClassStatus;
-  /** An extra line under the details, such as an overlap warning. */
-  note?: ReactNode;
-  /** A control on the right edge, such as the edit button. */
-  action?: ReactNode;
+  /** True for the first class still to come, which gets the "Next" tag. */
+  next?: boolean;
+  top: number;
+  span: number;
 }) {
   const done = status === "done";
+  const tag: ReactNode =
+    status === "current" ? (
+      <span className="shrink-0 rounded-full bg-hue-ink px-2 py-1 text-xs leading-none font-semibold text-hue">
+        In class now
+      </span>
+    ) : done ? (
+      <span className="inline-flex shrink-0 items-center gap-1 text-xs leading-none font-semibold">
+        <CheckIcon aria-hidden strokeWidth={1.75} className="size-3.5" />
+        Finished
+      </span>
+    ) : next ? (
+      <span className="shrink-0 rounded-full border-[1.5px] border-current px-[7px] py-[2.5px] text-xs leading-none font-semibold">
+        Next
+      </span>
+    ) : null;
   return (
     <li
+      data-hue={courseHue(entry.courseCode)}
+      data-status={status}
+      style={{ "--at": top, "--span": span } as CSSProperties}
       className={cn(
-        "grid grid-cols-[6rem_minmax(0,1fr)] border-b border-line",
-        status === "current" && "bg-brand-soft",
+        "absolute right-0 left-[68px] z-[2] flex flex-col justify-center gap-px overflow-hidden rounded-row px-3 py-1",
+        "top-[calc(var(--hh)_*_var(--at)_+_2px)] h-[calc(var(--hh)_*_var(--span)_-_4px)]",
+        done ? "bg-tint text-faint" : "bg-hue text-hue-ink",
       )}
     >
-      <div className="py-3 pr-3 pl-2 text-right text-sm whitespace-nowrap tabular-nums">
-        <p className={cn("font-medium", done ? "text-faint" : "text-ink")}>
-          {formatClock(entry.start)}
-        </p>
-        <p className={done ? "text-faint" : "text-soft"}>{formatClock(entry.end)}</p>
-      </div>
-      <div className="flex min-w-0 items-start gap-1 border-l border-line py-3 pr-1 pl-3">
-        <div className="min-w-0 flex-1">
-          <p className="flex items-baseline gap-2 text-sm">
-            <span className={cn("shrink-0 font-semibold", done ? "text-faint" : "text-ink")}>
-              {entry.courseCode}
-            </span>
-            {title ? (
-              <span className={cn("truncate", done ? "text-faint" : "text-soft")}>{title}</span>
-            ) : null}
-            {status === "current" ? (
-              <span className="ml-auto shrink-0 text-xs font-semibold text-ink">Now</span>
-            ) : null}
-            {done ? <span className="sr-only">Finished</span> : null}
-          </p>
-          <p className={cn("text-sm", done ? "text-faint" : "text-soft")}>{classDetails(entry)}</p>
-          {note}
-        </div>
-        {action}
-      </div>
+      <p className="flex items-center gap-2">
+        <strong className="shrink-0 text-[15px] leading-5 font-bold">{entry.courseCode}</strong>
+        <span className="min-w-0 flex-1 truncate text-[13px]">{title}</span>
+        {tag}
+      </p>
+      <p className="truncate text-[13px] leading-[17px] tabular-nums">
+        {formatRange(entry.start, entry.end)} · {classDetails(entry)}
+      </p>
     </li>
   );
 }

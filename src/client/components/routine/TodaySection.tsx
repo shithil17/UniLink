@@ -1,12 +1,17 @@
 import { Link } from "@tanstack/react-router";
+import { CalendarDaysIcon, CalendarPlusIcon, ClockIcon } from "lucide-react";
 import { SectionHeader } from "@/components/layout/SectionHeader";
-import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorBlock } from "@/components/ui/error-block";
 import { focusRing } from "@/components/ui/focus";
-import { classDetails, formatGap, formatRange } from "@/lib/routine";
+import { Skeleton } from "@/components/ui/skeleton";
+import { formatClock, formatGap } from "@/lib/routine";
+import { cn } from "@/lib/utils";
 import { dhakaMinutes } from "../../../shared/time";
-import { entryStatus, timeToMinutes, todayEntries } from "../../../shared/routine";
+import { entryStatus, minutesToTime, timeToMinutes, todayEntries } from "../../../shared/routine";
 import type { RoutineEntry } from "../../../shared/schemas/routine";
 import { ClassRow } from "./ClassRow";
+import { hourLabel, hoursFromTop, nowOffset, timelineRange, type TimelineRange } from "./timeline";
 
 /** The slice of a routine query the Home pieces need. */
 export type RoutineView = {
@@ -16,11 +21,13 @@ export type RoutineView = {
   refetch: () => unknown;
 };
 
-const link = `rounded-control text-brand underline-offset-4 hover:underline ${focusRing}`;
-const flat = "rounded-control bg-tint";
+const link = `rounded-control text-brand-ink underline underline-offset-4 ${focusRing}`;
 
-/** The summary panel for a class: the minutes until it starts (or ends), its name and where it is. */
-export function NextClassPanel({
+/**
+ * A compact pill for Home's header: "In class now" with the minutes left, or "Next class" with its
+ * start and the wait. The course title is read out for screen readers only, to keep the pill short.
+ */
+export function NextClassPill({
   entry,
   title,
   now,
@@ -34,41 +41,111 @@ export function NextClassPanel({
   const current = entryStatus(entry, now) === "current";
   const gap = (timeToMinutes(current ? entry.end : entry.start) ?? 0) - dhakaMinutes(now);
   return (
-    <section className={className} aria-labelledby="next-class-title">
-      <h1 id="next-class-title" className="text-sm text-soft">
-        {current ? "In class now" : "Next class"}
-      </h1>
-      <p className="mt-2 flex flex-wrap items-baseline gap-x-2">
-        <span className="text-4xl font-semibold text-ink tabular-nums">{formatGap(gap)}</span>
-        <span className="text-sm text-soft">
-          {current ? "left in this class" : "until it starts"}
-        </span>
-      </p>
-      <p className="mt-4 text-base font-semibold text-ink">
+    <p
+      data-slot="next-class-pill"
+      className={cn(
+        "inline-flex min-h-8 items-center gap-1.5 rounded-full bg-brand-soft px-3 py-1.5 text-[13px] leading-[1.3] font-semibold text-brand-ink tabular-nums",
+        className,
+      )}
+    >
+      <ClockIcon aria-hidden strokeWidth={1.75} className="size-4 shrink-0" />
+      <span>{current ? "In class now" : "Next class"}</span>
+      <span aria-hidden>·</span>
+      <span>
         {entry.courseCode}
-        {title ? <span className="font-normal text-soft"> {title}</span> : null}
-      </p>
-      <p className="mt-0.5 text-sm text-soft tabular-nums">
-        {formatRange(entry.start, entry.end)} · {classDetails(entry)}
-      </p>
-    </section>
+        {title ? <span className="sr-only"> {title}</span> : null}
+        {current ? null : ` at ${formatClock(entry.start)}`}
+      </span>
+      <span aria-hidden>·</span>
+      <span>{current ? `${formatGap(gap)} left` : `in ${formatGap(gap)}`}</span>
+    </p>
   );
 }
 
-/** A flat placeholder for the summary panel while the routine loads. */
-export function NextClassSkeleton({ className }: { className?: string }) {
+/** The now marker: a `brand` line and dot with the Dhaka time in a pill, moved with `transform`. */
+function NowMarker({ offset, now }: { offset: number; now: number }) {
+  const clock = formatClock(minutesToTime(dhakaMinutes(now))).slice(0, -3);
   return (
-    <section className={className} aria-busy="true">
-      <h1 className="sr-only">Home</h1>
-      <div className={`h-5 w-24 ${flat}`} />
-      <div className={`mt-2 h-10 w-36 ${flat}`} />
-      <div className={`mt-4 h-5 w-56 ${flat}`} />
-      <div className={`mt-1 h-5 w-48 ${flat}`} />
-    </section>
+    <div
+      aria-hidden
+      data-slot="now-marker"
+      style={{ "--at": offset } as React.CSSProperties}
+      // Only the marker's transform animates (900ms linear, so a 30 s tick glides); reduced motion jumps.
+      className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-0 [transform:translateY(calc(var(--hh)_*_var(--at)))] motion-safe:transition-transform motion-safe:duration-900 motion-safe:ease-linear"
+    >
+      <span className="absolute top-[-10px] left-0 h-5 min-w-11 rounded-full bg-brand px-1.5 text-center text-xs leading-5 font-bold text-primary-foreground">
+        {clock}
+      </span>
+      <span className="absolute top-[-6px] left-[46px] size-3 rounded-full bg-brand outline-[3px] outline-app" />
+      <span className="absolute top-[-1px] right-0 left-[58px] h-0.5 rounded-sm bg-brand" />
+    </div>
   );
 }
 
-/** Today's classes in time order, with a link to the full week. */
+/**
+ * The day as a timeline: an hour axis, hairlines, one hue block per class placed by its time (52px
+ * an hour, 56px from `xl`) and the now marker while the time is inside the hours shown.
+ * ceiling: classes that overlap in time stack on top of each other; the routine screen already warns
+ * about clashes, and a side-by-side layout would justify itself only if clashes became common.
+ */
+function DayTimeline({
+  entries,
+  range,
+  titles,
+  now,
+}: {
+  entries: readonly RoutineEntry[];
+  range: TimelineRange;
+  titles: ReadonlyMap<string, string>;
+  now: number;
+}) {
+  const hours = range.to - range.from;
+  const marker = nowOffset(range, now);
+  const nextId = entries.find((e) => entryStatus(e, now) === "upcoming")?.id;
+  return (
+    <div className="py-2.5">
+      <div
+        data-slot="timeline"
+        style={{ "--n": hours } as React.CSSProperties}
+        className="relative h-[calc(var(--hh)_*_var(--n))] [--hh:52px] xl:[--hh:56px]"
+      >
+        <span
+          aria-hidden
+          className="absolute top-0 bottom-0 left-[51px] w-0.5 rounded-sm bg-line"
+        />
+        {Array.from({ length: hours + 1 }, (_, i) => (
+          <div
+            key={i}
+            aria-hidden
+            style={{ "--at": i } as React.CSSProperties}
+            className="absolute inset-x-0 h-0 top-[calc(var(--hh)_*_var(--at))]"
+          >
+            <span className="absolute top-[-9px] left-0 w-11 pr-1.5 text-right text-xs leading-[18px] font-semibold whitespace-nowrap text-soft">
+              {hourLabel(range.from + i)}
+            </span>
+            <span className="absolute right-0 left-[58px] h-px bg-line opacity-70" />
+          </div>
+        ))}
+        <ol className="absolute inset-0">
+          {entries.map((entry) => (
+            <ClassRow
+              key={entry.id}
+              entry={entry}
+              title={titles.get(entry.courseCode)}
+              status={entryStatus(entry, now)}
+              next={entry.id === nextId}
+              top={hoursFromTop(range, timeToMinutes(entry.start) ?? 0)}
+              span={((timeToMinutes(entry.end) ?? 0) - (timeToMinutes(entry.start) ?? 0)) / 60}
+            />
+          ))}
+        </ol>
+        {marker === null ? null : <NowMarker offset={marker} now={now} />}
+      </div>
+    </div>
+  );
+}
+
+/** Today's classes on a timeline, with a link to the full week. */
 export function TodaySection({
   routine,
   titles,
@@ -79,6 +156,7 @@ export function TodaySection({
   now: number;
 }) {
   const today = routine.data ? todayEntries(routine.data, now) : [];
+  const range = timelineRange(today);
   return (
     <section aria-label="Today">
       <SectionHeader
@@ -90,41 +168,38 @@ export function TodaySection({
         }
       />
       {routine.isPending ? (
-        <div aria-busy="true" role="status" aria-label="Loading today's classes">
-          {[0, 1].map((n) => (
-            <div key={n} className="flex gap-3 border-b border-line py-3">
-              <div className={`h-10 w-16 ${flat}`} />
-              <div className={`h-10 flex-1 ${flat}`} />
-            </div>
-          ))}
+        <div
+          role="status"
+          aria-busy="true"
+          data-slot="timeline-skeleton"
+          className="grid gap-3 py-2.5 pl-[68px]"
+        >
+          <span className="sr-only">Loading today's classes</span>
+          {/* 16px matches the class block radius (`rounded-row`); an arbitrary value so it wins the merge. */}
+          <Skeleton className="h-[100px] rounded-[16px]" />
+          <Skeleton className="h-[76px] rounded-[16px]" />
         </div>
       ) : routine.isError ? (
-        <div className="space-y-3 py-4 text-sm text-soft">
-          <p>Today's classes didn't load. Check your connection and try again.</p>
-          <Button variant="outline" onClick={() => void routine.refetch()}>
-            Retry
-          </Button>
-        </div>
+        <ErrorBlock
+          title="Today's classes didn't load"
+          message="Check your connection and try again."
+          onRetry={() => void routine.refetch()}
+        />
       ) : routine.data?.length === 0 ? (
-        <p className="py-4 text-sm text-soft">
-          Add the classes you're taking this term and today's will show up here.{" "}
-          <Link to="/routine" className={`${link} underline`}>
-            Add your routine
-          </Link>
-        </p>
-      ) : today.length === 0 ? (
-        <p className="py-4 text-sm text-soft">No classes today.</p>
+        <EmptyState
+          icon={CalendarPlusIcon}
+          title="No routine yet"
+          description="Add the classes you're taking this term and today's will show up here."
+          action={
+            <Link to="/routine" className={link}>
+              Add your routine
+            </Link>
+          }
+        />
+      ) : !range ? (
+        <EmptyState icon={CalendarDaysIcon} title="No classes today." />
       ) : (
-        <ul>
-          {today.map((entry) => (
-            <ClassRow
-              key={entry.id}
-              entry={entry}
-              title={titles.get(entry.courseCode)}
-              status={entryStatus(entry, now)}
-            />
-          ))}
-        </ul>
+        <DayTimeline entries={today} range={range} titles={titles} now={now} />
       )}
     </section>
   );
