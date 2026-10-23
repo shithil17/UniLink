@@ -4,6 +4,9 @@ import { cn } from "cn";
 import { focusRing } from "./focus";
 import { press } from "./press";
 
+/** The chip's look, exported for plain buttons that act as chips (a jump list) and are not toggles. */
+export const chipClass = `relative inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-surface px-4 text-sm leading-none font-medium whitespace-nowrap text-ink outline-none select-none after:absolute after:inset-x-0 after:-inset-y-0.5 after:content-[''] ${press} ${focusRing} hover:bg-brand-soft disabled:pointer-events-none disabled:bg-line disabled:text-faint aria-pressed:bg-brand-soft aria-pressed:text-brand-ink`;
+
 type ChipProps = Omit<React.ComponentProps<"button">, "aria-pressed"> & {
   /** Controlled pressed state. Leave it out and the chip keeps its own. */
   pressed?: boolean;
@@ -32,10 +35,7 @@ function Chip({
       type="button"
       data-slot="chip"
       aria-pressed={pressed}
-      className={cn(
-        `relative inline-flex min-h-10 items-center justify-center gap-1.5 rounded-full bg-surface px-4 text-sm leading-none font-medium whitespace-nowrap text-ink outline-none select-none after:absolute after:inset-x-0 after:-inset-y-0.5 after:content-[''] ${press} ${focusRing} hover:bg-brand-soft disabled:pointer-events-none disabled:bg-line disabled:text-faint aria-pressed:bg-brand-soft aria-pressed:text-brand-ink`,
-        className,
-      )}
+      className={cn(chipClass, className)}
       onClick={(event) => {
         onClick?.(event);
         if (event.defaultPrevented) return;

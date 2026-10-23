@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { CourseMap } from "../../../shared/schemas/courses";
+import { courseHue } from "@/lib/courseHue";
 import { CategorySection, ExtrasSection } from "./CategorySection";
 
 afterEach(cleanup);
@@ -50,7 +51,7 @@ describe("CategorySection", () => {
     expect(within(rows[1]).getByRole("img", { name: "Locked" })).toBeTruthy();
     expect(within(rows[2]).getByRole("img", { name: "Waived" })).toBeTruthy();
     expect(container.querySelectorAll("[data-shape]")).toHaveLength(4);
-    expect(screen.getByText("3 / 9 cr")).toBeTruthy();
+    expect(screen.getByText("3 of 9 credits")).toBeTruthy();
   });
 
   it("opens a slot on tap and adds a course from an open elective", () => {
@@ -193,5 +194,73 @@ describe("ExtrasSection", () => {
     );
     expect(screen.getByRole("img", { name: "Available" })).toBeTruthy();
     expect(screen.getByText("Excluded")).toBeTruthy();
+  });
+});
+
+describe("CategorySection rows", () => {
+  const states = [
+    {
+      name: "done",
+      code: "CSE115",
+      over: { status: "done" as const },
+      mark: "filled",
+      word: "Done",
+    },
+    { name: "available", code: "CSE173", over: {}, mark: "hollow", word: "Available" },
+    {
+      name: "locked",
+      code: "CSE225",
+      over: { status: "locked" as const },
+      mark: "struck",
+      word: "Locked",
+    },
+    {
+      name: "waived",
+      code: "ENG102",
+      over: { status: "done" as const, waived: true },
+      mark: "half",
+      word: "Waived",
+    },
+  ];
+
+  it.each(states)("a $name row prints its mark, a word and a hued code chip", (state) => {
+    const { container } = render(
+      <CategorySection
+        category={{
+          name: "Core",
+          required: 3,
+          earned: 0,
+          slots: [slot({ code: state.code, ...state.over })],
+          trails: null,
+        }}
+        onOpenSlot={() => {}}
+        onAdd={() => {}}
+      />,
+    );
+    const row = within(screen.getByRole("list")).getByRole("listitem");
+    expect(row.querySelector("[data-shape]")?.getAttribute("data-shape")).toBe(state.mark);
+    expect(within(row).getByText(state.word)).toBeTruthy();
+    const chip = container.querySelector("[data-slot=course-code]");
+    expect(chip?.textContent).toBe(state.code);
+    expect(chip?.getAttribute("data-hue")).toBe(courseHue(state.code));
+  });
+
+  it("gives a joined choice chip the hue of its first code", () => {
+    const { container } = render(
+      <CategorySection
+        category={{
+          name: "GED",
+          required: 3,
+          earned: 0,
+          slots: [slot({ code: "ENG115", alternatives: [{ code: "BEN205", title: "Bangla" }] })],
+          trails: null,
+        }}
+        onOpenSlot={() => {}}
+        onAdd={() => {}}
+      />,
+    );
+    expect(container.querySelector("[data-slot=course-code]")?.getAttribute("data-hue")).toBe(
+      courseHue("ENG115"),
+    );
   });
 });
