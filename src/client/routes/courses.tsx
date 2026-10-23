@@ -48,12 +48,14 @@ function MapGrid({
     <div
       className={
         side
-          ? "grid max-w-3xl gap-6 xl:max-w-none xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start xl:gap-x-8"
-          : "grid max-w-3xl gap-6"
+          ? "grid max-w-3xl grid-cols-1 gap-6 xl:max-w-none xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start xl:gap-x-8"
+          : "grid max-w-3xl grid-cols-1 gap-6"
       }
     >
-      <div className="grid gap-4 xl:col-start-1 xl:row-start-1">{header}</div>
-      {main ? <div className="grid gap-6 xl:col-start-1 xl:row-start-2">{main}</div> : null}
+      <div className="grid grid-cols-1 gap-4 xl:col-start-1 xl:row-start-1">{header}</div>
+      {main ? (
+        <div className="grid grid-cols-1 gap-6 xl:col-start-1 xl:row-start-2">{main}</div>
+      ) : null}
       {side ? (
         <div className="xl:sticky xl:top-22 xl:col-start-2 xl:row-span-2 xl:row-start-1">
           {side}
