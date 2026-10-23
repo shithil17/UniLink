@@ -6,6 +6,8 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 ## Status
 
+**Restyle note (2026-10-23):** The visual locks of Phase 4b are superseded by [`build_plan_pocket_planner.md`](build_plan_pocket_planner.md); the non-visual locks stay.
+
 **Status (2026-10-20):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty/` holds the ECE faculty from the public department listing plus partial lists for eight other departments (see `docs/faculty-sources.md`). Phase 7 automated gate passed (2026-10-20): mod tests pass; the staging check (an admin reverses a ban and a soft delete and both reversals appear in the audit log) is pending, and needs a content type with `deleted_at` registered in `softDeleteTargets` before a soft delete can happen on staging. Report reasons are not screened until `screen()` lands (Phase 8). Phase 8 automated gate passed (2026-10-20): moderation tests pass; the staging check (forced-review post reaches the mod queue, a mod approves it, the author gets an inbox message) waits for the first post type to register in `moderatedPostTypes` and call `submitPost()`. Phase 9 automated gate passed (2026-10-20): routine tests pass; the manual check (entries show on Home on the right weekday and in time order, on a phone) is pending, and D still confirms the NSU day letters (S M T W R F A). Changes from `plan_pwa.md`:
 
 - The two cut orders that disagreed are now one locked order (see Suggested Build Order).
@@ -16,7 +18,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - All limits live in one config file, and all times use Asia/Dhaka.
 - (2026-10-19) Any course can be marked waived: it counts as done and earns credits but never affects CGPA (Phase 4, Phase 6).
 - (2026-10-19) The course map covers every undergraduate program with a course map, picked by the program code in the student ID. Students add their own elective courses (code, title, credits), may go over the degree total, and can exclude extra courses from the transcript (Phase 4).
-- (2026-10-20) New Phase 4b: the Quiet Utility design language reorganizes Phase 1's four palettes into shared roles and restyles every existing screen. The app now serves all NSU undergraduates, with CSE-only extras (faculty profiles, supervisor finder).
+- (2026-10-20) New Phase 4b: the Quiet Utility design language reorganizes Phase 1's four palettes into shared roles and restyles every existing screen. The app now serves all NSU undergraduates, with CSE-only extras (faculty profiles, supervisor finder). (2026-10-23) Its visual locks are superseded by [`build_plan_pocket_planner.md`](build_plan_pocket_planner.md).
 - (2026-10-19) Lost-and-found posts and marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (post photos kit, Phase 15). Photos in the "ID or card" category always go to a mod first. Authors can delete their own posts (Phase 12).
 - (2026-10-20) Faculty now covers every NSU department, each with a department, optional initials, an NSU page and a hidden flag; students search and filter the picker by name, initials and department; mods manage faculty (add, edit, hide, show again) in the panel.
 - (2026-10-20) Mods manage curriculum courses in the panel (`/mod/courses`): add, edit (including prerequisites as text, such as `CSE215 and (MAT120 or MAT125)`) and hide or show again with a reason, never delete (`courses.hidden`, migration 0011). Hidden courses leave students' maps unless the student already has an attempt on them. Re-importing a version still replaces all its courses, edits included, and the import screen warns. A slot with alternatives shows all its codes joined with "/" until the student takes one.
@@ -50,7 +52,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 - Mobile-first and responsive. The same screens work on a phone and on desktop.
 - Components use theme token classes only (`bg-app`, `text-ink`, `border-line`, `bg-surface`, …). No hex values, no `bg-white`, no Tailwind palette colors outside `index.css`.
-- Every screen follows the Quiet Utility language (Phase 4b, recorded in `DESIGN.md`): neutral grounds, hairline-separated lists, one accent per palette, no gradients, glass or resting shadows, Geist with Noto Sans Bengali for Bangla, the shared state marks, and color on data and state rather than chrome.
+- Every screen follows the Pocket Planner language ([`build_plan_pocket_planner.md`](build_plan_pocket_planner.md), which supersedes the visual locks of Phase 4b; `DESIGN.md` records the built system): neutral grounds, flat borderless surfaces with hairline-separated rows, one accent per palette plus six course hues used only for course data, a floating tab bar, soft rounded shapes, Figtree with Noto Sans Bengali for Bangla, the shared state marks, shadow only on floating layers, and no gradients or glass.
 - Build forms from the shadcn/ui form components + React Hook Form + the shared Zod schema.
 - Feedback has one place per kind (decided 2026-10-18). **Toast** (sonner): every message about an action or a failed load ("Saved", "Report sent", "Copied", a server error, rate limit hit, network error, "The faculty list did not load"). No inline message boxes (revised 2026-10-20). Error toasts stay up longer (`ERROR_TOAST_MS` in `src/client/lib/toast.ts`). **Inline field errors** only for per-field validation (the Zod schema, or a server error tied to one field such as `code_taken`). **`StatusNote`** for moderation states, because they persist. **Inbox** for anything the user must see later. Toasts never contain contact details, student IDs or AI text.
 
@@ -489,6 +491,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ---
 
 ## Phase 4b — Design language & restyle
+
+> **(2026-10-23) The visual locks of this phase are superseded by [`build_plan_pocket_planner.md`](build_plan_pocket_planner.md); the non-visual locks stay.**
 
 **Owner:** Dev B (Dev A reviews) · **When:** Sprint 2, before Phase 5 and Phase 7 add screens · **Depends on:** Phase 1, Phase 3, Phase 4
 

@@ -1,5 +1,7 @@
 # Contrast check
 
+> **(2026-10-23)** These results are for the Quiet Utility roles. They are recomputed for the Pocket Planner roles and values (`build_plan_pocket_planner.md`) in PP10.
+
 Covers the Phase 1 and Phase 4b checks. Computed from the hex values in `src/client/index.css` with the WCAG 2.x relative-luminance formula on 2026-10-20. Targets: body and small text 4.5:1, large text and control borders 3:1.
 
 **Result: every pair on all five palettes passes. No change to `index.css` was needed.**

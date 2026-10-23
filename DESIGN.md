@@ -101,6 +101,8 @@ components:
     textColor: "{colors.ink}"
 ---
 
+> **Being replaced (2026-10-23):** the Quiet Utility system below is being replaced by Pocket Planner. Until this file is rewritten from the built system, the values in [`build_plan_pocket_planner.md`](build_plan_pocket_planner.md) win wherever they differ from this file.
+
 # Design System: UniLink
 
 ## Overview
