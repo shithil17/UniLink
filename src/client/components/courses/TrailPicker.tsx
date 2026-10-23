@@ -16,12 +16,12 @@ import { StateMark } from "./StateMark";
 
 type TrailCourse = CourseMapTrails["trails"][number]["courses"][number];
 
-const rowClass = "flex min-h-14 w-full items-center gap-3 px-4 py-2 text-left";
+const rowClass = "flex min-h-15 w-full items-center gap-3 px-4 py-2 text-left";
 
 /** The mark in front of a trail course: filled when done, hollow when added, a plus when addable. */
 function CourseMark({ state }: { state: TrailCourse["state"] }) {
   if (state === null) {
-    return <PlusIcon aria-hidden="true" className="size-4 shrink-0 text-faint" />;
+    return <PlusIcon aria-hidden="true" className="size-5 shrink-0 text-soft" />;
   }
   return <StateMark status={state === "done" ? "done" : "available"} />;
 }
@@ -87,11 +87,11 @@ export function TrailPicker({
       <div className="relative px-5">
         <SearchIcon
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-7 size-4 -translate-y-1/2 text-faint"
+          className="pointer-events-none absolute top-1/2 left-8 size-[18px] -translate-y-1/2 text-faint"
         />
         <Input
           type="search"
-          className="h-11 pl-9"
+          className="pl-10"
           placeholder="Search by code or title"
           aria-label="Search by code or title"
           autoComplete="off"
@@ -108,9 +108,9 @@ export function TrailPicker({
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-line">
         {visible.map(({ trail, courses }) => (
           <section key={trail.name} aria-label={trail.name}>
-            <div className="flex items-baseline justify-between gap-3 border-b border-line bg-tint px-4 py-2">
-              <h3 className="text-sm font-semibold text-ink">{trail.name}</h3>
-              <span className="shrink-0 text-sm text-soft tabular-nums">
+            <div className="flex items-baseline justify-between gap-3 bg-app px-4 py-2.5">
+              <h3 className="text-[15px] font-semibold text-ink">{trail.name}</h3>
+              <span className="shrink-0 text-[13px] text-soft tabular-nums">
                 {trail.done} of {trails.minFromOneTrail} done
               </span>
             </div>
@@ -123,7 +123,7 @@ export function TrailPicker({
                     onClick={() => pick(course)}
                     className={cn(
                       rowClass,
-                      "transition-colors hover:bg-tint disabled:cursor-default disabled:hover:bg-transparent",
+                      "hover:bg-tint active:bg-tint disabled:cursor-default disabled:hover:bg-transparent",
                       focusRingInset,
                     )}
                   >
@@ -131,21 +131,22 @@ export function TrailPicker({
                     <span className="min-w-0 flex-1">
                       <span
                         className={cn(
-                          "block truncate font-medium",
+                          "block truncate text-[15px] font-medium",
                           course.state ? "text-soft" : "text-ink",
                         )}
                       >
                         {course.title}
                       </span>
-                      <span className="block truncate text-sm text-soft">{course.code}</span>
+                      <span className="block truncate text-[13px] text-faint">{course.code}</span>
                     </span>
                     {course.state ? (
-                      <Badge className="shrink-0">
+                      <Badge variant="soft" className="shrink-0">
                         {course.state === "done" ? "Done" : "Added"}
                       </Badge>
                     ) : null}
-                    <span className="shrink-0 text-right text-sm text-soft tabular-nums">
-                      {formatCredits(course.credits)} cr
+                    <span className="shrink-0 text-right text-[15px] font-semibold text-soft tabular-nums">
+                      {formatCredits(course.credits)}
+                      <span className="text-xs font-normal text-faint"> cr</span>
                     </span>
                   </button>
                 </li>
@@ -154,12 +155,14 @@ export function TrailPicker({
           </section>
         ))}
         {visible.length === 0 ? (
-          <p className="px-4 py-6 text-center text-sm text-soft">No course matches that search.</p>
+          <p className="px-4 py-8 text-center text-[15px] text-soft">
+            No course matches that search.
+          </p>
         ) : null}
       </div>
       <div className="flex items-center justify-between gap-3 px-5 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <p className="text-sm text-soft">Course not listed?</p>
-        <Button variant="outline" size="lg" onClick={onNotListed}>
+        <p className="text-[15px] text-soft">Course not listed?</p>
+        <Button variant="outline" onClick={onNotListed}>
           Add it yourself
         </Button>
       </div>

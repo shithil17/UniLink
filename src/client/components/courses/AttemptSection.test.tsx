@@ -53,8 +53,36 @@ describe("AttemptSection", () => {
 
   it("offers the quick form while the course has no attempt", async () => {
     renderWith(<AttemptSection choices={choices} onSaved={() => {}} />);
-    expect(await screen.findByRole("button", { name: "Save grade" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Record a grade" })).toBeTruthy();
     expect(screen.queryByText("Your attempts")).toBeNull();
+  });
+
+  it("keeps the grade and term picked in the quick form when toggling to the full form and back", async () => {
+    renderWith(<AttemptSection choices={choices} onSaved={() => {}} />);
+    fireEvent.click(await screen.findByRole("radio", { name: "B+, 3.3 points" }));
+    fireEvent.click(screen.getByLabelText("Term (optional)"));
+    // Option 0 is "Not sure"; pick the first real term.
+    const option = (await screen.findAllByRole("option"))[1];
+    fireEvent.pointerDown(option);
+    fireEvent.mouseDown(option);
+    fireEvent.pointerUp(option);
+    fireEvent.mouseUp(option);
+    fireEvent.click(option);
+    const termText = screen.getByLabelText("Term (optional)").textContent;
+    expect(termText).not.toContain("Not sure");
+
+    fireEvent.click(screen.getByRole("button", { name: "Add term and faculty" }));
+    expect(screen.getByRole("radio", { name: "B+, 3.3 points" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    expect(screen.getByLabelText("Term").textContent).toBe(termText);
+    expect(screen.getByLabelText("Faculty (optional)")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Use the quick form" }));
+    expect(screen.getByRole("radio", { name: "B+, 3.3 points" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    expect(screen.getByLabelText("Term (optional)").textContent).toBe(termText);
   });
 
   it("lists the history with term and faculty, and allows a retake below B+", async () => {
@@ -102,7 +130,7 @@ describe("AttemptForm modes", () => {
     full.unmount();
 
     renderWith(<AttemptForm choices={choices} onSaved={() => {}} />);
-    fireEvent.click(screen.getByRole("button", { name: "Save grade" }));
+    fireEvent.click(screen.getByRole("button", { name: "Record a grade" }));
     expect(await screen.findByText(/Invalid|Required|expected/i)).toBeTruthy();
     expect(screen.queryByText("Pick the term you took it in.")).toBeNull();
   });
@@ -140,14 +168,14 @@ describe("AttemptForm grade grid", () => {
     const pick = screen.getByRole("radio", { name: "B+, 3.3 points" });
     fireEvent.click(pick);
     expect(pick.getAttribute("aria-checked")).toBe("true");
-    fireEvent.click(screen.getByRole("button", { name: "Save grade" }));
+    fireEvent.click(screen.getByRole("button", { name: "Record a grade" }));
     await waitFor(() => expect(posts).toHaveLength(1));
     expect(posts[0]).toEqual({ courseCode: "CSE115", grade: "B+", term: null, facultyId: null });
   });
 
   it("shows the inline error when no grade is picked", async () => {
     renderWith(<AttemptForm choices={choices} onSaved={() => {}} />);
-    fireEvent.click(screen.getByRole("button", { name: "Save grade" }));
+    fireEvent.click(screen.getByRole("button", { name: "Record a grade" }));
     expect(await screen.findByRole("alert")).toBeTruthy();
     expect(screen.getByRole("radiogroup", { name: "Grade" }).getAttribute("aria-invalid")).toBe(
       "true",

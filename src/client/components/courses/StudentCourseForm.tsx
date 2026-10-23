@@ -121,7 +121,7 @@ export function StudentCourseForm({
           <FieldLabel htmlFor="sc-code">Course code</FieldLabel>
           <Input
             id="sc-code"
-            className="h-11 uppercase"
+            className="uppercase"
             placeholder="CSE115"
             autoCapitalize="characters"
             autoComplete="off"
@@ -142,7 +142,6 @@ export function StudentCourseForm({
           <FieldLabel htmlFor="sc-title">Title</FieldLabel>
           <Input
             id="sc-title"
-            className="h-11"
             autoComplete="off"
             aria-invalid={Boolean(errors.title)}
             {...form.register("title")}
@@ -157,7 +156,6 @@ export function StudentCourseForm({
             inputMode="decimal"
             step="0.5"
             min="0.5"
-            className="h-11"
             aria-invalid={Boolean(errors.credits)}
             {...form.register("credits", { valueAsNumber: true })}
           />
@@ -187,7 +185,7 @@ export function StudentCourseForm({
           control={form.control}
           name="excluded"
           render={({ field }) => (
-            <Field orientation="horizontal">
+            <Field orientation="horizontal" className="min-h-12 items-start gap-3 py-1.5">
               <Checkbox
                 id="sc-excluded"
                 checked={field.value}
@@ -203,10 +201,10 @@ export function StudentCourseForm({
           )}
         />
         <div className="flex flex-col gap-2 sm:flex-row-reverse">
-          <Button type="submit" size="lg" className="sm:flex-1" disabled={mutation.isPending}>
+          <Button type="submit" className="sm:flex-1" disabled={mutation.isPending}>
             {mutation.isPending ? "Saving..." : existing ? "Save changes" : "Add course"}
           </Button>
-          <Button type="button" variant="outline" size="lg" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
         </div>

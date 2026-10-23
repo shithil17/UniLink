@@ -45,7 +45,7 @@ function RadioChip({ className, children, ...props }: RadioPrimitive.Root.Props)
     <RadioPrimitive.Root
       data-slot="radio-chip"
       className={cn(
-        `group/radio-chip relative grid min-h-13 cursor-pointer content-center justify-items-center gap-0.5 rounded-[14px] border-2 border-transparent bg-app text-ink outline-none select-none ${press} ${focusRing} hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50 data-checked:border-brand data-checked:bg-brand-soft data-checked:text-brand-ink`,
+        `group/radio-chip relative grid min-h-13 cursor-pointer content-center justify-items-center gap-0.5 rounded-[14px] border-2 border-transparent bg-app text-ink outline-none select-none ${press} ${focusRing} hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50 data-disabled:pointer-events-none data-disabled:cursor-not-allowed data-disabled:opacity-50 data-checked:border-brand data-checked:bg-brand-soft data-checked:text-brand-ink`,
         className,
       )}
       {...props}
