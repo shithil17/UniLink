@@ -84,7 +84,7 @@ export function TrailPicker({
           Tap a course to add it. It fills your next open elective.
         </SheetDescription>
       </SheetHeader>
-      <div className="relative px-4">
+      <div className="relative px-5">
         <SearchIcon
           aria-hidden="true"
           className="pointer-events-none absolute top-1/2 left-7 size-4 -translate-y-1/2 text-faint"
@@ -157,7 +157,7 @@ export function TrailPicker({
           <p className="px-4 py-6 text-center text-sm text-soft">No course matches that search.</p>
         ) : null}
       </div>
-      <div className="flex items-center justify-between gap-3 px-4 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="flex items-center justify-between gap-3 px-5 pt-1 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <p className="text-sm text-soft">Course not listed?</p>
         <Button variant="outline" size="lg" onClick={onNotListed}>
           Add it yourself

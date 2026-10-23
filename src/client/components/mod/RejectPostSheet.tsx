@@ -80,7 +80,7 @@ function RejectForm({
           reason stays in the audit log.
         </SheetDescription>
       </SheetHeader>
-      <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-4 pb-4">
+      <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-5 pb-4">
         <FieldGroup>
           <Field data-invalid={Boolean(errors.category)}>
             <FieldLabel htmlFor={`reject-category-${post.id}`}>Category</FieldLabel>

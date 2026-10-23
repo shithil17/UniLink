@@ -133,7 +133,7 @@ function PickerBody({
 
   return (
     <>
-      <div className="px-4">
+      <div className="px-5">
         <FacultyFilters
           idPrefix={base}
           query={query}

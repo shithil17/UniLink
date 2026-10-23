@@ -98,6 +98,17 @@
   --ease-ui-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-ui-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Skeleton bars breathe between full and 45% opacity; stopped under reduced motion below. */
+  --animate-skeleton: skeleton-pulse 1.2s ease-in-out infinite alternate;
+  @keyframes skeleton-pulse {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.45;
+    }
+  }
 }
 
 /* Bordeaux (id: red-gradient) */
@@ -393,6 +404,71 @@
   }
   :lang(bn) {
     font-family: "Noto Sans Bengali Variable", "Figtree Variable", system-ui, sans-serif;
+  }
+}
+
+/*
+ * Toasts. Sonner injects its own stylesheet at runtime with plain attribute selectors, so this block
+ * sits outside any cascade layer and every selector carries `.toaster .cn-toast` to out-rank it.
+ * The pill is `ink` with `app` text (it flips light on Night), centered, 48px tall, with the float
+ * shadow. Enter and exit are a 16px rise with opacity: 300ms ease-drawer on transform, 200ms
+ * ease-ui-out on opacity. Sonner's stacking, expand and swipe are left alone.
+ * `--toast-bottom` clears the phone tab bar (12px inset + 68px bar = 80px, plus 12px air) and the
+ * home-indicator inset; from md the bar is a rail, so the toast drops to the screen corner.
+ */
+:root {
+  --toast-bottom: calc(92px + env(safe-area-inset-bottom));
+}
+@media (min-width: 48rem) {
+  :root {
+    --toast-bottom: 24px;
+  }
+}
+.toaster {
+  --border-radius: 999px;
+}
+.toaster .cn-toast[data-sonner-toast][data-styled="true"] {
+  left: 0;
+  right: 0;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 48px;
+  margin-inline: auto;
+  padding: 0 18px 0 14px;
+  gap: 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: var(--color-app);
+  box-shadow: var(--shadow-float);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.toaster .cn-toast [data-description] {
+  color: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+.toaster .cn-toast[data-sonner-toast]:not([data-swiping="true"]) {
+  transition:
+    transform 300ms var(--ease-drawer),
+    opacity 200ms var(--ease-ui-out);
+}
+.toaster .cn-toast[data-sonner-toast]:not([data-mounted="true"]),
+.toaster
+  .cn-toast[data-sonner-toast][data-removed="true"][data-front="true"][data-swipe-out="false"] {
+  --y: translateY(16px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .toaster .cn-toast[data-sonner-toast]:not([data-swiping="true"]) {
+    transition: opacity 200ms var(--ease-ui-out) !important;
+  }
+  .toaster .cn-toast[data-sonner-toast]:not([data-mounted="true"]),
+  .toaster
+    .cn-toast[data-sonner-toast][data-removed="true"][data-front="true"][data-swipe-out="false"] {
+    --y: translateY(0);
   }
 }
 

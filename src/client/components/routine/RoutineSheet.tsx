@@ -161,7 +161,7 @@ function RoutineEditor({
         <SheetTitle>{entry ? "Edit class" : "Add a class"}</SheetTitle>
         <SheetDescription>Times are Dhaka time. Only you can see your routine.</SheetDescription>
       </SheetHeader>
-      <div className="space-y-4 px-4 pb-4">
+      <div className="space-y-4 px-5 pb-4">
         <form onSubmit={submit} noValidate>
           <FieldGroup>
             <Field data-invalid={Boolean(errors.courseCode)}>

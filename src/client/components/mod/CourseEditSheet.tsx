@@ -174,7 +174,7 @@ function CourseEditor({
             : "It goes at the end of its category and shows for students right away."}
         </SheetDescription>
       </SheetHeader>
-      <div className="space-y-4 px-4 pb-4">
+      <div className="space-y-4 px-5 pb-4">
         <form onSubmit={submit} noValidate>
           <FieldGroup>
             <Field data-invalid={Boolean(errors.kind)}>

@@ -132,7 +132,7 @@ function PickerBody({
 
   return (
     <>
-      <div className="relative px-4">
+      <div className="relative px-5">
         <SearchIcon
           aria-hidden="true"
           className="pointer-events-none absolute top-1/2 left-7 size-4 -translate-y-1/2 text-faint"

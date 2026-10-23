@@ -117,7 +117,7 @@ function UserActions({
         <SheetTitle>{user.username}</SheetTitle>
         <SheetDescription>{state}</SheetDescription>
       </SheetHeader>
-      <div className="space-y-4 px-4 pb-4">
+      <div className="space-y-4 px-5 pb-4">
         {flagged ? (
           <p className="text-sm text-soft">
             Flagged for several rejected posts in a short time.{" "}

@@ -62,7 +62,7 @@ export function CourseSheet({
               <SheetTitle>Add a course</SheetTitle>
               <SheetDescription>It fills the next open elective in its category.</SheetDescription>
             </SheetHeader>
-            <div className="px-4">
+            <div className="px-5">
               <StudentCourseForm
                 categories={categories}
                 trailCategory={trailName}
@@ -123,7 +123,7 @@ function TrailAdd({
         <SheetTitle>Add a course</SheetTitle>
         <SheetDescription>It fills the next open elective in its category.</SheetDescription>
       </SheetHeader>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
         <StudentCourseForm
           categories={categories}
           trailCategory={trailCategory.name}
@@ -150,7 +150,7 @@ function SlotDetails({ slot, onClose }: { slot: Slot; onClose: () => void }) {
           {slot.category}
         </SheetDescription>
       </SheetHeader>
-      <div className="space-y-5 px-4">
+      <div className="space-y-5 px-5">
         <div className="flex flex-wrap items-center gap-2">
           <StateMark showLabel status={slot.status} waived={slot.waived} />
         </div>
@@ -200,7 +200,7 @@ function StudentCourseDetails({
           <SheetTitle>Edit {course.code}</SheetTitle>
           <SheetDescription>Your own course in {course.category}.</SheetDescription>
         </SheetHeader>
-        <div className="px-4">
+        <div className="px-5">
           <StudentCourseForm
             categories={categories}
             trailCategory={trailCategory}
@@ -234,7 +234,7 @@ function StudentCourseDetails({
           {formatCredits(course.credits)} credits · {course.category} · your own course
         </SheetDescription>
       </SheetHeader>
-      <div className="space-y-5 px-4">
+      <div className="space-y-5 px-5">
         <div className="flex flex-wrap items-center gap-2">
           <StateMark showLabel status={course.done ? "done" : "available"} waived={course.waived} />
           {course.excluded ? <Badge variant="outline">Excluded</Badge> : null}

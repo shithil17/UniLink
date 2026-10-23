@@ -119,7 +119,7 @@ function FacultyEditor({ faculty, onClose }: { faculty: ModFaculty | null; onClo
             : "New faculty show in the picker right away."}
         </SheetDescription>
       </SheetHeader>
-      <div className="space-y-4 px-4 pb-4">
+      <div className="space-y-4 px-5 pb-4">
         <form onSubmit={submit} noValidate>
           <FieldGroup>
             <Field data-invalid={Boolean(errors.name)}>

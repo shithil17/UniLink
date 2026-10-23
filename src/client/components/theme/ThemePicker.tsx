@@ -96,7 +96,7 @@ export function ThemePickerTrigger() {
             <SheetTitle>Color theme</SheetTitle>
             <SheetDescription>Just colors. Your pick is saved on this device.</SheetDescription>
           </SheetHeader>
-          <div className="px-4">
+          <div className="px-5">
             <ThemePicker />
           </div>
         </SheetContent>
