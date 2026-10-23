@@ -342,7 +342,7 @@ function DayPicker({
             aria-label={ROUTINE_DAY_NAMES[day]}
             onClick={() => toggle(day)}
             className={cn(
-              "h-11 rounded-control border text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
+              "h-11 rounded-control border text-sm transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-brand",
               on
                 ? "border-brand bg-brand-soft font-semibold text-ink"
                 : "border-input bg-surface text-soft hover:bg-tint",

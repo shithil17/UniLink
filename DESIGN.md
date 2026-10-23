@@ -126,11 +126,11 @@ The app is unofficial and must look it: no NSU colors, crest or logo-like marks.
 
 ## Colors
 
-Five hand-picked palettes fill one shared set of roles; the frontmatter lists the default, Ocean Teal. The other four (Bordeaux `red-gradient`, Cherry Blossom `cherry-blossom`, Cherry Red `cherry-red`, Night `night`) override the same variables in `src/client/index.css`, which is the normative source for their values. Palette ids never change, because saved choices depend on them. Nothing follows the OS color scheme: Night is picked by hand in Settings like any other palette.
+Five hand-picked palettes fill one shared set of roles; the frontmatter lists the default, Coral. The other four (Bordeaux `red-gradient`, Cherry Blossom `cherry-blossom`, Cherry Red `cherry-red`, Night `night`) override the same variables in `src/client/index.css`, which is the normative source for their values. Palette ids never change, because saved choices depend on them. Nothing follows the OS color scheme: Night is picked by hand in Settings like any other palette.
 
 ### Primary
 
-- **Ocean Teal** (`brand`, also `primary`): the single accent. Fills the one primary button per screen, the credit bar, done and waived state marks, links and the keyboard focus outline.
+- **Coral** (`brand`, also `primary`): the single accent. Fills the one primary button per screen, the credit bar, done and waived state marks, links and the keyboard focus outline.
 - **Teal Wash** (`brand-soft`): a light accent fill for the selected or current row. Text on it must stay at 4.5:1.
 
 ### Neutral

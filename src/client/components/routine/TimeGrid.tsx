@@ -30,7 +30,7 @@ const DEFAULT_CLASS_MINUTES = 90;
 const LAST_MINUTE = 24 * 60 - 1;
 
 const BLOCK_STYLE: Record<ClassStatus, string> = {
-  upcoming: "bg-chip text-ink",
+  upcoming: "bg-brand-soft text-ink",
   current: "bg-brand-soft text-ink ring-1 ring-brand ring-inset",
   done: "bg-tint text-faint",
 };

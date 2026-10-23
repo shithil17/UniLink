@@ -118,9 +118,9 @@ export default defineConfig({
               start_url: "/",
               scope: "/",
               display: "standalone",
-              // Static Ocean Teal: the manifest and icons do not follow the chosen palette.
-              theme_color: "#f4f6f5",
-              background_color: "#f4f6f5",
+              // Static Coral: the manifest and icons do not follow the chosen palette.
+              theme_color: "#f3f4f8",
+              background_color: "#f3f4f8",
               icons: [
                 { src: "pwa-64x64.png", sizes: "64x64", type: "image/png" },
                 { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },
