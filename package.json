@@ -61,6 +61,7 @@
     "vite": "catalog:",
     "vite-plugin-pwa": "2.0.0",
     "vite-plus": "catalog:",
+    "vitest": "catalog:",
     "workbox-window": "7.4.1",
     "wrangler": "4.151.1"
   },
