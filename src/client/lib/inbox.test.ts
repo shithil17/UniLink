@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vite-plus/test";
 import { notificationType } from "../../shared/schemas/inbox";
-import { badgeLabel, INBOX_BADGE_MAX, notificationCopy, timeAgo } from "./inbox";
+import { HUES } from "./courseHue";
+import {
+  badgeLabel,
+  INBOX_BADGE_MAX,
+  NOTIFICATION_HUE,
+  notificationCopy,
+  notificationHue,
+  timeAgo,
+} from "./inbox";
 
 describe("badgeLabel", () => {
   it("is empty at zero, the count up to the cap, then capped", () => {
@@ -18,6 +26,27 @@ describe("notificationCopy", () => {
       expect(copy.title.length).toBeGreaterThan(0);
       expect(copy.detail.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("notificationHue", () => {
+  it("gives every notification kind a real course hue", () => {
+    for (const type of notificationType.options) {
+      expect(HUES).toContain(notificationHue(type));
+    }
+  });
+
+  it("has no entry for a kind that does not exist", () => {
+    expect(Object.keys(NOTIFICATION_HUE).sort()).toEqual([...notificationType.options].sort());
+  });
+
+  it("tints good news mint, bad news rose, a request sky, a link lilac, a match butter", () => {
+    expect(notificationHue("post_approved")).toBe("mint");
+    expect(notificationHue("resource_accepted")).toBe("mint");
+    expect(notificationHue("post_rejected")).toBe("rose");
+    expect(notificationHue("resource_requested")).toBe("sky");
+    expect(notificationHue("resource_submitted")).toBe("lilac");
+    expect(notificationHue("lost_found_possible_match")).toBe("butter");
   });
 });
 
