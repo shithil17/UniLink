@@ -18,10 +18,16 @@ export default defineConfig({
     "*": "vp check --fix",
   },
   fmt: {
-    ignorePatterns: ["worker-configuration.d.ts", "src/client/routeTree.gen.ts", "drizzle/meta/**"],
+    // design/ holds verbatim reference material (the Pocket Planner showcase); never reformat it.
+    ignorePatterns: [
+      "worker-configuration.d.ts",
+      "src/client/routeTree.gen.ts",
+      "drizzle/meta/**",
+      "design/**",
+    ],
   },
   lint: {
-    ignorePatterns: ["worker-configuration.d.ts", "src/client/routeTree.gen.ts"],
+    ignorePatterns: ["worker-configuration.d.ts", "src/client/routeTree.gen.ts", "design/**"],
     plugins: ["react", "typescript", "oxc"],
     rules: {
       "react/rules-of-hooks": "error",
