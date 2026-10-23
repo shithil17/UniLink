@@ -2,11 +2,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useWatch, type Resolver } from "react-hook-form";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { RadioChip, RadioGroup } from "@/components/ui/radio-group";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { errorMessage } from "@/lib/api";
 import { termLabel, termOptions, termValue } from "@/lib/courseMap";
 import { useRecordAttempt, useUpdateAttempt } from "@/lib/courses";
-import { ATTEMPT_GRADES, gradeLabel, WAIVED } from "../../../shared/grading";
+import { ATTEMPT_GRADES, gradeLabel, gradePoints, WAIVED } from "../../../shared/grading";
 import {
   attemptFullInput,
   attemptInput,
@@ -17,7 +18,22 @@ import { FacultyPicker } from "./FacultyPicker";
 import { OptionSelect } from "./OptionSelect";
 
 const NO_TERM = "none";
-const gradeOptions = ATTEMPT_GRADES.map((g) => ({ value: g, label: gradeLabel(g) }));
+
+/** One tile per grade: the grade over its points, from the shared scale. I, W and WV have none. */
+const gradeTiles = ATTEMPT_GRADES.map((g) => {
+  const points = gradePoints(g);
+  return {
+    value: g,
+    points: points === null ? "-" : points.toFixed(1),
+    // The name starts with the visible text so voice control and screen readers agree.
+    label:
+      g === WAIVED
+        ? `${g}, ${gradeLabel(g).toLowerCase()}`
+        : points === null
+          ? `${g}, no grade points`
+          : `${g}, ${points.toFixed(1)} points`,
+  };
+});
 
 /**
  * One attempt form in three shapes:
@@ -107,19 +123,34 @@ export function AttemptForm({
           </Field>
         ) : null}
         <Field data-invalid={Boolean(errors.grade)}>
-          <FieldLabel htmlFor="attempt-grade">Grade</FieldLabel>
+          <FieldLabel id="attempt-grade-label">Grade</FieldLabel>
           <Controller
             control={form.control}
             name="grade"
             render={({ field }) => (
-              <OptionSelect
+              <RadioGroup
                 id="attempt-grade"
+                aria-labelledby="attempt-grade-label"
+                aria-invalid={Boolean(errors.grade)}
                 value={field.value ?? null}
-                onChange={field.onChange}
-                options={gradeOptions}
-                placeholder="Pick a grade"
-                invalid={Boolean(errors.grade)}
-              />
+                onValueChange={(v) => field.onChange(v)}
+                onBlur={field.onBlur}
+                className="grid-cols-6 gap-1.5"
+              >
+                {gradeTiles.map((g) => (
+                  <RadioChip key={g.value} value={g.value} aria-label={g.label}>
+                    <span aria-hidden className="text-[15px] leading-none font-bold">
+                      {g.value}
+                    </span>
+                    <span
+                      aria-hidden
+                      className="text-[11px] leading-none font-medium text-faint tabular-nums group-data-checked/radio-chip:text-brand-ink"
+                    >
+                      {g.points}
+                    </span>
+                  </RadioChip>
+                ))}
+              </RadioGroup>
             )}
           />
           {grade === WAIVED ? (

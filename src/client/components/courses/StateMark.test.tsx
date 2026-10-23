@@ -40,6 +40,32 @@ describe("StateMark", () => {
     expect(new Set(shapes).size).toBe(4);
   });
 
+  it("keeps waived and locked apart from each other and from done and available", () => {
+    const shape = (props: { status: "done" | "available" | "locked"; waived?: boolean }) => {
+      const { container } = render(<StateMark {...props} />);
+      const found = shapeOf(container);
+      cleanup();
+      return found;
+    };
+    const waived = shape({ status: "done", waived: true });
+    const locked = shape({ status: "locked" });
+    expect(waived).toBe("half");
+    expect(locked).toBe("struck");
+    expect(
+      new Set([waived, locked, shape({ status: "done" }), shape({ status: "available" })]),
+    ).toHaveProperty("size", 4);
+  });
+
+  it("is 20px by default, takes a size, and wears hue ink only inside a course", () => {
+    const { container, rerender } = render(<StateMark status="available" />);
+    const svg = () => container.querySelector("svg")!;
+    expect(svg().getAttribute("width")).toBe("20");
+    expect(svg().getAttribute("class")).toContain("text-ink");
+    rerender(<StateMark status="available" size={28} inCourse />);
+    expect(svg().getAttribute("height")).toBe("28");
+    expect(svg().getAttribute("class")).toContain("text-hue-ink");
+  });
+
   it("prints the label and hides the mark from assistive tech when asked", () => {
     render(<StateMark status="locked" showLabel />);
     expect(screen.getByText("Locked")).toBeTruthy();

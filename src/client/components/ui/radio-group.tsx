@@ -2,6 +2,7 @@ import { Radio as RadioPrimitive } from "@base-ui/react/radio";
 import { RadioGroup as RadioGroupPrimitive } from "@base-ui/react/radio-group";
 import { cn } from "cn";
 import { focusRing } from "./focus";
+import { press } from "./press";
 
 function RadioGroup({ className, ...props }: RadioGroupPrimitive.Props) {
   return (
@@ -33,4 +34,25 @@ function RadioGroupItem({ className, ...props }: RadioPrimitive.Root.Props) {
   );
 }
 
-export { RadioGroup, RadioGroupItem };
+/**
+ * A radio drawn as a tile, for a short grid of choices (the grade picker). Same primitive, so arrow
+ * keys, the roving tab stop and form state work as for any radio. The checked tile gets a 2px
+ * `brand` edge as well as the soft fill, so the choice is never color alone. Put the label and any
+ * detail line in `children`; give it an `aria-label` that starts with the visible text.
+ */
+function RadioChip({ className, children, ...props }: RadioPrimitive.Root.Props) {
+  return (
+    <RadioPrimitive.Root
+      data-slot="radio-chip"
+      className={cn(
+        `group/radio-chip relative grid min-h-13 cursor-pointer content-center justify-items-center gap-0.5 rounded-[14px] border-2 border-transparent bg-app text-ink outline-none select-none ${press} ${focusRing} hover:bg-brand-soft disabled:cursor-not-allowed disabled:opacity-50 data-checked:border-brand data-checked:bg-brand-soft data-checked:text-brand-ink`,
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </RadioPrimitive.Root>
+  );
+}
+
+export { RadioGroup, RadioGroupItem, RadioChip };
