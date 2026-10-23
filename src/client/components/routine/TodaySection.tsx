@@ -8,9 +8,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatClock, formatGap } from "@/lib/routine";
 import { cn } from "@/lib/utils";
 import { dhakaMinutes } from "../../../shared/time";
-import { entryStatus, minutesToTime, timeToMinutes, todayEntries } from "../../../shared/routine";
+import { entryStatus, timeToMinutes, todayEntries } from "../../../shared/routine";
 import type { RoutineEntry } from "../../../shared/schemas/routine";
 import { ClassRow } from "./ClassRow";
+import { NowMarker } from "./NowMarker";
 import { hourLabel, hoursFromTop, nowOffset, timelineRange, type TimelineRange } from "./timeline";
 
 /** The slice of a routine query the Home pieces need. */
@@ -59,26 +60,6 @@ export function NextClassPill({
       <span aria-hidden>·</span>
       <span>{current ? `${formatGap(gap)} left` : `in ${formatGap(gap)}`}</span>
     </p>
-  );
-}
-
-/** The now marker: a `brand` line and dot with the Dhaka time in a pill, moved with `transform`. */
-function NowMarker({ offset, now }: { offset: number; now: number }) {
-  const clock = formatClock(minutesToTime(dhakaMinutes(now))).slice(0, -3);
-  return (
-    <div
-      aria-hidden
-      data-slot="now-marker"
-      style={{ "--at": offset } as React.CSSProperties}
-      // Only the marker's transform animates (900ms linear, so a 30 s tick glides); reduced motion jumps.
-      className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-0 [transform:translateY(calc(var(--hh)_*_var(--at)))] motion-safe:transition-transform motion-safe:duration-900 motion-safe:ease-linear"
-    >
-      <span className="absolute top-[-10px] left-0 h-5 min-w-11 rounded-full bg-brand px-1.5 text-center text-xs leading-5 font-bold text-primary-foreground">
-        {clock}
-      </span>
-      <span className="absolute top-[-6px] left-[46px] size-3 rounded-full bg-brand outline-[3px] outline-app" />
-      <span className="absolute top-[-1px] right-0 left-[58px] h-0.5 rounded-sm bg-brand" />
-    </div>
   );
 }
 
