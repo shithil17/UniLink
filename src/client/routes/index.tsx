@@ -116,8 +116,10 @@ function HomeGrid({
   return (
     <div
       className={cn(
-        "grid max-w-3xl gap-6 xl:max-w-none xl:grid-rows-[auto_1fr] xl:items-start xl:gap-x-8",
-        side ? "xl:grid-cols-[minmax(0,1fr)_400px]" : "xl:grid-cols-[minmax(0,1fr)]",
+        // The single column is pinned to the screen width: an implicit `auto` column grows to the
+        // tile row's intrinsic width (its `1fr` tracks size to max-content) and the page scrolls sideways.
+        "grid max-w-3xl grid-cols-[minmax(0,1fr)] gap-6 xl:max-w-none xl:grid-rows-[auto_1fr] xl:items-start xl:gap-x-8",
+        side && "xl:grid-cols-[minmax(0,1fr)_400px]",
       )}
     >
       <div className="xl:col-start-1 xl:row-start-1">{header}</div>
