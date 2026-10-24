@@ -1,0 +1,1 @@
+CREATE INDEX `faculty_name_idx` ON `faculty` (`name`,`id`);

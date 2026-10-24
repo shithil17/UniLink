@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { PlusIcon, UsersIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { FacultyFilters } from "@/components/faculty/FacultyFilters";
 import { FacultyRowText } from "@/components/faculty/FacultyRowText";
 import { FacultySheet, type FacultySheetTarget } from "@/components/mod/FacultySheet";
@@ -14,8 +14,8 @@ import { focusRingInset } from "@/components/ui/focus";
 import { press } from "@/components/ui/press";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/api";
-import { modFacultyQuery } from "@/lib/faculty";
-import { searchFaculty } from "../../shared/facultySearch";
+import { modFacultyList } from "@/lib/faculty";
+import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { modPanel as panel, modTitle } from "@/components/mod/modStyles";
 
 export const Route = createFileRoute("/mod/faculty")({
@@ -31,17 +31,15 @@ const skeletonRow = (
 );
 
 function FacultyPage() {
-  const list = useQuery(modFacultyQuery);
   const [query, setQuery] = useState("");
   const [department, setDepartment] = useState<string | null>(null);
   const [showHidden, setShowHidden] = useState(false);
   const [target, setTarget] = useState<FacultySheetTarget>(null);
 
-  const rows = useMemo(
-    () => searchFaculty(list.data ?? [], { query, department, includeHidden: showHidden }),
-    [list.data, query, department, showHidden],
-  );
-  const hiddenCount = (list.data ?? []).filter((f) => f.hidden).length;
+  // The server searches every row; a new term, department or switch starts again at page one.
+  const search = useDebouncedValue(query);
+  const list = useInfiniteQuery(modFacultyList({ q: search, department, showHidden }));
+  const rows = list.data?.pages.flatMap((p) => p.items) ?? [];
 
   return (
     <section className="space-y-5">
@@ -63,9 +61,6 @@ function FacultyPage() {
         />
         <Chip pressed={showHidden} onPressedChange={setShowHidden}>
           Show hidden
-          {hiddenCount > 0 ? (
-            <span className="text-faint tabular-nums">({hiddenCount})</span>
-          ) : null}
         </Chip>
       </div>
 
@@ -84,7 +79,7 @@ function FacultyPage() {
             icon={UsersIcon}
             title="No faculty found"
             description={
-              query || department || showHidden
+              search.trim() || department
                 ? "No faculty match that search."
                 : "No faculty have been added yet."
             }
@@ -92,10 +87,7 @@ function FacultyPage() {
         </div>
       ) : (
         <>
-          <p className="text-[13px] leading-[1.3] font-medium text-soft">
-            <span className="tabular-nums">{rows.length}</span> faculty
-          </p>
-          <ul className={panel}>
+          <ul className={panel} aria-busy={list.isPlaceholderData}>
             {rows.map((f) => (
               <li key={f.id} className="border-t border-line first:border-t-0">
                 <button
@@ -109,6 +101,16 @@ function FacultyPage() {
               </li>
             ))}
           </ul>
+          {list.hasNextPage ? (
+            <Button
+              variant="outline"
+              className="w-full"
+              loading={list.isFetchingNextPage}
+              onClick={() => void list.fetchNextPage()}
+            >
+              Show more
+            </Button>
+          ) : null}
         </>
       )}
 

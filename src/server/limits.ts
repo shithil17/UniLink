@@ -11,6 +11,7 @@ import {
   FACULTY_INITIALS_MIN_LENGTH,
   FACULTY_NAME_MAX_LENGTH,
   FACULTY_PAGE_MAX_LENGTH,
+  FACULTY_SEARCH_MAX_LENGTH,
 } from "../shared/schemas/faculty.ts";
 import {
   ROUTINE_INITIALS_MAX_LENGTH,
@@ -54,8 +55,10 @@ export const limits = {
   courseImportMaxRows: 300,
   // ceiling: bounds D1 rows per user; a degree has around a dozen elective slots. Revisit if students report hitting it.
   studentCoursesMax: 40,
-  // ceiling: the faculty directory is a bounded reference table of about a thousand people across every department. The picker fetches it once, caches it for an hour and searches it in the browser, so there is no paging. Revisit with server-side paginated search if the list outgrows this.
-  facultyListMax: 2000,
+  // ceiling: the faculty directory grows toward a thousand people across every department, so the picker and the mod panel load it a page at a time and search on the server. A phone shows about this many rows; more arrive through the cursor. Revisit if the picker feels short.
+  facultyPage: { defaultSize: 20, maxSize: 50 },
+  // ceiling: a faculty search is a name or initials, a few words at most. The length is defined in shared code for the client box; the word cap bounds the SQL (each word is a bound parameter and a LIKE). Revisit if a real search is cut short.
+  facultySearch: { maxLength: FACULTY_SEARCH_MAX_LENGTH, maxWords: 6 },
   // ceiling: mod-entered faculty fields only need to hold real NSU names, designations, initials and profile links. Defined in shared code for the client form. Revisit if a real value is refused.
   facultyField: {
     nameMax: FACULTY_NAME_MAX_LENGTH,
@@ -64,8 +67,6 @@ export const limits = {
     initialsMax: FACULTY_INITIALS_MAX_LENGTH,
     pageMax: FACULTY_PAGE_MAX_LENGTH,
   },
-  // ceiling: how long a browser may reuse the faculty list before asking again. The list changes only when a mod edits it. Revisit if mods need edits to show up sooner.
-  facultyListCacheSeconds: HOUR / SECOND,
   // ceiling: a whole transcript entered in one sitting is roughly 50 attempts. Revisit if students hit it.
   attemptWrites: { limit: 200, windowMs: HOUR },
   // ceiling: bounds D1 rows per user and term; a term is five or six courses, each a lecture and sometimes a lab. Revisit if students report hitting it.

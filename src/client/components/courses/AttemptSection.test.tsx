@@ -28,8 +28,19 @@ function stubApi(attempts: Attempt[]) {
     "fetch",
     vi.fn(async (path: string) =>
       Response.json(
-        path === "/api/faculty"
-          ? [{ id: 7, name: "Amy Ay", initials: "AA", designation: "Lecturer", department: "ECE" }]
+        path.startsWith("/api/faculty")
+          ? {
+              items: [
+                {
+                  id: 7,
+                  name: "Amy Ay",
+                  initials: "AA",
+                  designation: "Lecturer",
+                  department: "ECE",
+                },
+              ],
+              nextCursor: null,
+            }
           : attempts,
       ),
     ),
@@ -161,7 +172,9 @@ describe("AttemptForm grade grid", () => {
           posts.push(JSON.parse(init.body as string));
           return Response.json(attempt({ grade: "B+" }));
         }
-        return Response.json(path === "/api/faculty" ? [] : []);
+        return Response.json(
+          path.startsWith("/api/faculty") ? { items: [], nextCursor: null } : [],
+        );
       }),
     );
     renderWith(<AttemptForm choices={choices} onSaved={() => {}} />);

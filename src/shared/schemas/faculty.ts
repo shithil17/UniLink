@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { departmentCode } from "../departments.ts";
-import { id } from "./common.ts";
+import { id, page, pageQuery } from "./common.ts";
 import { reasonBody } from "./moderation.ts";
 
 // ceiling: the longest NSU faculty name and designation run to a few words; these only stop a pasted wall of text. Defined here for the client form. Revisit if a real name is refused.
@@ -11,6 +11,9 @@ export const FACULTY_INITIALS_MIN_LENGTH = 2;
 export const FACULTY_INITIALS_MAX_LENGTH = 6;
 // ceiling: a profile URL on northsouth.edu is well under this. Revisit if a profile link is refused.
 export const FACULTY_PAGE_MAX_LENGTH = 200;
+
+// ceiling: a search is a name or initials, a few words; this bounds the text sent to the server. Defined here for the client box. Revisit if a real search is refused.
+export const FACULTY_SEARCH_MAX_LENGTH = 60;
 
 const NSU_HOST = "northsouth.edu";
 
@@ -95,11 +98,26 @@ export const facultyPatch = facultyInput
   .partial()
   .refine((v) => Object.values(v).some((x) => x !== undefined), "Change at least one field");
 
+/** The directory is read a page at a time: `q` matches names and initials, `department` narrows it. */
+export const facultyListQuery = pageQuery.extend({
+  q: z.string().trim().max(FACULTY_SEARCH_MAX_LENGTH).optional(),
+  department: departmentCode.optional(),
+});
+
+export const facultyOptionPage = page(facultyOption);
+
 /** A faculty member as mods see them: everything, hidden ones included. */
 export const modFaculty = facultyOption.extend({
   nsuPage: z.string().nullable(),
   hidden: z.boolean(),
 });
+
+/** Mods can also ask for hidden rows to be listed with the visible ones. */
+export const modFacultyListQuery = facultyListQuery.extend({
+  hidden: z.literal("include").optional(),
+});
+
+export const modFacultyPage = page(modFaculty);
 
 /** Hiding and showing again both need a reason for the audit log. */
 export const facultyHideRequest = reasonBody;

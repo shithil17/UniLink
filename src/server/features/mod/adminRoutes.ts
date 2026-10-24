@@ -18,7 +18,7 @@ import { usersRepo } from "../../repos/users";
 import { reverse, type ReverseFailure } from "../../reverse";
 import { validateJson, validateQuery } from "../../validate";
 import { changeRole } from "./actions";
-import { pageParams, toPage } from "./paging";
+import { pageParams, toPage } from "../../paging";
 import { actionFailure, actorOf, badCursor, paramId } from "./respond";
 
 const REVERSE_FAILURES: Record<ReverseFailure, { status: 403 | 404 | 409; message: string }> = {

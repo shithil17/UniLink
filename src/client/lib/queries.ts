@@ -2,7 +2,6 @@ import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
 import { attempt, cgpaSummary } from "../../shared/schemas/attempts";
 import { me } from "../../shared/schemas/auth";
 import { courseMap } from "../../shared/schemas/courses";
-import { facultyOption } from "../../shared/schemas/faculty";
 import { healthResponse } from "../../shared/schemas/health";
 import { notificationPage, unreadCount } from "../../shared/schemas/inbox";
 import { routineEntry } from "../../shared/schemas/routine";
@@ -83,13 +82,6 @@ export const attemptsQuery = queryOptions({
 export const cgpaSummaryQuery = queryOptions({
   queryKey: ["attempts", "summary"],
   queryFn: () => apiGet("/api/attempts/summary", cgpaSummary),
-});
-
-/** The faculty list for the picker. It changes rarely, so it is kept for the session. */
-export const facultyQuery = queryOptions({
-  queryKey: ["faculty"],
-  queryFn: () => apiGet("/api/faculty", z.array(facultyOption)),
-  staleTime: Infinity,
 });
 
 /** The signed-in student's classes for the current term. Any routine write invalidates the `routine` prefix. */

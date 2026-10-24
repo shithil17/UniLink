@@ -1,8 +1,10 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { FacultyFilters } from "@/components/faculty/FacultyFilters";
 import { FacultyRowText } from "@/components/faculty/FacultyRowText";
+import { Button } from "@/components/ui/button";
+import { ErrorBlock } from "@/components/ui/error-block";
 import { focusRingInset } from "@/components/ui/focus";
 import { pickerTrigger } from "./OptionSelect";
 import {
@@ -12,18 +14,20 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { facultyQuery } from "@/lib/queries";
-import { toast } from "@/lib/toast";
+import { errorMessage } from "@/lib/api";
+import { facultyOptionsList } from "@/lib/faculty";
+import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import type { FacultyOption } from "../../../shared/schemas/faculty";
-import { facultyTitle, searchFaculty } from "../../../shared/facultySearch";
+import { facultyTitle } from "../../../shared/facultySearch";
 
 const rowClass =
   "flex min-h-15 w-full cursor-pointer items-center gap-3 px-4 py-2 text-left active:bg-tint";
 
 /**
- * The faculty member who taught the course, or none. Optional everywhere it is used, so a list that
- * fails to load never blocks saving: the control is disabled and a toast says why. `current` names the
- * saved choice, which may be a faculty member hidden from the list since.
+ * The faculty member who taught the course, or none. Optional everywhere it is used. The list is
+ * searched on the server a page at a time, only once the sheet opens, so a failed load never blocks
+ * saving. `current` names the saved choice, which may be a faculty member hidden from the list since;
+ * a choice made in this sheet is remembered here for the label.
  */
 export function FacultyPicker({
   id,
@@ -36,17 +40,10 @@ export function FacultyPicker({
   onChange: (value: number | null) => void;
   current?: { name: string; initials: string | null } | null;
 }) {
-  const { data, isError } = useQuery(facultyQuery);
   const [open, setOpen] = useState(false);
-  useEffect(() => {
-    if (isError) {
-      toast.error("The faculty list did not load. You can save without it.", {
-        id: "faculty-load",
-      });
-    }
-  }, [isError]);
+  const [picked, setPicked] = useState<FacultyOption | null>(null);
 
-  const selected = value === null ? null : (data?.find((f) => f.id === value) ?? current ?? null);
+  const selected = value === null ? null : picked?.id === value ? picked : (current ?? null);
   const label =
     value === null ? "No faculty" : selected ? facultyTitle(selected) : "Chosen faculty";
 
@@ -55,7 +52,6 @@ export function FacultyPicker({
       <button
         type="button"
         id={id}
-        disabled={!data}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
@@ -79,10 +75,10 @@ export function FacultyPicker({
             </SheetDescription>
           </SheetHeader>
           <PickerBody
-            list={data ?? []}
             value={value}
             onPick={(next) => {
-              onChange(next);
+              setPicked(next);
+              onChange(next?.id ?? null);
               setOpen(false);
             }}
           />
@@ -93,13 +89,11 @@ export function FacultyPicker({
 }
 
 function PickerBody({
-  list,
   value,
   onPick,
 }: {
-  list: readonly FacultyOption[];
   value: number | null;
-  onPick: (value: number | null) => void;
+  onPick: (value: FacultyOption | null) => void;
 }) {
   const base = useId();
   const listboxId = `${base}-list`;
@@ -107,16 +101,19 @@ function PickerBody({
   const [department, setDepartment] = useState<string | null>(null);
   // Set once the arrow keys move the highlight; typing or filtering puts it back on the first match.
   const [moved, setMoved] = useState<number | null>(null);
-  const results = useMemo(
-    () => searchFaculty(list, { query, department }),
-    [list, query, department],
-  );
+  // The server searches every faculty member; a new term or department starts again at page one.
+  const search = useDebouncedValue(query);
+  const list = useInfiniteQuery(facultyOptionsList({ q: search, department }));
+  const results = list.data?.pages.flatMap((p) => p.items) ?? [];
+
+  // False while typing and while the last term's rows are still on screen: Enter must not pick those.
+  const settled = query.trim() === search.trim() && !list.isPlaceholderData;
 
   // Row 0 is "No faculty"; the results follow.
   const rows = results.length + 1;
-  const active = moved ?? (query.trim() !== "" && results.length > 0 ? 1 : 0);
+  const active = moved ?? (settled && query.trim() !== "" && results.length > 0 ? 1 : 0);
   const optionId = (n: number) => `${base}-opt-${n}`;
-  const pick = (n: number) => onPick(n === 0 ? null : (results[n - 1]?.id ?? null));
+  const pick = (n: number) => onPick(n === 0 ? null : (results[n - 1] ?? null));
 
   const activeId = optionId(active);
   useEffect(() => {
@@ -132,7 +129,7 @@ function PickerBody({
       setMoved(Math.max(active - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      pick(active);
+      if (settled) pick(active);
     }
   };
 
@@ -158,12 +155,15 @@ function PickerBody({
         />
       </div>
       <p role="status" className="sr-only">
-        {results.length} found
+        {list.isPending
+          ? "Loading faculty"
+          : `${results.length} found${list.hasNextPage ? ", more available" : ""}`}
       </p>
       <ul
         id={listboxId}
         role="listbox"
         aria-label="Faculty"
+        aria-busy={list.isPending || list.isPlaceholderData}
         className="min-h-0 flex-1 divide-y divide-line overflow-y-auto overscroll-contain border-t border-line pb-[env(safe-area-inset-bottom)]"
       >
         <li
@@ -193,9 +193,34 @@ function PickerBody({
             ) : null}
           </li>
         ))}
-        {results.length === 0 ? (
-          <li className="px-4 py-8 text-center text-[15px] text-soft">
+        {list.isPending ? (
+          <li role="presentation" className="px-4 py-8 text-center text-[15px] text-soft">
+            Loading faculty
+          </li>
+        ) : list.isError ? (
+          <li role="presentation" className="p-4">
+            <ErrorBlock
+              title="The faculty list didn't load"
+              message={`${errorMessage(list.error)} You can save without it.`}
+              onRetry={() => void list.refetch()}
+              retrying={list.isRefetching}
+            />
+          </li>
+        ) : results.length === 0 ? (
+          <li role="presentation" className="px-4 py-8 text-center text-[15px] text-soft">
             No faculty match that search.
+          </li>
+        ) : null}
+        {list.hasNextPage ? (
+          <li role="presentation" className="p-4">
+            <Button
+              variant="outline"
+              className="w-full"
+              loading={list.isFetchingNextPage}
+              onClick={() => void list.fetchNextPage()}
+            >
+              Show more
+            </Button>
           </li>
         ) : null}
       </ul>

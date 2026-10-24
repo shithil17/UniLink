@@ -15,19 +15,11 @@ import {
   temporaryPassword,
 } from "../../shared/schemas/moderation";
 import type { rejectCategory } from "../../shared/schemas/moderation";
-import { apiGet, apiPost } from "./api";
+import { apiGet, apiPost, queryString } from "./api";
 
 const ok = z.object({ ok: z.boolean() });
 
 type ReportStatus = z.infer<typeof modReportPage>["items"][number]["status"];
-
-/** `?a=1&b=2` from the defined values, or an empty string. */
-function queryString(params: Record<string, string | undefined>): string {
-  const search = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) if (value) search.set(key, value);
-  const text = search.toString();
-  return text ? `?${text}` : "";
-}
 
 /** Users, newest first, or those whose username starts with `q`. One cursor page at a time. */
 export const modUsersList = (q: string) =>

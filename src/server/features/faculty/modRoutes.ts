@@ -4,12 +4,16 @@ import {
   facultyHideRequest,
   facultyInput,
   facultyPatch,
+  modFacultyListQuery,
   type modFaculty,
+  type modFacultyPage,
 } from "../../../shared/schemas/faculty";
 import { getDb } from "../../db/client";
+import { limits } from "../../limits";
 import type { AppEnv } from "../../middleware/types";
+import { pageParams, toPage } from "../../paging";
 import { facultyRepo, type FacultyRow } from "../../repos/faculty";
-import { validateJson } from "../../validate";
+import { validateJson, validateQuery } from "../../validate";
 import { actorOf, paramId } from "../mod/respond";
 import { addFaculty, editFaculty, setFacultyHidden, type FacultyFailure } from "./actions";
 
@@ -36,9 +40,26 @@ const toModFaculty = (f: FacultyRow): z.infer<typeof modFaculty> => ({
 
 /** Faculty management for mods and admins. Mounted under `/api/mod`, behind its role guard. */
 export const facultyModRoutes = new Hono<AppEnv>()
-  .get("/", async (c) => {
-    const rows = await facultyRepo(getDb(c.env.DB)).listAll();
-    return c.json(rows.map(toModFaculty));
+  .get("/", validateQuery(modFacultyListQuery), async (c) => {
+    const { cursor, limit, q, department, hidden } = c.req.valid("query");
+    const params = pageParams({ cursor, limit }, limits.facultyPage);
+    const rows =
+      params &&
+      (await facultyRepo(getDb(c.env.DB)).listPage({
+        limit: params.size + 1,
+        cursor: params.cursor,
+        query: q,
+        department,
+        includeHidden: hidden === "include",
+      }));
+    if (!params || !rows) {
+      return c.json({ error: "invalid_request", message: "That page cursor is not valid." }, 400);
+    }
+    const page = toPage(rows, params.size);
+    return c.json({
+      items: page.items.map(toModFaculty),
+      nextCursor: page.nextCursor,
+    } satisfies z.infer<typeof modFacultyPage>);
   })
   .post("/", validateJson(facultyInput), async (c) => {
     const result = await addFaculty(getDb(c.env.DB), actorOf(c), c.req.valid("json"));

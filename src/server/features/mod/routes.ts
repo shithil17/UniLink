@@ -34,7 +34,7 @@ import {
   resolveReport,
   unbanUser,
 } from "./actions";
-import { pageParams, toPage } from "./paging";
+import { pageParams, toPage } from "../../paging";
 import { decidePost, type PostDecisionFailure } from "./postActions";
 import { modQueue } from "./queue";
 import { toModReports } from "./reportView";

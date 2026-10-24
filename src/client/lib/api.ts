@@ -40,6 +40,14 @@ export function errorMessage(err: unknown): string {
   return "Something went wrong. Try again.";
 }
 
+/** `?a=1&b=2` from the defined, non-empty values, or an empty string. */
+export function queryString(params: Record<string, string | undefined>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) if (value) search.set(key, value);
+  const text = search.toString();
+  return text ? `?${text}` : "";
+}
+
 async function request<T extends z.ZodType>(
   method: "GET" | "POST" | "PATCH" | "DELETE",
   path: `/api/${string}`,

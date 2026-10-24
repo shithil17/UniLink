@@ -164,20 +164,20 @@ Schemas: `rides.ts` (`rideInput`, `rideFeedQuery`, `rideSummary`), `lostFound.ts
 
 ## Faculty and finder
 
-| Method | Path                             | Auth  | Schema                                                                      |
-| ------ | -------------------------------- | ----- | --------------------------------------------------------------------------- |
-| GET    | `/api/faculty`                   | user  | `faculty.ts` → `facultyOption[]`: visible faculty only, by name (see below) |
-| GET    | `/api/faculty/profiles`          | user  | Phase 11: `faculty.ts` → `page(facultySummary)`, `?q=` keyword              |
-| GET    | `/api/faculty/:slug`             | user  | Phase 11: profile + recent papers                                           |
-| GET    | `/api/mod/faculty`               | mod   | `faculty.ts` → `modFaculty[]`: every row, hidden ones included              |
-| POST   | `/api/mod/faculty`               | mod   | `facultyInput` → `modFaculty` (201)                                         |
-| PATCH  | `/api/mod/faculty/:id`           | mod   | `facultyPatch` (any of the input fields) → `modFaculty`                     |
-| POST   | `/api/mod/faculty/:id/hide`      | mod   | `facultyHideRequest` (`reason`) → `modFaculty`                              |
-| POST   | `/api/mod/faculty/:id/unhide`    | mod   | `facultyHideRequest` (`reason`) → `modFaculty`                              |
-| PUT    | `/api/admin/faculty/:id/summary` | admin | Phase 11: `faculty.ts` → `facultySummaryUpdate`                             |
-| POST   | `/api/finder/match`              | user  | Phase 11: `faculty.ts` → `finderMatchRequest` → `finderMatchResponse`       |
+| Method | Path                             | Auth  | Schema                                                                                              |
+| ------ | -------------------------------- | ----- | --------------------------------------------------------------------------------------------------- |
+| GET    | `/api/faculty`                   | user  | `faculty.ts` → `page(facultyOption)`: visible faculty, `?q=&department=&cursor=&limit=` (see below) |
+| GET    | `/api/faculty/profiles`          | user  | Phase 11: `faculty.ts` → `page(facultySummary)`, `?q=` keyword                                      |
+| GET    | `/api/faculty/:slug`             | user  | Phase 11: profile + recent papers                                                                   |
+| GET    | `/api/mod/faculty`               | mod   | `faculty.ts` → `page(modFaculty)`: same query plus `?hidden=include`                                |
+| POST   | `/api/mod/faculty`               | mod   | `facultyInput` → `modFaculty` (201)                                                                 |
+| PATCH  | `/api/mod/faculty/:id`           | mod   | `facultyPatch` (any of the input fields) → `modFaculty`                                             |
+| POST   | `/api/mod/faculty/:id/hide`      | mod   | `facultyHideRequest` (`reason`) → `modFaculty`                                                      |
+| POST   | `/api/mod/faculty/:id/unhide`    | mod   | `facultyHideRequest` (`reason`) → `modFaculty`                                                      |
+| PUT    | `/api/admin/faculty/:id/summary` | admin | Phase 11: `faculty.ts` → `facultySummaryUpdate`                                                     |
+| POST   | `/api/finder/match`              | user  | Phase 11: `faculty.ts` → `finderMatchRequest` → `finderMatchResponse`                               |
 
-`GET /api/faculty` returns `[{ id, name, initials | null, designation, department }]` ordered by name, capped at `limits.facultyListMax` (a bounded reference table: the client fetches it once, keeps it for an hour and searches it in the browser). It sends `Cache-Control: private, max-age=3600`. Hidden faculty are left out, but an attempt that already names a hidden faculty member still carries `faculty: { name, initials }` (see `attempt` in `attempts.ts`), so the student's own history keeps the name.
+`GET /api/faculty` returns `{ items: [{ id, name, initials | null, designation, department }], nextCursor }`, a page of `limits.facultyPage` rows (`limit` up to the max). `q` searches the whole directory on the server: every word must start a word of the name, or the text (spaces removed) must start the initials, without regard to case, accents on the query or titles like "Dr."; results rank exact initials, then initials prefixes, then names, each by name. `department` narrows it. Without `q` the order is name, then id. `nextCursor` is the id of the last row and is only valid for the same `q` and `department`; a cursor naming no row is `400`. `GET /api/mod/faculty` takes the same query and returns the same shape with `modFaculty` items; it lists visible rows only unless `hidden=include`. Hidden faculty are left out, but an attempt that already names a hidden faculty member still carries `faculty: { name, initials }` (see `attempt` in `attempts.ts`), so the student's own history keeps the name.
 
 `facultyInput`: `name` (2 to 100), `initials` (optional, 2 to 6 letters or digits, unique across the university without regard to case), `designation`, `department` (a code from `src/shared/departments.ts`), `nsuPage` (optional, https on `northsouth.edu` or a subdomain). Empty `initials` and `nsuPage` mean none. Conflicts answer `409` with `error: "initials_taken"` or `"name_taken"` (the same name in the same department), which the form shows under the Initials and Name fields. Hide and unhide need a `reason`; `409 already_hidden` / `not_hidden` when the row is already in that state. Every write logs an audit row (`faculty_add`, `faculty_edit`, `faculty_hide`, `faculty_unhide`) with a before-snapshot of the changed columns; an admin can reverse an edit, hide or unhide (`409 value_in_use` if the old initials or name were taken since).
 

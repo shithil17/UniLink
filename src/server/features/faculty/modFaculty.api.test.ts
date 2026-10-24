@@ -41,6 +41,13 @@ const NEW = {
   nsuPage: "https://ece.northsouth.edu/people/sabbir-rahman/",
 };
 
+/** The rows of a list page, whichever list answered. */
+async function listed(path: string, token: string) {
+  const res = await call("GET", path, token);
+  expect(res.status).toBe(200);
+  return ((await res.json()) as { items: Row[] }).items;
+}
+
 const auditRows = () =>
   env.DB.prepare("SELECT * FROM audit_log ORDER BY id").all<{
     id: number;
@@ -86,11 +93,9 @@ describe("mod faculty routes", () => {
     const row = (await res.json()) as Row;
     expect(row).toMatchObject({ ...NEW, hidden: false });
 
-    expect(
-      ((await (await call("GET", "/api/mod/faculty", mod.token)).json()) as Row[]).length,
-    ).toBe(1);
+    expect(await listed("/api/mod/faculty", mod.token)).toHaveLength(1);
     const student = await signedIn("student");
-    const visible = (await (await call("GET", "/api/faculty", student.token)).json()) as Row[];
+    const visible = await listed("/api/faculty", student.token);
     expect(visible).toEqual([
       {
         id: row.id,
@@ -212,9 +217,12 @@ describe("mod faculty routes", () => {
         .status,
     ).toBe(409);
 
-    expect((await (await call("GET", "/api/faculty", student.token)).json()) as Row[]).toEqual([]);
-    const listed = (await (await call("GET", "/api/mod/faculty", mod.token)).json()) as Row[];
-    expect(listed[0]).toMatchObject({ id: row.id, hidden: true });
+    expect(await listed("/api/faculty", student.token)).toEqual([]);
+    expect(await listed("/api/mod/faculty", mod.token)).toEqual([]);
+    expect((await listed("/api/mod/faculty?hidden=include", mod.token))[0]).toMatchObject({
+      id: row.id,
+      hidden: true,
+    });
     expect(
       await env.DB.prepare("SELECT faculty_id FROM attempts").first<{ faculty_id: number }>(),
     ).toEqual({ faculty_id: row.id });
@@ -223,9 +231,7 @@ describe("mod faculty routes", () => {
       reason: "Back again",
     });
     expect(show.status).toBe(200);
-    expect((await (await call("GET", "/api/faculty", student.token)).json()) as Row[]).toHaveLength(
-      1,
-    );
+    expect(await listed("/api/faculty", student.token)).toHaveLength(1);
     expect(
       (await call("POST", `/api/mod/faculty/${row.id}/unhide`, mod.token, { reason: "twice" }))
         .status,
@@ -254,7 +260,7 @@ describe("mod faculty routes", () => {
       reason: "Name was right",
     });
     expect(undoEdit.status).toBe(201);
-    const now = (await (await call("GET", "/api/mod/faculty", mod.token)).json()) as Row[];
+    const now = await listed("/api/mod/faculty?hidden=include", mod.token);
     expect(now[0]).toMatchObject({ name: NEW.name, hidden: false });
 
     // Someone else takes the old name; reversing an edit that would bring it back is refused.

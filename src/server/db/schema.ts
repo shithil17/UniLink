@@ -253,6 +253,8 @@ export const faculty = sqliteTable(
       .on(sql`lower(${t.initials})`)
       .where(sql`${t.initials} is not null`),
     index("faculty_department_idx").on(t.department),
+    // The directory pages by (name, id); this index serves that order and its keyset cursor without a sort.
+    index("faculty_name_idx").on(t.name, t.id),
   ],
 );
 
