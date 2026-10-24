@@ -25,6 +25,8 @@ import {
   useEditCourse,
   useSetCourseHidden,
 } from "@/lib/modCourses";
+import { courseAddConfirm, courseEditConfirm, courseHiddenConfirm } from "@/lib/curriculumConfirm";
+import { NOTHING_TO_SAVE } from "@/lib/modConfirm";
 import { toast } from "@/lib/toast";
 import { prereqCourseCodes } from "../../../shared/prereq";
 import { formatPrereq } from "../../../shared/prereqText";
@@ -35,6 +37,7 @@ import {
   type CourseInput,
   type ModCourse,
 } from "../../../shared/schemas/modCourses";
+import { useConfirm } from "@/lib/useConfirm";
 import { ReasonForm } from "./ReasonForm";
 
 /** What the sheet is showing: a new slot (`"new"`), an existing one, or nothing (closed). */
@@ -114,18 +117,18 @@ function CourseEditor({
   const alternatives = useFieldArray({ control: form.control, name: "alternatives" });
   const { errors } = form.formState;
   const kind = useWatch({ control: form.control, name: "kind" });
-  const pending = add.isPending || edit.isPending;
+  const confirm = useConfirm();
 
-  // Each server refusal belongs on the field that caused it, where the mod can fix it.
-  const fail = (err: unknown) => {
+  // A refusal that belongs to a field is marked on it too, where the mod can fix it once the confirm
+  // sheet is closed. The error is thrown on, so the sheet shows it as well.
+  const fail = (err: unknown): never => {
     const code = err instanceof ApiError ? err.code : undefined;
     if (code === "code_taken" || code === "code_referenced") {
       form.setError("code", { message: errorMessage(err) });
     } else if (code === "prereq_unknown") {
       form.setError("prereq", { message: errorMessage(err) });
-    } else {
-      toast.error(errorMessage(err));
     }
+    throw err;
   };
 
   const submit = form.handleSubmit((values) => {
@@ -139,26 +142,28 @@ function CourseEditor({
       return;
     }
     if (!course) {
-      add.mutate(values, {
-        onSuccess: () => {
+      confirm.ask({
+        ...courseAddConfirm(values),
+        run: async () => {
+          await add.mutateAsync(values).catch(fail);
           toast.success("Course added");
           onClose();
         },
-        onError: fail,
       });
       return;
     }
     const patch = changedFields(course, values);
     if (Object.keys(patch).length === 0) {
-      onClose();
+      toast(NOTHING_TO_SAVE);
       return;
     }
-    edit.mutate(patch, {
-      onSuccess: () => {
+    confirm.ask({
+      ...courseEditConfirm(course, patch),
+      run: async () => {
+        await edit.mutateAsync(patch).catch(fail);
         toast.success("Course updated");
         onClose();
       },
-      onError: fail,
     });
   });
 
@@ -416,8 +421,8 @@ function CourseEditor({
               </FieldDescription>
               <FieldError errors={[errors.prereq]} />
             </Field>
-            <Button type="submit" size="lg" className="w-full" disabled={pending}>
-              {pending ? "Saving..." : course ? "Save changes" : "Add course"}
+            <Button type="submit" size="lg" className="w-full">
+              {course ? "Save changes" : "Add course"}
             </Button>
           </FieldGroup>
         </form>
@@ -437,26 +442,23 @@ function CourseEditor({
               <ReasonForm
                 id={`course-reason-${course.id}`}
                 submitLabel={course.hidden ? "Show again" : "Hide"}
-                pendingLabel="Saving..."
                 variant="outline"
-                pending={setHidden.isPending}
                 onSubmit={(reason) =>
-                  setHidden.mutate(
-                    { hidden: !course.hidden, reason },
-                    {
-                      onSuccess: () => {
-                        toast.success(course.hidden ? "Course shown again" : "Course hidden");
-                        onClose();
-                      },
-                      onError: (err) => toast.error(errorMessage(err)),
+                  confirm.ask({
+                    ...courseHiddenConfirm(course, !course.hidden, reason),
+                    run: async () => {
+                      await setHidden.mutateAsync({ hidden: !course.hidden, reason });
+                      toast.success(course.hidden ? "Course shown again" : "Course hidden");
+                      onClose();
                     },
-                  )
+                  })
                 }
               />
             </div>
           </>
         ) : null}
       </div>
+      {confirm.element}
     </>
   );
 }

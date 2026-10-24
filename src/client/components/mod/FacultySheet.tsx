@@ -14,6 +14,12 @@ import {
 } from "@/components/ui/sheet";
 import { ApiError, errorMessage } from "@/lib/api";
 import { changedFields, useAddFaculty, useEditFaculty, useSetFacultyHidden } from "@/lib/faculty";
+import {
+  facultyAddConfirm,
+  facultyEditConfirm,
+  facultyHiddenConfirm,
+  NOTHING_TO_SAVE,
+} from "@/lib/modConfirm";
 import { toast } from "@/lib/toast";
 import { DEPARTMENTS } from "../../../shared/departments";
 import {
@@ -23,6 +29,7 @@ import {
   type FacultyInput,
   type ModFaculty,
 } from "../../../shared/schemas/faculty";
+import { useConfirm } from "@/lib/useConfirm";
 import { ReasonForm } from "./ReasonForm";
 
 const departmentChoices = DEPARTMENTS.map((d) => ({
@@ -70,42 +77,45 @@ function FacultyEditor({ faculty, onClose }: { faculty: ModFaculty | null; onClo
     },
   });
   const { errors } = form.formState;
-  const pending = add.isPending || edit.isPending;
+  const confirm = useConfirm();
 
-  // A taken name or initials belongs on its own field, where the mod can fix it.
-  const fail = (err: unknown) => {
+  // A taken name or initials is also marked on its own field, where the mod can fix it once the
+  // confirm sheet is closed. The error is thrown on, so the sheet shows it too.
+  const fail = (err: unknown): never => {
     const code = err instanceof ApiError ? err.code : undefined;
     if (code === "initials_taken" || code === "name_taken") {
       form.setError(code === "initials_taken" ? "initials" : "name", {
         message: errorMessage(err),
       });
-      return;
     }
-    toast.error(errorMessage(err));
+    throw err;
   };
 
+  // The form checks the values, then the confirm sheet says what will change. Only its button sends.
   const submit = form.handleSubmit((values) => {
     if (!faculty) {
-      add.mutate(values, {
-        onSuccess: () => {
+      confirm.ask({
+        ...facultyAddConfirm(values),
+        run: async () => {
+          await add.mutateAsync(values).catch(fail);
           toast.success("Faculty added");
           onClose();
         },
-        onError: fail,
       });
       return;
     }
     const patch = changedFields(faculty, values);
     if (Object.keys(patch).length === 0) {
-      onClose();
+      toast(NOTHING_TO_SAVE);
       return;
     }
-    edit.mutate(patch, {
-      onSuccess: () => {
+    confirm.ask({
+      ...facultyEditConfirm(faculty, patch),
+      run: async () => {
+        await edit.mutateAsync(patch).catch(fail);
         toast.success("Faculty updated");
         onClose();
       },
-      onError: fail,
     });
   });
 
@@ -190,8 +200,8 @@ function FacultyEditor({ faculty, onClose }: { faculty: ModFaculty | null; onClo
               <FieldDescription>The profile link on northsouth.edu.</FieldDescription>
               <FieldError errors={[errors.nsuPage]} />
             </Field>
-            <Button type="submit" size="lg" className="w-full" disabled={pending}>
-              {pending ? "Saving..." : faculty ? "Save changes" : "Add faculty"}
+            <Button type="submit" size="lg" className="w-full">
+              {faculty ? "Save changes" : "Add faculty"}
             </Button>
           </FieldGroup>
         </form>
@@ -211,26 +221,23 @@ function FacultyEditor({ faculty, onClose }: { faculty: ModFaculty | null; onClo
               <ReasonForm
                 id={`faculty-reason-${faculty.id}`}
                 submitLabel={faculty.hidden ? "Show again" : "Hide"}
-                pendingLabel="Saving..."
                 variant="outline"
-                pending={setHidden.isPending}
                 onSubmit={(reason) =>
-                  setHidden.mutate(
-                    { hidden: !faculty.hidden, reason },
-                    {
-                      onSuccess: () => {
-                        toast.success(faculty.hidden ? "Faculty shown again" : "Faculty hidden");
-                        onClose();
-                      },
-                      onError: (err) => toast.error(errorMessage(err)),
+                  confirm.ask({
+                    ...facultyHiddenConfirm(faculty, !faculty.hidden, reason),
+                    run: async () => {
+                      await setHidden.mutateAsync({ hidden: !faculty.hidden, reason });
+                      toast.success(faculty.hidden ? "Faculty shown again" : "Faculty hidden");
+                      onClose();
                     },
-                  )
+                  })
                 }
               />
             </div>
           </>
         ) : null}
       </div>
+      {confirm.element}
     </>
   );
 }

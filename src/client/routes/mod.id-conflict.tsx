@@ -6,6 +6,7 @@ import { SearchIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "@/lib/toast";
 import type { z } from "zod";
+import { useConfirm } from "@/lib/useConfirm";
 import { ReasonForm } from "@/components/mod/ReasonForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { modPanel as panel, modRowMin, modTitle } from "@/components/mod/modStyles";
 import { errorMessage } from "@/lib/api";
 import { idHolderLookup, useReleaseKey } from "@/lib/mod";
+import { releaseKeyConfirm } from "@/lib/modConfirm";
 import { meQuery } from "@/lib/queries";
 import { canActOn } from "../../shared/modPolicy";
 import { idConflictQuery, STUDENT_KEY_LENGTH } from "../../shared/schemas/moderation";
@@ -74,6 +76,7 @@ function Holder({ studentKey }: { studentKey: string }) {
   const lookup = useQuery(idHolderLookup(studentKey));
   const { data: me } = useQuery(meQuery);
   const release = useReleaseKey();
+  const confirm = useConfirm();
 
   if (lookup.isPending) {
     return (
@@ -144,22 +147,18 @@ function Holder({ studentKey }: { studentKey: string }) {
             <ReasonForm
               id="release-reason"
               submitLabel="Release ID and ban"
-              pendingLabel="Releasing"
               variant="destructive"
-              pending={release.isPending}
               hint="Say why this account should not hold the ID."
-              onSubmit={(reason) => {
-                release.mutate(
-                  { userId: holder.id, reason },
-                  {
-                    onSuccess: () => {
-                      toast.success("ID released");
-                      void lookup.refetch();
-                    },
-                    onError: (err) => toast.error(errorMessage(err)),
+              onSubmit={(reason) =>
+                confirm.ask({
+                  ...releaseKeyConfirm(holder, reason),
+                  run: async () => {
+                    await release.mutateAsync({ userId: holder.id, reason });
+                    toast.success("ID released");
+                    void lookup.refetch();
                   },
-                );
-              }}
+                })
+              }
             />
           </>
         ) : (
@@ -170,6 +169,7 @@ function Holder({ studentKey }: { studentKey: string }) {
           </FieldDescription>
         )}
       </div>
+      {confirm.element}
     </div>
   );
 }

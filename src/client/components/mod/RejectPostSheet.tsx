@@ -11,28 +11,31 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { rejectPostConfirm } from "@/lib/modConfirm";
 import { categoryLabel } from "@/lib/modQueue";
 import {
   rejectCategory,
   rejectPostRequest,
   type ModQueuePost,
 } from "../../../shared/schemas/moderation";
+import { useConfirm } from "@/lib/useConfirm";
 import { ReasonField } from "./ReasonField";
 
 type Values = z.input<typeof rejectPostRequest>;
 
 const options = rejectCategory.options.map((value) => ({ value, label: categoryLabel(value) }));
 
-/** The reject form for a held post: a category the author will see as a message, and a reason for the audit log. */
+/**
+ * The reject form for a held post: a category the author will see as a message, and a reason for the
+ * audit log. Submitting opens the confirm sheet; `onReject` runs only when that is confirmed.
+ */
 export function RejectPostSheet({
   post,
-  pending,
-  onSubmit,
+  onReject,
   onClose,
 }: {
   post: ModQueuePost | null;
-  pending: boolean;
-  onSubmit: (values: z.output<typeof rejectPostRequest>) => void;
+  onReject: (values: z.output<typeof rejectPostRequest>) => Promise<unknown>;
   onClose: () => void;
 }) {
   return (
@@ -42,8 +45,7 @@ export function RejectPostSheet({
           <RejectForm
             key={`${post.targetType}:${post.id}`}
             post={post}
-            pending={pending}
-            onSubmit={onSubmit}
+            onReject={onReject}
             onClose={onClose}
           />
         ) : null}
@@ -54,15 +56,14 @@ export function RejectPostSheet({
 
 function RejectForm({
   post,
-  pending,
-  onSubmit,
+  onReject,
   onClose,
 }: {
   post: ModQueuePost;
-  pending: boolean;
-  onSubmit: (values: z.output<typeof rejectPostRequest>) => void;
+  onReject: (values: z.output<typeof rejectPostRequest>) => Promise<unknown>;
   onClose: () => void;
 }) {
+  const confirm = useConfirm();
   const preset = rejectCategory.safeParse(post.category);
   const form = useForm<Values, unknown, z.output<typeof rejectPostRequest>>({
     resolver: zodResolver(rejectPostRequest),
@@ -80,7 +81,13 @@ function RejectForm({
           reason stays in the audit log.
         </SheetDescription>
       </SheetHeader>
-      <form noValidate onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 px-5 pb-4">
+      <form
+        noValidate
+        onSubmit={form.handleSubmit((values) =>
+          confirm.ask({ ...rejectPostConfirm(post, values), run: () => onReject(values) }),
+        )}
+        className="space-y-4 px-5 pb-4"
+      >
         <FieldGroup>
           <Field data-invalid={Boolean(errors.category)}>
             <FieldLabel htmlFor={`reject-category-${post.id}`}>Category</FieldLabel>
@@ -110,12 +117,13 @@ function RejectForm({
             <Button type="button" variant="ghost" size="lg" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" variant="destructive" size="lg" disabled={pending}>
-              {pending ? "Rejecting" : "Reject post"}
+            <Button type="submit" variant="destructive" size="lg">
+              Reject post
             </Button>
           </div>
         </FieldGroup>
       </form>
+      {confirm.element}
     </>
   );
 }

@@ -1,11 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { errorMessage } from "@/lib/api";
 import { timeAgo } from "@/lib/inbox";
 import { confidenceLabel, categoryLabel, postTypeLabel, ruleLabel } from "@/lib/modQueue";
 import { useDecidePost, useResolveReport } from "@/lib/mod";
+import { approvePostConfirm, resolveReportConfirm } from "@/lib/modConfirm";
 import { toast } from "@/lib/toast";
+import { useConfirm } from "@/lib/useConfirm";
 import { modRowMin } from "./modStyles";
 import type { ModQueuePost, ModReport } from "../../../shared/schemas/moderation";
 
@@ -20,14 +21,19 @@ export function PostRow({
   const decide = useDecidePost();
   const confidence = confidenceLabel(post.confidence);
 
+  const confirm = useConfirm();
   const approve = () =>
-    decide.mutate(
-      { targetType: post.targetType, id: post.id, decision: "approve" },
-      {
-        onSuccess: () => toast.success("Post approved. The author was told."),
-        onError: (err) => toast.error(errorMessage(err)),
+    confirm.ask({
+      ...approvePostConfirm(post),
+      run: async () => {
+        await decide.mutateAsync({
+          targetType: post.targetType,
+          id: post.id,
+          decision: "approve",
+        });
+        toast.success("Post approved. The author was told.");
       },
-    );
+    });
 
   return (
     <div className={`space-y-3 px-4 py-3.5 ${modRowMin}`}>
@@ -67,18 +73,14 @@ export function PostRow({
         ) : null}
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={decide.isPending}
-          onClick={() => onReject(post)}
-        >
+        <Button variant="outline" size="sm" onClick={() => onReject(post)}>
           Reject
         </Button>
-        <Button size="sm" disabled={decide.isPending} onClick={approve}>
+        <Button size="sm" onClick={approve}>
           Approve
         </Button>
       </div>
+      {confirm.element}
     </div>
   );
 }
@@ -86,11 +88,15 @@ export function PostRow({
 /** A report, as before: the target, the reason, and dismiss or mark handled while it is open. */
 export function ReportRow({ report, now }: { report: ModReport; now: number }) {
   const resolve = useResolveReport();
+  const confirm = useConfirm();
   const act = (outcome: "resolved" | "dismissed", done: string) =>
-    resolve.mutate(
-      { id: report.id, outcome },
-      { onSuccess: () => toast.success(done), onError: (err) => toast.error(errorMessage(err)) },
-    );
+    confirm.ask({
+      ...resolveReportConfirm(report, outcome),
+      run: async () => {
+        await resolve.mutateAsync({ id: report.id, outcome });
+        toast.success(done);
+      },
+    });
 
   return (
     <div className={`space-y-3 px-4 py-3.5 ${modRowMin}`}>
@@ -121,23 +127,15 @@ export function ReportRow({ report, now }: { report: ModReport; now: number }) {
               Review user
             </Link>
           ) : null}
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={resolve.isPending}
-            onClick={() => act("dismissed", "Report dismissed")}
-          >
+          <Button variant="outline" size="sm" onClick={() => act("dismissed", "Report dismissed")}>
             Dismiss
           </Button>
-          <Button
-            size="sm"
-            disabled={resolve.isPending}
-            onClick={() => act("resolved", "Report marked handled")}
-          >
+          <Button size="sm" onClick={() => act("resolved", "Report marked handled")}>
             Mark handled
           </Button>
         </div>
       ) : null}
+      {confirm.element}
     </div>
   );
 }

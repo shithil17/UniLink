@@ -4,21 +4,23 @@ import { useState } from "react";
 import { ScrollTextIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { modPanel as panel, modRowLine, modRowMin, modTitle } from "@/components/mod/modStyles";
+import { useConfirm } from "@/lib/useConfirm";
 import { ReasonForm } from "@/components/mod/ReasonForm";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBlock } from "@/components/ui/error-block";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/api";
 import { timeAgo } from "@/lib/inbox";
 import { auditList, useReverse } from "@/lib/mod";
+import { reverseConfirm } from "@/lib/modConfirm";
 import { meQuery } from "@/lib/queries";
 import { auditActionLabel } from "../../shared/auditActions";
 import type { AuditEntry } from "../../shared/schemas/moderation";
@@ -94,7 +96,7 @@ function AuditPage() {
         </>
       )}
 
-      <ReverseDialog entry={target} onClose={() => setTarget(null)} />
+      <ReverseSheet entry={target} onClose={() => setTarget(null)} />
     </section>
   );
 }
@@ -149,50 +151,46 @@ function EntryRow({
   );
 }
 
-function ReverseDialog({ entry, onClose }: { entry: AuditEntry | null; onClose: () => void }) {
+function ReverseSheet({ entry, onClose }: { entry: AuditEntry | null; onClose: () => void }) {
   const reverse = useReverse();
-
-  const close = () => {
-    reverse.reset();
-    onClose();
-  };
+  const confirm = useConfirm();
 
   return (
-    <Dialog open={entry !== null} onOpenChange={(open) => !open && close()}>
-      <DialogContent>
+    <Sheet open={entry !== null} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="bottom">
         {entry ? (
           <>
-            <DialogHeader>
-              <DialogTitle>Reverse this action</DialogTitle>
-              <DialogDescription>
+            <SheetHeader>
+              <SheetTitle>Reverse this action</SheetTitle>
+              <SheetDescription>
                 {auditActionLabel(entry.action)} on{" "}
                 {entry.targetLabel ?? `${entry.targetType} ${entry.targetId}`}. It puts back what
                 the action changed.
-              </DialogDescription>
-            </DialogHeader>
-            <ReasonForm
-              key={entry.id}
-              id={`reverse-${entry.id}`}
-              submitLabel="Reverse"
-              pendingLabel="Reversing"
-              pending={reverse.isPending}
-              onCancel={close}
-              onSubmit={(reason) => {
-                reverse.mutate(
-                  { id: entry.id, reason },
-                  {
-                    onSuccess: () => {
+              </SheetDescription>
+            </SheetHeader>
+            <div className="px-5 pb-4">
+              <ReasonForm
+                key={entry.id}
+                id={`reverse-${entry.id}`}
+                submitLabel="Reverse"
+                variant="destructive"
+                onCancel={onClose}
+                onSubmit={(reason) =>
+                  confirm.ask({
+                    ...reverseConfirm(entry, reason),
+                    run: async () => {
+                      await reverse.mutateAsync({ id: entry.id, reason });
                       toast.success("Action reversed");
-                      close();
+                      onClose();
                     },
-                    onError: (err) => toast.error(errorMessage(err)),
-                  },
-                );
-              }}
-            />
+                  })
+                }
+              />
+            </div>
+            {confirm.element}
           </>
         ) : null}
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

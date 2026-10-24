@@ -4,13 +4,14 @@ import { TriangleAlertIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/lib/toast";
 import { CourseCode } from "@/components/courses/CourseCode";
+import { useConfirm } from "@/lib/useConfirm";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { errorMessage } from "@/lib/api";
 import { parseCurriculumText, rejectedRows, type ParsedCurriculum } from "@/lib/courseImport";
 import { useImportCurriculum } from "@/lib/courses";
-import { modCurriculaQuery } from "@/lib/modCourses";
+import { importConfirm, previewImport } from "@/lib/curriculumConfirm";
+import { modCoursesQuery, modCurriculaQuery } from "@/lib/modCourses";
 import { meQuery } from "@/lib/queries";
 import type { ImportResult } from "../../shared/schemas/courses";
 import { modTitle } from "@/components/mod/modStyles";
@@ -32,6 +33,7 @@ function ImportPage() {
   const [file, setFile] = useState<{ name: string; parsed: ParsedCurriculum } | null>(null);
   const [result, setResult] = useState<{ imported: number; rejected: Rejected } | null>(null);
   const [failure, setFailure] = useState<Rejected | null>(null);
+  const confirm = useConfirm();
 
   const pick = async (picked: File | undefined) => {
     setResult(null);
@@ -45,21 +47,44 @@ function ImportPage() {
 
   // Importing a version that exists swaps all its courses, so edits made on the Courses screen are lost.
   const incoming = file?.parsed.ok ? file.parsed.body : null;
-  const replacing =
-    incoming !== null &&
-    (curricula.data ?? []).some(
-      (c) => c.programCode === incoming.program && c.version === incoming.version,
-    );
+  const existing =
+    incoming === null
+      ? undefined
+      : (curricula.data ?? []).find(
+          (c) => c.programCode === incoming.program && c.version === incoming.version,
+        );
+  const replacing = existing !== undefined;
+  // What the version holds now, so the confirm sheet can count what the file adds, changes and removes.
+  const current = useQuery({ ...modCoursesQuery(existing?.id ?? 0), enabled: replacing });
 
   const submit = () => {
     if (!file?.parsed.ok) return;
-    setResult(null);
-    setFailure(null);
-    importCurriculum.mutate(file.parsed.body, {
-      onSuccess: (r) => setResult({ imported: r.imported, rejected: r.rejected }),
-      onError: (err) => {
-        toast.error(errorMessage(err));
-        setFailure(rejectedRows(err));
+    const { body, rowCount } = file.parsed;
+    const preview = !replacing
+      ? previewImport([], body.courses)
+      : current.data
+        ? previewImport(current.data, body.courses)
+        : null;
+    confirm.ask({
+      ...importConfirm({
+        fileName: file.name,
+        program: body.program,
+        version: body.version,
+        rowCount,
+        replacing,
+        preview,
+      }),
+      run: async () => {
+        setResult(null);
+        setFailure(null);
+        try {
+          const r = await importCurriculum.mutateAsync(body);
+          setResult({ imported: r.imported, rejected: r.rejected });
+        } catch (err) {
+          // The rows the server refused go in the table under the form; the sheet shows the message.
+          setFailure(rejectedRows(err));
+          throw err;
+        }
       },
     });
   };
@@ -109,10 +134,10 @@ function ImportPage() {
         ) : null}
         <Button
           className="w-full sm:w-auto sm:self-start"
-          disabled={!file?.parsed.ok || importCurriculum.isPending}
+          disabled={!file?.parsed.ok}
           onClick={submit}
         >
-          {importCurriculum.isPending ? "Importing..." : "Import"}
+          Import
         </Button>
       </FieldGroup>
 
@@ -126,6 +151,7 @@ function ImportPage() {
         </div>
       ) : null}
       {failure ? <RejectedTable rows={failure} /> : null}
+      {confirm.element}
     </section>
   );
 }

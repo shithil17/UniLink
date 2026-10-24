@@ -81,26 +81,18 @@ function WaitingList() {
       </ListShell>
       <RejectPostSheet
         post={rejecting}
-        pending={decide.isPending}
         onClose={() => setRejecting(null)}
-        onSubmit={({ reason, category }) => {
+        onReject={async ({ reason, category }) => {
           if (!rejecting) return;
-          decide.mutate(
-            {
-              targetType: rejecting.targetType,
-              id: rejecting.id,
-              decision: "reject",
-              reason,
-              category,
-            },
-            {
-              onSuccess: () => {
-                toast.success("Post rejected. The author was told.");
-                setRejecting(null);
-              },
-              onError: (err) => toast.error(errorMessage(err)),
-            },
-          );
+          await decide.mutateAsync({
+            targetType: rejecting.targetType,
+            id: rejecting.id,
+            decision: "reject",
+            reason,
+            category,
+          });
+          toast.success("Post rejected. The author was told.");
+          setRejecting(null);
         }}
       />
     </>

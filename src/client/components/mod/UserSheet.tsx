@@ -12,10 +12,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { errorMessage } from "@/lib/api";
 import { useChangeRole, useUserAction, type UserAction } from "@/lib/mod";
+import { roleChangeConfirm, userActionConfirm } from "@/lib/modConfirm";
 import { canActOn, type Role } from "../../../shared/modPolicy";
 import { reasonBody, type ModUser } from "../../../shared/schemas/moderation";
+import { useConfirm } from "@/lib/useConfirm";
 import { ReasonField } from "./ReasonField";
 
 type Values = z.infer<typeof reasonBody>;
@@ -61,41 +62,36 @@ function UserActions({
   const [temporary, setTemporary] = useState<string | null>(null);
   // Read once when the sheet opens: the pause is shown in whole minutes, so no ticking is needed.
   const [openedAt] = useState(() => Date.now());
-  const pending = userAction.isPending || changeRole.isPending;
   const allowed = canActOn(me, user);
+  const confirm = useConfirm();
 
-  const fail = (err: unknown) => toast.error(errorMessage(err));
-
+  // The form checks the reason, then the confirm sheet says what will happen. Only its button sends.
   const run = (action: UserAction, done: string) =>
     form.handleSubmit(({ reason }) => {
-      userAction.mutate(
-        { id: user.id, action, reason },
-        {
-          onSuccess: (result) => {
-            if ("temporaryPassword" in result) {
-              setTemporary(result.temporaryPassword);
-              return;
-            }
-            toast.success(done);
-            onClose();
-          },
-          onError: fail,
+      confirm.ask({
+        ...userActionConfirm(action, user, reason),
+        run: async () => {
+          const result = await userAction.mutateAsync({ id: user.id, action, reason });
+          if ("temporaryPassword" in result) {
+            setTemporary(result.temporaryPassword);
+            return;
+          }
+          toast.success(done);
+          onClose();
         },
-      );
+      });
     });
 
   const setRole = (role: "mod" | "student", done: string) =>
     form.handleSubmit(({ reason }) => {
-      changeRole.mutate(
-        { id: user.id, role, reason },
-        {
-          onSuccess: () => {
-            toast.success(done);
-            onClose();
-          },
-          onError: fail,
+      confirm.ask({
+        ...roleChangeConfirm(user, role, reason),
+        run: async () => {
+          await changeRole.mutateAsync({ id: user.id, role, reason });
+          toast.success(done);
+          onClose();
         },
-      );
+      });
     });
 
   const flagged = user.probingFlaggedAt !== null;
@@ -155,7 +151,6 @@ function UserActions({
                     type="button"
                     variant="destructive"
                     size="lg"
-                    disabled={pending}
                     onClick={() => void run("ban", "User banned")()}
                   >
                     Ban
@@ -165,7 +160,6 @@ function UserActions({
                     type="button"
                     variant="outline"
                     size="lg"
-                    disabled={pending}
                     onClick={() => void run("unban", "User unbanned")()}
                   >
                     Unban
@@ -175,7 +169,6 @@ function UserActions({
                   type="button"
                   variant="outline"
                   size="lg"
-                  disabled={pending}
                   onClick={() => void run("reset-password", "")()}
                 >
                   Reset password
@@ -185,7 +178,6 @@ function UserActions({
                     type="button"
                     variant="outline"
                     size="lg"
-                    disabled={pending}
                     onClick={() => void run("clear-probing", "Flag cleared")()}
                   >
                     Clear flag
@@ -197,7 +189,6 @@ function UserActions({
                       type="button"
                       variant="outline"
                       size="lg"
-                      disabled={pending}
                       onClick={() => void setRole("mod", "Made a mod")()}
                     >
                       Make mod
@@ -207,7 +198,6 @@ function UserActions({
                       type="button"
                       variant="outline"
                       size="lg"
-                      disabled={pending}
                       onClick={() => void setRole("student", "Removed as mod")()}
                     >
                       Remove as mod
@@ -219,6 +209,7 @@ function UserActions({
           </form>
         )}
       </div>
+      {confirm.element}
     </>
   );
 }

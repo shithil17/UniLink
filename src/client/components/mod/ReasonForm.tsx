@@ -8,22 +8,21 @@ import { ReasonField } from "./ReasonField";
 
 type Values = z.infer<typeof reasonBody>;
 
-/** A reason box with one confirm button, for actions that are a single choice (release, reverse). */
+/**
+ * A reason box with one submit button, for actions that are a single choice (release, reverse, hide).
+ * Submitting hands the checked reason to `onSubmit`, which opens the confirm sheet.
+ */
 export function ReasonForm({
   id,
   submitLabel,
-  pendingLabel,
   variant = "default",
-  pending,
   hint,
   onSubmit,
   onCancel,
 }: {
   id: string;
   submitLabel: string;
-  pendingLabel: string;
   variant?: "default" | "destructive" | "outline";
-  pending: boolean;
   hint?: string;
   onSubmit: (reason: string) => void;
   onCancel?: () => void;
@@ -49,8 +48,8 @@ export function ReasonForm({
               Cancel
             </Button>
           ) : null}
-          <Button type="submit" variant={variant} size="lg" disabled={pending}>
-            {pending ? pendingLabel : submitLabel}
+          <Button type="submit" variant={variant} size="lg">
+            {submitLabel}
           </Button>
         </div>
       </FieldGroup>
