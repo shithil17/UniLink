@@ -14,18 +14,13 @@ type Props = {
   className?: string;
 };
 
-/** A sentence-case title with an optional count and action, over a hairline. */
+/** A sentence-case 18/600 title with an optional count and action. No hairline: panels carry their own rows. */
 export function SectionHeader({ title, count, action, as: Heading = "h2", id, className }: Props) {
   return (
-    <div
-      className={cn(
-        "flex min-h-9 items-baseline justify-between gap-3 border-b border-line pb-2",
-        className,
-      )}
-    >
+    <div className={cn("flex min-h-7 items-center justify-between gap-3 pb-3", className)}>
       <Heading
         id={id}
-        className="flex scroll-mt-20 items-baseline gap-2 text-base font-semibold text-ink"
+        className="flex scroll-mt-4 items-baseline gap-2 text-lg leading-[1.3] font-semibold text-ink"
       >
         {title}
         {count === undefined ? null : (

@@ -61,4 +61,24 @@ describe("ModNav", () => {
       expect(screen.queryByRole("navigation", { name: "Moderation sections" })).toBeNull(),
     );
   });
+
+  it("lists the audit log only for admins, in the tab row as well as the sheet, and marks the current section", async () => {
+    await renderAt("/mod/audit", "mod");
+    const modRow = screen.getAllByRole("navigation", { name: "Moderation" })[0]!;
+    expect(within(modRow).queryByRole("link", { name: "Audit log" })).toBeNull();
+    cleanup();
+
+    await renderAt("/mod/audit", "admin");
+    const row = screen.getAllByRole("navigation", { name: "Moderation" })[0]!;
+    const audit = within(row).getByRole("link", { name: "Audit log" });
+    expect(audit.getAttribute("aria-current")).toBe("page");
+    const others = within(row)
+      .getAllByRole("link")
+      .filter((l) => l !== audit);
+    expect(others).toHaveLength(modSectionsFor("admin").length - 1);
+    expect(others.every((l) => l.getAttribute("aria-current") === null)).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Audit log" }));
+    const sheet = await screen.findByRole("navigation", { name: "Moderation sections" });
+    expect(within(sheet).getByRole("link", { name: /Audit log/ })).toBeTruthy();
+  });
 });

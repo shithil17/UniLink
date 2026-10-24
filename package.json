@@ -23,7 +23,7 @@
   "dependencies": {
     "@base-ui/react": "1.9.0",
     "@block65/webcrypto-web-push": "2.0.0",
-    "@fontsource-variable/geist": "5.3.0",
+    "@fontsource-variable/figtree": "^5.3.0",
     "@fontsource-variable/noto-sans-bengali": "^5.3.0",
     "@hono/zod-validator": "0.9.1",
     "@hookform/resolvers": "5.9.2",
@@ -61,6 +61,7 @@
     "vite": "catalog:",
     "vite-plugin-pwa": "2.0.0",
     "vite-plus": "catalog:",
+    "vitest": "catalog:",
     "workbox-window": "7.4.1",
     "wrangler": "4.151.1"
   },

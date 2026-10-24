@@ -52,7 +52,6 @@ function LoginPage() {
             <FieldLabel htmlFor="username">Username</FieldLabel>
             <Input
               id="username"
-              className="h-11"
               autoComplete="username"
               autoCapitalize="none"
               aria-invalid={Boolean(errors.username)}
@@ -65,7 +64,6 @@ function LoginPage() {
             <Input
               id="password"
               type="password"
-              className="h-11"
               autoComplete="current-password"
               aria-invalid={Boolean(errors.password)}
               {...form.register("password")}

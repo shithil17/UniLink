@@ -15,11 +15,18 @@ export const Route = createFileRoute("/demo")({
 function Demo() {
   const { tab } = Route.useSearch();
   return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-semibold">Search param demo</h1>
+    <section className="space-y-4 text-ink">
+      <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.01em] text-ink">
+        Search param demo
+      </h1>
       <div className="flex gap-3">
         {tabs.map((value) => (
-          <Link key={value} to="/demo" search={{ tab: value }} className="underline">
+          <Link
+            key={value}
+            to="/demo"
+            search={{ tab: value }}
+            className="font-semibold text-brand-ink underline underline-offset-[3px]"
+          >
             {value}
           </Link>
         ))}

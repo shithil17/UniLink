@@ -5,12 +5,18 @@ import { cn } from "cn";
 import { focusRing } from "./focus";
 
 const badgeVariants = cva(
-  `group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-control border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-colors ${focusRing} has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive [&>svg]:pointer-events-none [&>svg]:size-3!`,
+  `group/badge inline-flex min-h-[22px] w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full px-[9px] text-xs leading-none font-semibold whitespace-nowrap ${focusRing} has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&>svg]:pointer-events-none [&>svg]:size-3!`,
   {
     variants: {
       variant: {
         // Plain label for a state that is not a course state (for example "Excluded").
-        outline: "border-input text-ink [a]:hover:bg-tint",
+        outline: "text-ink inset-ring-1 inset-ring-edge [a]:hover:bg-tint",
+        solid: "bg-primary text-primary-foreground",
+        soft: "bg-brand-soft text-brand-ink",
+        // Course hue: read from the nearest `data-hue` wrapper. Course data only.
+        hue: "bg-hue text-hue-ink",
+        // A number on a queue that needs action; a solid pill at least as wide as it is tall.
+        count: "min-w-[22px] bg-primary px-1.5 text-primary-foreground",
       },
     },
     defaultVariants: {

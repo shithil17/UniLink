@@ -59,7 +59,6 @@ function SignupPage() {
             <FieldLabel htmlFor="username">Username</FieldLabel>
             <Input
               id="username"
-              className="h-11"
               autoComplete="username"
               autoCapitalize="none"
               aria-invalid={Boolean(errors.username)}
@@ -74,7 +73,6 @@ function SignupPage() {
             <FieldLabel htmlFor="fullName">Full name</FieldLabel>
             <Input
               id="fullName"
-              className="h-11"
               autoComplete="name"
               aria-invalid={Boolean(errors.fullName)}
               {...form.register("fullName")}
@@ -87,7 +85,6 @@ function SignupPage() {
             <Input
               id="email"
               type="email"
-              className="h-11"
               autoComplete="email"
               autoCapitalize="none"
               placeholder={`name@${NSU_EMAIL_DOMAIN}`}
@@ -101,7 +98,6 @@ function SignupPage() {
             <FieldLabel htmlFor="studentId">NSU student ID</FieldLabel>
             <Input
               id="studentId"
-              className="h-11"
               inputMode="numeric"
               autoComplete="off"
               placeholder="221 1234 042"
@@ -118,7 +114,6 @@ function SignupPage() {
             <Input
               id="password"
               type="password"
-              className="h-11"
               autoComplete="new-password"
               aria-invalid={Boolean(errors.password)}
               {...form.register("password")}

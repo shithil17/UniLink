@@ -1,10 +1,10 @@
 # Screens and flows (mobile-first)
 
-The screen specification for what is built through Phase 9. It records each flow, what every screen shows, and its states (loading, empty, error) at phone width (390px). It replaces the planned Figma file: the screens were designed straight in code against [`DESIGN.md`](../DESIGN.md), so this document and the running app are the reference. Desktop (1440px) uses the same screens in a wider centred column, with the bottom bar moved into the top header.
+The screen specification for the built app. It records each flow, what every screen shows, and its states (loading, empty, error) at phone width (390px). It replaces the planned Figma file: the screens were designed straight in code against [`DESIGN.md`](../DESIGN.md), so this document and the running app are the reference. Desktop (1440px) uses the same screens beside the left navigation rail.
 
 Shared rules on every screen (from `PRODUCT.md` and `DESIGN.md`):
 
-- Quiet Utility: neutral grounds, hairline-separated lists, one accent per palette, no gradients, glass or resting shadows. Geist, with Noto Sans Bengali for Bangla.
+- Pocket Planner: neutral grounds, flat rounded surfaces, one accent per palette, course hues only on data, Figtree with Noto Sans Bengali, and shadows only on floating layers.
 - Every action result and error is a toast. Inline text only for per-field validation. Moderation states use a persistent `StatusNote`.
 - Touch targets are at least 44px. Everything works with the keyboard.
 - Student IDs, emails and full names are never shown to other students.
@@ -41,7 +41,7 @@ flowchart LR
 
 Navigation:
 
-- **Main tabs.** A bottom bar on phones, the top bar from `md`. Students: Home, Courses, Routine, Inbox (unread badge), Settings. Mods and admins: Home, Courses, Inbox, Mod, Settings; the Mod tab opens the moderation panel and stays marked while any `/mod/...` screen is open. Mods and admins get Mod in place of Routine so the bar never goes past five; they reach their own routine from Home ("Full routine"). Students never see Mod. The current tab is marked by `aria-current` and heavier ink. Moderation is also still listed under Settings.
+- **Main tabs.** A floating pill bar on phones, a 240px left rail from `md`. Students: Home, Courses, Routine, Inbox (unread badge), Settings. Mods and admins: Home, Courses, Inbox, Mod, Settings; the Mod tab opens the moderation panel and stays marked while any `/mod/...` screen is open. Mods and admins get Mod in place of Routine so the bar never goes past five; they reach their own routine from Home ("Full routine"). Students never see Mod. The current tab is marked by `aria-current` and a sliding `brand-soft` pill on phones; the rail uses a `brand-soft` active row. Moderation is also still listed under Settings.
 - **No tabs when they would lead nowhere.** Log in, Create an account and the forced Change password screen show only the wordmark; the tabs return once the user is signed in and has no temporary password.
 - **Moderation sections.** From `md`: an underline tab row (Queue, Users, Faculty, Courses, ID check, Audit log for admins, Import). On a phone seven sections do not fit a row, so the screen shows "Moderation" with a button naming the current section; it opens a bottom sheet listing every section the role can open, each with a one-line hint. The current row is tinted and ticked (`aria-current="page"`), and choosing a row closes the sheet.
 - **Back paths.** Mod sections are peers of one top-level panel, so they need no back. Change password, opened from Settings, shows "Settings" with a back chevron above its title (not while the change is forced). Sheets (course sheet, pickers, mod sheets) close with their X, Esc or a tap on the scrim.
@@ -81,7 +81,7 @@ Current password and New password. Reached by choice from Settings, or forced af
 
 ### Home (`/`)
 
-- "Welcome to UniLink" header with the CGPA summary (CGPA, earned and remaining credits, a credit bar).
+- Header and degree summary (CGPA, earned and remaining credits, a 14px credit bar). When a routine exists, the next class or in-progress class leads the summary; Today’s timeline follows.
 - "Unlocked next" with its count and a "Course map" link: the first six courses whose prerequisites are now met, each with its state mark. When there are more, a muted "Showing 6 of 12" line ends the list.
 - Empty: "No course map for your program yet. It will show up here once a moderator adds it. Your progress starts counting then."
 - Error: "Couldn't load your progress. Check your connection and try again."
@@ -120,7 +120,7 @@ Inside the course sheet, under "Your attempts":
 | Loading     | "Loading your attempts..."                                                                                  |
 | Error       | "Your attempts did not load. You can still record a grade."                                                 |
 
-Full attempt form: Course, Grade, Term (optional, "Pick the term you took it in."), Faculty (optional; a picker, see below; if the list fails to load the control is disabled and a toast says "The faculty list did not load. You can save without it."). Buttons: "Save grade" (quick), "Save attempt" (new), "Save changes" (edit). Toasts: "Grade saved", "Attempt updated", "Attempt deleted".
+Grade choices are compact selectable chips; the selected grade uses `brand-soft` and `brand-ink`. Full attempt form: Course, Grade, Term (optional, "Pick the term you took it in."), Faculty (optional; a picker, see below; if the list fails to load the control is disabled and a toast says "The faculty list did not load. You can save without it."). Buttons: "Record a grade" (quick), "Save attempt" (new), "Save changes" (edit). Toasts: "Grade saved", "Attempt updated", "Attempt deleted".
 
 **Faculty picker.** The Faculty field is a button showing the chosen "Name (INITIALS)" or "No faculty". Tapping it opens a bottom sheet (centred on desktop) titled "Who taught it?" with a search box ("Search by name or initials", focused on open), a department filter ("All departments" or one department) and a hairline list. The first row is "No faculty". Each row shows the name with initials in brackets (no brackets when the person has none) and a muted line "designation · department". The chosen row is tinted and ticked. Search matches the start of any name word, or the start of the initials, without regard to case or accents, and ignores titles like "Dr."; exact initials rank first. Empty result: "No faculty match that search." Keyboard: type, Arrow up/down to move, Enter to pick, Esc to close. The list is fetched once and searched in the browser. A faculty member a moderator has hidden is not in the list, but an attempt that already names them keeps showing the name. Attempt rows show "Name (INITIALS)".
 
@@ -142,9 +142,9 @@ A calendar of the current term, like a phone's calendar app, with Month, Week an
 
 - Header "Routine" with the current term (for example "Fall 2026") and the one primary button, "Add class".
 - A row with the view switch (Month · Week · Day, a segmented control) and "Today" (disabled while today is shown). Under it the period on screen ("October 2026", "Oct 18 - 24", "Wednesday, Oct 21") with back and forward arrows: a month, a week or a day at a time.
-- **Week** (the default): a time grid, Sunday to Saturday, 8 AM to 6 PM (wider when a class starts earlier or ends later), one hairline per hour. Each column header shows the weekday and date; today's date sits on a `brand-soft` chip, and tapping a header opens that day. Classes are blocks at their times: the code (and on wider screens the time and room); classes on now are `brand-soft` with a brand edge, finished ones are faint, and a thin brand line marks the current time in today's column. Classes that clash share their slot side by side; on a phone those narrow blocks drop their text, and the full label is read out and shown in the sheet. Tapping a block opens Edit class; tapping an empty slot opens "Add a class" with that day and time filled in (a 90-minute class from the nearest half hour).
+- **Week** (the default): a time grid, Sunday to Saturday, 8 AM to 6 PM (wider when a class starts earlier or ends later), one hairline per hour. Each column header shows the weekday and date; today's date sits on a `brand-soft` chip, and tapping a header opens that day. Classes are rounded course-hue blocks at their times: the code (and on wider screens the time and room); classes on now use the shared current-state styling, finished ones are faint, and a thin brand line marks the current time in today's column. Classes that clash share their slot side by side; on a phone those narrow blocks drop their text, and the full label is read out and shown in the sheet. Tapping a block opens Edit class; tapping an empty slot opens "Add a class" with that day and time filled in (a 90-minute class from the nearest half hour).
 - **Day**: the same grid for one date, with each block showing the code and title, the time range and "Section 2 · Room 304 · RkZ".
-- **Month**: whole weeks covering the month, Sunday first. Each date shows its classes: on wider screens up to three as "8:00 AM CSE115" with "N more" after, on a phone one short bar per class. Other months' dates are faint; today's date sits on a `brand-soft` chip. Tapping a date opens it in Day.
+- **Month**: whole weeks covering the month, Sunday first. Each date shows its classes: on wider screens up to three as "8:00 AM CSE115" with "N more" after, on a phone one short course-hue bar per class. Other months' dates are faint; today's date uses the brand accent. Tapping a date opens it in Day.
 - Dates outside the term have no classes; a day outside it says "This day is outside Fall 2026, so it has no classes." Term dates come from the shared term start dates until moderators can set each term's start and end.
 - No classes at all: "No classes yet. Add the ones you're taking this term, or tap an empty slot on the grid." A day with none: "No classes this day."
 - "Clear this term" (only when there are classes) asks first: "Clear this term's routine?" / "This deletes all N classes from this term. It can't be undone." with "Keep them" and "Clear routine". Toast "Routine cleared".

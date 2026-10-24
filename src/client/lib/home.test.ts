@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { CourseMap } from "../../shared/schemas/courses";
-import { selectHomeState, unlockedNext, UNLOCKED_NEXT_MAX } from "./home";
+import {
+  dhakaDateLine,
+  greeting,
+  greetingBand,
+  selectHomeState,
+  unlockedNext,
+  UNLOCKED_NEXT_MAX,
+} from "./home";
 
 const ok = <T>(data: T) => ({ status: "success" as const, data });
 const pending = { status: "pending" as const, data: undefined };
@@ -83,5 +90,46 @@ describe("unlockedNext", () => {
     const { items, total } = unlockedNext({ categories: [category(many)] });
     expect(items).toHaveLength(UNLOCKED_NEXT_MAX);
     expect(total).toBe(UNLOCKED_NEXT_MAX + 3);
+  });
+});
+
+// Dhaka is UTC+6, so 04:59 in Dhaka is 22:59 UTC the day before. Building the instants in UTC makes
+// these fail if the band is read in the device's zone or in UTC.
+const dhakaAt = (hour: number, minute: number) => Date.UTC(2026, 9, 24, hour - 6, minute);
+
+describe("greetingBand", () => {
+  it.each([
+    ["04:59", 4, 59, "evening"],
+    ["05:00", 5, 0, "morning"],
+    ["11:59", 11, 59, "morning"],
+    ["12:00", 12, 0, "afternoon"],
+    ["16:59", 16, 59, "afternoon"],
+    ["17:00", 17, 0, "evening"],
+  ] as const)("is %s Dhaka -> %s", (_label, hour, minute, band) => {
+    expect(greetingBand(dhakaAt(hour, minute))).toBe(band);
+  });
+
+  it("reads the Dhaka hour, not the UTC hour", () => {
+    // 23:00 UTC is 05:00 the next day in Dhaka.
+    expect(greetingBand(Date.UTC(2026, 9, 23, 23, 0))).toBe("morning");
+  });
+});
+
+describe("greeting", () => {
+  it("names the user when there is a name", () => {
+    expect(greeting(dhakaAt(9, 0), "apollo")).toBe("Good morning, apollo");
+  });
+
+  it("has no name when none is available", () => {
+    expect(greeting(dhakaAt(13, 0))).toBe("Good afternoon");
+    expect(greeting(dhakaAt(19, 0), null)).toBe("Good evening");
+    expect(greeting(dhakaAt(19, 0), "  ")).toBe("Good evening");
+  });
+});
+
+describe("dhakaDateLine", () => {
+  it("prints the Dhaka calendar day", () => {
+    // 20:00 UTC on Friday 23 October is already Saturday 24 October in Dhaka.
+    expect(dhakaDateLine(Date.UTC(2026, 9, 23, 20, 0))).toBe("Saturday, 24 October");
   });
 });

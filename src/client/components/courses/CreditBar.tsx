@@ -1,7 +1,11 @@
+import type { CSSProperties } from "react";
 import { progressPercent } from "@/lib/courseMap";
 import { cn } from "@/lib/utils";
 
-/** Earned against required in `brand`; full once the total is reached, even when over it. */
+/**
+ * Earned against required: a 14px `track` pill with the `brand` fill revealed by `clip-path`, never
+ * by width. Full once the total is reached, even when over it; a real zero shows nothing filled.
+ */
 export function CreditBar({
   earned,
   required,
@@ -21,9 +25,13 @@ export function CreditBar({
       aria-valuemax={100}
       aria-valuenow={percent}
       aria-label={label}
-      className={cn("h-1 overflow-hidden rounded-full bg-tint", className)}
+      className={cn("relative h-3.5 overflow-hidden rounded-full bg-track", className)}
+      style={{ "--p": `${percent}%` } as CSSProperties}
     >
-      <div className="h-full rounded-full bg-brand" style={{ width: `${percent}%` }} />
+      <div
+        data-slot="credit-bar-fill"
+        className="absolute inset-0 bg-brand [clip-path:inset(0_calc(100%-var(--p))_0_0_round_999px)] motion-safe:transition-[clip-path] motion-safe:duration-700 motion-safe:ease-ui-out"
+      />
     </div>
   );
 }

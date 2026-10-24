@@ -2,14 +2,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { SearchIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { toast } from "@/lib/toast";
 import type { z } from "zod";
 import { ReasonForm } from "@/components/mod/ReasonForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorBlock } from "@/components/ui/error-block";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { modPanel as panel, modRowMin, modTitle } from "@/components/mod/modStyles";
 import { errorMessage } from "@/lib/api";
 import { idHolderLookup, useReleaseKey } from "@/lib/mod";
 import { meQuery } from "@/lib/queries";
@@ -20,7 +25,7 @@ export const Route = createFileRoute("/mod/id-conflict")({
   component: IdConflictPage,
 });
 
-const panel = "rounded-panel border border-line bg-surface";
+const detailRow = `flex items-center justify-between gap-3 border-t border-line px-4 py-2.5 text-[15px] ${modRowMin}`;
 
 function IdConflictPage() {
   const [key, setKey] = useState<string | null>(null);
@@ -32,8 +37,8 @@ function IdConflictPage() {
 
   return (
     <section className="space-y-4">
-      <h1 className="text-xl font-semibold text-ink">ID check</h1>
-      <p className="text-sm text-soft">
+      <h1 className={modTitle}>ID check</h1>
+      <p className="text-soft">
         Someone says their student ID is already registered? Look up who holds it. This is the only
         screen that shows a student ID, and each lookup is logged.
       </p>
@@ -45,7 +50,7 @@ function IdConflictPage() {
             </FieldLabel>
             <Input
               id="id-key"
-              className="h-11 tabular-nums"
+              className="tabular-nums"
               inputMode="numeric"
               autoComplete="off"
               maxLength={STUDENT_KEY_LENGTH}
@@ -71,26 +76,34 @@ function Holder({ studentKey }: { studentKey: string }) {
   const release = useReleaseKey();
 
   if (lookup.isPending) {
-    return <div className={`${panel} h-24`} aria-busy="true" aria-label="Looking up" />;
+    return (
+      <div role="status" aria-busy="true" className={`${panel} grid gap-3 p-4`}>
+        <span className="sr-only">Looking up</span>
+        <Skeleton className="h-5 w-1/3" />
+        <Skeleton className="h-4 w-1/2" />
+        <Skeleton className="h-4 w-2/5" />
+      </div>
+    );
   }
   if (lookup.isError) {
     return (
-      <div className={`${panel} p-6 text-center`}>
-        <p className="font-medium text-ink">The lookup failed</p>
-        <p className="mt-1 text-sm text-soft">{errorMessage(lookup.error)}</p>
-        <Button variant="outline" className="mt-4" onClick={() => void lookup.refetch()}>
-          Try again
-        </Button>
-      </div>
+      <ErrorBlock
+        title="The lookup failed"
+        message={errorMessage(lookup.error)}
+        onRetry={() => void lookup.refetch()}
+        retrying={lookup.isRefetching}
+      />
     );
   }
   const holder = lookup.data.holder;
   if (!holder) {
     return (
-      <div className={`${panel} p-6 text-center`}>
-        <p className="text-sm text-soft">
-          No account holds that ID, so it is free to register (or was already released).
-        </p>
+      <div className={panel}>
+        <EmptyState
+          icon={SearchIcon}
+          title="No account holds that ID"
+          description="It is free to register, or was already released."
+        />
       </div>
     );
   }
@@ -101,59 +114,62 @@ function Holder({ studentKey }: { studentKey: string }) {
     : false;
 
   return (
-    <div className={`${panel} space-y-4 p-4`}>
-      <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <p className="font-medium text-ink">{holder.username}</p>
-          {holder.role !== "student" ? (
-            <Badge>{holder.role === "admin" ? "Admin" : "Mod"}</Badge>
-          ) : null}
-          {holder.bannedAt !== null ? <Badge>Banned</Badge> : null}
-        </div>
-        <p className="text-sm text-soft">
-          Student ID <span className="text-ink tabular-nums">{holder.studentId}</span>
-        </p>
-        <p className="text-sm text-faint">
-          Joined{" "}
-          <span className="tabular-nums">
-            {new Date(holder.createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka" })}
-          </span>
-        </p>
+    <div className={panel}>
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3.5">
+        <p className="text-lg leading-[1.3] font-semibold text-ink">{holder.username}</p>
+        {holder.role !== "student" ? (
+          <Badge>{holder.role === "admin" ? "Admin" : "Mod"}</Badge>
+        ) : null}
+        {holder.bannedAt !== null ? <Badge>Banned</Badge> : null}
       </div>
-      {can ? (
-        <>
-          <p className="text-sm text-soft">
-            Releasing bans this account and frees the ID, so its real owner can sign up. An admin
-            can reverse it.
-          </p>
-          <ReasonForm
-            id="release-reason"
-            submitLabel="Release ID and ban"
-            pendingLabel="Releasing"
-            variant="destructive"
-            pending={release.isPending}
-            hint="Say why this account should not hold the ID."
-            onSubmit={(reason) => {
-              release.mutate(
-                { userId: holder.id, reason },
-                {
-                  onSuccess: () => {
-                    toast.success("ID released");
-                    void lookup.refetch();
+      <dl>
+        <div className={detailRow}>
+          <dt className="text-soft">Student ID</dt>
+          <dd className="font-medium text-ink tabular-nums">{holder.studentId}</dd>
+        </div>
+        <div className={detailRow}>
+          <dt className="text-soft">Joined</dt>
+          <dd className="text-ink tabular-nums">
+            {new Date(holder.createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Dhaka" })}
+          </dd>
+        </div>
+      </dl>
+      <div className="space-y-4 border-t border-line p-4">
+        {can ? (
+          <>
+            <p className="text-soft">
+              Releasing bans this account and frees the ID, so its real owner can sign up. An admin
+              can reverse it.
+            </p>
+            <ReasonForm
+              id="release-reason"
+              submitLabel="Release ID and ban"
+              pendingLabel="Releasing"
+              variant="destructive"
+              pending={release.isPending}
+              hint="Say why this account should not hold the ID."
+              onSubmit={(reason) => {
+                release.mutate(
+                  { userId: holder.id, reason },
+                  {
+                    onSuccess: () => {
+                      toast.success("ID released");
+                      void lookup.refetch();
+                    },
+                    onError: (err) => toast.error(errorMessage(err)),
                   },
-                  onError: (err) => toast.error(errorMessage(err)),
-                },
-              );
-            }}
-          />
-        </>
-      ) : (
-        <FieldDescription>
-          {holder.role === "student"
-            ? "You can't act on this account."
-            : "Only an admin can act on a mod, and no one can act on an admin here."}
-        </FieldDescription>
-      )}
+                );
+              }}
+            />
+          </>
+        ) : (
+          <FieldDescription>
+            {holder.role === "student"
+              ? "You can't act on this account."
+              : "Only an admin can act on a mod, and no one can act on an admin here."}
+          </FieldDescription>
+        )}
+      </div>
     </div>
   );
 }

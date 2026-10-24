@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { TriangleAlertIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "@/lib/toast";
+import { CourseCode } from "@/components/courses/CourseCode";
 import { Button } from "@/components/ui/button";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { errorMessage } from "@/lib/api";
 import { parseCurriculumText, rejectedRows, type ParsedCurriculum } from "@/lib/courseImport";
@@ -11,6 +13,7 @@ import { useImportCurriculum } from "@/lib/courses";
 import { modCurriculaQuery } from "@/lib/modCourses";
 import { meQuery } from "@/lib/queries";
 import type { ImportResult } from "../../shared/schemas/courses";
+import { modTitle } from "@/components/mod/modStyles";
 
 type Rejected = ImportResult["rejected"];
 
@@ -63,9 +66,9 @@ function ImportPage() {
 
   return (
     <section className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-xl font-semibold text-ink">Import a curriculum</h1>
-        <p className="text-sm text-soft">
+      <header className="space-y-2">
+        <h1 className={modTitle}>Import a curriculum</h1>
+        <p className="text-[15px] text-soft">
           Pick one curriculum JSON file. Importing a program and version that already exist replaces
           its courses, including changes made in the Courses screen.
         </p>
@@ -77,7 +80,7 @@ function ImportPage() {
             id="curriculum-file"
             type="file"
             accept="application/json,.json"
-            className="h-11"
+            aria-invalid={file ? !file.parsed.ok : undefined}
             onChange={(e) => void pick(e.target.files?.[0])}
           />
           {file?.parsed.ok ? (
@@ -86,19 +89,26 @@ function ImportPage() {
               {file.parsed.rowCount} rows.
             </FieldDescription>
           ) : null}
+          {file && !file.parsed.ok ? (
+            <FieldError errors={[{ message: file.parsed.message }]} />
+          ) : null}
         </Field>
         {replacing ? (
           <p
             role="note"
-            className="rounded-control border border-line bg-tint px-3 py-2 text-sm text-body"
+            className="flex items-start gap-3 rounded-row bg-danger-soft px-3.5 py-3 text-[15px] text-ink"
           >
+            <TriangleAlertIcon
+              aria-hidden
+              strokeWidth={1.75}
+              className="mt-0.5 size-5 shrink-0 text-danger"
+            />
             Importing replaces every course of this version, including changes made in the Courses
             screen.
           </p>
         ) : null}
         <Button
-          size="lg"
-          className="w-full sm:w-auto"
+          className="w-full sm:w-auto sm:self-start"
           disabled={!file?.parsed.ok || importCurriculum.isPending}
           onClick={submit}
         >
@@ -108,7 +118,7 @@ function ImportPage() {
 
       {result ? (
         <div className="space-y-3" role="status">
-          <p className="font-medium text-ink">
+          <p className="text-lg leading-[1.3] font-semibold text-ink tabular-nums">
             Imported {result.imported} {result.imported === 1 ? "course" : "courses"}
             {result.rejected.length > 0 ? `, rejected ${result.rejected.length}` : ""}.
           </p>
@@ -120,33 +130,44 @@ function ImportPage() {
   );
 }
 
+/**
+ * Rejected rows as a flat panel: hairline rules, no header band, the row number right-aligned. The
+ * code wears its course hue (this and the Courses screen are the only mod screens where hue is
+ * allowed); a row without a code prints a dash. Rows are 60px on phones.
+ */
 function RejectedTable({ rows }: { rows: Rejected }) {
   if (rows.length === 0) return null;
   return (
-    <div className="overflow-x-auto rounded-panel border border-line bg-surface">
-      <table className="w-full text-left text-sm">
+    <div className="overflow-x-auto rounded-panel bg-surface md:rounded-[24px]">
+      <table className="w-full text-left text-[15px]">
         <caption className="sr-only">Rejected rows</caption>
-        <thead className="border-b border-line text-soft">
+        <thead className="text-[13px] leading-[1.3] font-medium text-soft">
           <tr>
-            <th scope="col" className="px-4 py-2 text-right font-medium">
+            <th scope="col" className="px-4 pt-3 pb-2 text-right font-medium">
               Row
             </th>
-            <th scope="col" className="px-4 py-2 font-medium">
+            <th scope="col" className="px-4 pt-3 pb-2 font-medium">
               Code
             </th>
-            <th scope="col" className="px-4 py-2 font-medium">
+            <th scope="col" className="px-4 pt-3 pb-2 font-medium">
               Reason
             </th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.index} className="border-b border-line last:border-b-0">
-              <td className="px-4 py-2 text-right text-body tabular-nums">{r.index + 1}</td>
-              <td className="px-4 py-2 text-body">
-                {r.code ?? <span className="text-faint">&mdash;</span>}
+            <tr key={r.index} className="h-15 border-t border-line align-middle">
+              <td className="px-4 py-2.5 text-right font-semibold text-soft tabular-nums">
+                {r.index + 1}
               </td>
-              <td className="px-4 py-2 text-body">{r.reason}</td>
+              <td className="px-4 py-2.5">
+                {r.code ? (
+                  <CourseCode code={r.code} />
+                ) : (
+                  <span className="text-faint">&mdash;</span>
+                )}
+              </td>
+              <td className="px-4 py-2.5 text-ink">{r.reason}</td>
             </tr>
           ))}
         </tbody>

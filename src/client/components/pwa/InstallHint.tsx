@@ -1,7 +1,7 @@
-import { ShareIcon, XIcon } from "lucide-react";
+import { ShareIcon } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { readInstallHintEnv, saveDismissed, shouldShowInstallHint } from "@/lib/installHint";
+import { FloatingNote } from "./FloatingNotes";
 
 /** One-time "Add to Home Screen" hint for iOS Safari. Dismissal is remembered in localStorage. */
 export function InstallHint() {
@@ -9,26 +9,18 @@ export function InstallHint() {
   if (!visible) return null;
 
   return (
-    <div
+    <FloatingNote
       role="note"
-      className="mb-4 flex items-center gap-3 rounded-panel border border-line bg-surface py-2 pr-2 pl-4 text-sm text-body"
+      onDismiss={() => {
+        saveDismissed();
+        setVisible(false);
+      }}
     >
-      <p className="flex-1">
+      <p className="flex-1 py-1.5">
         Keep UniLink on your home screen: tap{" "}
         <ShareIcon className="mx-0.5 inline size-4 text-ink" aria-label="Share" />, then{" "}
         <strong className="font-semibold text-ink">Add to Home Screen</strong>.
       </p>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label="Dismiss"
-        onClick={() => {
-          saveDismissed();
-          setVisible(false);
-        }}
-      >
-        <XIcon />
-      </Button>
-    </div>
+    </FloatingNote>
   );
 }

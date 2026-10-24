@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
+import { CheckIcon, ChevronDownIcon } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
 import { FacultyFilters } from "@/components/faculty/FacultyFilters";
 import { FacultyRowText } from "@/components/faculty/FacultyRowText";
 import { focusRingInset } from "@/components/ui/focus";
+import { pickerTrigger } from "./OptionSelect";
 import {
   Sheet,
   SheetContent,
@@ -16,7 +17,8 @@ import { toast } from "@/lib/toast";
 import type { FacultyOption } from "../../../shared/schemas/faculty";
 import { facultyTitle, searchFaculty } from "../../../shared/facultySearch";
 
-const rowClass = `flex min-h-14 w-full cursor-pointer items-center gap-3 px-4 py-2 text-left transition-colors`;
+const rowClass =
+  "flex min-h-15 w-full cursor-pointer items-center gap-3 px-4 py-2 text-left active:bg-tint";
 
 /**
  * The faculty member who taught the course, or none. Optional everywhere it is used, so a list that
@@ -57,10 +59,13 @@ export function FacultyPicker({
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen(true)}
-        className={`flex h-11 w-full items-center justify-between gap-1.5 rounded-control border border-input bg-surface py-2 pr-2 pl-3 text-left text-sm transition-colors outline-none ${focusRingInset} disabled:cursor-not-allowed disabled:opacity-60`}
+        className={`relative ${pickerTrigger} ${focusRingInset}`}
       >
         <span className="truncate text-ink">{label}</span>
-        <ChevronsUpDownIcon aria-hidden="true" className="size-4 shrink-0 text-faint" />
+        <ChevronDownIcon
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 right-3.5 size-[18px] -translate-y-1/2 text-soft"
+        />
       </button>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
@@ -133,7 +138,7 @@ function PickerBody({
 
   return (
     <>
-      <div className="px-4">
+      <div className="px-5">
         <FacultyFilters
           idPrefix={base}
           query={query}
@@ -169,7 +174,9 @@ function PickerBody({
           className={`${rowClass} ${value === null ? "bg-brand-soft" : active === 0 ? "bg-tint" : ""}`}
         >
           <span className="flex-1 font-medium text-ink">No faculty</span>
-          {value === null ? <CheckIcon aria-hidden="true" className="size-4 text-ink" /> : null}
+          {value === null ? (
+            <CheckIcon aria-hidden="true" className="size-5 shrink-0 text-brand-ink" />
+          ) : null}
         </li>
         {results.map((f, i) => (
           <li
@@ -181,11 +188,15 @@ function PickerBody({
             className={`${rowClass} ${f.id === value ? "bg-brand-soft" : active === i + 1 ? "bg-tint" : ""}`}
           >
             <FacultyRowText faculty={f} />
-            {f.id === value ? <CheckIcon aria-hidden="true" className="size-4 text-ink" /> : null}
+            {f.id === value ? (
+              <CheckIcon aria-hidden="true" className="size-5 shrink-0 text-brand-ink" />
+            ) : null}
           </li>
         ))}
         {results.length === 0 ? (
-          <li className="px-4 py-6 text-center text-sm text-soft">No faculty match that search.</li>
+          <li className="px-4 py-8 text-center text-[15px] text-soft">
+            No faculty match that search.
+          </li>
         ) : null}
       </ul>
     </>

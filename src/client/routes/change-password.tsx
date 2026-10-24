@@ -58,7 +58,6 @@ function ChangePasswordPage() {
             <Input
               id="currentPassword"
               type="password"
-              className="h-11"
               autoComplete="current-password"
               aria-invalid={Boolean(errors.currentPassword)}
               {...form.register("currentPassword")}
@@ -70,7 +69,6 @@ function ChangePasswordPage() {
             <Input
               id="newPassword"
               type="password"
-              className="h-11"
               autoComplete="new-password"
               aria-invalid={Boolean(errors.newPassword)}
               {...form.register("newPassword")}

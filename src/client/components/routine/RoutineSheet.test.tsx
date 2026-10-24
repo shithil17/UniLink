@@ -73,4 +73,40 @@ describe("RoutineSheet overlap warning", () => {
     expect(screen.getByText("Pick a start time")).toBeTruthy();
     expect(screen.getByText(/Enter the section number/)).toBeTruthy();
   });
+
+  it("shows the overlap as a butter Note with a bold state word", async () => {
+    open("new");
+    fireEvent.click(screen.getByRole("button", { name: "Wednesday" }));
+    type("Starts", "10:00");
+    type("Ends", "11:00");
+    const note = await screen.findByRole("status");
+    expect(note.getAttribute("data-hue")).toBe("butter");
+    expect(note.querySelector("b")?.textContent).toBe("Overlap.");
+    expect(note.textContent).toContain("This overlaps another class. You can still save it.");
+  });
+});
+
+describe("RoutineSheet day chips", () => {
+  it("prints the letters, names the days in full and toggles aria-pressed", () => {
+    open("new");
+    const sunday = screen.getByRole("button", { name: "Sunday" });
+    expect(sunday.textContent).toBe("S");
+    expect(sunday.getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getByRole("button", { name: "Thursday" }).textContent).toBe("R");
+    expect(screen.getByRole("button", { name: "Saturday" }).textContent).toBe("A");
+
+    fireEvent.click(sunday);
+    expect(sunday.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByText("Sunday")).toBeTruthy();
+
+    fireEvent.click(sunday);
+    expect(sunday.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("keeps the chosen days in week order whatever order they were tapped in", () => {
+    open("new");
+    fireEvent.click(screen.getByRole("button", { name: "Tuesday" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sunday" }));
+    expect(screen.getByText("Sunday, Tuesday")).toBeTruthy();
+  });
 });

@@ -3,45 +3,18 @@ import { STATE_LABEL, stateKind, type StateKind } from "@/lib/stateKind";
 import type { CourseStatus } from "../../../shared/schemas/courses";
 
 /** Shape carries the state, never color alone: filled = done, hollow = available, struck = locked, half = waived. */
-function Shape({ kind }: { kind: StateKind }) {
-  switch (kind) {
-    case "done":
-      return <circle data-shape="filled" cx="8" cy="8" r="6.5" fill="currentColor" />;
-    case "available":
-      return (
-        <circle
-          data-shape="hollow"
-          cx="8"
-          cy="8"
-          r="5.75"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-        />
-      );
-    case "locked":
-      return (
-        <g data-shape="struck" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <circle cx="8" cy="8" r="5.75" />
-          <path d="M1.5 8h13" strokeLinecap="round" />
-        </g>
-      );
-    case "waived":
-      return (
-        <g data-shape="half">
-          <circle cx="8" cy="8" r="5.75" fill="none" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M8 2.25a5.75 5.75 0 0 0 0 11.5z" fill="currentColor" />
-        </g>
-      );
-  }
-}
-
-const TONE: Record<StateKind, string> = {
-  done: "text-brand",
-  available: "text-ink",
-  locked: "text-faint",
-  waived: "text-brand",
+const SHAPE: Record<StateKind, "filled" | "hollow" | "struck" | "half"> = {
+  done: "filled",
+  available: "hollow",
+  locked: "struck",
+  waived: "half",
 };
+
+/** Every layer stays mounted so a state change (a saved grade) animates instead of swapping. */
+const FILL =
+  "origin-[12px_12px] motion-safe:transition-[scale,opacity] motion-safe:duration-220 motion-safe:ease-ui-out";
+const SHOWN = "scale-100 opacity-100";
+const HIDDEN = "scale-90 opacity-0 motion-reduce:scale-100";
 
 type Props = {
   status: CourseStatus;
@@ -49,23 +22,61 @@ type Props = {
   waived?: boolean;
   /** Print the label next to the mark (a drop-in for the old status chip). */
   showLabel?: boolean;
+  /** Edge in px: 20 by default, 28 for specimens, 18 in prerequisite lists. */
+  size?: number;
+  /** Inside a `data-hue` course context the mark takes the hue's ink; otherwise it is `ink`. */
+  inCourse?: boolean;
   className?: string;
 };
 
 /** The printed mark for a course's state, with an accessible label. */
-export function StateMark({ status, waived = false, showLabel = false, className }: Props) {
+export function StateMark({
+  status,
+  waived = false,
+  showLabel = false,
+  size = 20,
+  inCourse = false,
+  className,
+}: Props) {
   const kind = stateKind(status, waived);
   const label = STATE_LABEL[kind];
   const mark = (
     <svg
-      viewBox="0 0 16 16"
-      className={cn("size-4 shrink-0", TONE[kind], !showLabel && className)}
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      className={cn(
+        "shrink-0 overflow-visible",
+        inCourse ? "text-hue-ink" : "text-ink",
+        !showLabel && className,
+      )}
       role={showLabel ? undefined : "img"}
       aria-label={showLabel ? undefined : label}
       aria-hidden={showLabel ? true : undefined}
       data-state={kind}
+      data-shape={SHAPE[kind]}
     >
-      <Shape kind={kind} />
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        fill="currentColor"
+        className={cn(FILL, kind === "done" ? SHOWN : HIDDEN)}
+      />
+      <path
+        d="M12 3a9 9 0 0 0 0 18z"
+        fill="currentColor"
+        className={kind === "waived" ? "opacity-100" : "opacity-0"}
+      />
+      <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path
+        d="M5.6 5.6l12.8 12.8"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        className={kind === "locked" ? "opacity-100" : "opacity-0"}
+      />
     </svg>
   );
   if (!showLabel) return mark;

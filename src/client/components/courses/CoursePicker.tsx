@@ -1,4 +1,4 @@
-import { CheckIcon, ChevronsUpDownIcon, SearchIcon } from "lucide-react";
+import { CheckIcon, ChevronDownIcon, SearchIcon } from "lucide-react";
 import { useEffect, useId, useMemo, useState } from "react";
 import { StateMark } from "@/components/courses/StateMark";
 import { focusRingInset } from "@/components/ui/focus";
@@ -12,8 +12,11 @@ import {
 } from "@/components/ui/sheet";
 import { searchCourses, type CourseChoice } from "@/lib/courseSearch";
 import { cn } from "@/lib/utils";
+import { CourseCode } from "./CourseCode";
+import { pickerTrigger } from "./OptionSelect";
 
-const rowClass = "flex min-h-12 w-full cursor-pointer items-center gap-3 px-4 py-2 text-left";
+const rowClass =
+  "flex min-h-15 w-full cursor-pointer items-center gap-3 px-4 py-2 text-left active:bg-tint";
 
 /**
  * A course field that opens a searchable list in a bottom sheet, for lists too long to scroll:
@@ -53,10 +56,7 @@ export function CoursePicker({
         aria-expanded={open}
         aria-invalid={invalid || undefined}
         onClick={() => setOpen(true)}
-        className={cn(
-          "flex h-11 w-full items-center justify-between gap-1.5 rounded-control border border-input bg-surface py-2 pr-2 pl-3 text-left text-sm transition-colors outline-none disabled:cursor-not-allowed disabled:opacity-60 aria-invalid:border-destructive aria-invalid:outline-destructive",
-          focusRingInset,
-        )}
+        className={cn("relative", pickerTrigger, focusRingInset)}
       >
         {value ? (
           <span className="flex min-w-0 items-baseline gap-2">
@@ -64,9 +64,12 @@ export function CoursePicker({
             {selected?.title ? <span className="truncate text-soft">{selected.title}</span> : null}
           </span>
         ) : (
-          <span className="text-muted-foreground">{placeholder}</span>
+          <span className="text-faint">{placeholder}</span>
         )}
-        <ChevronsUpDownIcon aria-hidden="true" className="size-4 shrink-0 text-faint" />
+        <ChevronDownIcon
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 right-3.5 size-[18px] -translate-y-1/2 text-soft"
+        />
       </button>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
@@ -132,14 +135,14 @@ function PickerBody({
 
   return (
     <>
-      <div className="relative px-4">
+      <div className="relative px-5">
         <SearchIcon
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-7 size-4 -translate-y-1/2 text-faint"
+          className="pointer-events-none absolute top-1/2 left-8 size-[18px] -translate-y-1/2 text-faint"
         />
         <Input
           type="search"
-          className="h-11 pl-9"
+          className="pl-10"
           placeholder="Search by code or title"
           aria-label="Search by code or title"
           autoComplete="off"
@@ -181,16 +184,18 @@ function PickerBody({
               className={cn(rowClass, chosen ? "bg-brand-soft" : i === active && "bg-tint")}
             >
               {c.status ? <StateMark status={c.status} waived={c.waived} /> : null}
-              <span className="min-w-[4.5rem] shrink-0 text-sm font-medium text-ink">{c.code}</span>
-              <span className="min-w-0 flex-1 truncate text-sm text-soft">{c.title}</span>
+              <span className="flex min-w-[4.75rem] shrink-0">
+                <CourseCode code={c.code} />
+              </span>
+              <span className="min-w-0 flex-1 truncate text-[15px] text-ink">{c.title}</span>
               {chosen ? (
-                <CheckIcon aria-hidden="true" className="size-4 shrink-0 text-ink" />
+                <CheckIcon aria-hidden="true" className="size-5 shrink-0 text-brand-ink" />
               ) : null}
             </li>
           );
         })}
         {results.length === 0 ? (
-          <li className="px-4 py-6 text-center text-sm text-soft">
+          <li className="px-4 py-8 text-center text-[15px] text-soft">
             No course matches that search.
           </li>
         ) : null}

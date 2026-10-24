@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource-variable/figtree";
 @import "@fontsource-variable/noto-sans-bengali";
 
 /*
@@ -11,148 +11,295 @@
  */
 @custom-variant dark (&:is(.dark *));
 
+/* Hover only where a real pointer can hover, so `hover:` never sticks after a tap on touch. */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
 /*
- * Palette tokens (Quiet Utility). Every palette fills the same roles:
- *   app / surface / tint / chip    neutral ground (tinted toward the hue), panel, hover fill, secondary fill
+ * Palette tokens (Pocket Planner). Every palette fills the same roles:
+ *   app / surface / tint           ground, panel, hover and pressed fill (tint = app)
  *   ink / soft / faint / body      text tiers (body = running text)
- *   line                           hairline for dividers only (decorative, not contrast-checked)
- *   edge                           border of controls, at least 3:1 against app, surface and tint
+ *   line / track                   hairline and bar track (decorative, same value); line is also the disabled fill
+ *   edge                           border of controls, at least 3:1 against app and surface
  *   brand / primary                the one accent (primary = brand, kept as a separate name for shadcn)
- *   brand-soft                     light brand fill for selected and current rows
- *   danger                         errors and destructive actions
+ *   primary-foreground             text on brand
+ *   brand-soft / brand-ink         soft accent fill and the text or icon on it (also links)
+ *   danger / on-danger / danger-soft   errors, text on danger, in-block error fill
+ *   scrim                          overlay behind sheets and dialogs
  *   bar                            the ground color again, read by `<meta name="theme-color">`
- *   deep                           the overlay (scrim) behind sheets and dialogs, used at 40%; always dark
- * The default palette (Ocean Teal) lives here; every other palette is a `:root[data-theme="<id>"]`
- * block below that overrides the same variables. `static` keeps the variables in the output even when
- * a utility does not use them yet. `--color-primary` and `--color-primary-foreground` double as the
- * shadcn utilities of the same name. `--color-brand` is the accent token (focus ring, progress). It is
- * not called `accent` because shadcn's `accent` is a subtle hover background, which maps to `tint`.
- * `themes.test.ts` checks that every block has every role; contrast is checked per palette (see the
- * build plan's contrast pass).
+ *   mint ... rose (+ -ink)         six course hues, fill and text; used only for course data
+ *   --float-color                  shadow tint (a plain variable, not a utility)
+ * The default palette (Coral, id: ocean) lives here; every other palette is a `:root[data-theme="<id>"]`
+ * block below that overrides the same variables, so a block must never be removed or the default leaks
+ * through. `static` keeps the variables in the output even when a utility does not use them yet.
+ * `--color-primary` and `--color-primary-foreground` double as the shadcn utilities of the same name.
+ * `--color-brand` is the accent token (focus ring, progress). It is not called `accent` because
+ * shadcn's `accent` is a subtle hover background, which maps to `tint`.
+ * `themes.test.ts` checks that every block has every role; `contrast.test.ts` checks the pairs.
  */
 @theme static {
-  --color-app: #f4f6f5;
+  --color-app: #f3f4f8;
   --color-surface: #ffffff;
-  --color-tint: #ebf0ee;
-  --color-chip: #e0ebe8;
-  --color-brand-soft: #d9eeea;
-  --color-ink: #14201e;
-  --color-soft: #3d514e;
-  --color-faint: #5b6d69;
-  --color-body: #14201e;
-  --color-deep: #14201e;
-  --color-line: #e0e6e4;
-  --color-edge: #74857f;
-  --color-brand: #0e7367;
-  --color-primary: #0e7367;
+  --color-tint: #f3f4f8;
+  --color-ink: #1c1e2b;
+  --color-soft: #4a4e63;
+  --color-faint: #5f6479;
+  --color-body: #1c1e2b;
+  --color-line: #e4e6ee;
+  --color-track: #e4e6ee;
+  --color-edge: #7b8097;
+  --color-brand: #c4401a;
+  --color-primary: #c4401a;
   --color-primary-foreground: #ffffff;
+  --color-brand-soft: #ffe9df;
+  --color-brand-ink: #a23412;
   --color-danger: #b3261e;
-  --color-bar: #f4f6f5;
+  --color-on-danger: #ffffff;
+  --color-danger-soft: #fce4e1;
+  --color-scrim: rgba(28, 30, 43, 0.42);
+  --float-color: rgba(28, 30, 43, 0.3);
+  --color-bar: #f3f4f8;
+  --color-mint: #ddf3e8;
+  --color-mint-ink: #1e6b47;
+  --color-sky: #dcebfb;
+  --color-sky-ink: #1e4f86;
+  --color-lilac: #ece4fb;
+  --color-lilac-ink: #5a3a9a;
+  --color-butter: #fbf1cc;
+  --color-butter-ink: #7a5a00;
+  --color-peach: #fde3d6;
+  --color-peach-ink: #93401a;
+  --color-rose: #fbe0e8;
+  --color-rose-ink: #8e2a4e;
 
   /*
-   * Two radii, decided once: controls (buttons, inputs, selects, badges, checkboxes, menu items) and
-   * panels (cards, sheets, dialogs, popups). Nothing in between.
+   * Radii, decided once: controls (buttons, inputs, selects), rows (notes, class blocks, day
+   * chips), panels (cards, tiles) and sheets (top corners). `rounded-full` covers the pills.
    */
-  --radius-control: 0.375rem;
-  --radius-panel: 0.625rem;
+  --radius-control: 12px;
+  --radius-row: 16px;
+  --radius-panel: 20px;
+  --radius-sheet: 28px;
 
   /*
-   * The only shadow: layers that float (sheet, dialog, select popup, toast). Panels never get one.
-   * Tinted with `deep` (always dark), never `ink`, which is light in Night and would glow. Tailwind
-   * inlines this value into the utility, so a palette cannot override it here; change `deep` instead.
+   * Only layers that float cast a shadow: sheet (up), toast and tab bar. The tint is the plain
+   * variable `--float-color`, which each palette sets; Tailwind keeps the `var()` in the utility,
+   * so the palette override applies at use.
    */
-  --shadow-float: 0 8px 24px -6px color-mix(in oklab, var(--color-deep) 22%, transparent);
+  --shadow-float: 0 10px 30px -10px var(--float-color);
+  --shadow-float-up: 0 -10px 30px -10px var(--float-color);
+
+  /* Motion curves; Tailwind's built-in ease-in is never used on UI. */
+  --ease-ui-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-ui-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Skeleton bars breathe between full and 45% opacity; stopped under reduced motion below. */
+  --animate-skeleton: skeleton-pulse 1.2s ease-in-out infinite alternate;
+  @keyframes skeleton-pulse {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0.45;
+    }
+  }
 }
 
 /* Bordeaux (id: red-gradient) */
 :root[data-theme="red-gradient"] {
-  --color-app: #f7f3f3;
+  --color-app: #f5f2f4;
   --color-surface: #ffffff;
-  --color-tint: #f1e9ea;
-  --color-chip: #ecdcde;
-  --color-brand-soft: #f6e0e2;
-  --color-ink: #2e1014;
-  --color-soft: #5a3a40;
-  --color-faint: #7a5a60;
-  --color-body: #2e1014;
-  --color-deep: #2e1014;
-  --color-line: #e9dfe0;
-  --color-edge: #8f7a7d;
-  --color-brand: #9b1b30;
-  --color-primary: #9b1b30;
+  --color-tint: #f5f2f4;
+  --color-ink: #1c1e2b;
+  --color-soft: #4a4e63;
+  --color-faint: #5f6479;
+  --color-body: #1c1e2b;
+  --color-line: #e4e6ee;
+  --color-track: #e4e6ee;
+  --color-edge: #7b8097;
+  --color-brand: #8c1f3d;
+  --color-primary: #8c1f3d;
   --color-primary-foreground: #ffffff;
-  --color-danger: #b42318;
-  --color-bar: #f7f3f3;
+  --color-brand-soft: #f6e1e7;
+  --color-brand-ink: #7a1a35;
+  --color-danger: #b3261e;
+  --color-on-danger: #ffffff;
+  --color-danger-soft: #fce4e1;
+  --color-scrim: rgba(28, 30, 43, 0.42);
+  --float-color: rgba(28, 30, 43, 0.3);
+  --color-bar: #f5f2f4;
+  --color-mint: #ddf3e8;
+  --color-mint-ink: #1e6b47;
+  --color-sky: #dcebfb;
+  --color-sky-ink: #1e4f86;
+  --color-lilac: #ece4fb;
+  --color-lilac-ink: #5a3a9a;
+  --color-butter: #fbf1cc;
+  --color-butter-ink: #7a5a00;
+  --color-peach: #fde3d6;
+  --color-peach-ink: #93401a;
+  --color-rose: #fbe0e8;
+  --color-rose-ink: #8e2a4e;
 }
 
 /* Cherry Blossom (id: cherry-blossom) */
 :root[data-theme="cherry-blossom"] {
-  --color-app: #fbf4f5;
+  --color-app: #faf3f6;
   --color-surface: #ffffff;
-  --color-tint: #f6e9ec;
-  --color-chip: #f3d9df;
-  --color-brand-soft: #fde2e8;
-  --color-ink: #3a0f1c;
-  --color-soft: #5f3a46;
-  --color-faint: #7d5964;
-  --color-body: #3a0f1c;
-  --color-deep: #3a0f1c;
-  --color-line: #f0e0e4;
-  --color-edge: #927780;
-  --color-brand: #b0123f;
-  --color-primary: #b0123f;
+  --color-tint: #faf3f6;
+  --color-ink: #1c1e2b;
+  --color-soft: #4a4e63;
+  --color-faint: #5f6479;
+  --color-body: #1c1e2b;
+  --color-line: #e4e6ee;
+  --color-track: #e4e6ee;
+  --color-edge: #7b8097;
+  --color-brand: #b53568;
+  --color-primary: #b53568;
   --color-primary-foreground: #ffffff;
-  --color-danger: #b42318;
-  --color-bar: #fbf4f5;
+  --color-brand-soft: #fce4ee;
+  --color-brand-ink: #9a2a57;
+  --color-danger: #b3261e;
+  --color-on-danger: #ffffff;
+  --color-danger-soft: #fce4e1;
+  --color-scrim: rgba(28, 30, 43, 0.42);
+  --float-color: rgba(28, 30, 43, 0.3);
+  --color-bar: #faf3f6;
+  --color-mint: #ddf3e8;
+  --color-mint-ink: #1e6b47;
+  --color-sky: #dcebfb;
+  --color-sky-ink: #1e4f86;
+  --color-lilac: #ece4fb;
+  --color-lilac-ink: #5a3a9a;
+  --color-butter: #fbf1cc;
+  --color-butter-ink: #7a5a00;
+  --color-peach: #fde3d6;
+  --color-peach-ink: #93401a;
+  --color-rose: #fbe0e8;
+  --color-rose-ink: #8e2a4e;
 }
 
 /* Cherry Red (id: cherry-red) */
 :root[data-theme="cherry-red"] {
-  --color-app: #f3f4f4;
+  --color-app: #f6f3f4;
   --color-surface: #ffffff;
-  --color-tint: #eaecec;
-  --color-chip: #e0e3e3;
-  --color-brand-soft: #fde6e9;
-  --color-ink: #1a1a1a;
-  --color-soft: #4b4f53;
-  --color-faint: #63676b;
-  --color-body: #1a1a1a;
-  --color-deep: #1a1a1a;
-  --color-line: #e1e4e5;
-  --color-edge: #80868b;
-  --color-brand: #d6001f;
-  --color-primary: #d6001f;
+  --color-tint: #f6f3f4;
+  --color-ink: #1c1e2b;
+  --color-soft: #4a4e63;
+  --color-faint: #5f6479;
+  --color-body: #1c1e2b;
+  --color-line: #e4e6ee;
+  --color-track: #e4e6ee;
+  --color-edge: #7b8097;
+  --color-brand: #c21f2f;
+  --color-primary: #c21f2f;
   --color-primary-foreground: #ffffff;
-  --color-danger: #b42318;
-  --color-bar: #f3f4f4;
+  --color-brand-soft: #fde3e5;
+  --color-brand-ink: #a5192a;
+  --color-danger: #b3261e;
+  --color-on-danger: #ffffff;
+  --color-danger-soft: #fce4e1;
+  --color-scrim: rgba(28, 30, 43, 0.42);
+  --float-color: rgba(28, 30, 43, 0.3);
+  --color-bar: #f6f3f4;
+  --color-mint: #ddf3e8;
+  --color-mint-ink: #1e6b47;
+  --color-sky: #dcebfb;
+  --color-sky-ink: #1e4f86;
+  --color-lilac: #ece4fb;
+  --color-lilac-ink: #5a3a9a;
+  --color-butter: #fbf1cc;
+  --color-butter-ink: #7a5a00;
+  --color-peach: #fde3d6;
+  --color-peach-ink: #93401a;
+  --color-rose: #fbe0e8;
+  --color-rose-ink: #8e2a4e;
 }
 
-/* Night (id: night): the dark palette. Cool charcoal, mint-teal accent, dark text on primary. */
+/* Night (id: night): the dark palette. Charcoal ground, warm coral accent, dark text on primary. */
 :root[data-theme="night"] {
   color-scheme: dark;
-  --color-app: #121716;
-  --color-surface: #1a201f;
-  --color-tint: #232a29;
-  --color-chip: #2a3331;
-  --color-brand-soft: #173c37;
-  --color-ink: #e6edeb;
-  --color-soft: #b4c1bd;
-  --color-faint: #8f9c98;
-  --color-body: #e6edeb;
-  --color-deep: #030505;
-  --color-line: #2b3331;
-  --color-edge: #7d8d89;
-  --color-brand: #5cc4b4;
-  --color-primary: #5cc4b4;
-  --color-primary-foreground: #0b1312;
+  --color-app: #14151c;
+  --color-surface: #1d1f28;
+  --color-tint: #14151c;
+  --color-ink: #ecedf3;
+  --color-soft: #b4b8cb;
+  --color-faint: #9296ab;
+  --color-body: #ecedf3;
+  --color-line: #2d3040;
+  --color-track: #2d3040;
+  --color-edge: #7c8196;
+  --color-brand: #ff8a5c;
+  --color-primary: #ff8a5c;
+  --color-primary-foreground: #2a0f05;
+  --color-brand-soft: #3e2118;
+  --color-brand-ink: #ffb596;
   --color-danger: #ff8a80;
-  --color-bar: #121716;
+  --color-on-danger: #2b0a08;
+  --color-danger-soft: #4a2220;
+  --color-scrim: rgba(0, 0, 0, 0.6);
+  --float-color: rgba(0, 0, 0, 0.65);
+  --color-bar: #14151c;
+  --color-mint: #1b3a2d;
+  --color-mint-ink: #8fddb5;
+  --color-sky: #1c3350;
+  --color-sky-ink: #9cc8f5;
+  --color-lilac: #2e2748;
+  --color-lilac-ink: #c5b0f2;
+  --color-butter: #3d3414;
+  --color-butter-ink: #ebd27a;
+  --color-peach: #43251a;
+  --color-peach-ink: #f4b596;
+  --color-rose: #432032;
+  --color-rose-ink: #f2a5bf;
+}
+
+/*
+ * Course hue: put `data-hue="mint|sky|lilac|butter|peach|rose"` on a wrapper and use
+ * `bg-hue text-hue-ink`. No data-hue = sky. The pairs above are resolved at the element, so they
+ * follow the active palette.
+ */
+:root,
+[data-hue="sky"] {
+  --hue-bg: var(--color-sky);
+  --hue-ink: var(--color-sky-ink);
+}
+[data-hue="mint"] {
+  --hue-bg: var(--color-mint);
+  --hue-ink: var(--color-mint-ink);
+}
+[data-hue="lilac"] {
+  --hue-bg: var(--color-lilac);
+  --hue-ink: var(--color-lilac-ink);
+}
+[data-hue="butter"] {
+  --hue-bg: var(--color-butter);
+  --hue-ink: var(--color-butter-ink);
+}
+[data-hue="peach"] {
+  --hue-bg: var(--color-peach);
+  --hue-ink: var(--color-peach-ink);
+}
+[data-hue="rose"] {
+  --hue-bg: var(--color-rose);
+  --hue-ink: var(--color-rose-ink);
+}
+
+@theme inline {
+  --color-hue: var(--hue-bg);
+  --color-hue-ink: var(--hue-ink);
 }
 
 /* shadcn utilities read the shadcn variables below, which are aliases of the palette tokens. */
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: "Geist Variable", "Noto Sans Bengali Variable", sans-serif;
+  --font-sans: "Figtree Variable", "Noto Sans Bengali Variable", system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -200,9 +347,9 @@
   --popover-foreground: var(--color-body);
   --primary: var(--color-primary);
   --primary-foreground: var(--color-primary-foreground);
-  --secondary: var(--color-chip);
-  --secondary-foreground: var(--color-ink);
-  --muted: var(--color-tint);
+  --secondary: var(--color-brand-soft);
+  --secondary-foreground: var(--color-brand-ink);
+  --muted: var(--color-track);
   --muted-foreground: var(--color-soft);
   --accent: var(--color-tint);
   --accent-foreground: var(--color-ink);
@@ -214,8 +361,8 @@
   --chart-2: var(--color-soft);
   --chart-3: var(--color-faint);
   --chart-4: var(--color-edge);
-  --chart-5: var(--color-chip);
-  --radius: 0.625rem;
+  --chart-5: var(--color-track);
+  --radius: var(--radius-panel);
   --sidebar: var(--color-surface);
   --sidebar-foreground: var(--color-body);
   --sidebar-primary: var(--color-primary);
@@ -229,11 +376,180 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
+    scrollbar-color: var(--color-edge) transparent;
   }
   html {
     @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 15px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background: var(--color-brand-soft);
+    color: var(--color-brand-ink);
+  }
+  input,
+  textarea,
+  select {
+    caret-color: var(--color-brand);
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+  :lang(bn) {
+    font-family: "Noto Sans Bengali Variable", "Figtree Variable", system-ui, sans-serif;
+  }
+}
+
+/*
+ * Toasts. Sonner injects its own stylesheet at runtime with plain attribute selectors, so this block
+ * sits outside any cascade layer and every selector carries `.toaster .cn-toast` to out-rank it.
+ * The pill is `ink` with `app` text (it flips light on Night), centered, 48px tall, with the float
+ * shadow. Enter and exit are a 16px rise with opacity: 300ms ease-drawer on transform, 200ms
+ * ease-ui-out on opacity. Sonner's stacking, expand and swipe are left alone.
+ * `--toast-bottom` clears the phone tab bar (12px inset + 68px bar = 80px, plus 12px air) and the
+ * home-indicator inset; from md the bar is a rail, so the toast drops to the screen corner.
+ */
+:root {
+  --toast-bottom: calc(92px + env(safe-area-inset-bottom));
+}
+@media (min-width: 48rem) {
+  :root {
+    --toast-bottom: 24px;
+  }
+}
+.toaster {
+  --border-radius: 999px;
+}
+.toaster .cn-toast[data-sonner-toast][data-styled="true"] {
+  left: 0;
+  right: 0;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 48px;
+  margin-inline: auto;
+  padding: 0 18px 0 14px;
+  gap: 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: var(--color-app);
+  box-shadow: var(--shadow-float);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.toaster .cn-toast [data-description] {
+  color: inherit;
+  font-size: 13px;
+  font-weight: 500;
+}
+.toaster .cn-toast[data-sonner-toast]:not([data-swiping="true"]) {
+  transition:
+    transform 300ms var(--ease-drawer),
+    opacity 200ms var(--ease-ui-out);
+}
+.toaster .cn-toast[data-sonner-toast]:not([data-mounted="true"]),
+.toaster
+  .cn-toast[data-sonner-toast][data-removed="true"][data-front="true"][data-swipe-out="false"] {
+  --y: translateY(16px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .toaster .cn-toast[data-sonner-toast]:not([data-swiping="true"]) {
+    transition: opacity 200ms var(--ease-ui-out) !important;
+  }
+  .toaster .cn-toast[data-sonner-toast]:not([data-mounted="true"]),
+  .toaster
+    .cn-toast[data-sonner-toast][data-removed="true"][data-front="true"][data-swipe-out="false"] {
+    --y: translateY(0);
+  }
+}
+
+/*
+ * Floating PWA notes (update prompt, install hint): the toast's enter, a 16px rise with opacity
+ * (300ms ease-drawer on transform, 200ms ease-ui-out on opacity). Reduced motion keeps the fade.
+ */
+.floating-note {
+  animation:
+    note-rise 300ms var(--ease-drawer) backwards,
+    note-fade 200ms var(--ease-ui-out) backwards;
+}
+@keyframes note-rise {
+  from {
+    transform: translateY(16px);
+  }
+}
+@keyframes note-fade {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .floating-note {
+    animation: note-fade 200ms var(--ease-ui-out) backwards;
+  }
+}
+
+/*
+ * List entrance. Put `stagger` on a list and `style={{ "--k": i }}` on each row (`staggerRow(i)`):
+ * a row rises 8px and fades in over 320ms, 50ms later per row, capped at row 9 so a long list never
+ * waits more than 450ms. `backwards` fill hides a row only until its turn and leaves no animation
+ * state behind, and nothing disables pointer events, so a tap is never blocked. The list should get
+ * the class on a screen's first visit only (`useStagger`). Reduced motion keeps the fade, drops the rise.
+ */
+@utility stagger {
+  & > * {
+    animation: stagger-rise 320ms var(--ease-ui-out) backwards;
+    animation-delay: calc(min(var(--k, 0), 9) * 50ms);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    & > * {
+      animation-name: stagger-fade;
+    }
+  }
+}
+@keyframes stagger-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes stagger-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
+ * Screen swap: the new top-level screen fades in over 120ms (opacity only, no slide). Kept under
+ * reduced motion, since opacity is the variant that stays.
+ */
+.screen-swap {
+  animation: screen-swap 120ms var(--ease-ui-out);
+}
+@keyframes screen-swap {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
+ * Shared motion pieces stop under reduced motion: spinners, skeleton pulses and the press scale.
+ * `.press` is the class the shared press utility uses.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin,
+  .animate-pulse {
+    animation: none;
+  }
+  .press:active {
+    transform: none;
   }
 }

@@ -5,6 +5,7 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import type { z } from "zod";
 import { CoursePicker } from "@/components/courses/CoursePicker";
 import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
 import {
   Field,
   FieldDescription,
@@ -32,7 +33,6 @@ import {
   useUpdateRoutineEntry,
 } from "@/lib/routine";
 import { toast } from "@/lib/toast";
-import { cn } from "@/lib/utils";
 import { ROUTINE_DAY_NAMES, ROUTINE_DAYS, type RoutineDay } from "../../../shared/routine";
 import {
   ROUTINE_INITIALS_MAX_LENGTH,
@@ -161,7 +161,7 @@ function RoutineEditor({
         <SheetTitle>{entry ? "Edit class" : "Add a class"}</SheetTitle>
         <SheetDescription>Times are Dhaka time. Only you can see your routine.</SheetDescription>
       </SheetHeader>
-      <div className="space-y-4 px-4 pb-4">
+      <div className="space-y-4 px-5 pb-4">
         <form onSubmit={submit} noValidate>
           <FieldGroup>
             <Field data-invalid={Boolean(errors.courseCode)}>
@@ -198,7 +198,6 @@ function RoutineEditor({
                 inputMode="numeric"
                 min={1}
                 max={ROUTINE_SECTION_MAX}
-                className="h-11"
                 aria-invalid={Boolean(errors.section)}
                 {...form.register("section", { valueAsNumber: true })}
               />
@@ -232,7 +231,6 @@ function RoutineEditor({
                 <Input
                   id="routine-start"
                   type="time"
-                  className="h-11"
                   aria-invalid={Boolean(errors.start)}
                   {...form.register("start")}
                 />
@@ -243,7 +241,6 @@ function RoutineEditor({
                 <Input
                   id="routine-end"
                   type="time"
-                  className="h-11"
                   aria-invalid={Boolean(errors.end)}
                   {...form.register("end")}
                 />
@@ -256,7 +253,6 @@ function RoutineEditor({
                 <FieldLabel htmlFor="routine-room">Room (optional)</FieldLabel>
                 <Input
                   id="routine-room"
-                  className="h-11"
                   autoComplete="off"
                   maxLength={ROUTINE_ROOM_MAX_LENGTH}
                   aria-invalid={Boolean(errors.room)}
@@ -268,7 +264,6 @@ function RoutineEditor({
                 <FieldLabel htmlFor="routine-initials">Faculty (optional)</FieldLabel>
                 <Input
                   id="routine-initials"
-                  className="h-11"
                   autoComplete="off"
                   autoCapitalize="characters"
                   spellCheck={false}
@@ -285,41 +280,36 @@ function RoutineEditor({
           </FieldGroup>
         </form>
         {entry ? (
-          confirming ? (
-            <div className="space-y-3 rounded-control border border-line p-3">
-              <p className="text-sm text-body">Delete this class from your routine?</p>
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="text-destructive"
-                  disabled={remove.isPending}
-                  onClick={onDelete}
-                >
-                  {remove.isPending ? "Deleting..." : "Delete class"}
-                </Button>
-                <Button variant="outline" size="lg" onClick={() => setConfirming(false)}>
-                  Keep it
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              size="lg"
-              className="w-full text-destructive"
-              onClick={() => setConfirming(true)}
-            >
-              Delete class
-            </Button>
-          )
+          <div className="grid gap-3 border-t border-line pt-4">
+            {confirming ? (
+              <>
+                <p className="text-[15px] text-ink">Delete this class from your routine?</p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button variant="destructive" disabled={remove.isPending} onClick={onDelete}>
+                    {remove.isPending ? "Deleting..." : "Delete class"}
+                  </Button>
+                  <Button variant="outline" onClick={() => setConfirming(false)}>
+                    Keep it
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <Button variant="outline" className="text-danger" onClick={() => setConfirming(true)}>
+                Delete class
+              </Button>
+            )}
+          </div>
         ) : null}
       </div>
     </>
   );
 }
 
-/** Seven toggles, one per NSU day letter. The pressed state shows by fill and weight, not color alone. */
+/**
+ * Seven chips, one per NSU day letter. `aria-pressed` carries the state and a pressed chip shows a
+ * check, so it is never color alone. The letter is what shows; the full day name is what a screen
+ * reader hears.
+ */
 function DayPicker({
   value,
   onChange,
@@ -332,31 +322,26 @@ function DayPicker({
     onChange(ROUTINE_DAYS.filter((d) => (d === day ? !value.includes(d) : value.includes(d))));
   return (
     <div className="grid grid-cols-7 gap-1.5">
-      {ROUTINE_DAYS.map((day) => {
-        const on = value.includes(day);
-        return (
-          <button
-            key={day}
-            type="button"
-            aria-pressed={on}
-            aria-label={ROUTINE_DAY_NAMES[day]}
-            onClick={() => toggle(day)}
-            className={cn(
-              "h-11 rounded-control border text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
-              on
-                ? "border-brand bg-brand-soft font-semibold text-ink"
-                : "border-input bg-surface text-soft hover:bg-tint",
-            )}
-          >
-            {day}
-          </button>
-        );
-      })}
+      {ROUTINE_DAYS.map((day) => (
+        <Chip
+          key={day}
+          pressed={value.includes(day)}
+          onPressedChange={() => toggle(day)}
+          aria-label={ROUTINE_DAY_NAMES[day]}
+          // Tinted so an unpressed chip reads against the sheet's own `surface`.
+          className="w-full rounded-row bg-tint px-0 text-[15px] font-semibold aria-pressed:bg-brand-soft"
+        >
+          {day}
+        </Chip>
+      ))}
     </div>
   );
 }
 
-/** Names the classes this one would clash with and the days. It never blocks saving. */
+/**
+ * A Note in the `butter` hue (radius 16, padding 12 14): an icon, a bold state word and the plain
+ * sentence. It names the classes this one would clash with and the days, and never blocks saving.
+ */
 function ClashWarning({
   days,
   clashes,
@@ -365,11 +350,17 @@ function ClashWarning({
   clashes: readonly RoutineEntry[];
 }) {
   return (
-    <div role="status" className="flex items-start gap-2 rounded-control bg-tint p-3 text-sm">
-      <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-ink" aria-hidden="true" />
-      <div className="space-y-0.5 text-ink">
-        <p className="font-medium">This overlaps another class. You can still save it.</p>
-        <ul className="text-soft">
+    <div
+      role="status"
+      data-hue="butter"
+      className="flex items-start gap-3 rounded-row bg-hue px-3.5 py-3 text-sm leading-[1.4] text-hue-ink"
+    >
+      <TriangleAlertIcon aria-hidden strokeWidth={1.75} className="mt-px size-5 shrink-0" />
+      <div className="min-w-0 space-y-1">
+        <p>
+          <b className="font-bold">Overlap.</b> This overlaps another class. You can still save it.
+        </p>
+        <ul>
           {clashes.map((c) => (
             <li key={c.id}>
               {c.courseCode} section {c.section}, {sharedDays(days, c)}{" "}

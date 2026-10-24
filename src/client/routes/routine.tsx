@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { MonthGrid } from "@/components/routine/MonthGrid";
 import { RoutineSheet, type RoutineSheetTarget } from "@/components/routine/RoutineSheet";
@@ -14,6 +14,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorBlock } from "@/components/ui/error-block";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorMessage } from "@/lib/api";
 import { termLabel } from "@/lib/courseMap";
@@ -28,6 +31,8 @@ import {
 } from "@/lib/routineCalendar";
 import { toast } from "@/lib/toast";
 import { useNow } from "@/lib/useNow";
+import { useViewFade } from "@/lib/useViewFade";
+import { cn } from "@/lib/utils";
 import {
   dhakaToday,
   inRange,
@@ -87,73 +92,78 @@ function RoutinePage() {
     });
   const openDay = (d: DateKey) => show({ view: "day", date: d });
 
-  const note =
-    view === "day" && !inRange(date, range)
-      ? `This day is outside ${termLabel(term)}, so it has no classes.`
+  // The grid below is drawn from `shown`, which trails `view` by one 110ms fade-out.
+  const { shown, fading } = useViewFade(view);
+  const empty =
+    shown === "day" && !inRange(date, range)
+      ? {
+          title: "No classes this day.",
+          description: `This day is outside ${termLabel(term)}.`,
+        }
       : routine.data && entries.length === 0
-        ? "No classes yet. Add the ones you're taking this term, or tap an empty slot on the grid."
-        : view === "day" && routine.data && classesOn(entries, date, range).length === 0
-          ? "No classes this day."
+        ? {
+            title: "No classes yet.",
+            description: "Add the ones you're taking this term, or tap an empty slot on the grid.",
+          }
+        : shown === "day" && routine.data && classesOn(entries, date, range).length === 0
+          ? { title: date === today ? "No classes today." : "No classes this day." }
           : null;
 
   return (
-    <div className="space-y-4">
-      <div className="flex min-h-11 items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-ink">Routine</h1>
-          <p className="text-sm text-soft">{termLabel(term)}</p>
+    <div className="flex flex-col gap-4">
+      <header className="flex min-h-11 items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.01em] text-ink md:text-[32px]">
+            Routine
+          </h1>
+          <p className="mt-1 text-soft">{termLabel(term)}</p>
         </div>
-        <Button size="lg" disabled={!routine.data} onClick={() => setTarget("new")}>
+        <Button size="sm" disabled={!routine.data} onClick={() => setTarget("new")}>
+          <PlusIcon aria-hidden />
           Add class
         </Button>
-      </div>
+      </header>
 
-      <div className="flex items-center justify-between gap-3">
-        <Tabs value={view} onValueChange={(v) => show({ view: v as CalendarView })}>
-          <TabsList aria-label="Calendar view" className="h-11!">
-            {CALENDAR_VIEWS.map((v) => (
-              <TabsTrigger key={v} value={v} className="px-3.5">
-                {VIEW_LABELS[v]}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-        <Button
-          variant="outline"
-          size="lg"
-          className="px-3.5"
-          disabled={date === today}
-          onClick={() => show({ date: today })}
-        >
-          Today
-        </Button>
-      </div>
+      <Tabs value={view} onValueChange={(v) => show({ view: v as CalendarView })}>
+        <TabsList aria-label="Calendar view" className="w-full md:w-80">
+          {CALENDAR_VIEWS.map((v) => (
+            <TabsTrigger key={v} value={v}>
+              {VIEW_LABELS[v]}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
-      <div>
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-base font-semibold text-ink" aria-live="polite">
-            {periodLabel(view, date)}
-          </h2>
-          <div className="-mr-2.5 flex items-center">
-            <Button
-              variant="ghost"
-              size="icon-lg"
-              aria-label={`Previous ${view}`}
-              onClick={() => show({ date: stepDate(view, date, -1) })}
-            >
-              <ChevronLeftIcon />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-lg"
-              aria-label={`Next ${view}`}
-              onClick={() => show({ date: stepDate(view, date, 1) })}
-            >
-              <ChevronRightIcon />
-            </Button>
-          </div>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="min-w-0 text-lg leading-[1.3] font-semibold text-ink" aria-live="polite">
+          {periodLabel(view, date)}
+        </h2>
+        <div className="-mr-2.5 flex shrink-0 items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={date === today}
+            onClick={() => show({ date: today })}
+          >
+            Today
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            aria-label={`Previous ${view}`}
+            onClick={() => show({ date: stepDate(view, date, -1) })}
+          >
+            <ChevronLeftIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-lg"
+            aria-label={`Next ${view}`}
+            onClick={() => show({ date: stepDate(view, date, 1) })}
+          >
+            <ChevronRightIcon />
+          </Button>
         </div>
-        {note ? <p className="text-sm text-soft">{note}</p> : null}
       </div>
 
       {routine.isPending ? (
@@ -161,47 +171,69 @@ function RoutinePage() {
           aria-busy="true"
           role="status"
           aria-label="Loading your routine"
-          className="h-[30rem] rounded-panel border border-line bg-tint"
-        />
-      ) : routine.isError ? (
-        <div className="rounded-panel border border-line bg-surface p-6 text-center">
-          <p className="font-medium text-ink">Your routine didn't load</p>
-          <p className="mt-1 text-sm text-soft">{errorMessage(routine.error)}</p>
-          <Button variant="outline" className="mt-4" onClick={() => void routine.refetch()}>
-            Try again
-          </Button>
+          className="grid gap-3 rounded-panel bg-surface p-4 md:rounded-[24px]"
+        >
+          {Array.from({ length: 6 }, (_, i) => (
+            <Skeleton key={i} className="h-12" />
+          ))}
         </div>
-      ) : view === "month" ? (
-        <MonthGrid
-          weeks={monthWeeks(date)}
-          month={monthOf(date)}
-          entries={entries}
-          term={range}
-          today={today}
-          now={now}
-          onPickDate={openDay}
+      ) : routine.isError ? (
+        <ErrorBlock
+          title="Your routine didn't load"
+          message={errorMessage(routine.error)}
+          onRetry={() => void routine.refetch()}
+          retrying={routine.isFetching}
         />
       ) : (
-        <TimeGrid
-          dates={view === "week" ? weekOf(date) : [date]}
-          entries={entries}
-          term={range}
-          today={today}
-          now={now}
-          titles={titles}
-          onOpen={setTarget}
-          onAdd={setTarget}
-          onPickDate={view === "week" ? openDay : undefined}
-        />
+        <div
+          data-fading={fading || undefined}
+          className={cn(
+            "flex flex-col gap-4 motion-safe:transition-opacity motion-safe:duration-110 motion-safe:ease-ui-out",
+            fading && "pointer-events-none opacity-0",
+          )}
+        >
+          {empty ? (
+            <div className="overflow-hidden rounded-panel bg-surface md:rounded-[24px]">
+              <EmptyState icon={CalendarIcon} {...empty} />
+            </div>
+          ) : null}
+          {shown === "month" ? (
+            <MonthGrid
+              weeks={monthWeeks(date)}
+              month={monthOf(date)}
+              entries={entries}
+              term={range}
+              today={today}
+              now={now}
+              onPickDate={openDay}
+            />
+          ) : (
+            <TimeGrid
+              dates={shown === "week" ? weekOf(date) : [date]}
+              entries={entries}
+              term={range}
+              today={today}
+              now={now}
+              titles={titles}
+              onOpen={setTarget}
+              onAdd={setTarget}
+              onPickDate={shown === "week" ? openDay : undefined}
+            />
+          )}
+        </div>
       )}
 
       {entries.length > 0 ? (
         <div className="pt-2">
-          <Button variant="outline" size="lg" onClick={() => setClearing(true)}>
+          <Button variant="outline" onClick={() => setClearing(true)}>
             Clear this term
           </Button>
         </div>
       ) : null}
+
+      <p className="text-[13px] leading-[1.3] font-medium text-faint">
+        Times are Dhaka time. Only you can see your routine.
+      </p>
 
       <RoutineSheet
         target={target}

@@ -29,6 +29,17 @@ export function mainTabs(
     : [homeTab, coursesTab, inboxTab, modTab, settingsTab];
 }
 
+/**
+ * The position of the tab the pathname is inside, or -1 when none is (a screen reached from
+ * elsewhere, such as a mod's own routine). The tab bar's sliding pill sits at this index. Matches the
+ * router's own active test: Home only on "/", every other tab on its path and anything below it.
+ */
+export function activeTabIndex(tabs: readonly MainTab[], pathname: string): number {
+  return tabs.findIndex(({ to }) =>
+    to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`),
+  );
+}
+
 export type ModSection = {
   to:
     | "/mod/queue"

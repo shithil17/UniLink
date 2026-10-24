@@ -2,13 +2,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { ChevronRightIcon, UsersIcon } from "lucide-react";
 import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { ErrorBlock } from "@/components/ui/error-block";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { focusRingInset } from "@/components/ui/focus";
 import { Input } from "@/components/ui/input";
+import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
+import { modPanel as panel, modRowLine, modRowMin, modTitle } from "@/components/mod/modStyles";
 import { UserSheet } from "@/components/mod/UserSheet";
 import { errorMessage } from "@/lib/api";
 import { timeAgo } from "@/lib/inbox";
@@ -23,8 +28,13 @@ export const Route = createFileRoute("/mod/users")({
   component: UsersPage,
 });
 
-const panel = "overflow-hidden rounded-panel border border-line bg-surface";
-const flat = "rounded-control bg-tint";
+/** The loading row in the final layout: a name, a short joined time and a chevron's room. */
+const skeletonRow = (
+  <>
+    <Skeleton className="h-4 w-2/5" />
+    <Skeleton className="ml-auto h-3.5 w-20 shrink-0" />
+  </>
+);
 
 type SearchValues = z.input<typeof userSearchForm>;
 
@@ -48,7 +58,7 @@ function UsersPage() {
 
   return (
     <section className="space-y-4">
-      <h1 className="text-xl font-semibold text-ink">Users</h1>
+      <h1 className={modTitle}>Users</h1>
       <form onSubmit={search} noValidate className="flex items-start gap-2">
         <Field data-invalid={Boolean(form.formState.errors.q)} className="flex-1">
           <FieldLabel htmlFor="user-search" className="sr-only">
@@ -57,7 +67,6 @@ function UsersPage() {
           <Input
             id="user-search"
             type="search"
-            className="h-11"
             placeholder="Username starts with"
             autoCapitalize="none"
             autoComplete="off"
@@ -72,49 +81,46 @@ function UsersPage() {
       </form>
 
       {list.isPending ? (
-        <div className={panel} aria-busy="true" aria-label="Loading users">
-          {[0, 1, 2, 3].map((n) => (
-            <div key={n} className="border-b border-line px-4 py-3 last:border-b-0">
-              <div className={`${flat} h-4 w-1/3`} />
-            </div>
-          ))}
-        </div>
+        <SkeletonRows rows={5} row={skeletonRow} label="Loading users" />
       ) : list.isError ? (
-        <div className="rounded-panel border border-line bg-surface p-6 text-center">
-          <p className="font-medium text-ink">The list didn't load</p>
-          <p className="mt-1 text-sm text-soft">{errorMessage(list.error)}</p>
-          <Button variant="outline" className="mt-4" onClick={() => void list.refetch()}>
-            Try again
-          </Button>
-        </div>
+        <ErrorBlock
+          title="The list didn't load"
+          message={errorMessage(list.error)}
+          onRetry={() => void list.refetch()}
+          retrying={list.isRefetching}
+        />
       ) : users.length === 0 ? (
-        <div className="rounded-panel border border-line bg-surface p-6 text-center">
-          <p className="font-medium text-ink">No one found</p>
-          <p className="mt-1 text-sm text-soft">
-            {q ? `No username starts with "${q}".` : "No one has signed up yet."}
-          </p>
+        <div className={panel}>
+          <EmptyState
+            icon={UsersIcon}
+            title="No one found"
+            description={q ? `No username starts with "${q}".` : "No one has signed up yet."}
+          />
         </div>
       ) : (
         <>
           <ul className={panel}>
             {users.map((u) => (
-              <li key={u.id} className="border-b border-line last:border-b-0">
+              <li key={u.id} className={modRowLine}>
                 <button
                   type="button"
                   onClick={() => setSelected(u)}
-                  className={`flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-tint ${focusRingInset}`}
+                  className={`flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-tint ${modRowMin} ${focusRingInset}`}
                 >
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-medium text-ink">{u.username}</span>
-                    <span className="block text-xs text-faint">
-                      Joined <span className="tabular-nums">{timeAgo(u.createdAt, now)}</span>
+                  <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="max-w-full truncate text-[15px] font-medium text-ink">
+                      {u.username}
                     </span>
+                    {u.role !== "student" ? (
+                      <Badge>{u.role === "admin" ? "Admin" : "Mod"}</Badge>
+                    ) : null}
+                    {u.bannedAt !== null ? <Badge>Banned</Badge> : null}
+                    {u.probingFlaggedAt !== null ? <Badge>Flagged</Badge> : null}
                   </span>
-                  {u.role !== "student" ? (
-                    <Badge>{u.role === "admin" ? "Admin" : "Mod"}</Badge>
-                  ) : null}
-                  {u.bannedAt !== null ? <Badge>Banned</Badge> : null}
-                  {u.probingFlaggedAt !== null ? <Badge>Flagged</Badge> : null}
+                  <span className="shrink-0 text-right text-[13px] text-faint">
+                    Joined <span className="tabular-nums">{timeAgo(u.createdAt, now)}</span>
+                  </span>
+                  <ChevronRightIcon aria-hidden="true" className="size-5 shrink-0 text-faint" />
                 </button>
               </li>
             ))}
@@ -123,10 +129,10 @@ function UsersPage() {
             <Button
               variant="outline"
               className="w-full"
-              disabled={list.isFetchingNextPage}
+              loading={list.isFetchingNextPage}
               onClick={() => void list.fetchNextPage()}
             >
-              {list.isFetchingNextPage ? "Loading" : "Show more"}
+              Show more
             </Button>
           ) : null}
         </>

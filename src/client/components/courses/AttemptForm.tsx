@@ -1,12 +1,14 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { LockIcon } from "lucide-react";
 import { Controller, useForm, useWatch, type Resolver } from "react-hook-form";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { RadioChip, RadioGroup } from "@/components/ui/radio-group";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { errorMessage } from "@/lib/api";
 import { termLabel, termOptions, termValue } from "@/lib/courseMap";
 import { useRecordAttempt, useUpdateAttempt } from "@/lib/courses";
-import { ATTEMPT_GRADES, gradeLabel, WAIVED } from "../../../shared/grading";
+import { ATTEMPT_GRADES, gradeLabel, gradePoints, WAIVED } from "../../../shared/grading";
 import {
   attemptFullInput,
   attemptInput,
@@ -17,7 +19,35 @@ import { FacultyPicker } from "./FacultyPicker";
 import { OptionSelect } from "./OptionSelect";
 
 const NO_TERM = "none";
-const gradeOptions = ATTEMPT_GRADES.map((g) => ({ value: g, label: gradeLabel(g) }));
+
+// ceiling: the sheet takes 320ms to slide out (200ms fade under reduced motion), so the "Grade
+// saved" toast waits a beat longer: close first, then confirm. Revisit if the sheet's timing changes.
+const CONFIRM_AFTER_CLOSE_MS = 340;
+const CONFIRM_AFTER_CLOSE_REDUCED_MS = 200;
+
+function confirmAfterClose(message: string) {
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  window.setTimeout(
+    () => toast.success(message),
+    reduced ? CONFIRM_AFTER_CLOSE_REDUCED_MS : CONFIRM_AFTER_CLOSE_MS,
+  );
+}
+
+/** One tile per grade: the grade over its points, from the shared scale. I, W and WV have none. */
+const gradeTiles = ATTEMPT_GRADES.map((g) => {
+  const points = gradePoints(g);
+  return {
+    value: g,
+    points: points === null ? "-" : points.toFixed(1),
+    // The name starts with the visible text so voice control and screen readers agree.
+    label:
+      g === WAIVED
+        ? `${g}, ${gradeLabel(g).toLowerCase()}`
+        : points === null
+          ? `${g}, no grade points`
+          : `${g}, ${points.toFixed(1)} points`,
+  };
+});
 
 /**
  * One attempt form in three shapes:
@@ -31,12 +61,18 @@ export function AttemptForm({
   onCancel,
   mode = "quick",
   attempt,
+  locked = false,
+  confirmAfterSheetCloses = false,
 }: {
   choices: readonly { code: string; title: string }[];
   onSaved: () => void;
   onCancel?: () => void;
   mode?: "quick" | "full";
   attempt?: Attempt;
+  /** The course's prerequisites are not met: the grades, the term and the button are disabled. */
+  locked?: boolean;
+  /** `onSaved` closes the sheet, so the "Grade saved" toast waits until it has gone. */
+  confirmAfterSheetCloses?: boolean;
 }) {
   const record = useRecordAttempt();
   const update = useUpdateAttempt(attempt?.id ?? 0);
@@ -69,6 +105,11 @@ export function AttemptForm({
   const submit = form.handleSubmit((values) => {
     const done = {
       onSuccess: () => {
+        if (!attempt && confirmAfterSheetCloses) {
+          onSaved();
+          confirmAfterClose("Grade saved");
+          return;
+        }
         toast.success(attempt ? "Attempt updated" : "Grade saved");
         onSaved();
       },
@@ -80,7 +121,9 @@ export function AttemptForm({
         done,
       );
     } else {
-      record.mutate(values, done);
+      // The faculty picker is hidden in the quick form, so a faculty picked in the full form (and
+      // kept in form state for the toggle back) is not sent from here.
+      record.mutate(mode === "quick" ? { ...values, facultyId: null } : values, done);
     }
   });
 
@@ -107,19 +150,35 @@ export function AttemptForm({
           </Field>
         ) : null}
         <Field data-invalid={Boolean(errors.grade)}>
-          <FieldLabel htmlFor="attempt-grade">Grade</FieldLabel>
+          <FieldLabel id="attempt-grade-label">Grade</FieldLabel>
           <Controller
             control={form.control}
             name="grade"
             render={({ field }) => (
-              <OptionSelect
+              <RadioGroup
                 id="attempt-grade"
+                aria-labelledby="attempt-grade-label"
+                aria-invalid={Boolean(errors.grade)}
+                disabled={locked}
                 value={field.value ?? null}
-                onChange={field.onChange}
-                options={gradeOptions}
-                placeholder="Pick a grade"
-                invalid={Boolean(errors.grade)}
-              />
+                onValueChange={(v) => field.onChange(v)}
+                onBlur={field.onBlur}
+                className="grid-cols-6 gap-1.5"
+              >
+                {gradeTiles.map((g) => (
+                  <RadioChip key={g.value} value={g.value} aria-label={g.label}>
+                    <span aria-hidden className="text-[15px] leading-none font-bold">
+                      {g.value}
+                    </span>
+                    <span
+                      aria-hidden
+                      className="text-[12px] leading-none font-medium text-faint tabular-nums group-data-checked/radio-chip:text-brand-ink"
+                    >
+                      {g.points}
+                    </span>
+                  </RadioChip>
+                ))}
+              </RadioGroup>
             )}
           />
           {grade === WAIVED ? (
@@ -144,6 +203,7 @@ export function AttemptForm({
                 options={termChoices}
                 placeholder="Pick a term"
                 invalid={Boolean(errors.term)}
+                disabled={locked}
               />
             )}
           />
@@ -166,18 +226,24 @@ export function AttemptForm({
             />
           </Field>
         ) : null}
+        {locked ? (
+          <p className="flex items-start gap-2 text-sm leading-snug font-medium text-danger">
+            <LockIcon aria-hidden className="mt-px size-[18px] shrink-0" />
+            You haven't met the prerequisites yet.
+          </p>
+        ) : null}
         <div className="flex flex-col gap-2">
-          <Button type="submit" size="lg" className="w-full" disabled={pending}>
+          <Button type="submit" className="w-full" disabled={pending || locked}>
             {pending
               ? "Saving..."
               : attempt
                 ? "Save changes"
                 : mode === "full"
                   ? "Save attempt"
-                  : "Save grade"}
+                  : "Record a grade"}
           </Button>
           {onCancel ? (
-            <Button type="button" variant="outline" size="lg" className="w-full" onClick={onCancel}>
+            <Button type="button" variant="outline" className="w-full" onClick={onCancel}>
               Cancel
             </Button>
           ) : null}

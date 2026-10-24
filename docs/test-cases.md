@@ -45,20 +45,20 @@ Valid sample IDs below use the 2022 intake; replace `22` with a year within 8 ye
 
 ## C. App shell, install and palettes (FR-11 to FR-15, NFR-1, NFR-7)
 
-| ID   | Steps                                                                          | Expected                                                      | Result |
-| ---- | ------------------------------------------------------------------------------ | ------------------------------------------------------------- | ------ |
-| C-1  | Android Chrome: open the staging URL, Add to Home Screen, launch from the icon | Opens standalone with the app name and icon                   |        |
-| C-2  | iOS Safari: open the URL                                                       | One-time "Add to Home Screen" hint appears                    |        |
-| C-3  | Dismiss the hint, reload                                                       | Hint does not return                                          |        |
-| C-4  | iOS: Add to Home Screen, launch it                                             | Standalone, no hint                                           |        |
-| C-5  | Installed app on each platform: turn on airplane mode, launch                  | "You are offline" screen with a retry button                  |        |
-| C-6  | From C-5 turn the network on, tap retry                                        | App loads                                                     |        |
-| C-7  | Deploy a new build, relaunch the installed app                                 | "Update available, reload" toast; reload shows the new build  |        |
-| C-8  | DevTools > Application > Cache Storage                                         | No `/api` response is cached                                  |        |
-| C-9  | Resize to 360px and 390px, then 1440px on every main screen                    | No overlap or clipped text; desktop uses the wider layout     |        |
-| C-10 | Settings: pick each of the five palettes, restart the installed app            | Choice kept; no flash of Ocean Teal; status bar color matches |        |
-| C-11 | Private browsing (storage blocked)                                             | App works and falls back to Ocean Teal                        |        |
-| C-12 | Show Bangla sample text (e.g. in copy or a student course title)               | Renders in Noto Sans Bengali, no tofu boxes                   |        |
+| ID   | Steps                                                                          | Expected                                                     | Result |
+| ---- | ------------------------------------------------------------------------------ | ------------------------------------------------------------ | ------ |
+| C-1  | Android Chrome: open the staging URL, Add to Home Screen, launch from the icon | Opens standalone with the app name and icon                  |        |
+| C-2  | iOS Safari: open the URL                                                       | One-time "Add to Home Screen" hint appears                   |        |
+| C-3  | Dismiss the hint, reload                                                       | Hint does not return                                         |        |
+| C-4  | iOS: Add to Home Screen, launch it                                             | Standalone, no hint                                          |        |
+| C-5  | Installed app on each platform: turn on airplane mode, launch                  | "You are offline" screen with a retry button                 |        |
+| C-6  | From C-5 turn the network on, tap retry                                        | App loads                                                    |        |
+| C-7  | Deploy a new build, relaunch the installed app                                 | "Update available, reload" toast; reload shows the new build |        |
+| C-8  | DevTools > Application > Cache Storage                                         | No `/api` response is cached                                 |        |
+| C-9  | Resize to 360px and 390px, then 1440px on every main screen                    | No overlap or clipped text; desktop uses the wider layout    |        |
+| C-10 | Settings: pick each of the five palettes, restart the installed app            | Choice kept; no flash of Coral; status bar color matches     |        |
+| C-11 | Private browsing (storage blocked)                                             | App works and falls back to Coral                            |        |
+| C-12 | Show Bangla sample text (e.g. in copy or a student course title)               | Renders in Noto Sans Bengali, no tofu boxes                  |        |
 
 ## D. Course map (FR-16 to FR-22)
 

@@ -37,12 +37,12 @@ export function PushSwitch() {
 
   return (
     <>
-      <div className="flex min-h-14 items-center gap-3 px-4 py-3">
+      <div className="flex min-h-15 items-center gap-3 px-4 py-2.5">
         <div className="min-w-0 flex-1">
-          <p id="push-switch-label" className="font-medium text-ink">
+          <p id="push-switch-label" className="text-[15px] leading-[1.3] font-medium text-ink">
             Notifications on this device
           </p>
-          <p id="push-switch-hint" className="mt-0.5 text-sm text-soft">
+          <p id="push-switch-hint" className="mt-0.5 text-[13px] leading-[1.4] text-soft">
             {HINT[state]}
           </p>
         </div>
@@ -74,10 +74,10 @@ function PushTestRow() {
 
   if (me?.role !== "admin") return null;
   return (
-    <div className="flex min-h-14 items-center gap-3 border-t border-line px-4 py-3">
+    <div className="flex min-h-15 items-center gap-3 border-t border-line px-4 py-2.5">
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-ink">Test notification</p>
-        <p className="mt-0.5 text-sm text-soft">
+        <p className="text-[15px] leading-[1.3] font-medium text-ink">Test notification</p>
+        <p className="mt-0.5 text-[13px] leading-[1.4] text-soft">
           Sends one to you on every device where notifications are on.
         </p>
       </div>

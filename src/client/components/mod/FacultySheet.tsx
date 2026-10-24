@@ -119,14 +119,13 @@ function FacultyEditor({ faculty, onClose }: { faculty: ModFaculty | null; onClo
             : "New faculty show in the picker right away."}
         </SheetDescription>
       </SheetHeader>
-      <div className="space-y-4 px-4 pb-4">
+      <div className="space-y-5 px-5 pb-4">
         <form onSubmit={submit} noValidate>
           <FieldGroup>
             <Field data-invalid={Boolean(errors.name)}>
               <FieldLabel htmlFor="faculty-name">Name</FieldLabel>
               <Input
                 id="faculty-name"
-                className="h-11"
                 autoComplete="off"
                 aria-invalid={Boolean(errors.name)}
                 {...form.register("name")}
@@ -137,7 +136,6 @@ function FacultyEditor({ faculty, onClose }: { faculty: ModFaculty | null; onClo
               <FieldLabel htmlFor="faculty-initials">Initials (optional)</FieldLabel>
               <Input
                 id="faculty-initials"
-                className="h-11"
                 autoComplete="off"
                 autoCapitalize="none"
                 spellCheck={false}
@@ -154,7 +152,6 @@ function FacultyEditor({ faculty, onClose }: { faculty: ModFaculty | null; onClo
               <FieldLabel htmlFor="faculty-designation">Designation</FieldLabel>
               <Input
                 id="faculty-designation"
-                className="h-11"
                 autoComplete="off"
                 aria-invalid={Boolean(errors.designation)}
                 {...form.register("designation")}
@@ -184,7 +181,6 @@ function FacultyEditor({ faculty, onClose }: { faculty: ModFaculty | null; onClo
               <Input
                 id="faculty-page"
                 type="url"
-                className="h-11"
                 autoComplete="off"
                 autoCapitalize="none"
                 spellCheck={false}
@@ -204,10 +200,10 @@ function FacultyEditor({ faculty, onClose }: { faculty: ModFaculty | null; onClo
           <>
             <Separator />
             <div className="space-y-3">
-              <h3 className="text-sm font-semibold text-ink">
+              <h3 className="text-lg leading-[1.3] font-semibold text-ink">
                 {faculty.hidden ? "Hidden from students" : "Visibility"}
               </h3>
-              <p className="text-sm text-soft">
+              <p className="text-[15px] text-soft">
                 {faculty.hidden
                   ? "Students can't pick this person. Attempts that already name them still do."
                   : "Hiding removes this person from the picker. Attempts that already name them keep the name."}

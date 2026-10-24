@@ -117,9 +117,9 @@ function UserActions({
         <SheetTitle>{user.username}</SheetTitle>
         <SheetDescription>{state}</SheetDescription>
       </SheetHeader>
-      <div className="space-y-4 px-4 pb-4">
+      <div className="space-y-4 px-5 pb-4">
         {flagged ? (
-          <p className="text-sm text-soft">
+          <p className="text-soft">
             Flagged for several rejected posts in a short time.{" "}
             {pausedMinutes > 0 ? (
               <>
@@ -134,7 +134,7 @@ function UserActions({
         {temporary ? (
           <TemporaryPassword password={temporary} onDone={onClose} />
         ) : !allowed ? (
-          <p className="text-sm text-soft">
+          <p className="text-soft">
             {user.id === me.id
               ? "You can't take moderation actions on your own account."
               : user.role === "admin"
@@ -235,11 +235,11 @@ function TemporaryPassword({ password, onDone }: { password: string; onDone: () 
   };
   return (
     <div className="space-y-3" role="status">
-      <p className="text-sm text-soft">
+      <p className="text-soft">
         Temporary password. It is shown once, so pass it on now. They are signed out everywhere and
         must choose a new password when they log in.
       </p>
-      <p className="rounded-control border border-line bg-tint px-3 py-3 text-center text-xl font-semibold tracking-wider text-ink tabular-nums select-all">
+      <p className="rounded-control bg-tint px-3 py-3 text-center text-xl font-semibold tracking-wider text-ink tabular-nums select-all">
         {password}
       </p>
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

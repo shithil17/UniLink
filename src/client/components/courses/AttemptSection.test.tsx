@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { ATTEMPT_GRADES } from "../../../shared/grading";
 import type { Attempt } from "../../../shared/schemas/attempts";
 import { AttemptForm } from "./AttemptForm";
 import { AttemptSection } from "./AttemptSection";
@@ -52,8 +53,36 @@ describe("AttemptSection", () => {
 
   it("offers the quick form while the course has no attempt", async () => {
     renderWith(<AttemptSection choices={choices} onSaved={() => {}} />);
-    expect(await screen.findByRole("button", { name: "Save grade" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Record a grade" })).toBeTruthy();
     expect(screen.queryByText("Your attempts")).toBeNull();
+  });
+
+  it("keeps the grade and term picked in the quick form when toggling to the full form and back", async () => {
+    renderWith(<AttemptSection choices={choices} onSaved={() => {}} />);
+    fireEvent.click(await screen.findByRole("radio", { name: "B+, 3.3 points" }));
+    fireEvent.click(screen.getByLabelText("Term (optional)"));
+    // Option 0 is "Not sure"; pick the first real term.
+    const option = (await screen.findAllByRole("option"))[1];
+    fireEvent.pointerDown(option);
+    fireEvent.mouseDown(option);
+    fireEvent.pointerUp(option);
+    fireEvent.mouseUp(option);
+    fireEvent.click(option);
+    const termText = screen.getByLabelText("Term (optional)").textContent;
+    expect(termText).not.toContain("Not sure");
+
+    fireEvent.click(screen.getByRole("button", { name: "Add term and faculty" }));
+    expect(screen.getByRole("radio", { name: "B+, 3.3 points" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    expect(screen.getByLabelText("Term").textContent).toBe(termText);
+    expect(screen.getByLabelText("Faculty (optional)")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Use the quick form" }));
+    expect(screen.getByRole("radio", { name: "B+, 3.3 points" }).getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    expect(screen.getByLabelText("Term (optional)").textContent).toBe(termText);
   });
 
   it("lists the history with term and faculty, and allows a retake below B+", async () => {
@@ -101,8 +130,74 @@ describe("AttemptForm modes", () => {
     full.unmount();
 
     renderWith(<AttemptForm choices={choices} onSaved={() => {}} />);
-    fireEvent.click(screen.getByRole("button", { name: "Save grade" }));
+    fireEvent.click(screen.getByRole("button", { name: "Record a grade" }));
     expect(await screen.findByText(/Invalid|Required|expected/i)).toBeTruthy();
     expect(screen.queryByText("Pick the term you took it in.")).toBeNull();
+  });
+});
+
+describe("AttemptForm grade grid", () => {
+  beforeEach(() => stubApi([]));
+
+  it("lists every grade as a radio in a labelled group", () => {
+    renderWith(<AttemptForm choices={choices} onSaved={() => {}} />);
+    const group = screen.getByRole("radiogroup", { name: "Grade" });
+    const radios = screen.getAllByRole("radio");
+    expect(radios).toHaveLength(ATTEMPT_GRADES.length);
+    ATTEMPT_GRADES.forEach((g, i) => {
+      expect(radios[i].getAttribute("aria-label")?.startsWith(g)).toBe(true);
+      expect(group.contains(radios[i])).toBe(true);
+    });
+    expect(screen.getByRole("radio", { name: "A-, 3.7 points" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "WV, waived" })).toBeTruthy();
+  });
+
+  it("submits the picked grade in the same payload as before", async () => {
+    const posts: unknown[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (path: string, init?: RequestInit) => {
+        if (init?.method === "POST") {
+          posts.push(JSON.parse(init.body as string));
+          return Response.json(attempt({ grade: "B+" }));
+        }
+        return Response.json(path === "/api/faculty" ? [] : []);
+      }),
+    );
+    renderWith(<AttemptForm choices={choices} onSaved={() => {}} />);
+    const pick = screen.getByRole("radio", { name: "B+, 3.3 points" });
+    fireEvent.click(pick);
+    expect(pick.getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "Record a grade" }));
+    await waitFor(() => expect(posts).toHaveLength(1));
+    expect(posts[0]).toEqual({ courseCode: "CSE115", grade: "B+", term: null, facultyId: null });
+  });
+
+  it("shows the inline error when no grade is picked", async () => {
+    renderWith(<AttemptForm choices={choices} onSaved={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Record a grade" }));
+    expect(await screen.findByRole("alert")).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "Grade" }).getAttribute("aria-invalid")).toBe(
+      "true",
+    );
+  });
+
+  it("moves the choice with the arrow keys", async () => {
+    renderWith(<AttemptForm choices={choices} onSaved={() => {}} />);
+    const a = screen.getByRole("radio", { name: "A, 4.0 points" });
+    fireEvent.click(a);
+    a.focus();
+    fireEvent.keyDown(a, { key: "ArrowRight", code: "ArrowRight", keyCode: 39 });
+    await waitFor(() =>
+      expect(
+        screen.getByRole("radio", { name: "A-, 3.7 points" }).getAttribute("aria-checked"),
+      ).toBe("true"),
+    );
+  });
+
+  it("explains a waived grade once picked", () => {
+    renderWith(<AttemptForm choices={choices} onSaved={() => {}} />);
+    fireEvent.click(screen.getByRole("radio", { name: "WV, waived" }));
+    expect(screen.getByText(/counts toward your credits, not your CGPA/)).toBeTruthy();
   });
 });

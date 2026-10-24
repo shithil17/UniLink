@@ -12,16 +12,33 @@ const isTest = Boolean(process.env.VITEST);
 // https://vite.dev/config/
 export default defineConfig({
   resolve: {
-    alias: { "@": path.resolve(import.meta.dirname, "src/client") },
+    alias: {
+      "@": path.resolve(import.meta.dirname, "src/client"),
+      // vite-plugin-pwa is off under Vitest, so its virtual module needs a stand-in there.
+      ...(isTest
+        ? {
+            "virtual:pwa-register/react": path.resolve(
+              import.meta.dirname,
+              "src/client/test/pwa-register-stub.ts",
+            ),
+          }
+        : {}),
+    },
   },
   staged: {
     "*": "vp check --fix",
   },
   fmt: {
-    ignorePatterns: ["worker-configuration.d.ts", "src/client/routeTree.gen.ts", "drizzle/meta/**"],
+    // design/ holds verbatim reference material (the Pocket Planner showcase); never reformat it.
+    ignorePatterns: [
+      "worker-configuration.d.ts",
+      "src/client/routeTree.gen.ts",
+      "drizzle/meta/**",
+      "design/**",
+    ],
   },
   lint: {
-    ignorePatterns: ["worker-configuration.d.ts", "src/client/routeTree.gen.ts"],
+    ignorePatterns: ["worker-configuration.d.ts", "src/client/routeTree.gen.ts", "design/**"],
     plugins: ["react", "typescript", "oxc"],
     rules: {
       "react/rules-of-hooks": "error",
@@ -112,9 +129,9 @@ export default defineConfig({
               start_url: "/",
               scope: "/",
               display: "standalone",
-              // Static Ocean Teal: the manifest and icons do not follow the chosen palette.
-              theme_color: "#f4f6f5",
-              background_color: "#f4f6f5",
+              // Static Coral: the manifest and icons do not follow the chosen palette.
+              theme_color: "#f3f4f8",
+              background_color: "#f3f4f8",
               icons: [
                 { src: "pwa-64x64.png", sizes: "64x64", type: "image/png" },
                 { src: "pwa-192x192.png", sizes: "192x192", type: "image/png" },

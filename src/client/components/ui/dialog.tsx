@@ -28,7 +28,7 @@ function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) 
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 isolate z-50 bg-deep/40 duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 isolate z-50 bg-scrim transition-opacity duration-200 ease-ui-out data-ending-style:opacity-0 data-starting-style:opacity-0",
         className,
       )}
       {...props}
@@ -50,7 +50,10 @@ function DialogContent({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-panel border border-line bg-popover p-4 text-sm text-popover-foreground shadow-float duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          // A dialog floats, so it takes the float shadow and no border. It eases in from .96 scale
+          // and opacity; the centering uses `translate`, so the `scale` transition never fights it.
+          // Reduced motion keeps the opacity and drops the scale.
+          "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-panel bg-popover p-4 text-sm text-popover-foreground shadow-float outline-none transition-[scale,opacity] duration-220 ease-ui-out data-ending-style:scale-[.96] data-ending-style:opacity-0 data-starting-style:scale-[.96] data-starting-style:opacity-0 sm:max-w-sm motion-reduce:transition-[opacity] motion-reduce:data-ending-style:scale-100 motion-reduce:data-starting-style:scale-100",
           className,
         )}
         {...props}
