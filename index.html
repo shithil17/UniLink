@@ -26,6 +26,17 @@
         if (meta) meta.setAttribute("content", bars[id]);
       })();
     </script>
+    <script>
+      // Installed app only: draw under the status and navigation bars (the layout pads with
+      // env(safe-area-inset-*)). Kept out of the browser tab, where viewport-fit=cover can break
+      // Chrome's install sheet.
+      (function () {
+        if (!window.matchMedia("(display-mode: standalone)").matches) return;
+        var meta = document.querySelector('meta[name="viewport"]');
+        if (meta)
+          meta.setAttribute("content", meta.getAttribute("content") + ", viewport-fit=cover");
+      })();
+    </script>
     <link rel="apple-touch-icon" href="/apple-touch-icon-180x180.png" />
     <meta
       name="description"

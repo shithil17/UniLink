@@ -129,6 +129,8 @@ export default defineConfig({
             autoCodeSplitting: true,
             routesDirectory: "./src/client/routes",
             generatedRouteTree: "./src/client/routeTree.gen.ts",
+            // Tests sit next to their route files.
+            routeFileIgnorePattern: "\\.test\\.tsx?$",
           }),
           react(),
           tailwindcss(),
