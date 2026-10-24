@@ -172,7 +172,7 @@ export function AttemptForm({
                     </span>
                     <span
                       aria-hidden
-                      className="text-[11px] leading-none font-medium text-faint tabular-nums group-data-checked/radio-chip:text-brand-ink"
+                      className="text-[12px] leading-none font-medium text-faint tabular-nums group-data-checked/radio-chip:text-brand-ink"
                     >
                       {g.points}
                     </span>
