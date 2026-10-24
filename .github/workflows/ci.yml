@@ -25,6 +25,8 @@ jobs:
           cache: true
       - run: vp install --frozen-lockfile
       - run: vp check
+      # The layout tests run in headless Chromium at phone widths.
+      - run: vp exec playwright install --with-deps chromium
       - run: vp test
       - run: vp build
 

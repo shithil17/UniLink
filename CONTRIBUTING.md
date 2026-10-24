@@ -19,6 +19,7 @@ You do not need a Cloudflare account to work locally. Wrangler runs the Worker a
 git clone git@github.com:shithil17/UniLink.git
 cd UniLink
 vp install
+vp exec playwright install chromium   # for the layout tests
 cp .dev.vars.example .dev.vars
 ```
 
@@ -54,14 +55,14 @@ This starts the Worker (`/api/*`) and the app together. Open the URL it prints. 
 
 ### Commands
 
-| Command                       | What it does                                             |
-| ----------------------------- | -------------------------------------------------------- |
-| `vp install` / `vp add <pkg>` | Install deps / add a dependency                          |
-| `vp dev`                      | Run Worker and app locally                               |
-| `vp check` / `vp check --fix` | Format, lint and type check (optionally fix)             |
-| `vp test [<filter>]`          | Unit tests (`*.test.ts`) and API tests (`*.api.test.ts`) |
-| `vp build`                    | Production build                                         |
-| `vp run <script>`             | Custom scripts: `db:*`, `seed`, `cf:types`, ...          |
+| Command                       | What it does                                                                     |
+| ----------------------------- | -------------------------------------------------------------------------------- |
+| `vp install` / `vp add <pkg>` | Install deps / add a dependency                                                  |
+| `vp dev`                      | Run Worker and app locally                                                       |
+| `vp check` / `vp check --fix` | Format, lint and type check (optionally fix)                                     |
+| `vp test [<filter>]`          | Unit (`*.test.ts`), API (`*.api.test.ts`) and layout (`*.layout.test.tsx`) tests |
+| `vp build`                    | Production build                                                                 |
+| `vp run <script>`             | Custom scripts: `db:*`, `seed`, `cf:types`, ...                                  |
 
 Rules of thumb:
 

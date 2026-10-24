@@ -101,6 +101,13 @@ function Home() {
 }
 
 /**
+ * A one-column grid as wide as its container. A bare `grid` gets an `auto` column that grows to its
+ * content's intrinsic width, and the tile row's `1fr` tracks size to their unwrapped text, so on a
+ * 360px phone the page scrolled sideways.
+ */
+const column = "grid grid-cols-[minmax(0,1fr)] gap-6";
+
+/**
  * Phone: one column in reading order. From `xl` the header and today's timeline take the center and
  * the tiles, action and unlocked list a 400px right column that starts level with the greeting.
  */
@@ -116,16 +123,15 @@ function HomeGrid({
   return (
     <div
       className={cn(
-        // The single column is pinned to the screen width: an implicit `auto` column grows to the
-        // tile row's intrinsic width (its `1fr` tracks size to max-content) and the page scrolls sideways.
-        "grid max-w-3xl grid-cols-[minmax(0,1fr)] gap-6 xl:max-w-none xl:grid-rows-[auto_1fr] xl:items-start xl:gap-x-8",
+        column,
+        "max-w-3xl xl:max-w-none xl:grid-rows-[auto_1fr] xl:items-start xl:gap-x-8",
         side && "xl:grid-cols-[minmax(0,1fr)_400px]",
       )}
     >
       <div className="xl:col-start-1 xl:row-start-1">{header}</div>
-      <div className="grid gap-6 xl:col-start-1 xl:row-start-2">{main}</div>
+      <div className={`${column} xl:col-start-1 xl:row-start-2`}>{main}</div>
       {side ? (
-        <div className="grid gap-6 xl:col-start-2 xl:row-span-2 xl:row-start-1">{side}</div>
+        <div className={`${column} xl:col-start-2 xl:row-span-2 xl:row-start-1`}>{side}</div>
       ) : null}
     </div>
   );

@@ -6,6 +6,7 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig, lazyPlugins } from "vite-plus";
+import { playwright } from "vite-plus/test/browser-playwright";
 
 const isTest = Boolean(process.env.VITEST);
 
@@ -76,8 +77,25 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts"],
-          exclude: ["src/**/*.api.test.ts"],
+          exclude: ["src/**/*.api.test.ts", "src/**/*.layout.test.tsx"],
           environment: "node",
+        },
+      },
+      {
+        // Layout tests render screens with the real stylesheet in headless Chromium at phone widths,
+        // because happy-dom computes no layout and cannot see a page scrolling sideways.
+        extends: true,
+        plugins: [react(), tailwindcss()],
+        test: {
+          name: "layout",
+          include: ["src/**/*.layout.test.tsx"],
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: playwright(),
+            instances: [{ browser: "chromium" }],
+            screenshotFailures: false,
+          },
         },
       },
       {
