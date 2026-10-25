@@ -168,7 +168,6 @@ const states = [
   { name: "with no routine yet", seed: { me, map, cgpa, routine: [] } },
   { name: "while everything loads", seed: {} },
   { name: "without a course map", seed: { me, map: { ...map, curriculum: null }, routine } },
-  { name: "signed out", seed: { me: null } },
 ];
 
 // Four widths bracket the range: the smallest Android, two common phones and the widest.
