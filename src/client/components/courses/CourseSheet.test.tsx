@@ -46,9 +46,7 @@ describe("CourseSheet", () => {
     renderSheet({ type: "slot", slot });
     expect(screen.getByText("CSE115 and (MAT120 or 30 credits completed)")).toBeTruthy();
     expect(screen.getByText("CSE226 Data Structures II")).toBeTruthy();
-    expect(await screen.findByText("You haven't met the prerequisites yet.")).toBeTruthy();
     expect(await screen.findByLabelText("Grade")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Record a grade" })).toBeTruthy();
   });
 
   it("names every code in the header until one is taken, then the course taken", () => {
@@ -92,27 +90,29 @@ describe("CourseSheet", () => {
     expect((await screen.findByLabelText("Course code")).hasAttribute("readonly")).toBe(true);
   });
 
-  it("disables the grade grid and the primary, and says why, while prerequisites are unmet", async () => {
-    renderSheet({ type: "slot", slot });
-    const group = await screen.findByRole("radiogroup", { name: "Grade" });
-    const radios = within(group).getAllByRole("radio");
-    expect(radios.length).toBeGreaterThan(0);
-    for (const radio of radios) expect(radio.getAttribute("aria-disabled")).toBe("true");
-    expect(
-      (screen.getByRole("button", { name: "Record a grade" }) as HTMLButtonElement).disabled,
-    ).toBe(true);
-    expect(screen.getByText("You haven't met the prerequisites yet.")).toBeTruthy();
-  });
+  it("disables the grade grid and the primary, and says why, until prerequisites are met", async () => {
+    const grid = async (target: CourseMap["categories"][number]["slots"][number]) => {
+      renderSheet({ type: "slot", slot: target });
+      const group = await screen.findByRole("radiogroup", { name: "Grade" });
+      const radios = within(group).getAllByRole("radio");
+      expect(radios.length).toBeGreaterThan(0);
+      return {
+        radiosDisabled: radios.map((r) => r.getAttribute("aria-disabled") === "true"),
+        primaryDisabled: (
+          screen.getByRole("button", { name: "Record a grade" }) as HTMLButtonElement
+        ).disabled,
+        why: screen.queryByText("You haven't met the prerequisites yet."),
+      };
+    };
+    const unmet = await grid(slot);
+    expect(unmet.radiosDisabled.every(Boolean)).toBe(true);
+    expect(unmet.primaryDisabled).toBe(true);
+    expect(unmet.why).toBeTruthy();
+    cleanup();
 
-  it("enables the grade grid and the primary once prerequisites are met", async () => {
-    renderSheet({ type: "slot", slot: { ...slot, status: "available" } });
-    const group = await screen.findByRole("radiogroup", { name: "Grade" });
-    for (const radio of within(group).getAllByRole("radio")) {
-      expect(radio.getAttribute("aria-disabled")).not.toBe("true");
-    }
-    expect(
-      (screen.getByRole("button", { name: "Record a grade" }) as HTMLButtonElement).disabled,
-    ).toBe(false);
-    expect(screen.queryByText("You haven't met the prerequisites yet.")).toBeNull();
+    const met = await grid({ ...slot, status: "available" });
+    expect(met.radiosDisabled.some(Boolean)).toBe(false);
+    expect(met.primaryDisabled).toBe(false);
+    expect(met.why).toBeNull();
   });
 });

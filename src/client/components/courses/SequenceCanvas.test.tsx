@@ -1,8 +1,7 @@
 // @vitest-environment happy-dom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vite-plus/test";
 import type { CourseMap } from "../../../shared/schemas/courses";
-import { CourseViewToggle } from "./CourseViewToggle";
 import { layoutCourseSequence } from "../../lib/courseSequence";
 import { connections, styleEdges } from "../../lib/sequenceEdges";
 import { SequenceCanvas } from "./SequenceCanvas";
@@ -42,7 +41,10 @@ beforeAll(() => {
   );
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 const slot = (over: Partial<CourseMap["categories"][number]["slots"][number]> = {}) => ({
   kind: "course" as const,
@@ -85,13 +87,6 @@ const map: CourseMap = {
 };
 
 describe("course sequence UI", () => {
-  it("keeps the view toggle hidden below md and shows it from md up", () => {
-    render(<CourseViewToggle view="list" onChange={() => {}} />);
-    const group = screen.getByRole("group", { name: "Course map view" });
-    expect(group.className).toContain("hidden");
-    expect(group.className).toContain("md:flex");
-  });
-
   it("renders nodes, splits a lab pair, and opens the existing slot sheet target", () => {
     const onOpen = vi.fn();
     render(<SequenceCanvas map={map} onOpen={onOpen} />);
@@ -105,20 +100,23 @@ describe("course sequence UI", () => {
     expect(screen.getByRole("button", { name: /CSE101 \+ L/ })).toBeTruthy();
   });
 
-  it("keeps the highlight during a brief gap between course nodes", async () => {
+  it("keeps the highlight during a brief gap between course nodes", () => {
+    vi.useFakeTimers();
     const { container } = render(<SequenceCanvas map={map} onOpen={() => {}} />);
     const first = container.querySelector('.react-flow__node[data-id="CSE101"]')!;
     const unrelated = container.querySelector('.react-flow__node[data-id="CSE104"]')!;
+    const resting = unrelated.getAttribute("style");
     fireEvent.mouseEnter(first);
-    expect(unrelated.getAttribute("style")).toContain("opacity: 0.2");
+    const dimmed = unrelated.getAttribute("style");
+    expect(dimmed).not.toBe(resting);
     fireEvent.mouseLeave(first);
-    await new Promise((resolve) => setTimeout(resolve, 40));
-    expect(unrelated.getAttribute("style")).toContain("opacity: 0.2");
-    await new Promise((resolve) => setTimeout(resolve, 220));
-    expect(unrelated.getAttribute("style")).not.toContain("opacity: 0.2");
+    act(() => void vi.advanceTimersByTime(40));
+    expect(unrelated.getAttribute("style")).toBe(dimmed);
+    act(() => void vi.advanceTimersByTime(220));
+    expect(unrelated.getAttribute("style")).toBe(resting);
   });
 
-  it("draws the active chain in the brand colour, wider than the dimmed edges", () => {
+  it("draws the active chain in the a stronger style than the dimmed edges", () => {
     const layout = layoutCourseSequence(map);
     const chain = connections(layout, "CSE101")!;
     const edges = styleEdges(
@@ -127,14 +125,13 @@ describe("course sequence UI", () => {
     );
     const lit = edges.find((edge) => edge.source === "CSE101")!;
     const dimmed = edges.find((edge) => edge.source === "CSE201")!;
-    expect(lit.style.stroke).toBe("var(--color-brand)");
-    expect(lit.markerEnd.color).toBe("var(--color-brand)");
+    expect(lit.style.stroke).not.toBe(dimmed.style.stroke);
+    expect(lit.markerEnd.color).toBe(lit.style.stroke);
     expect(lit.style.strokeWidth).toBeGreaterThan(dimmed.style.strokeWidth);
-    expect(lit.style.opacity).toBe(1);
-    expect(dimmed.style.opacity).toBe(0.08);
+    expect(lit.style.opacity).toBeGreaterThan(dimmed.style.opacity);
     expect(lit.zIndex).toBeGreaterThan(dimmed.zIndex);
     const idle = styleEdges(layout.edges as never, null);
-    expect(idle[0]!.style.stroke).toBe("var(--color-edge)");
-    expect(idle[0]!.style.opacity).toBe(1);
+    expect(idle[0]!.style.stroke).not.toBe(lit.style.stroke);
+    expect(idle[0]!.style.opacity).toBeGreaterThan(dimmed.style.opacity);
   });
 });

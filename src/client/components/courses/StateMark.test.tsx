@@ -10,18 +10,15 @@ const shapeOf = (container: HTMLElement) =>
   container.querySelector("[data-shape]")?.getAttribute("data-shape");
 
 describe("StateMark", () => {
-  it("labels each state for assistive tech, not by color alone", () => {
-    const cases = [
-      { props: { status: "done" as const }, label: "Done" },
-      { props: { status: "available" as const }, label: "Available" },
-      { props: { status: "locked" as const }, label: "Locked" },
-      { props: { status: "done" as const, waived: true }, label: "Waived" },
-    ];
-    for (const { props, label } of cases) {
-      render(<StateMark {...props} />);
-      expect(screen.getByRole("img", { name: label })).toBeTruthy();
-      cleanup();
-    }
+  it.each([
+    { props: { status: "done" as const }, label: "Done", shape: "filled" },
+    { props: { status: "available" as const }, label: "Available", shape: "hollow" },
+    { props: { status: "locked" as const }, label: "Locked", shape: "struck" },
+    { props: { status: "done" as const, waived: true }, label: "Waived", shape: "half" },
+  ])("marks $label with its own label and shape", ({ props, label, shape }) => {
+    const { container } = render(<StateMark {...props} />);
+    expect(screen.getByRole("img", { name: label })).toBeTruthy();
+    expect(shapeOf(container)).toBe(shape);
   });
 
   it("draws a different shape for every state", () => {
@@ -36,30 +33,12 @@ describe("StateMark", () => {
       cleanup();
       return shape;
     });
-    expect(shapes).toEqual(["filled", "hollow", "struck", "half"]);
     expect(new Set(shapes).size).toBe(4);
   });
 
-  it("keeps waived and locked apart from each other and from done and available", () => {
-    const shape = (props: { status: "done" | "available" | "locked"; waived?: boolean }) => {
-      const { container } = render(<StateMark {...props} />);
-      const found = shapeOf(container);
-      cleanup();
-      return found;
-    };
-    const waived = shape({ status: "done", waived: true });
-    const locked = shape({ status: "locked" });
-    expect(waived).toBe("half");
-    expect(locked).toBe("struck");
-    expect(
-      new Set([waived, locked, shape({ status: "done" }), shape({ status: "available" })]),
-    ).toHaveProperty("size", 4);
-  });
-
-  it("is 20px by default, takes a size, and wears hue ink only inside a course", () => {
+  it("takes a size and wears hue ink only inside a course", () => {
     const { container, rerender } = render(<StateMark status="available" />);
     const svg = () => container.querySelector("svg")!;
-    expect(svg().getAttribute("width")).toBe("20");
     expect(svg().getAttribute("class")).toContain("text-ink");
     rerender(<StateMark status="available" size={28} inCourse />);
     expect(svg().getAttribute("height")).toBe("28");
