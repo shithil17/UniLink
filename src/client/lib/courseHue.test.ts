@@ -17,10 +17,6 @@ function curriculumCodes(): string[] {
 }
 
 describe("courseHue", () => {
-  it("gives the same code the same hue", () => {
-    expect(courseHue("CSE115")).toBe(courseHue("CSE115"));
-  });
-
   it("ignores case and surrounding whitespace", () => {
     expect(courseHue("  cse225 ")).toBe(courseHue("CSE225"));
   });

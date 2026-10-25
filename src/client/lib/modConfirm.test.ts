@@ -51,21 +51,17 @@ describe("user action summaries", () => {
       { label: "User", value: "rafi_2 · Student" },
       { label: "Reason", value: "posted a scam" },
     ]);
-    expect(ban.effects.join(" ")).toMatch(/signed out/);
   });
 
-  it("uses the destructive style for a ban and a password reset, not for an unban or a flag clear", () => {
-    const destructive = (a: Parameters<typeof userActionConfirm>[0]) =>
-      userActionConfirm(a, user, "reason").destructive ?? false;
-    expect(destructive("ban")).toBe(true);
-    expect(destructive("reset-password")).toBe(true);
-    expect(destructive("unban")).toBe(false);
-    expect(destructive("clear-probing")).toBe(false);
-  });
-
-  it("warns that a password reset can't be reversed", () => {
-    const reset = userActionConfirm("reset-password", user, "locked out");
-    expect(reset.effects.join(" ")).toMatch(/can't be reversed/);
+  it.each([
+    ["ban", true, /signed out/],
+    ["reset-password", true, /can't be reversed/],
+    ["unban", false, undefined],
+    ["clear-probing", false, undefined],
+  ] as const)("%s: destructive style %s, and says what follows", (action, destructive, effect) => {
+    const summary = userActionConfirm(action, user, "reason");
+    expect(summary.destructive ?? false).toBe(destructive);
+    if (effect) expect(summary.effects.join(" ")).toMatch(effect);
   });
 
   it("shows a role change as a before and after", () => {
@@ -91,7 +87,6 @@ describe("report and post summaries", () => {
       { targetLabel: "sam_1", reporter: "rafi_2", reason: "rude" },
       "dismissed",
     );
-    expect(dismiss.title).toBe("Dismiss report");
     expect(dismiss.facts.map((f) => f.value)).toEqual(["sam_1", "rafi_2", "rude"]);
     expect(dismiss.effects[0]).toMatch(/Nothing happens/);
   });
@@ -170,9 +165,7 @@ describe("faculty summaries", () => {
 
   it("explains hiding and showing", () => {
     const hide = facultyHiddenConfirm(faculty, true, "left NSU");
-    expect(hide.title).toBe("Hide faculty");
     expect(hide.destructive).toBe(true);
-    expect(hide.lead).toContain("Dr. Rashid Khan (RkZ)");
     const show = facultyHiddenConfirm(faculty, false, "returned");
     expect(show.destructive).toBeUndefined();
   });

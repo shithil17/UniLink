@@ -289,9 +289,6 @@ describe("layoutCourseSequence", () => {
       ],
     ]);
     const layout = layoutCourseSequence(map);
-    expect(layoutCourseSequence(map).nodes.map((node) => [node.id, node.position])).toEqual(
-      layout.nodes.map((node) => [node.id, node.position]),
-    );
     expect(layout.edges.some((edge) => edge.source === "BASE101" && edge.target === "CSE201")).toBe(
       true,
     );

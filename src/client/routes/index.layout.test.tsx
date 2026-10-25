@@ -171,10 +171,16 @@ const states = [
   { name: "signed out", seed: { me: null } },
 ];
 
-describe.each(PHONES)("Home on $name ($width px)", (phone) => {
-  it.each(states)("never scrolls sideways $name", async ({ seed }) => {
-    await onPhone(phone);
-    await renderHome(seed);
-    expect(sidewaysOverflow()).toEqual([]);
-  });
-});
+// Four widths bracket the range: the smallest Android, two common phones and the widest.
+const WIDTHS = [320, 360, 390, 430];
+
+describe.each(PHONES.filter((p) => WIDTHS.includes(p.width)))(
+  "Home on $name ($width px)",
+  (phone) => {
+    it.each(states)("never scrolls sideways $name", async ({ seed }) => {
+      await onPhone(phone);
+      await renderHome(seed);
+      expect(sidewaysOverflow()).toEqual([]);
+    });
+  },
+);

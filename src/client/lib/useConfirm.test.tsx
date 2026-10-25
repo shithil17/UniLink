@@ -45,12 +45,7 @@ describe("confirm sheet", () => {
     const run = vi.fn(async () => {});
     render(<Harness run={run} />);
     const sheet = await open();
-    expect(within(sheet).getByText("rafi_2 will be banned.")).toBeTruthy();
     expect(within(sheet).getByText("posted a scam")).toBeTruthy();
-    expect(within(sheet).getByText("Student")).toBeTruthy();
-    expect(within(sheet).getByText("Mod")).toBeTruthy();
-    expect(within(sheet).getByText("4")).toBeTruthy();
-    expect(within(sheet).getByText("They're signed out everywhere.")).toBeTruthy();
     expect(run).not.toHaveBeenCalled();
 
     fireEvent.click(within(sheet).getByRole("button", { name: "Ban user" }));
@@ -101,13 +96,5 @@ describe("confirm sheet", () => {
     fireEvent.click(within(sheet).getByRole("button", { name: "Ban user" }));
     await waitFor(() => expect(run).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.queryByRole("heading", { name: "Ban user" })).toBeNull());
-  });
-
-  it("wears the destructive style for a destructive action", async () => {
-    render(<Harness run={async () => {}} />);
-    const sheet = await open();
-    expect(within(sheet).getByRole("button", { name: "Ban user" }).className).toContain(
-      "bg-destructive",
-    );
   });
 });

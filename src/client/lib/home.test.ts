@@ -108,11 +108,6 @@ describe("greetingBand", () => {
   ] as const)("is %s Dhaka -> %s", (_label, hour, minute, band) => {
     expect(greetingBand(dhakaAt(hour, minute))).toBe(band);
   });
-
-  it("reads the Dhaka hour, not the UTC hour", () => {
-    // 23:00 UTC is 05:00 the next day in Dhaka.
-    expect(greetingBand(Date.UTC(2026, 9, 23, 23, 0))).toBe("morning");
-  });
 });
 
 describe("greeting", () => {

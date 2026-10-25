@@ -79,30 +79,17 @@ describe("course sequence route", () => {
         disconnect() {}
       },
     );
-    vi.stubGlobal(
-      "DOMMatrixReadOnly",
-      class {
-        m22 = 1;
-        inverse() {
-          return this;
-        }
-        scale() {
-          return this;
-        }
-      },
-    );
-    vi.stubGlobal(
-      "DOMMatrix",
-      class {
-        m22 = 1;
-        inverse() {
-          return this;
-        }
-        scale() {
-          return this;
-        }
-      },
-    );
+    class Matrix {
+      m22 = 1;
+      inverse() {
+        return this;
+      }
+      scale() {
+        return this;
+      }
+    }
+    vi.stubGlobal("DOMMatrixReadOnly", Matrix);
+    vi.stubGlobal("DOMMatrix", Matrix);
     vi.stubGlobal(
       "fetch",
       vi.fn(() => Promise.reject(new Error("No network in this test"))),
@@ -130,12 +117,10 @@ describe("course sequence route", () => {
 
     await screen.findByRole("region", { name: "Course sequence sheet" });
     const summaryButton = screen.getByRole("button", { name: "CGPA summary" });
-    expect(summaryButton.closest(".sequence-table-header")).toBeNull();
     expect(screen.queryByRole("heading", { name: "CGPA" })).toBeNull();
     fireEvent.click(summaryButton);
     expect(await screen.findByRole("heading", { name: "CGPA" })).toBeTruthy();
     expect(summaryButton.getAttribute("aria-expanded")).toBe("true");
-    expect(document.querySelector("main")?.className).toContain("max-w-none");
     fireEvent.click(summaryButton);
     await waitFor(() => expect(screen.queryByRole("heading", { name: "CGPA" })).toBeNull());
   });

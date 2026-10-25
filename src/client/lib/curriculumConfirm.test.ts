@@ -146,6 +146,13 @@ describe("import preview", () => {
       unchanged: 1,
       shownAgain: 1,
     });
+
+    // A new version has nothing existing, so every row is added.
+    expect(previewImport([], [row(), row({ code: "CSE173" })])).toMatchObject({
+      added: 2,
+      changed: 0,
+      removed: 0,
+    });
   });
 
   it("counts the rows the server would refuse as skipped, not as added", () => {
@@ -161,14 +168,6 @@ describe("import preview", () => {
     expect(preview.accepted).toBe(1);
     expect(preview.skipped).toBe(3);
     expect(preview.added).toBe(1);
-  });
-
-  it("treats a new version as all added", () => {
-    expect(previewImport([], [row(), row({ code: "CSE173" })])).toMatchObject({
-      added: 2,
-      changed: 0,
-      removed: 0,
-    });
   });
 
   it("puts the counts in the summary and uses the destructive style only for a replacement", () => {

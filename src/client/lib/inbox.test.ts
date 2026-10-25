@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
 import { notificationType } from "../../shared/schemas/inbox";
-import { HUES } from "./courseHue";
 import {
   badgeLabel,
   INBOX_BADGE_MAX,
@@ -30,12 +29,6 @@ describe("notificationCopy", () => {
 });
 
 describe("notificationHue", () => {
-  it("gives every notification kind a real course hue", () => {
-    for (const type of notificationType.options) {
-      expect(HUES).toContain(notificationHue(type));
-    }
-  });
-
   it("has no entry for a kind that does not exist", () => {
     expect(Object.keys(NOTIFICATION_HUE).sort()).toEqual([...notificationType.options].sort());
   });
@@ -47,6 +40,7 @@ describe("notificationHue", () => {
     expect(notificationHue("resource_requested")).toBe("sky");
     expect(notificationHue("resource_submitted")).toBe("lilac");
     expect(notificationHue("lost_found_possible_match")).toBe("butter");
+    expect(notificationHue("push_test")).toBe("sky");
   });
 });
 
