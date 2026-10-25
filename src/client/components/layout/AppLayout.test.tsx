@@ -7,7 +7,7 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { Me } from "../../../shared/schemas/auth";
 import { AppLayout } from "./AppLayout";
@@ -19,6 +19,7 @@ vi.mock("@/components/pwa/InstallHint", () => ({ InstallHint: () => null }));
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  localStorage.removeItem("unilink-rail");
 });
 
 async function renderShell(me: Me | null, path = "/", unread?: number) {
@@ -131,5 +132,48 @@ describe("AppLayout rail", () => {
   it("shows the signed-in username in the rail", async () => {
     await renderShell({ ...user("student"), username: "tasnim" });
     expect(screen.getByText("tasnim")).toBeTruthy();
+  });
+
+  it("collapses, saves the choice, and restores it after a remount", async () => {
+    await renderShell(user("student"));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+
+    await waitFor(() => expect(localStorage.getItem("unilink-rail")).toBe("collapsed"));
+    expect(
+      screen.getByRole("complementary", { name: "Sidebar" }).getAttribute("data-collapsed"),
+    ).toBe("true");
+
+    cleanup();
+    await renderShell(user("student"));
+    expect(screen.getByRole("button", { name: "Keep sidebar open" })).toBeTruthy();
+    expect(
+      screen.getByRole("complementary", { name: "Sidebar" }).getAttribute("data-collapsed"),
+    ).toBe("true");
+  });
+
+  it("pins the rail open when Keep sidebar open is clicked", async () => {
+    await renderShell(user("student"));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+    const keepOpen = await screen.findByRole("button", { name: "Keep sidebar open" });
+    fireEvent.click(keepOpen);
+
+    await waitFor(() => expect(localStorage.getItem("unilink-rail")).toBe("expanded"));
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeTruthy();
+    expect(
+      screen.getByRole("complementary", { name: "Sidebar" }).getAttribute("data-collapsed"),
+    ).toBe("false");
+  });
+
+  it("keeps tab link names available and hides the toggle below md", async () => {
+    await renderShell(user("student"));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+
+    for (const label of ["Home", "Courses", "Routine", "Inbox", "Settings"]) {
+      expect(screen.getByRole("link", { name: label })).toBeTruthy();
+    }
+    expect(screen.getByRole("button", { name: "Keep sidebar open" }).className).toContain("hidden");
+    expect(screen.getByRole("button", { name: "Keep sidebar open" }).className).toContain(
+      "md:flex",
+    );
   });
 });

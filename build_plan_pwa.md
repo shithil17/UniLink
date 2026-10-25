@@ -554,6 +554,18 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] Home: the summary panel (degree standing until Phase 9) and the "unlocked next" list, with loading, empty (no curriculum yet), signed-out and error states.
 - [x] Courses header: the degree standing (credits done of the total and one short bar per category, all in `brand`).
 
+### Checklist — Collapsible rail (desktop)
+
+> **Design decisions (locked in, 2026-10-25):**
+>
+> - From `md` up, the side rail can be collapsed to a thin icon-only rail (wordmark becomes its first letter, tab icons stay, labels and the username hide, the avatar stays). Phones keep the floating tab bar unchanged.
+> - A collapsed rail expands while hovered or while focus is inside it, **over** the content as a floating layer (`shadow-float`), so the page never reflows. Moving away collapses it again after a short delay. The delay lives as a named constant in the layout code; it is presentation, not a server limit.
+> - One button at the bottom of the rail toggles the mode: "Collapse sidebar" while expanded, "Keep sidebar open" while collapsed. Clicking it while collapsed pins the rail open in place and the content reflows to the full rail. The choice is saved on the device (`localStorage`) and restored on load without a flash. Default: expanded.
+> - The active tab still shows by weight, ink and the `brand-soft` row; in the thin rail the row is a square around the icon. Every icon link keeps its accessible name when labels are hidden. The width change animates only under `motion-safe`.
+
+- [x] Rail: collapsed and expanded states, hover and focus-within expansion over the content, toggle button, saved choice, no reflow while hover-expanded.
+- [x] Tests: the toggle collapses and pins the rail and survives a remount; links keep their names when collapsed; phones never show the toggle.
+
 ### Checklist — Restyle existing screens
 
 - [x] Course map, course sheet, attempt form and student course form, with `StatusChip` replaced by `StateMark`.
