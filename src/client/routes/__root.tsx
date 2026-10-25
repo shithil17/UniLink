@@ -3,7 +3,6 @@ import {
   createRootRouteWithContext,
   Outlet,
   redirect,
-  useRouter,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -39,12 +38,10 @@ function RootLayout() {
   );
 }
 
-function RootError({ error, reset }: ErrorComponentProps) {
-  const router = useRouter();
-  const retry = () => {
-    reset();
-    void router.invalidate();
-  };
+function RootError({ error }: ErrorComponentProps) {
+  // A full navigation, not a router invalidate: it fetches a fresh index.html and lets the browser
+  // check for a new service worker, so a deploy that landed while this screen was up comes through.
+  const retry = () => window.location.reload();
 
   return (
     <ThemeProvider>
