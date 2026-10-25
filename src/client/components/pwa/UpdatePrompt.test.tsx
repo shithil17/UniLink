@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 import { UpdatePrompt } from "./UpdatePrompt";
 
@@ -16,12 +16,15 @@ vi.mock("virtual:pwa-register/react", () => ({
   useRegisterSW: (options: {
     onRegisteredSW: (url: string, registration: ServiceWorkerRegistration) => void;
   }) => {
+    // Register once, like the real hook. `options` is a new object every render, so depending on it
+    // would re-register on each render, and `setRegistration` would then render forever.
+    const first = useRef(options);
     useEffect(() => {
-      options.onRegisteredSW("/sw.js", {
+      first.current.onRegisteredSW("/sw.js", {
         waiting,
         update: () => Promise.resolve(),
       } as unknown as ServiceWorkerRegistration);
-    }, [options]);
+    }, []);
     return {
       needRefresh: [true, () => {}],
       offlineReady: [false, () => {}],
