@@ -46,11 +46,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
   // Only ask for the count once signed in; a failed poll just hides the badge.
   const unread = useQuery({ ...unreadCountQuery, enabled: me.data != null }).data?.count ?? 0;
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const search = useRouterState({ select: (s) => s.location.search });
 
   const tabs = mainTabs(me.data);
   const activeIndex = activeTabIndex(tabs, pathname);
   const hasTabs = tabs.length > 0;
   const username = me.data?.username ?? "";
+  const wideCourses = pathname === "/courses" && (search as { view?: string }).view === "sequence";
 
   return (
     <div className="min-h-dvh bg-app text-body md:flex">
@@ -135,7 +137,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
          * inset. The column is 1240px wide with the rail, so the main part is 1240 minus the 240px rail.
          */}
         <main
-          className={`mx-auto w-full max-w-[calc(1240px-15rem)] px-4 md:px-8 ${
+          className={`mx-auto w-full ${wideCourses ? "max-w-none" : "max-w-[calc(1240px-15rem)]"} px-4 md:px-8 ${
             hasTabs
               ? "pt-[calc(1.75rem+env(safe-area-inset-top))] pb-[calc(7rem+env(safe-area-inset-bottom))] md:pt-9 md:pb-12"
               : "pt-6 pb-12"
