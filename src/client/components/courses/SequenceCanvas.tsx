@@ -1,10 +1,13 @@
 import "@xyflow/react/dist/style.css";
 import {
+  BaseEdge,
+  getSmoothStepPath,
   Handle,
   MarkerType,
   Position,
   ReactFlow,
   type Edge,
+  type EdgeProps,
   type Node,
   type NodeProps,
 } from "@xyflow/react";
@@ -54,9 +57,12 @@ function CourseNode({ id, data }: NodeProps<FlowNode>) {
             <span className="block truncate text-[14px] leading-[18px] font-semibold tracking-[0.01em] text-hue-ink tabular-nums">
               {openElective ? slot.code : course.code}
             </span>
-            {course.note ? (
-              <span aria-label={course.note} className="text-[12px] font-semibold text-hue-ink">
-                †
+            {course.creditMark ? (
+              <span
+                aria-label={`${course.creditMark} ${course.note}`}
+                className="text-[12px] font-semibold text-hue-ink"
+              >
+                {course.creditMark}
               </span>
             ) : null}
           </span>
@@ -90,6 +96,50 @@ function TotalNode({ data }: NodeProps<FlowNode>) {
 }
 
 const nodeTypes = { sequenceCourse: CourseNode, sequenceRow: RowNode, sequenceTotal: TotalNode };
+
+function roundedPath(points: { x: number; y: number }[]) {
+  let path = `M ${points[0]!.x} ${points[0]!.y}`;
+  for (let i = 1; i < points.length - 1; i++) {
+    const before = points[i - 1]!;
+    const corner = points[i]!;
+    const after = points[i + 1]!;
+    const radius = Math.min(
+      5,
+      Math.hypot(corner.x - before.x, corner.y - before.y) / 2,
+      Math.hypot(after.x - corner.x, after.y - corner.y) / 2,
+    );
+    const inX = corner.x + Math.sign(before.x - corner.x) * radius;
+    const inY = corner.y + Math.sign(before.y - corner.y) * radius;
+    const outX = corner.x + Math.sign(after.x - corner.x) * radius;
+    const outY = corner.y + Math.sign(after.y - corner.y) * radius;
+    path += ` L ${inX} ${inY} Q ${corner.x} ${corner.y} ${outX} ${outY}`;
+  }
+  const end = points.at(-1)!;
+  return `${path} L ${end.x} ${end.y}`;
+}
+
+function SequenceEdgeView(props: EdgeProps<Edge>) {
+  const { sourceX, sourceY, targetX, targetY, data, markerEnd, style, interactionWidth } = props;
+  const points = data?.points as { x: number; y: number }[] | undefined;
+  const [smoothPath] = getSmoothStepPath({
+    sourceX,
+    sourceY,
+    sourcePosition: Position.Bottom,
+    targetX,
+    targetY,
+    targetPosition: Position.Top,
+  });
+  return (
+    <BaseEdge
+      path={points ? roundedPath(points) : smoothPath}
+      markerEnd={markerEnd}
+      style={style}
+      interactionWidth={interactionWidth}
+    />
+  );
+}
+
+const edgeTypes = { sequence: SequenceEdgeView };
 
 function asFlow(
   layout: SequenceLayout,
@@ -240,8 +290,8 @@ export function SequenceCanvas({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [expanded]);
   const footnotes = [
-    ...new Map(layout.creditNotes.map((note) => [note.credits, note.credits])).values(),
-  ];
+    ...new Map(layout.creditNotes.map((note) => [note.credits, note])).values(),
+  ].sort((a, b) => a.credits - b.credits);
   return (
     <section
       ref={container}
@@ -268,6 +318,7 @@ export function SequenceCanvas({
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           style={{ width: layout.width, height: layout.height }}
           nodesDraggable={false}
           nodesConnectable={false}
@@ -287,7 +338,7 @@ export function SequenceCanvas({
             setActive(null);
             setExpanded(null);
           }}
-          defaultEdgeOptions={{ type: "smoothstep" }}
+          defaultEdgeOptions={{ type: "sequence" }}
           proOptions={{ hideAttribution: true }}
         />
       </div>
@@ -297,8 +348,10 @@ export function SequenceCanvas({
       </div>
       {footnotes.length ? (
         <div className="grid gap-1 px-4 pb-3 text-[12px] text-soft">
-          {footnotes.map((credits) => (
-            <p key={credits}>† after completion of {formatCredits(credits)} credits</p>
+          {footnotes.map(({ credits, mark }) => (
+            <p key={credits}>
+              {mark} after completion of {formatCredits(credits)} credits
+            </p>
           ))}
         </div>
       ) : null}

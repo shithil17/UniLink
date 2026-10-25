@@ -111,6 +111,56 @@ describe("layoutCourseSequence", () => {
     expect(new Set(columns).size).toBe(1);
   });
 
+  it("routes the ENG103 to ENG115 skip through a gutter around intervening courses", () => {
+    const layout = layoutCourseSequence(mapFromCurriculum(), undefined, 1600);
+    const edge = layout.edges.find((item) => item.source === "ENG103" && item.target === "ENG115")!;
+    expect(edge.data.points).toBeDefined();
+    const blockers = ["ENG111", "PHI104"].map((id) => layout.nodes.find((node) => node.id === id)!);
+    const points = edge.data.points!;
+    for (const blocker of blockers) {
+      const left = blocker.position.x;
+      const right = left + blocker.width!;
+      const top = blocker.position.y;
+      const bottom = top + blocker.height!;
+      for (const point of points) {
+        expect(point.x > left && point.x < right && point.y > top && point.y < bottom).toBe(false);
+      }
+      for (const [start, end] of points.slice(1).map((point, index) => [points[index]!, point])) {
+        const crossesVertically = start.x === end.x && start.x > left && start.x < right;
+        const crossesHorizontally = start.y === end.y && start.y > top && start.y < bottom;
+        expect(
+          crossesVertically && Math.max(start.y, end.y) > top && Math.min(start.y, end.y) < bottom,
+        ).toBe(false);
+        expect(
+          crossesHorizontally &&
+            Math.max(start.x, end.x) > left &&
+            Math.min(start.x, end.x) < right,
+        ).toBe(false);
+      }
+    }
+  });
+
+  it("keeps adjacent-row prerequisite edges on the direct route", () => {
+    const layout = layoutCourseSequence(
+      mapWith([[base(), base({ code: "CSE102", semester: 2, prereq: { course: "CSE101" } })]]),
+    );
+    const edge = layout.edges.find((item) => item.source === "CSE101" && item.target === "CSE102")!;
+    expect(edge.data.points).toBeUndefined();
+  });
+
+  it("assigns a different mark to each credit threshold", () => {
+    const layout = layoutCourseSequence(mapFromCurriculum());
+    const courses = new Map(
+      layout.nodes
+        .filter((node) => node.type === "sequenceCourse")
+        .map((node) => [node.id, node.data as SequenceCourse]),
+    );
+    expect(courses.get("CSE299")?.creditMark).toBe("†");
+    expect(courses.get("CSE499A")?.creditMark).toBe("‡");
+    expect(layout.creditNotes.find((note) => note.credits === 60)?.mark).toBe("†");
+    expect(layout.creditNotes.find((note) => note.credits === 100)?.mark).toBe("‡");
+  });
+
   it("merges same-semester labs and splits the merged node on request", () => {
     const map = mapWith([[base(), base({ code: "CSE101L", title: "Course Lab", credits: 1 })]]);
     const merged = layoutCourseSequence(map);
@@ -152,7 +202,7 @@ describe("layoutCourseSequence", () => {
     expect(
       (layout.nodes.find((node) => node.id === "CSE102")!.data as { note?: string }).note,
     ).toBe("after 30 credits");
-    expect(layout.creditNotes).toEqual([{ code: "CSE102", credits: 30 }]);
+    expect(layout.creditNotes).toEqual([{ code: "CSE102", credits: 30, mark: "†" }]);
   });
 
   it("points alternatives to their containing slot, preserves curriculum order and includes null rows", () => {

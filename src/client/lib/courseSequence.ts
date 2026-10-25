@@ -25,6 +25,7 @@ export type SequenceCourse = {
   mergedLab?: CourseMap["categories"][number]["slots"][number];
   split?: boolean;
   note?: string;
+  creditMark?: string;
   electiveHint?: string;
 };
 
@@ -45,9 +46,9 @@ export type SequenceEdge = {
   id: string;
   source: string;
   target: string;
-  type: "smoothstep";
+  type: "sequence";
   animated: false;
-  data: { dashed: boolean };
+  data: { dashed: boolean; points?: { x: number; y: number }[] };
 };
 
 export type SequenceLayout = {
@@ -58,7 +59,7 @@ export type SequenceLayout = {
   height: number;
   columns: number;
   columnWidth: number;
-  creditNotes: { code: string; credits: number }[];
+  creditNotes: { code: string; credits: number; mark: string }[];
 };
 
 type Category = CourseMap["categories"][number];
@@ -191,6 +192,10 @@ function creditLeaves(rule: PrereqRule | null): number[] {
   if (!rule || "course" in rule) return [];
   if ("credits" in rule) return [rule.credits];
   return ("all" in rule ? rule.all : rule.any).flatMap(creditLeaves);
+}
+
+function creditMark(index: number) {
+  return ["†", "‡", "§", "¶"][index] ?? String(index - 3);
 }
 
 function lockedNode(
@@ -339,13 +344,22 @@ export function layoutCourseSequence(
     }
   }
   const edges: SequenceEdge[] = [];
-  const creditNotes: { code: string; credits: number }[] = [];
+  const creditNotes: { code: string; credits: number; mark: string }[] = [];
+  const creditThresholds = [
+    ...new Set(
+      nodes.flatMap((node) =>
+        node.type === "sequenceCourse" ? creditLeaves((node.data as SequenceCourse).prereq) : [],
+      ),
+    ),
+  ].sort((a, b) => a - b);
+  const marks = new Map(creditThresholds.map((credits, index) => [credits, creditMark(index)]));
   for (const node of nodes.filter((entry) => entry.type === "sequenceCourse")) {
     const course = node.data as SequenceCourse;
     const credits = creditLeaves(course.prereq);
     if (credits.length) {
       course.note = `after ${credits.join(" or ")} credits`;
-      creditNotes.push({ code: course.code, credits: credits[0]! });
+      course.creditMark = marks.get(credits[0]!);
+      creditNotes.push({ code: course.code, credits: credits[0]!, mark: marks.get(credits[0]!)! });
     }
     for (const leaf of leafRules(course.prereq)) {
       const source = codeToNode.get(leaf.code);
@@ -361,11 +375,54 @@ export function layoutCourseSequence(
         id: `${source}->${node.id}:${leaf.code}:${leaf.dashed ? "any" : "all"}`,
         source,
         target: node.id,
-        type: "smoothstep",
+        type: "sequence",
         animated: false,
         data: { dashed: leaf.dashed },
       });
     }
+  }
+  const courseNodes = new Map(
+    nodes.filter((node) => node.type === "sequenceCourse").map((node) => [node.id, node]),
+  );
+  const routedGutters = new Map<number, number>();
+  const gutterCounts = new Map<number, number>();
+  for (const edge of edges) {
+    const source = courseNodes.get(edge.source)!;
+    const target = courseNodes.get(edge.target)!;
+    if (target.position.y - source.position.y > ROW_HEIGHT) {
+      const targetColumn = Math.floor(
+        (target.position.x + (target.width ?? nodeWidth) / 2 - LEFT_LABEL_WIDTH) / columnWidth,
+      );
+      const gutter = targetColumn === 0 ? 1 : targetColumn;
+      gutterCounts.set(gutter, (gutterCounts.get(gutter) ?? 0) + 1);
+    }
+  }
+  for (const edge of edges) {
+    const source = courseNodes.get(edge.source)!;
+    const target = courseNodes.get(edge.target)!;
+    if (target.position.y - source.position.y <= ROW_HEIGHT) continue;
+    const sourceX = source.position.x + (source.width ?? nodeWidth) / 2;
+    const targetX = target.position.x + (target.width ?? nodeWidth) / 2;
+    const targetColumn = Math.floor((targetX - LEFT_LABEL_WIDTH) / columnWidth);
+    const gutter = targetColumn === 0 ? 1 : targetColumn;
+    const index = routedGutters.get(gutter) ?? 0;
+    routedGutters.set(gutter, index + 1);
+    const count = gutterCounts.get(gutter)!;
+    const spread = Math.min(6, columnWidth * 0.7);
+    const offset = count < 2 ? 0 : (index / (count - 1) - 0.5) * spread;
+    const gutterX = LEFT_LABEL_WIDTH + gutter * columnWidth + offset;
+    const sourceBottom = source.position.y + (source.height ?? NODE_HEIGHT);
+    const targetTop = target.position.y;
+    const belowSource = sourceBottom + ROW_GAP_Y / 2;
+    const aboveTarget = targetTop - ROW_GAP_Y / 2;
+    edge.data.points = [
+      { x: sourceX, y: sourceBottom },
+      { x: sourceX, y: belowSource },
+      { x: gutterX, y: belowSource },
+      { x: gutterX, y: aboveTarget },
+      { x: targetX, y: aboveTarget },
+      { x: targetX, y: targetTop },
+    ];
   }
   return {
     nodes,
