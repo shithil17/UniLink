@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
 import { CircleCheckIcon, PlusIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { CgpaTile, CreditsTile } from "@/components/courses/CgpaSummary";
@@ -54,7 +54,8 @@ function Home() {
   };
 
   if (state === "loading") return <HomeLoading />;
-  if (state === "signedOut") return <SignedOut />;
+  // The login screen carries the pitch and the way to sign up, so signed-out visitors go straight there.
+  if (state === "signedOut") return <Navigate to="/login" replace />;
   if (state === "error") {
     return <HomeError onRetry={retry} retrying={me.isFetching || map.isFetching} />;
   }
@@ -302,24 +303,6 @@ function Message({
       <Heading className="text-lg leading-[1.3] font-semibold text-ink">{title}</Heading>
       <div className="mt-1 grid gap-4 text-soft">{children}</div>
     </section>
-  );
-}
-
-function SignedOut() {
-  return (
-    <Message title="Welcome to UniLink">
-      <p>
-        See how far along your degree is, what you can take next, and swap help with other students.
-      </p>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Link to="/login" className={buttonVariants({})}>
-          Log in
-        </Link>
-        <Link to="/signup" className={buttonVariants({ variant: "ghost" })}>
-          Create an account
-        </Link>
-      </div>
-    </Message>
   );
 }
 

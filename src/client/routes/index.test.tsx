@@ -112,7 +112,9 @@ async function renderHome(seed: {
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  await screen.findByRole("heading", { level: 1 });
+  // Signed out, Home renders nothing of its own and redirects.
+  if (seed.me) await screen.findByRole("heading", { level: 1 });
+  return router;
 }
 
 const slots = (n: number) => Array.from({ length: n }, (_, i) => slot(i));
@@ -167,10 +169,8 @@ describe("Home", () => {
     expect(screen.getByText("No course map for your program yet")).toBeTruthy();
   });
 
-  it("offers log in and sign up when signed out", async () => {
-    await renderHome({ me: null });
-    expect(screen.getByText("Welcome to UniLink")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Log in" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Create an account" })).toBeTruthy();
+  it("sends a signed-out visitor to log in", async () => {
+    const router = await renderHome({ me: null });
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe("/login"));
   });
 });
