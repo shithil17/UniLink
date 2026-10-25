@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { activeModSection, activeTabIndex, mainTabs, modSectionsFor } from "./nav";
+import { activeModSection, activeTabIndex, isSplitAuthPath, mainTabs, modSectionsFor } from "./nav";
 
 const student = { role: "student", mustChangePassword: false } as const;
 
@@ -70,5 +70,17 @@ describe("activeTabIndex", () => {
   it("is -1 on a screen with no tab, or with no tabs at all", () => {
     expect(activeTabIndex(mainTabs(modUser), "/routine")).toBe(-1);
     expect(activeTabIndex(mainTabs(null), "/")).toBe(-1);
+  });
+});
+
+describe("isSplitAuthPath", () => {
+  it.each([
+    ["/login", true],
+    ["/signup", true],
+    ["/change-password", false],
+    ["/", false],
+    ["/login/extra", false],
+  ])("%s -> %s", (path, expected) => {
+    expect(isSplitAuthPath(path)).toBe(expected);
   });
 });

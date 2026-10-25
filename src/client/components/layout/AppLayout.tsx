@@ -27,7 +27,8 @@ import { focusRing } from "@/components/ui/focus";
 import { press } from "@/components/ui/press";
 import { Toaster } from "@/components/ui/sonner";
 import { badgeLabel } from "@/lib/inbox";
-import { activeTabIndex, mainTabs, type MainTab } from "@/lib/nav";
+import { AuthAside } from "@/components/auth/AuthForm";
+import { activeTabIndex, isSplitAuthPath, mainTabs, type MainTab } from "@/lib/nav";
 import { meQuery, unreadCountQuery } from "@/lib/queries";
 
 const tabIcons: Record<MainTab["to"], LucideIcon> = {
@@ -135,6 +136,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const activeIndex = activeTabIndex(tabs, pathname);
   const hasTabs = tabs.length > 0;
   const username = me.data?.username ?? "";
+  // Signed out, log in and sign up go edge to edge from `lg`: `AuthAside` is the left column and
+  // carries the wordmark. It sits outside `ScreenSwap` so it stays mounted between the two screens.
+  const splitAuth = !hasTabs && isSplitAuthPath(pathname);
   const wideCourses = pathname === "/courses" && (search as { view?: string }).view === "sequence";
 
   return (
@@ -244,10 +248,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </aside>
       ) : null}
-      <div className="min-w-0 flex-1">
+      {splitAuth ? <AuthAside /> : null}
+      <div className={`min-w-0 flex-1 ${splitAuth ? "lg:flex lg:min-h-dvh lg:flex-col" : ""}`}>
         {hasTabs ? null : (
           // 420px content box plus the 16px insets: the same width as the auth column below.
-          <header className="mx-auto max-w-[calc(420px+2rem)] px-4 pt-[calc(1.75rem+env(safe-area-inset-top))]">
+          <header
+            className={`mx-auto max-w-[calc(420px+2rem)] px-4 pt-[calc(1.75rem+env(safe-area-inset-top))] ${splitAuth ? "lg:hidden" : ""}`}
+          >
             <Link
               to="/"
               className={`-mx-3 inline-flex h-11 items-center rounded-control px-3 ${wordmark} ${focusRing}`}
@@ -265,9 +272,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
             hasTabs
               ? "pt-[calc(1.75rem+env(safe-area-inset-top))] pb-[calc(7rem+env(safe-area-inset-bottom))] md:pt-9 md:pb-12"
               : "pt-6 pb-12"
-          }`}
+          } ${splitAuth ? "lg:flex lg:max-w-none lg:flex-1 lg:items-center lg:justify-center lg:p-12" : ""}`}
         >
-          <ScreenSwap pathname={pathname}>{children}</ScreenSwap>
+          <ScreenSwap pathname={pathname} fill={splitAuth}>
+            {children}
+          </ScreenSwap>
         </main>
       </div>
       <FloatingNotes>
@@ -288,9 +297,18 @@ export function AppLayout({ children }: { children: ReactNode }) {
  * times a day and has to feel instant; a fade is the most it earns. Revisit only if a single
  * flow (say, opening a course from the map) gains something a student would notice from continuity.
  */
-function ScreenSwap({ pathname, children }: { pathname: string; children: ReactNode }) {
+function ScreenSwap({
+  pathname,
+  fill,
+  children,
+}: {
+  pathname: string;
+  /** Span the width of a flex `main`, so a centred column keeps its size. */
+  fill: boolean;
+  children: ReactNode;
+}) {
   return (
-    <div key={pathname.split("/")[1] ?? ""} className="screen-swap">
+    <div key={pathname.split("/")[1] ?? ""} className={`screen-swap ${fill ? "lg:w-full" : ""}`}>
       {children}
     </div>
   );

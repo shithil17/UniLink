@@ -75,3 +75,8 @@ export function modSectionsFor(role: Role | undefined): ModSection[] {
 export function activeModSection(pathname: string, sections: readonly ModSection[]) {
   return sections.find((s) => pathname === s.to || pathname.startsWith(`${s.to}/`));
 }
+
+/** The screens that use the split auth layout from `lg`: the shell then lets them run edge to edge. */
+export function isSplitAuthPath(pathname: string) {
+  return pathname === "/login" || pathname === "/signup";
+}

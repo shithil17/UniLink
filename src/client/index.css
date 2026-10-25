@@ -604,6 +604,26 @@
 }
 
 /*
+ * The login screen's sample week: each class block draws from its start time to its end with
+ * `clip-path`, one day row 40ms after the last, so the week fills in top to bottom once. Reduced motion
+ * keeps a fade.
+ */
+.week-reveal {
+  animation: week-draw 420ms var(--ease-ui-out) backwards;
+  animation-delay: calc(120ms + var(--k, 0) * 40ms);
+}
+@keyframes week-draw {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .week-reveal {
+    animation-name: stagger-fade;
+  }
+}
+
+/*
  * Screen swap: the new top-level screen fades in over 120ms (opacity only, no slide). Kept under
  * reduced motion, since opacity is the variant that stays.
  */
