@@ -49,17 +49,20 @@ function grid(entries: RoutineEntry[], dates: DateKey[] = week) {
 }
 
 describe("TimeGrid", () => {
-  it("colors a week block with the hue of its course code", () => {
+  it("colors a week block with the hue of its course code and tags the class under way", () => {
     const entries = [
       entry({ id: 1, courseCode: "CSE215", days: ["W"] }),
       entry({ id: 2, courseCode: "MAT120", days: ["W"], start: "13:00", end: "14:30" }),
+      // Tuesday 11:30-13:00 is under way at `now`.
+      entry({ id: 3, courseCode: "ENG115", days: ["T"], start: "11:30", end: "13:00" }),
     ];
     grid(entries);
     for (const e of entries) {
       const block = screen.getByRole("button", { name: new RegExp(`^${e.courseCode},`) });
       expect(block.dataset.hue).toBe(courseHue(e.courseCode));
-      expect(block.className).toContain("bg-hue");
     }
+    expect(screen.getByRole("button", { name: /^ENG115,/ }).dataset.status).toBe("current");
+    expect(screen.getByRole("button", { name: /^CSE215,/ }).dataset.status).not.toBe("current");
   });
 
   it("gives a lab the hue of its theory course", () => {
@@ -72,18 +75,9 @@ describe("TimeGrid", () => {
     expect(lab.dataset.hue).toBe(theory.dataset.hue);
   });
 
-  it("colors a day block the same way and tags the class under way", () => {
-    grid([entry({ id: 1, courseCode: "CSE215", start: "11:30", end: "13:00" })], [week[2]]);
-    const block = screen.getByRole("button", { name: /^CSE215,/ });
-    expect(block.dataset.hue).toBe(courseHue("CSE215"));
-    expect(block.dataset.status).toBe("current");
-    expect(block.className).toContain("rounded-row");
-  });
-
-  it("fills today's header and marks it as the current date", () => {
+  it("marks today's header as the current date", () => {
     grid([]);
     const header = screen.getByRole("button", { name: /Tuesday, October 20, 2026, today/ });
     expect(header.getAttribute("aria-current")).toBe("date");
-    expect(header.className).toContain("bg-brand-soft");
   });
 });

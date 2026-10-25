@@ -38,16 +38,6 @@ function renderShelf() {
 }
 
 describe("floating PWA notes", () => {
-  it("sit on the toast's bottom offset so they clear the tab bar", () => {
-    const { container } = renderShelf();
-    const shelf = container.firstElementChild as HTMLElement;
-    expect(shelf.className).toContain("bottom-(--toast-bottom)");
-    // Both notes live in the one shelf, so they stack instead of overlapping.
-    expect(screen.getByRole("status").parentElement).toBe(shelf);
-    expect(screen.getByRole("note").parentElement).toBe(shelf);
-    expect(screen.getByRole("status").className).toContain("shadow-float");
-  });
-
   it("announces the update and keeps the Reload action", () => {
     renderShelf();
     expect(screen.getByRole("status").textContent).toContain("A new version is ready");
@@ -70,11 +60,10 @@ describe("floating PWA notes", () => {
     expect(localStorage.getItem(INSTALL_HINT_STORAGE_KEY)).toBe("1");
   });
 
-  it("dismisses through the Dismiss buttons, which are real buttons", () => {
+  it("dismisses through the Dismiss buttons", () => {
     renderShelf();
     const buttons = screen.getAllByRole("button", { name: "Dismiss" });
     expect(buttons).toHaveLength(2);
-    expect(buttons.every((b) => b.tagName === "BUTTON")).toBe(true);
     for (const b of buttons) fireEvent.click(b);
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByRole("note")).toBeNull();

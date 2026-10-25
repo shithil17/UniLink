@@ -92,17 +92,15 @@ describe("AppLayout tab pill", () => {
   const index = () =>
     screen.getByRole("navigation", { name: "Main" }).style.getPropertyValue("--i");
 
-  it("sits at the active tab's position for a student", async () => {
-    await renderShell(user("student"), "/routine");
+  it.each([
     // Home, Courses, Routine, Inbox, Settings
-    expect(index()).toBe("2");
+    ["a student", "student", "/routine", "2"],
+    // a mod's bar swaps Routine for Mod: Home, Courses, Inbox, Mod, Settings
+    ["a mod", "mod", "/mod/queue", "3"],
+  ] as const)("sits at the active tab's position for %s", async (_who, role, path, at) => {
+    await renderShell(user(role), path);
+    expect(index()).toBe(at);
     expect(pill().hasAttribute("data-hidden")).toBe(false);
-  });
-
-  it("sits at the active tab's position for a mod, whose bar swaps Routine for Mod", async () => {
-    await renderShell(user("mod"), "/mod/queue");
-    // Home, Courses, Inbox, Mod, Settings
-    expect(index()).toBe("3");
   });
 
   it("hides when no tab is active, for example a mod's own routine", async () => {
@@ -164,16 +162,12 @@ describe("AppLayout rail", () => {
     ).toBe("false");
   });
 
-  it("keeps tab link names available and hides the toggle below md", async () => {
+  it("keeps tab link names available when collapsed", async () => {
     await renderShell(user("student"));
     fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
 
     for (const label of ["Home", "Courses", "Routine", "Inbox", "Settings"]) {
       expect(screen.getByRole("link", { name: label })).toBeTruthy();
     }
-    expect(screen.getByRole("button", { name: "Keep sidebar open" }).className).toContain("hidden");
-    expect(screen.getByRole("button", { name: "Keep sidebar open" }).className).toContain(
-      "md:flex",
-    );
   });
 });

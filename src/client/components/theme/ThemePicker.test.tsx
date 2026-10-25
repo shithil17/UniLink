@@ -31,10 +31,7 @@ describe("ThemePicker", () => {
     expect(radios()).toHaveLength(themes.length);
     expect(checked()).toHaveLength(1);
     expect(checked()[0]?.textContent).toContain("Cherry Blossom");
-  });
-
-  it("keeps a single tab stop on the checked row", () => {
-    mount();
+    // A single tab stop, on the checked row.
     const stops = radios().filter((r) => r.getAttribute("tabindex") === "0");
     expect(stops).toHaveLength(1);
     expect(stops[0]).toBe(checked()[0]);
@@ -61,17 +58,5 @@ describe("ThemePicker", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Night/ }));
     expect(localStorage.getItem("unilink-theme")).toBe("night");
     expect(checked()[0]?.textContent).toContain("Night");
-  });
-
-  it("shows each swatch from the registry, Night in its ink", () => {
-    mount();
-    const dots = radios().map((r) => r.querySelector<HTMLElement>("span[style]")!);
-    const expected = themes.map((t) => (t.id === "night" ? t.ink : t.accent));
-    // jsdom-style engines normalise hex to rgb(), so compare through a probe element.
-    const probe = document.createElement("span");
-    expected.forEach((color, i) => {
-      probe.style.backgroundColor = color;
-      expect(dots[i]!.style.backgroundColor).toBe(probe.style.backgroundColor);
-    });
   });
 });

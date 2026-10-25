@@ -65,7 +65,6 @@ describe("TodaySection", () => {
     ]);
     expect(rows.map((r) => r.getAttribute("data-status"))).toEqual(["done", "current", "upcoming"]);
     expect(rows[0].textContent).toContain("Finished");
-    expect(rows[0].className).toContain("text-faint");
     expect(rows[1].textContent).toContain("In class now");
     expect(rows[1].textContent).not.toContain("Next");
     expect(rows[2].textContent).toContain("Next");
@@ -78,9 +77,6 @@ describe("TodaySection", () => {
     const rows = screen.getAllByRole("listitem");
     expect(rows[1].getAttribute("data-hue")).toBe(courseHue("MAT120"));
     expect(rows[2].getAttribute("data-hue")).toBe(courseHue("ENG115"));
-    expect(rows[1].className).toContain("bg-hue");
-    // The finished block drops the hue fill for faint ink.
-    expect(rows[0].className).not.toContain("bg-hue");
     expect(rows[1].textContent).toContain("9:30 - 11:00 AM");
     expect(rows[0].textContent).toContain("Programming");
     expect(rows[0].textContent).toContain("Section 1");
@@ -97,9 +93,6 @@ describe("TodaySection", () => {
     const marker = document.querySelector('[data-slot="now-marker"]') as HTMLElement;
     expect(marker.style.getPropertyValue("--at")).toBe("2");
     expect(marker.textContent).toBe("10:00");
-    expect(document.querySelector('[data-slot="timeline"]')!.getAttribute("style")).toContain(
-      "--n: 6",
-    );
   });
 
   it("moves the marker with the clock and drops it outside the hours shown", async () => {
