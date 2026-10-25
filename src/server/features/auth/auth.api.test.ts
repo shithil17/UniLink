@@ -249,6 +249,19 @@ describe("POST /api/auth/login", () => {
     expect(await count("sessions")).toBe(before);
   });
 
+  it("does not reveal a ban to someone who has the wrong password", async () => {
+    const { body } = await signup();
+    await env.DB.prepare("UPDATE users SET banned_at = ?").bind(Date.now()).run();
+    const res = await post("/api/auth/login", { username: body.username, password: "nope-nope" });
+    expect(res.status).toBe(401);
+    const unknown = await post("/api/auth/login", {
+      username: "ghost_user",
+      password: "nope-nope",
+    });
+    expect(await res.json()).toEqual(await unknown.json());
+    expect(cookieOf(res)).toBeNull();
+  });
+
   it("is rate limited per username", async () => {
     const credentials = { username: "target_user", password: "whatever-1" };
     const { limit } = limits.loginPerUsername;
@@ -282,11 +295,21 @@ describe("POST /api/auth/login", () => {
   });
 });
 
-describe("GET /api/auth/me", () => {
-  it("answers 401 when signed out", async () => {
-    expect((await get("/api/auth/me")).status).toBe(401);
+describe("signed-out access", () => {
+  it.each([
+    ["GET", "/api/auth/me", undefined],
+    ["POST", "/api/auth/logout", undefined],
+    [
+      "POST",
+      "/api/auth/change-password",
+      { currentPassword: PASSWORD, newPassword: "a brand new one" },
+    ],
+  ] as const)("answers 401 on %s %s", async (method, path, body) => {
+    expect((await send(app, method, path, body)).status).toBe(401);
   });
+});
 
+describe("GET /api/auth/me", () => {
   it("never contains the student ID, key, suffix, full name or email", async () => {
     const { token, body } = await signup({ studentId: `${YY}1 7654 642` });
     const res = await get("/api/auth/me", { token });
@@ -321,10 +344,6 @@ describe("POST /api/auth/logout", () => {
     expect(res.headers.get("set-cookie")).toContain(`${SESSION_COOKIE}=;`);
     expect(await count("sessions")).toBe(0);
     expect((await get("/api/auth/me", { token })).status).toBe(401);
-  });
-
-  it("answers 401 when signed out", async () => {
-    expect((await post("/api/auth/logout")).status).toBe(401);
   });
 });
 
@@ -386,7 +405,8 @@ describe("POST /api/auth/change-password", () => {
     ).toBe(200);
   });
 
-  it("refuses a new password equal to the current one and a too-short one", async () => {
+  // The strength rules are the shared `newPassword` schema, covered by the signup input table.
+  it("refuses a new password equal to the current one", async () => {
     const { token } = await signup();
     const same = await post(
       "/api/auth/change-password",
@@ -394,20 +414,6 @@ describe("POST /api/auth/change-password", () => {
       { token },
     );
     expect(same.status).toBe(400);
-    const short = await post(
-      "/api/auth/change-password",
-      { currentPassword: PASSWORD, newPassword: "short" },
-      { token },
-    );
-    expect(short.status).toBe(400);
-  });
-
-  it("answers 401 when signed out", async () => {
-    const res = await post("/api/auth/change-password", {
-      currentPassword: PASSWORD,
-      newPassword: NEW_PASSWORD,
-    });
-    expect(res.status).toBe(401);
   });
 });
 

@@ -123,37 +123,31 @@ describe("POST /api/attempts", () => {
     expect((await create(token, "ELECT1", "A")).status).toBe(400);
   });
 
-  it("allows retakes below B+ without limit, and says why one is refused", async () => {
+  it.each([
+    // [prior grades, next grade, allowed]
+    [["F", "F", "D", "C", "B"], "B+", true],
+    [["B+"], "A", false],
+    [["A-"], "F", false],
+    [["A"], "A", false],
+    [["I", "W", "WV"], "C", true],
+    [["I", "W", "WV", "C"], "B", true],
+  ] as const)("retakes after %j: next %s allowed=%s", async (priors, next, allowed) => {
     const { token } = await signedIn();
-    for (const grade of ["F", "F", "D", "C", "B"]) {
-      expect((await create(token, "CSE115", grade)).status).toBe(201);
+    for (const grade of priors) expect((await create(token, "CSE115", grade)).status).toBe(201);
+    const res = await create(token, "CSE115", next);
+    expect(res.status).toBe(allowed ? 201 : 409);
+    if (!allowed) {
+      const body = await res.json<{ error: string; message: string }>();
+      expect(body.error).toBe("retake_not_allowed");
+      expect(body.message).toMatch(/CSE115/);
+      expect(body.message).toMatch(/B\+/);
     }
-    expect((await create(token, "CSE115", "B+")).status).toBe(201);
-    const refused = await create(token, "CSE115", "A");
-    expect(refused.status).toBe(409);
-    const body = await refused.json<{ error: string; message: string }>();
-    expect(body.error).toBe("retake_not_allowed");
-    expect(body.message).toMatch(/CSE115/);
-    expect(body.message).toMatch(/B\+/);
-    expect((await call("GET", "/api/attempts?courseCode=CSE115", token)).status).toBe(200);
+    // The rule is per course.
+    expect((await create(token, "CSE173", "F")).status).toBe(201);
     const kept = await (
       await call("GET", "/api/attempts?courseCode=CSE115", token)
     ).json<Attempt[]>();
-    expect(kept).toHaveLength(6);
-  });
-
-  it("is blocked at A- and A too, but the retake rule is per course", async () => {
-    const { token } = await signedIn();
-    expect((await create(token, "CSE115", "A-")).status).toBe(201);
-    expect((await create(token, "CSE115", "F")).status).toBe(409);
-    expect((await create(token, "CSE173", "F")).status).toBe(201);
-  });
-
-  it("never lets I, W or a waiver block a retake", async () => {
-    const { token } = await signedIn();
-    for (const grade of ["I", "W", "WV", "C"]) {
-      expect((await create(token, "CSE115", grade)).status).toBe(201);
-    }
+    expect(kept).toHaveLength(priors.length + (allowed ? 1 : 0));
   });
 
   it("limits writes per user", async () => {

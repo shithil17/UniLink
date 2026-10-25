@@ -407,6 +407,82 @@
   }
 }
 
+.sequence-canvas .react-flow {
+  --xy-background-color: var(--color-app);
+  --xy-edge-stroke-default: var(--color-edge);
+  --xy-edge-stroke-width-default: 1;
+  --xy-node-background-color-default: transparent;
+  --xy-node-border-default: 0;
+  --xy-node-boxshadow-hover-default: none;
+  --xy-node-boxshadow-selected-default: none;
+}
+
+.sequence-canvas .react-flow__node {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  text-align: left;
+  transition: opacity 120ms var(--ease-ui-out);
+}
+
+.sequence-canvas .react-flow__edge {
+  transition: opacity 120ms var(--ease-ui-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sequence-canvas .react-flow__node,
+  .sequence-canvas .react-flow__edge {
+    transition: none;
+  }
+}
+
+.sequence-canvas .sequence-handle {
+  width: 1px;
+  min-width: 1px;
+  height: 1px;
+  min-height: 1px;
+  border: 0;
+  background: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sequence-band {
+  position: relative;
+  height: 100%;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.sequence-band > span {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  color: var(--color-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sequence-table-header {
+  display: grid;
+  min-height: 38px;
+  align-items: center;
+  gap: 0;
+  padding: 0 12px 0 14px;
+  border-bottom: 1px solid var(--color-line);
+  color: var(--color-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sequence-sheet-total {
+  border-top: 1px solid var(--color-line);
+}
+
+.sequence-canvas .react-flow__attribution {
+  display: none;
+}
+
 /*
  * Toasts. Sonner injects its own stylesheet at runtime with plain attribute selectors, so this block
  * sits outside any cascade layer and every selector carries `.toaster .cn-toast` to out-rank it.

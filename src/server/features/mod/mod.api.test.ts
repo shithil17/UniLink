@@ -561,49 +561,32 @@ describe("reports", () => {
     expect((await call("POST", "/api/reports", reporter.token, body)).status).toBe(201);
   });
 
-  it("refuses reports on yourself, unknown targets and bad input, and needs a login", async () => {
+  it.each([
+    ["yourself", { targetType: "user", targetId: "self", reason: "Something is wrong" }, true, 400],
+    [
+      "an unknown target",
+      { targetType: "user", targetId: 99999, reason: "Something is wrong" },
+      true,
+      404,
+    ],
+    [
+      "an unknown target type",
+      { targetType: "ride", targetId: 1, reason: "Something is wrong" },
+      true,
+      400,
+    ],
+    ["an empty reason", { targetType: "user", targetId: 1, reason: "" }, true, 400],
+    [
+      "a signed-out caller",
+      { targetType: "user", targetId: 1, reason: "Something is wrong" },
+      false,
+      401,
+    ],
+  ])("refuses a report on %s", async (_name, body, signed, status) => {
     const reporter = await signedIn();
-    const reason = "Something is wrong";
-    expect(
-      (
-        await call("POST", "/api/reports", reporter.token, {
-          targetType: "user",
-          targetId: reporter.user.id,
-          reason,
-        })
-      ).status,
-    ).toBe(400);
-    expect(
-      (
-        await call("POST", "/api/reports", reporter.token, {
-          targetType: "user",
-          targetId: 99999,
-          reason,
-        })
-      ).status,
-    ).toBe(404);
-    expect(
-      (
-        await call("POST", "/api/reports", reporter.token, {
-          targetType: "ride",
-          targetId: 1,
-          reason,
-        })
-      ).status,
-    ).toBe(400);
-    expect(
-      (
-        await call("POST", "/api/reports", reporter.token, {
-          targetType: "user",
-          targetId: 1,
-          reason: "",
-        })
-      ).status,
-    ).toBe(400);
-    expect(
-      (await call("POST", "/api/reports", null, { targetType: "user", targetId: 1, reason }))
-        .status,
-    ).toBe(401);
+    const sent = body.targetId === "self" ? { ...body, targetId: reporter.user.id } : body;
+    const res = await call("POST", "/api/reports", signed ? reporter.token : null, sent);
+    expect(res.status).toBe(status);
   });
 
   it("is rate limited per reporter", async () => {

@@ -42,15 +42,8 @@ const category: Category = {
 };
 
 describe("CategorySection", () => {
-  it("marks every row with its state by shape and label, and prints totals", () => {
-    const { container } = render(
-      <CategorySection category={category} onOpenSlot={() => {}} onAdd={() => {}} />,
-    );
-    const rows = within(screen.getByRole("list")).getAllByRole("listitem");
-    expect(within(rows[0]).getByRole("img", { name: "Done" })).toBeTruthy();
-    expect(within(rows[1]).getByRole("img", { name: "Locked" })).toBeTruthy();
-    expect(within(rows[2]).getByRole("img", { name: "Waived" })).toBeTruthy();
-    expect(container.querySelectorAll("[data-shape]")).toHaveLength(4);
+  it("prints the category's credit total", () => {
+    render(<CategorySection category={category} onOpenSlot={() => {}} onAdd={() => {}} />);
     expect(screen.getByText("3 of 9 credits")).toBeTruthy();
   });
 

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { cleanup, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
-import { resetStagger, staggerRow, useStagger } from "./useStagger";
+import { resetStagger, useStagger } from "./useStagger";
 
 beforeEach(resetStagger);
 afterEach(cleanup);
@@ -31,11 +31,5 @@ describe("useStagger", () => {
     renderHook(() => useStagger("home")).unmount();
     resetStagger();
     expect(renderHook(() => useStagger("home")).result.current).toBe(true);
-  });
-});
-
-describe("staggerRow", () => {
-  it("sets the row position the CSS reads", () => {
-    expect(staggerRow(3)).toEqual({ "--k": 3 });
   });
 });

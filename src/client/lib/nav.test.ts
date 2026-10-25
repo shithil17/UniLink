@@ -14,19 +14,12 @@ describe("mainTabs", () => {
     ]);
   });
 
-  it("gives mods and admins the Mod tab in the Routine tab's place, so the bar stays at five", () => {
+  it("swaps Routine for the Mod tab for mods and admins, and stays within five", () => {
     for (const role of ["mod", "admin"] as const) {
-      expect(mainTabs({ role, mustChangePassword: false }).map((t) => t.label)).not.toContain(
-        "Routine",
-      );
-    }
-  });
-
-  it("adds the Mod tab for mods and admins, and stays within five", () => {
-    for (const role of ["mod", "admin"] as const) {
-      const tabs = mainTabs({ role, mustChangePassword: false });
-      expect(tabs.map((t) => t.label)).toContain("Mod");
-      expect(tabs.length).toBeLessThanOrEqual(5);
+      const labels = mainTabs({ role, mustChangePassword: false }).map((t) => t.label);
+      expect(labels).toContain("Mod");
+      expect(labels).not.toContain("Routine");
+      expect(labels.length).toBeLessThanOrEqual(5);
     }
   });
 

@@ -7,7 +7,7 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { Me } from "../../../shared/schemas/auth";
 import { AppLayout } from "./AppLayout";
@@ -19,6 +19,7 @@ vi.mock("@/components/pwa/InstallHint", () => ({ InstallHint: () => null }));
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  localStorage.removeItem("unilink-rail");
 });
 
 async function renderShell(me: Me | null, path = "/", unread?: number) {
@@ -91,17 +92,15 @@ describe("AppLayout tab pill", () => {
   const index = () =>
     screen.getByRole("navigation", { name: "Main" }).style.getPropertyValue("--i");
 
-  it("sits at the active tab's position for a student", async () => {
-    await renderShell(user("student"), "/routine");
+  it.each([
     // Home, Courses, Routine, Inbox, Settings
-    expect(index()).toBe("2");
+    ["a student", "student", "/routine", "2"],
+    // a mod's bar swaps Routine for Mod: Home, Courses, Inbox, Mod, Settings
+    ["a mod", "mod", "/mod/queue", "3"],
+  ] as const)("sits at the active tab's position for %s", async (_who, role, path, at) => {
+    await renderShell(user(role), path);
+    expect(index()).toBe(at);
     expect(pill().hasAttribute("data-hidden")).toBe(false);
-  });
-
-  it("sits at the active tab's position for a mod, whose bar swaps Routine for Mod", async () => {
-    await renderShell(user("mod"), "/mod/queue");
-    // Home, Courses, Inbox, Mod, Settings
-    expect(index()).toBe("3");
   });
 
   it("hides when no tab is active, for example a mod's own routine", async () => {
@@ -131,5 +130,44 @@ describe("AppLayout rail", () => {
   it("shows the signed-in username in the rail", async () => {
     await renderShell({ ...user("student"), username: "tasnim" });
     expect(screen.getByText("tasnim")).toBeTruthy();
+  });
+
+  it("collapses, saves the choice, and restores it after a remount", async () => {
+    await renderShell(user("student"));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+
+    await waitFor(() => expect(localStorage.getItem("unilink-rail")).toBe("collapsed"));
+    expect(
+      screen.getByRole("complementary", { name: "Sidebar" }).getAttribute("data-collapsed"),
+    ).toBe("true");
+
+    cleanup();
+    await renderShell(user("student"));
+    expect(screen.getByRole("button", { name: "Keep sidebar open" })).toBeTruthy();
+    expect(
+      screen.getByRole("complementary", { name: "Sidebar" }).getAttribute("data-collapsed"),
+    ).toBe("true");
+  });
+
+  it("pins the rail open when Keep sidebar open is clicked", async () => {
+    await renderShell(user("student"));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+    const keepOpen = await screen.findByRole("button", { name: "Keep sidebar open" });
+    fireEvent.click(keepOpen);
+
+    await waitFor(() => expect(localStorage.getItem("unilink-rail")).toBe("expanded"));
+    expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeTruthy();
+    expect(
+      screen.getByRole("complementary", { name: "Sidebar" }).getAttribute("data-collapsed"),
+    ).toBe("false");
+  });
+
+  it("keeps tab link names available when collapsed", async () => {
+    await renderShell(user("student"));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+
+    for (const label of ["Home", "Courses", "Routine", "Inbox", "Settings"]) {
+      expect(screen.getByRole("link", { name: label })).toBeTruthy();
+    }
   });
 });

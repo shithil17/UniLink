@@ -110,8 +110,19 @@ describe("GET /api/inbox", () => {
 
   it("caps the page size and rejects a bad cursor", async () => {
     const a = await signedIn();
-    for (let n = 0; n < 3; n += 1) await notify(db(), [a.user.id], "post_approved", { n });
-    expect((await inbox(a.token, "?limit=100000")).items).toHaveLength(3);
+    const rows = Array.from({ length: limits.inboxPage.maxSize + 1 }, (_, n) => ({
+      userId: a.user.id,
+      type: "post_approved",
+      payload: { n },
+      createdAt: n,
+    }));
+    for (let i = 0; i < rows.length; i += limits.notifyChunkRows)
+      await db()
+        .insert(notifications)
+        .values(rows.slice(i, i + limits.notifyChunkRows));
+    const page = await inbox(a.token, "?limit=100000");
+    expect(page.items).toHaveLength(limits.inboxPage.maxSize);
+    expect(page.nextCursor).not.toBeNull();
     expect((await call("GET", "/api/inbox?cursor=abc", a.token)).status).toBe(400);
   });
 });

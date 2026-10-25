@@ -3,7 +3,7 @@ import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { beforeAll, beforeEach, describe, expect, it } from "vite-plus/test";
 import { getDb } from "./db/client";
 import { reverse } from "./reverse";
-import { softDelete, softDeleteTargets, type SoftDeleteTargets } from "./softDelete";
+import { softDelete, type SoftDeleteTargets } from "./softDelete";
 import { createTestUser } from "./test/factories";
 
 // No content table exists yet, so these tests register a throwaway one the way a post type will.
@@ -88,10 +88,6 @@ describe("softDelete()", () => {
       reason: "already_deleted",
     });
     expect((await auditRows()).results).toHaveLength(1);
-  });
-
-  it("has no registered target until a content type adds one", () => {
-    expect(Object.keys(softDeleteTargets)).toEqual([]);
   });
 });
 

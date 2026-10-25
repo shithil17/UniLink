@@ -1,12 +1,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { MapIcon } from "lucide-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { Popover } from "@base-ui/react/popover";
+import { ChevronDown, MapIcon } from "lucide-react";
+import { lazy, Suspense, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { z } from "zod";
 import { CategorySection, ExtrasSection } from "@/components/courses/CategorySection";
 import { CgpaSummary } from "@/components/courses/CgpaSummary";
 import { CategoryJump } from "@/components/courses/CategoryJump";
 import { CreditBar } from "@/components/courses/CreditBar";
 import { CourseSheet, type SheetTarget } from "@/components/courses/CourseSheet";
+import { CourseViewToggle } from "@/components/courses/CourseViewToggle";
+import { focusRing } from "@/components/ui/focus";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBlock } from "@/components/ui/error-block";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
@@ -14,7 +18,14 @@ import { defaultElectiveCategory, formatCredits, overNote } from "@/lib/courseMa
 import { retakeCodes } from "@/lib/attempts";
 import { attemptsQuery, courseMapQuery, meQuery } from "@/lib/queries";
 
+const SequenceCanvas = lazy(() =>
+  import("@/components/courses/SequenceCanvas").then((module) => ({
+    default: module.SequenceCanvas,
+  })),
+);
+
 export const Route = createFileRoute("/courses")({
+  validateSearch: z.object({ view: z.enum(["list", "sequence"]).optional() }),
   beforeLoad: async ({ context }) => {
     if (!(await context.queryClient.ensureQueryData(meQuery).catch(() => null))) {
       throw redirect({ to: "/login" });
@@ -77,11 +88,18 @@ function MapTitle({ sub }: { sub?: string }) {
 }
 
 function CourseMapPage() {
+  const { view = "list" } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const desktop = useDesktopLayout();
   const map = useQuery(courseMapQuery);
   const { data: attempts } = useQuery(attemptsQuery);
   const retake = useMemo(() => (attempts ? retakeCodes(attempts) : undefined), [attempts]);
   const [target, setTarget] = useState<SheetTarget | null>(null);
   const close = () => setTarget(null);
+  const setView = (next: "list" | "sequence") =>
+    void navigate({
+      search: (previous) => ({ ...previous, view: next === "list" ? undefined : next }),
+    });
 
   if (map.isPending) return <MapLoading />;
   if (!map.data) {
@@ -123,48 +141,71 @@ function CourseMapPage() {
   const categoryNames = data.categories.map((c) => c.name);
   const electiveCategory = defaultElectiveCategory(data);
   const trailCategory = data.categories.find((c) => c.trails);
+  const showSequence = view === "sequence" && desktop;
+  const standing = (
+    <section aria-label="Degree standing" className={`${panel} grid gap-3`}>
+      <p className="flex flex-wrap items-baseline gap-x-2">
+        <span className="text-lg leading-[1.3] font-semibold text-ink tabular-nums">
+          {formatCredits(degree.earned)} of {formatCredits(degree.required)} credits
+        </span>
+        {over ? (
+          <span className="text-[13px] leading-[1.3] font-medium text-faint">{over}</span>
+        ) : null}
+      </p>
+      <CreditBar earned={degree.earned} required={degree.required} />
+    </section>
+  );
+  const header = (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <MapTitle sub={`${curriculum.programName} · ${curriculum.version}`} />
+        <CourseViewToggle view={view} onChange={setView} />
+      </div>
+      {standing}
+      <CategoryJump names={categoryNames} extras />
+    </>
+  );
+  const list = (
+    <>
+      {data.categories.map((category) => (
+        <CategorySection
+          key={category.name}
+          category={category}
+          retake={retake}
+          onOpenSlot={(slot) => setTarget({ type: "slot", slot })}
+          onAdd={(name) => setTarget({ type: "add", category: name })}
+        />
+      ))}
+      <ExtrasSection
+        extras={data.extras}
+        retake={retake}
+        onOpen={(course) => setTarget({ type: "extra", course })}
+        onAdd={() => setTarget({ type: "add", category: electiveCategory })}
+      />
+    </>
+  );
 
   return (
     <>
-      <MapGrid
-        header={
-          <>
-            <MapTitle sub={`${curriculum.programName} · ${curriculum.version}`} />
-            <section aria-label="Degree standing" className={`${panel} grid gap-3`}>
-              <p className="flex flex-wrap items-baseline gap-x-2">
-                <span className="text-lg leading-[1.3] font-semibold text-ink tabular-nums">
-                  {formatCredits(degree.earned)} of {formatCredits(degree.required)} credits
-                </span>
-                {over ? (
-                  <span className="text-[13px] leading-[1.3] font-medium text-faint">{over}</span>
-                ) : null}
-              </p>
-              <CreditBar earned={degree.earned} required={degree.required} />
-            </section>
-            <CategoryJump names={categoryNames} extras />
-          </>
-        }
-        main={
-          <>
-            {data.categories.map((category) => (
-              <CategorySection
-                key={category.name}
-                category={category}
-                retake={retake}
-                onOpenSlot={(slot) => setTarget({ type: "slot", slot })}
-                onAdd={(name) => setTarget({ type: "add", category: name })}
-              />
-            ))}
-            <ExtrasSection
-              extras={data.extras}
-              retake={retake}
-              onOpen={(course) => setTarget({ type: "extra", course })}
-              onAdd={() => setTarget({ type: "add", category: electiveCategory })}
-            />
-          </>
-        }
-        side={<CgpaSummary />}
-      />
+      {showSequence ? (
+        <div className="grid w-full grid-cols-1 gap-6">
+          <div className="grid gap-4">
+            <div className="flex items-start justify-between gap-3">
+              <MapTitle sub={`${curriculum.programName} · ${curriculum.version}`} />
+              <div className="flex shrink-0 items-center gap-2">
+                <CourseViewToggle view={view} onChange={setView} />
+                <CgpaPopover />
+              </div>
+            </div>
+            {standing}
+          </div>
+          <Suspense fallback={<Skeleton className="h-80 rounded-panel" />}>
+            <SequenceCanvas map={data} onOpen={(next) => setTarget(next)} />
+          </Suspense>
+        </div>
+      ) : (
+        <MapGrid header={header} main={list} side={<CgpaSummary />} />
+      )}
       <CourseSheet
         target={target}
         categories={categoryNames}
@@ -176,6 +217,46 @@ function CourseMapPage() {
         onClose={close}
       />
     </>
+  );
+}
+
+/** The CGPA summary in Sequence, dropping down from its button over the sheet. */
+function CgpaPopover() {
+  return (
+    <Popover.Root>
+      <Popover.Trigger
+        className={`group inline-flex min-h-10 items-center gap-1.5 rounded-control border border-edge bg-surface px-3 text-[13px] font-semibold text-ink hover:bg-tint data-[popup-open]:bg-chip ${focusRing}`}
+      >
+        CGPA summary
+        <ChevronDown
+          size={15}
+          aria-hidden="true"
+          className="transition-transform group-data-[popup-open]:rotate-180"
+        />
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Positioner side="bottom" align="end" sideOffset={8} className="z-50">
+          <Popover.Popup
+            aria-label="CGPA summary"
+            className="max-h-[min(70dvh,680px)] w-[min(360px,calc(100vw-2rem))] overflow-y-auto rounded-panel bg-surface shadow-float"
+          >
+            <CgpaSummary />
+          </Popover.Popup>
+        </Popover.Positioner>
+      </Popover.Portal>
+    </Popover.Root>
+  );
+}
+
+function useDesktopLayout() {
+  return useSyncExternalStore(
+    (notify) => {
+      const query = window.matchMedia("(min-width: 768px)");
+      query.addEventListener("change", notify);
+      return () => query.removeEventListener("change", notify);
+    },
+    () => window.matchMedia("(min-width: 768px)").matches,
+    () => false,
   );
 }
 

@@ -41,16 +41,6 @@ describe("ModNav", () => {
     ).toBeNull();
   });
 
-  it("lists every section a mod can open in the sheet, with the current one marked", async () => {
-    await renderAt("/mod/courses", "mod");
-    fireEvent.click(screen.getByRole("button", { name: "Courses" }));
-    const sheet = await screen.findByRole("navigation", { name: "Moderation sections" });
-    const links = within(sheet).getAllByRole("link");
-    expect(links).toHaveLength(modSectionsFor("mod").length);
-    expect(links.map((l) => l.getAttribute("aria-current")).filter(Boolean)).toEqual(["page"]);
-    expect(within(sheet).queryByRole("link", { name: /Audit log/ })).toBeNull();
-  });
-
   it("offers the audit log to an admin, and closes the sheet after choosing a section", async () => {
     const router = await renderAt("/mod/queue", "admin");
     fireEvent.click(screen.getByRole("button", { name: "Queue" }));
@@ -62,23 +52,29 @@ describe("ModNav", () => {
     );
   });
 
-  it("lists the audit log only for admins, in the tab row as well as the sheet, and marks the current section", async () => {
-    await renderAt("/mod/audit", "mod");
-    const modRow = screen.getAllByRole("navigation", { name: "Moderation" })[0]!;
-    expect(within(modRow).queryByRole("link", { name: "Audit log" })).toBeNull();
-    cleanup();
+  it.each([
+    ["mod", "/mod/courses", "Courses", false],
+    ["admin", "/mod/audit", "Audit log", true],
+  ] as const)(
+    "lists every section a %s can open, in the tab row and the sheet, with the current one marked",
+    async (role, path, current, seesAudit) => {
+      await renderAt(path, role);
+      const sections = modSectionsFor(role);
+      const row = screen.getAllByRole("navigation", { name: "Moderation" })[0]!;
+      const rowLinks = within(row).getAllByRole("link");
+      expect(rowLinks).toHaveLength(sections.length);
+      expect(rowLinks.filter((l) => l.getAttribute("aria-current") === "page")).toHaveLength(1);
+      expect(within(row).getByRole("link", { name: current }).getAttribute("aria-current")).toBe(
+        "page",
+      );
+      expect(!!within(row).queryByRole("link", { name: "Audit log" })).toBe(seesAudit);
 
-    await renderAt("/mod/audit", "admin");
-    const row = screen.getAllByRole("navigation", { name: "Moderation" })[0]!;
-    const audit = within(row).getByRole("link", { name: "Audit log" });
-    expect(audit.getAttribute("aria-current")).toBe("page");
-    const others = within(row)
-      .getAllByRole("link")
-      .filter((l) => l !== audit);
-    expect(others).toHaveLength(modSectionsFor("admin").length - 1);
-    expect(others.every((l) => l.getAttribute("aria-current") === null)).toBe(true);
-    fireEvent.click(screen.getByRole("button", { name: "Audit log" }));
-    const sheet = await screen.findByRole("navigation", { name: "Moderation sections" });
-    expect(within(sheet).getByRole("link", { name: /Audit log/ })).toBeTruthy();
-  });
+      fireEvent.click(screen.getByRole("button", { name: current }));
+      const sheet = await screen.findByRole("navigation", { name: "Moderation sections" });
+      const links = within(sheet).getAllByRole("link");
+      expect(links).toHaveLength(sections.length);
+      expect(links.map((l) => l.getAttribute("aria-current")).filter(Boolean)).toEqual(["page"]);
+      expect(!!within(sheet).queryByRole("link", { name: /Audit log/ })).toBe(seesAudit);
+    },
+  );
 });

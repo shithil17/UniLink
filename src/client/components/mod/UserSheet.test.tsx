@@ -156,8 +156,10 @@ describe("UserSheet", () => {
     expect(within(sheet).getByRole("button", { name: "Ban user" })).toBeTruthy();
   });
 
-  it("shows the role change as a before and after", async () => {
-    const fetchMock = vi.fn(async (_url: string) => Response.json({ ok: true }));
+  it("shows the role change as a before and after, and sends it only once confirmed", async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      Response.json({ ok: true }),
+    );
     vi.stubGlobal("fetch", fetchMock);
     renderSheet(student, { username: "boss", role: "admin" });
     fireEvent.change(screen.getByLabelText("Reason"), { target: { value: "helps a lot" } });
@@ -166,5 +168,13 @@ describe("UserSheet", () => {
     expect(within(sheet).getByText("Student")).toBeTruthy();
     expect(within(sheet).getByText("Mod")).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent.click(within(sheet).getByRole("button", { name: "Make mod" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/admin/users/5/role");
+    expect(JSON.parse(fetchMock.mock.calls[0][1]?.body as string)).toEqual({
+      role: "mod",
+      reason: "helps a lot",
+    });
   });
 });

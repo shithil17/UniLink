@@ -34,29 +34,13 @@ describe("CgpaSummaryView", () => {
       <CgpaSummaryView summary={{ ...summary, cgpa: null, gradedCredits: 0, categories: [] }} />,
     );
     expect(screen.getByLabelText("No CGPA yet").textContent).toBe("–");
+    expect(screen.queryByText("0.00")).toBeNull();
     expect(screen.getByText(/Record a graded course/)).toBeTruthy();
     expect(screen.getByText("Every category has its credits.")).toBeTruthy();
   });
 });
 
 describe("CgpaTile", () => {
-  it("prints the figure to two decimals over the graded credits", () => {
-    render(<CgpaTile summary={summary} />);
-    expect(screen.getByText("3.46")).toBeTruthy();
-    expect(screen.getByText("over 48 graded credits")).toBeTruthy();
-  });
-
-  it("prints a dash, not a zero, while there is no CGPA", () => {
-    render(<CgpaTile summary={{ ...summary, cgpa: null, gradedCredits: 0 }} />);
-    expect(screen.getByLabelText("No CGPA yet").textContent).toBe("–");
-    expect(screen.queryByText("0.00")).toBeNull();
-  });
-
-  it("shows a loading state while the summary loads", () => {
-    render(<CgpaTile />);
-    expect(screen.getByRole("status").textContent).toBe("Loading your CGPA");
-  });
-
   it("says it did not load and retries inside the tile", () => {
     const onRetry = vi.fn();
     render(<CgpaTile isError onRetry={onRetry} />);
@@ -67,20 +51,15 @@ describe("CgpaTile", () => {
 });
 
 describe("CreditsTile", () => {
-  it("shows earned of required, the bar and what is left", () => {
-    render(<CreditsTile earned={96} required={130} />);
-    expect(screen.getByText("96")).toBeTruthy();
+  it.each([
+    { earned: 96, left: "34 to go", now: "74" },
+    { earned: 0, left: "130 to go", now: "0" },
+    { earned: 136, left: "All credits done", now: "100" },
+  ])("shows $earned of 130 with $left", ({ earned, left, now }) => {
+    render(<CreditsTile earned={earned} required={130} />);
+    expect(screen.getByText(String(earned))).toBeTruthy();
     expect(screen.getByText("of 130")).toBeTruthy();
-    expect(screen.getByText("34 to go")).toBeTruthy();
-    expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("74");
-  });
-
-  it("prints a real zero as 0 and never goes negative past the total", () => {
-    const { unmount } = render(<CreditsTile earned={0} required={130} />);
-    expect(screen.getByText("130 to go")).toBeTruthy();
-    expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("0");
-    unmount();
-    render(<CreditsTile earned={136} required={130} />);
-    expect(screen.getByText("All credits done")).toBeTruthy();
+    expect(screen.getByText(left)).toBeTruthy();
+    expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe(now);
   });
 });

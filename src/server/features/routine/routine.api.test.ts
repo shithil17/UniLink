@@ -191,10 +191,10 @@ describe("owner only", () => {
     expect((await call("GET", "/api/routine", null)).status).toBe(401);
   });
 
-  it("lets a mod and an admin keep their own routine but never read or change a student's", async () => {
+  it("lets any other user keep their own routine but never read or change a student's", async () => {
     const student = await signedIn();
     const made = await (await add(student.token)).json<RoutineEntry>();
-    for (const role of ["mod", "admin"] as const) {
+    for (const role of ["student", "mod", "admin"] as const) {
       const staff = await signedIn(role);
       // Their own routine works like a student's.
       expect((await add(staff.token)).status, `${role} adds`).toBe(201);
@@ -210,18 +210,5 @@ describe("owner only", () => {
       });
     }
     expect(await list(student.token)).toEqual([made]);
-  });
-
-  it("treats another student's entry as not found and leaves it untouched", async () => {
-    const owner = await signedIn();
-    const other = await signedIn();
-    const made = await (await add(owner.token)).json<RoutineEntry>();
-
-    expect(await list(other.token)).toEqual([]);
-    expect(
-      (await call("PATCH", `/api/routine/${made.id}`, other.token, { room: "X" })).status,
-    ).toBe(404);
-    expect((await call("DELETE", `/api/routine/${made.id}`, other.token)).status).toBe(404);
-    expect((await list(owner.token))[0].room).toBe("NAC 501");
   });
 });

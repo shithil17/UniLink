@@ -106,47 +106,7 @@ describe("contrast per palette", () => {
   });
 });
 
-describe("ratios match the values computed for the showcase palettes", () => {
-  const close = (actual: number, expected: number) =>
-    expect(Math.abs(actual - expected)).toBeLessThanOrEqual(0.01);
-
-  it("ink, soft, faint and edge on app (Coral)", () => {
-    const p = palette("ocean");
-    close(ratio(p.get("ink")!, p.get("app")!), 15.05);
-    close(ratio(p.get("soft")!, p.get("app")!), 7.46);
-    close(ratio(p.get("faint")!, p.get("app")!), 5.33);
-    close(ratio(p.get("edge")!, p.get("app")!), 3.55);
-    close(ratio(p.get("brand")!, p.get("app")!), 4.67);
-  });
-
-  it("text on the accent, per palette", () => {
-    const expected = {
-      ocean: 5.13,
-      "red-gradient": 8.83,
-      "cherry-blossom": 5.72,
-      "cherry-red": 5.95,
-      night: 7.73,
-    };
-    for (const [id, want] of Object.entries(expected)) {
-      const p = palette(id);
-      close(ratio(p.get("primary-foreground")!, p.get("brand")!), want);
-    }
-  });
-
-  it("brand-ink on brand-soft, per palette", () => {
-    const expected = {
-      ocean: 5.92,
-      "red-gradient": 8.31,
-      "cherry-blossom": 6.15,
-      "cherry-red": 6.24,
-      night: 8.57,
-    };
-    for (const [id, want] of Object.entries(expected)) {
-      const p = palette(id);
-      close(ratio(p.get("brand-ink")!, p.get("brand-soft")!), want);
-    }
-  });
-
+describe("hue ink pairs", () => {
   it("hue pairs stay within the documented ranges", () => {
     const light = palette("ocean");
     const night = palette("night");

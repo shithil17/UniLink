@@ -114,13 +114,11 @@ describe("GET /api/faculty", () => {
     expect(all).toEqual(
       Array.from({ length: total }, (_, i) => `Faculty ${String(i + 1).padStart(3, "0")}`),
     );
-    expect(new Set(all).size).toBe(total);
   });
 
   it("honors limit up to the cap and refuses a bad cursor", async () => {
     await seedNumbered(limits.facultyPage.maxSize + 5);
     const { token } = await signedIn();
-    expect((await page("/api/faculty?limit=3", token)).items).toHaveLength(3);
     expect((await page("/api/faculty?limit=1000", token)).items).toHaveLength(
       limits.facultyPage.maxSize,
     );

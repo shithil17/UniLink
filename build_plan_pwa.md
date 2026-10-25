@@ -470,6 +470,25 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] Student course form (code, title, credits, category, excluded toggle) built from the shared schema.
 - [x] Mod-only curriculum import screen: upload a JSON file, show the imported count and the rejected rows.
 
+### Checklist — Sequence view (desktop)
+
+> **Design decisions (locked in, 2026-10-25):**
+>
+> - From `md` up, the course map has a **List / Sequence** toggle. List stays the default and the only view on phones. The choice lives in the URL (`/courses?view=sequence`).
+> - Sequence draws the curriculum like the NSU "Recommended sequence of courses" sheet: one row per semester (plus "Unscheduled" for a null semester, and a last row for extra student courses), each row's credit total on the right, prerequisite lines between courses. It is built entirely on the client from `GET /api/courses/map`; no API or schema change.
+> - **Layout** is a pure function (`src/client/lib/courseSequence.ts`) that mirrors the NSU sheet: a compact grid with as many columns as the busiest semester (labs merged), at least four. Courses of a general-education category (name matches "general education" or "GED") sit in the right-most columns, as on the sheet. Every other course takes the free column nearest the average column of its prerequisites, so chains run straight down; courses without prerequisites fill from the left in curriculum order. The result is stable. No ELK or dagre: they don't respect fixed semester rows.
+>   Note (2026-10-25): replaces per-category lanes, which spread CSE over about eleven sparse columns and forced the canvas to zoom out until nothing was readable.
+> - **Labs:** a lab row (theory code + `L`, same semester) is merged into its theory course as one node (`CSE115 + L`). Clicking a merged node splits it into two nodes, theory and lab side by side, each with its own state mark; clicking either opens its course sheet. Clicking elsewhere or Esc merges it back.
+> - **Edges:** a course leaf or `all` group draws a solid line; an `any` group draws dashed lines. A leaf naming an alternative code points at the slot that holds it. A `{ credits: n }` leaf draws no line: the node gets a † mark with a footnote ("after n credits").
+> - **Rendering:** React Flow (`@xyflow/react`), lazy-loaded only when Sequence opens, used only to draw nodes and right-angle (`smoothstep`) lines with arrowheads. The sheet is drawn at 1:1 scale: column width follows the available width, the canvas is as tall as its rows, and the page scrolls (no zoom, pan, controls or minimap). Nodes print the code first (`CSE215 + L`), the title below it.
+> - **Page:** in Sequence the page uses the full content width. The degree standing and the CGPA summary sit at the top (CGPA summary on the right, as in List), the sheet below them.
+> - React Flow's `--xy-*` variables are mapped to theme tokens in `src/client/index.css`. Flat nodes with `StateMark` and the course hue; alternating semester bands; no shadows.
+> - Hovering or focusing a course highlights its prerequisite chain and what it unlocks and dims the rest. Clicking opens the existing `CourseSheet`.
+
+- [x] `courseSequence.ts`: rows, columns (general education on the right, others under their prerequisites), lab merge and split, edges (solid, dashed, alternatives), credit-rule notes, row credit totals.
+- [x] Sequence screen: toggle (hidden below `md`, `?view=` search param), lazy React Flow canvas, themed nodes and edges, hover/focus highlight, lab split on click, course sheet on click.
+- [x] Tests: `courseSequence.test.ts` (CSE rows sum to 130, lab merge and split, nested `all`/`any` edges, `credits` leaf note, alternative target, stable order, null semester row); UI test (toggle hidden on phones, nodes render, click opens the sheet, merged node splits).
+
 ### Checklist — Docs & QA (C, D)
 
 - [x] D: course map screens. Check the transcribed curriculum files against the official maps. (Screens: `docs/screens.md`. All 13 files checked row by row against their source maps on 2026-10-20; CSE gained BEN205 and HIS103 as alternatives. MCJ credits and PBH credits and titles are inferred where the maps print none, as their notes say.)
@@ -534,6 +553,18 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] `AppLayout`: wordmark bar, bottom tab bar on phones, top bar from `md` up, active tab by weight and ink.
 - [x] Home: the summary panel (degree standing until Phase 9) and the "unlocked next" list, with loading, empty (no curriculum yet), signed-out and error states.
 - [x] Courses header: the degree standing (credits done of the total and one short bar per category, all in `brand`).
+
+### Checklist — Collapsible rail (desktop)
+
+> **Design decisions (locked in, 2026-10-25):**
+>
+> - From `md` up, the side rail can be collapsed to a thin icon-only rail (wordmark becomes its first letter, tab icons stay, labels and the username hide, the avatar stays). Phones keep the floating tab bar unchanged.
+> - A collapsed rail expands while hovered or while focus is inside it, **over** the content as a floating layer (`shadow-float`), so the page never reflows. Moving away collapses it again after a short delay. The delay lives as a named constant in the layout code; it is presentation, not a server limit.
+> - One button at the bottom of the rail toggles the mode: "Collapse sidebar" while expanded, "Keep sidebar open" while collapsed. Clicking it while collapsed pins the rail open in place and the content reflows to the full rail. The choice is saved on the device (`localStorage`) and restored on load without a flash. Default: expanded.
+> - The active tab still shows by weight, ink and the `brand-soft` row; in the thin rail the row is a square around the icon. Every icon link keeps its accessible name when labels are hidden. The width change animates only under `motion-safe`.
+
+- [x] Rail: collapsed and expanded states, hover and focus-within expansion over the content, toggle button, saved choice, no reflow while hover-expanded.
+- [x] Tests: the toggle collapses and pins the rail and survives a remount; links keep their names when collapsed; phones never show the toggle.
 
 ### Checklist — Restyle existing screens
 

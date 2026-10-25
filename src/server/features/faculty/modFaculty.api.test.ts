@@ -116,11 +116,13 @@ describe("mod faculty routes", () => {
     });
   });
 
-  it("treats empty initials and page as none, and trims text", async () => {
+  it("treats empty initials and page as none, allows many without initials, and trims text", async () => {
     const mod = await signedIn("mod");
     const res = await add(mod.token, { name: "  Plain Name ", initials: "", nsuPage: "  " });
     expect(res.status).toBe(201);
     expect(await res.json()).toMatchObject({ name: "Plain Name", initials: null, nsuPage: null });
+    // Empty initials are no initials, so they never collide.
+    expect((await add(mod.token, { name: "Other Plain", initials: "" })).status).toBe(201);
   });
 
   it("refuses duplicate initials without regard to case, in any department", async () => {
@@ -130,12 +132,6 @@ describe("mod faculty routes", () => {
     expect(dup.status).toBe(409);
     expect(await dup.json()).toMatchObject({ error: "initials_taken" });
     expect((await auditRows()).results).toHaveLength(1);
-  });
-
-  it("allows many faculty without initials", async () => {
-    const mod = await signedIn("mod");
-    expect((await add(mod.token, { name: "A One", initials: "" })).status).toBe(201);
-    expect((await add(mod.token, { name: "B Two", initials: "" })).status).toBe(201);
   });
 
   it("refuses the same name twice in a department, but not across departments", async () => {

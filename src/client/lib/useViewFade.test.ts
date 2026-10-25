@@ -20,6 +20,7 @@ afterEach(() => {
 describe("useViewFade", () => {
   it("fades out, swaps the view after 110ms, then fades back in", () => {
     motion(false);
+    Object.defineProperty(window, "scrollY", { value: 240, configurable: true });
     const { result, rerender } = renderHook(({ v }) => useViewFade(v), {
       initialProps: { v: "week" },
     });
@@ -37,22 +38,12 @@ describe("useViewFade", () => {
       vi.advanceTimersByTime(1);
     });
     expect(result.current.shown).toBe("month");
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 240);
 
     act(() => {
       vi.advanceTimersByTime(50);
     });
     expect(result.current).toEqual({ shown: "month", fading: false });
-  });
-
-  it("puts the page back where it was after the swap", () => {
-    motion(false);
-    Object.defineProperty(window, "scrollY", { value: 240, configurable: true });
-    const { rerender } = renderHook(({ v }) => useViewFade(v), { initialProps: { v: "week" } });
-    rerender({ v: "day" });
-    act(() => {
-      vi.advanceTimersByTime(VIEW_FADE_MS);
-    });
-    expect(window.scrollTo).toHaveBeenCalledWith(0, 240);
   });
 
   it("goes back to the old view without swapping when asked within the fade", () => {

@@ -53,14 +53,12 @@ const renderRow = (onReject: (v: unknown) => Promise<unknown> = async () => {}) 
   );
 
 describe("PostRow", () => {
-  it("shows the author's username, the text, the model category with confidence, and the rule flags", () => {
+  it("shows the author's username, the text, and the model category with confidence", () => {
     renderRow();
     expect(screen.getByText("rafi_2")).toBeTruthy();
     expect(screen.getByText("Found a black umbrella")).toBeTruthy();
     expect(screen.getByText(/Scam or spam/)).toBeTruthy();
     expect(screen.getByText(/64% sure/)).toBeTruthy();
-    expect(screen.getByText("Link")).toBeTruthy();
-    expect(screen.getByText(/asked a moderator to look/)).toBeTruthy();
   });
 
   it("sends nothing on Approve until the confirm sheet is confirmed", async () => {

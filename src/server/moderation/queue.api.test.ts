@@ -13,9 +13,8 @@ import { SESSION_COOKIE } from "../middleware/session";
 import { visibleTo } from "../repos/visibility";
 import { createTestSession, createTestUser } from "../test/factories";
 import { askModerator } from "./appeal";
-import { postTypeOf, type ModeratedPostTypes } from "./postTypes";
+import { type ModeratedPostTypes } from "./postTypes";
 import { submitPost } from "./submit";
-import { rejectReasonMessage } from "../../shared/rejectReasons";
 
 // No post table exists yet, so these tests register a throwaway one the way a post type will.
 const testPosts = sqliteTable(
@@ -289,7 +288,6 @@ describe("a mod's decision", () => {
     });
     // The mod's private reason stays in the audit log only.
     expect(note.payload).not.toContain("looks like a scam");
-    expect(rejectReasonMessage("scam_or_spam")).not.toBe("");
   });
 
   it("decides a post once, and refuses an unknown type, a missing post or a post not held", async () => {
@@ -496,7 +494,6 @@ describe("queue routes", () => {
     expect((await call("GET", "/api/mod/queue?cursor=bad", modToken)).status).toBe(400);
     // No post type is registered in production yet.
     expect((await call("POST", "/api/mod/posts/ride/1/approve", modToken, {})).status).toBe(404);
-    expect(postTypeOf(postTypes, "test_post")).toBeDefined();
   });
 
   it("merges an open report into the same list", async () => {
