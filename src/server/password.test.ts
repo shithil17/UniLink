@@ -12,12 +12,6 @@ describe("password hashing", () => {
     expect(stored.hash).not.toContain("correct horse");
   });
 
-  it("verifies the right password and rejects a wrong one", async () => {
-    const stored = await hashPassword("correct horse");
-    expect(await verifyPassword("correct horse", stored)).toBe(true);
-    expect(await verifyPassword("wrong horse", stored)).toBe(false);
-  });
-
   it("uses a fresh salt per hash", async () => {
     const a = await hashPassword("same");
     const b = await hashPassword("same");
@@ -25,9 +19,10 @@ describe("password hashing", () => {
     expect(a.hash).not.toBe(b.hash);
   });
 
-  it("verifies with the stored iteration count, and flags old ones for rehash", async () => {
+  it("verifies with the stored iteration count, rejects a wrong password and flags old ones for rehash", async () => {
     const old = await hashPassword("pw", 1000);
     expect(await verifyPassword("pw", old)).toBe(true);
+    expect(await verifyPassword("wrong", old)).toBe(false);
     expect(needsRehash(old)).toBe(true);
     expect(needsRehash(await hashPassword("pw"))).toBe(false);
   });

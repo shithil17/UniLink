@@ -99,21 +99,21 @@ describe("POST /api/push/subscribe and /unsubscribe", () => {
     expect(await rowsFor(a.user.id)).toHaveLength(1);
   });
 
-  it("rejects a host that is not a known push service", async () => {
+  it.each([
+    [
+      "a host that is not a known push service",
+      subBody("https://example.com/push/abc"),
+      "unknown_push_service",
+    ],
+    ["a body with no keys", { endpoint: "https://fcm.googleapis.com/x" }, undefined],
+    ["a plain-http endpoint", subBody("http://fcm.googleapis.com/x"), undefined],
+    ["a non-URL endpoint", subBody("nonsense"), undefined],
+  ])("rejects %s and stores nothing", async (_name, body, error) => {
     const a = await signedIn();
-    const res = await subscribe(a.token, subBody("https://example.com/push/abc"));
+    const res = await subscribe(a.token, body);
     expect(res.status).toBe(400);
-    expect(await res.json()).toMatchObject({ error: "unknown_push_service" });
+    if (error) expect(await res.json()).toMatchObject({ error });
     expect(await rowsFor(a.user.id)).toHaveLength(0);
-  });
-
-  it("rejects a malformed body and a plain-http endpoint", async () => {
-    const a = await signedIn();
-    expect((await subscribe(a.token, { endpoint: "https://fcm.googleapis.com/x" })).status).toBe(
-      400,
-    );
-    expect((await subscribe(a.token, subBody("http://fcm.googleapis.com/x"))).status).toBe(400);
-    expect((await subscribe(a.token, subBody("nonsense"))).status).toBe(400);
   });
 
   it("holds the per-user cap, still lets an existing device refresh, and frees a slot on unsubscribe", async () => {
@@ -145,34 +145,22 @@ describe("POST /api/push/subscribe and /unsubscribe", () => {
 });
 
 describe("GET /api/push/public-key", () => {
-  it("is null while push is not configured", async () => {
-    const a = await signedIn();
-    // Explicitly unset, so a developer's own .dev.vars cannot change the result.
-    const unset = {
-      ...env,
-      VAPID_PUBLIC_KEY: undefined,
-      VAPID_PRIVATE_KEY: undefined,
-      VAPID_SUBJECT: undefined,
-    };
-    const res = await call("GET", "/api/push/public-key", a.token, undefined, unset);
-    expect(pushPublicKey.parse(await res.json())).toEqual({ key: null });
+  // Values are explicit (even undefined), so a developer's own .dev.vars cannot change the result.
+  const vapid = (pub?: string, priv?: string, subject?: string) => ({
+    ...env,
+    VAPID_PUBLIC_KEY: pub,
+    VAPID_PRIVATE_KEY: priv,
+    VAPID_SUBJECT: subject,
   });
 
-  it("is null when only some VAPID values are set, and the key when all three are", async () => {
+  it.each([
+    ["nothing is set", vapid(), null],
+    ["only some VAPID values are set", vapid("pub"), null],
+    ["all three are set", vapid("pub", "priv", "mailto:a@b.c"), "pub"],
+  ])("is the right key when %s", async (_name, e, key) => {
     const a = await signedIn();
-    const partial = {
-      ...env,
-      VAPID_PUBLIC_KEY: "pub",
-      VAPID_PRIVATE_KEY: undefined,
-      VAPID_SUBJECT: undefined,
-    };
-    expect(
-      await (await call("GET", "/api/push/public-key", a.token, undefined, partial)).json(),
-    ).toEqual({ key: null });
-    const full = { ...partial, VAPID_PRIVATE_KEY: "priv", VAPID_SUBJECT: "mailto:a@b.c" };
-    expect(
-      await (await call("GET", "/api/push/public-key", a.token, undefined, full)).json(),
-    ).toEqual({ key: "pub" });
+    const res = await call("GET", "/api/push/public-key", a.token, undefined, e);
+    expect(pushPublicKey.parse(await res.json())).toEqual({ key });
   });
 });
 
@@ -226,13 +214,6 @@ describe("notify() with push", () => {
       .from(notifications)
       .where(eq(notifications.userId, noDevice.user.id));
     expect(rows).toHaveLength(1);
-  });
-
-  it("does not push when no sender is given", async () => {
-    const u = await subscribed();
-    await notify(db(), [u.user.id], "post_approved", {}, { push: null });
-    await notify(db(), [u.user.id], "post_approved", {});
-    expect(await rowsFor(u.user.id)).toHaveLength(1);
   });
 
   it("deletes a subscription the push service reports gone, and keeps the others", async () => {

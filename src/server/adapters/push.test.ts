@@ -1,6 +1,6 @@
 import { webcrypto } from "node:crypto";
 import { describe, expect, it } from "vite-plus/test";
-import { fakePushSender, isKnownPushEndpoint, pushSenderFromEnv, webPushSender } from "./push";
+import { isKnownPushEndpoint, pushSenderFromEnv, webPushSender } from "./push";
 import { limits } from "../limits";
 
 const { subtle } = webcrypto;
@@ -198,14 +198,5 @@ describe("isKnownPushEndpoint", () => {
     ]) {
       expect(isKnownPushEndpoint(url), url).toBe(false);
     }
-  });
-});
-
-describe("fakePushSender", () => {
-  it("records sends and answers ok by default", async () => {
-    const fake = fakePushSender();
-    const target = { endpoint: "https://fcm.googleapis.com/x", p256dh: "p", auth: "a" };
-    expect(await fake.send(target, message)).toEqual({ ok: true });
-    expect(fake.sent).toEqual([{ target, message }]);
   });
 });

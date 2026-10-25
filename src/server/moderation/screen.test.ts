@@ -83,16 +83,29 @@ describe("screen: forced review", () => {
 });
 
 describe("screen: fail safe", () => {
-  it("holds the post when the model step throws", async () => {
-    const model = new FakeModelStep(async () => {
-      throw new Error("boom");
-    });
-    const result = await screen(clean, { model });
-    expect(result).toMatchObject({
-      status: "pending_review",
-      source: "fail_safe",
-      failure: "error",
-    });
+  it.each([
+    [
+      "the model step throws",
+      async () => {
+        throw new Error("boom");
+      },
+      "error",
+    ],
+    [
+      "the daily cap is used up",
+      async () => {
+        throw new ModelCapReachedError();
+      },
+      "cap",
+    ],
+    [
+      "the model answers with something that is not valid",
+      async () => ({ verdict: "publish-it", category: "fine" }),
+      "error",
+    ],
+  ])("holds the post when %s", async (_name, run, failure) => {
+    const result = await screen(clean, { model: new FakeModelStep(run) });
+    expect(result).toMatchObject({ status: "pending_review", source: "fail_safe", failure });
   });
 
   it("holds the post when the model step times out, and aborts it", async () => {
@@ -113,29 +126,6 @@ describe("screen: fail safe", () => {
       failure: "timeout",
     });
     expect(aborted).toBe(true);
-  });
-
-  it("holds the post when the daily cap is used up", async () => {
-    const model = new FakeModelStep(async () => {
-      throw new ModelCapReachedError();
-    });
-    const result = await screen(clean, { model });
-    expect(result).toMatchObject({ status: "pending_review", failure: "cap" });
-  });
-
-  it("holds the post when the model answers with something that is not valid", async () => {
-    const model = new FakeModelStep(async () => ({ verdict: "publish-it", category: "fine" }));
-    const result = await screen(clean, { model });
-    expect(result).toMatchObject({ status: "pending_review", failure: "error" });
-  });
-
-  it("never auto-publishes or auto-rejects when the model failed", async () => {
-    const model = new FakeModelStep(async () => {
-      throw new Error("boom");
-    });
-    const result = await screen(clean, { model });
-    expect(result.status).not.toBe("published");
-    expect(result.status).not.toBe("rejected");
   });
 });
 
