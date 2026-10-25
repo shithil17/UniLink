@@ -1,7 +1,7 @@
 import curriculum from "../../../data/curricula/42-cse.json";
 import { describe, expect, it } from "vite-plus/test";
 import { curriculumImport, type CourseMap } from "../../shared/schemas/courses";
-import { LEFT_LABEL_WIDTH, layoutCourseSequence, type SequenceCourse } from "./courseSequence";
+import { ROW_GAP_Y, layoutCourseSequence, type SequenceCourse } from "./courseSequence";
 
 function mapFromCurriculum(): CourseMap {
   const parsed = curriculumImport.parse(curriculum);
@@ -93,7 +93,7 @@ describe("layoutCourseSequence", () => {
       geCourses.every(
         (node) =>
           Math.floor(
-            (node.position.x - LEFT_LABEL_WIDTH + (node.width ?? 0) / 2) / layout.columnWidth,
+            (node.position.x - layout.gridLeft + (node.width ?? 0) / 2) / layout.columnWidth,
           ) ===
           layout.columns - 1,
       ),
@@ -105,7 +105,7 @@ describe("layoutCourseSequence", () => {
     const columns = ["MAT116", "MAT120", "MAT130", "MAT250", "MAT350"].map((code) => {
       const node = layout.nodes.find((item) => item.id === code)!;
       return Math.floor(
-        (node.position.x - LEFT_LABEL_WIDTH + (node.width ?? 0) / 2) / layout.columnWidth,
+        (node.position.x - layout.gridLeft + (node.width ?? 0) / 2) / layout.columnWidth,
       );
     });
     expect(new Set(columns).size).toBe(1);
@@ -138,6 +138,76 @@ describe("layoutCourseSequence", () => {
         ).toBe(false);
       }
     }
+  });
+
+  it("gives CSE routed edges separate lanes and keeps every route point outside course boxes", () => {
+    const layout = layoutCourseSequence(mapFromCurriculum());
+    const routed = layout.edges.filter((edge) => edge.data.points);
+    const courses = layout.nodes.filter((node) => node.type === "sequenceCourse");
+    for (const edge of routed) {
+      for (const point of edge.data.points!) {
+        for (const node of courses) {
+          const left = node.position.x;
+          const right = left + node.width!;
+          const top = node.position.y;
+          const bottom = top + node.height!;
+          expect(point.x > left && point.x < right && point.y > top && point.y < bottom).toBe(
+            false,
+          );
+        }
+      }
+    }
+    for (let i = 0; i < routed.length; i++) {
+      const points = routed[i]!.data.points!;
+      const segments = points.slice(1).map((end, index) => ({ start: points[index]!, end }));
+      for (let j = i + 1; j < routed.length; j++) {
+        const otherPoints = routed[j]!.data.points!;
+        const otherSegments = otherPoints
+          .slice(1)
+          .map((end, index) => ({ start: otherPoints[index]!, end }));
+        for (const a of segments) {
+          for (const b of otherSegments) {
+            if (a.start.x === a.end.x && b.start.x === b.end.x && a.start.x === b.start.x) {
+              expect(
+                Math.min(Math.max(a.start.y, a.end.y), Math.max(b.start.y, b.end.y)) -
+                  Math.max(Math.min(a.start.y, a.end.y), Math.min(b.start.y, b.end.y)),
+              ).toBeLessThanOrEqual(0);
+            }
+            if (a.start.y === a.end.y && b.start.y === b.end.y && a.start.y === b.start.y) {
+              expect(
+                Math.min(Math.max(a.start.x, a.end.x), Math.max(b.start.x, b.end.x)) -
+                  Math.max(Math.min(a.start.x, a.end.x), Math.min(b.start.x, b.end.x)),
+              ).toBeLessThanOrEqual(0);
+            }
+          }
+        }
+      }
+    }
+  });
+
+  it("enters a target in another column horizontally from its side", () => {
+    const layout = layoutCourseSequence(mapFromCurriculum());
+    const nodes = new Map(layout.nodes.map((node) => [node.id, node]));
+    const routed = layout.edges.filter((edge) => edge.data.points);
+    expect(routed.length).toBeGreaterThan(0);
+    let sideEntries = 0;
+    for (const edge of routed) {
+      const points = edge.data.points!;
+      const last = points.at(-1)!;
+      const before = points.at(-2)!;
+      const target = nodes.get(edge.target)!;
+      if (last.y === target.position.y) continue;
+      sideEntries++;
+      expect(before.y).toBe(last.y);
+      expect([target.position.x, target.position.x + target.width!]).toContain(last.x);
+    }
+    expect(sideEntries).toBeGreaterThan(0);
+  });
+
+  it("gives every arrowhead its own point and keeps parallel runs apart", () => {
+    const layout = layoutCourseSequence(mapFromCurriculum(), undefined, 1500);
+    const ends = layout.edges.flatMap((edge) => edge.data.points?.at(-1) ?? []);
+    expect(new Set(ends.map((point) => `${point.x},${point.y}`)).size).toBe(ends.length);
   });
 
   it("keeps adjacent-row prerequisite edges on the direct route", () => {
@@ -227,7 +297,7 @@ describe("layoutCourseSequence", () => {
     );
     expect(layout.rows.map((row) => row.label)).toEqual(["1st", "Unscheduled"]);
     const unscheduled = layout.nodes.filter(
-      (node) => node.type === "sequenceCourse" && node.position.y === layout.rows[1]?.y + 10,
+      (node) => node.type === "sequenceCourse" && node.position.y === layout.rows[1]?.y + ROW_GAP_Y,
     );
     expect(unscheduled.map((node) => node.id)).toEqual(["CSE201", "CSE200", "CSE202"]);
   });

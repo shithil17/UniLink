@@ -1,3 +1,4 @@
+import { connections, styleEdges } from "../../lib/sequenceEdges";
 import "@xyflow/react/dist/style.css";
 import {
   BaseEdge,
@@ -158,39 +159,17 @@ function asFlow(
       ...edge,
       style: {
         stroke: "var(--color-edge)",
-        strokeWidth: 1.25,
+        strokeWidth: 1.5,
         strokeDasharray: edge.data.dashed ? "5 4" : undefined,
       },
       markerEnd: {
         type: MarkerType.ArrowClosed,
         color: "var(--color-edge)",
-        width: 14,
-        height: 14,
+        width: 16,
+        height: 16,
       },
     })) as Edge[],
   };
-}
-
-function connections(layout: SequenceLayout, active: string | null) {
-  if (!active) return null;
-  const parents = new Map<string, string[]>();
-  const children = new Map<string, string[]>();
-  for (const edge of layout.edges) {
-    parents.set(edge.target, [...(parents.get(edge.target) ?? []), edge.source]);
-    children.set(edge.source, [...(children.get(edge.source) ?? []), edge.target]);
-  }
-  const visited = new Set([active]);
-  for (const links of [parents, children]) {
-    const queue = [active];
-    while (queue.length)
-      for (const next of links.get(queue.shift()!) ?? []) {
-        if (!visited.has(next)) {
-          visited.add(next);
-          queue.push(next);
-        }
-      }
-  }
-  return visited;
 }
 
 export function SequenceCanvas({
@@ -257,24 +236,14 @@ export function SequenceCanvas({
       graph.nodes.map((node) => ({
         ...node,
         style:
-          node.type === "sequenceCourse" && highlighted && !highlighted.has(node.id)
+          node.type === "sequenceCourse" && highlighted && !highlighted.nodes.has(node.id)
             ? { opacity: 0.2 }
             : undefined,
       })),
     [graph.nodes, highlighted],
   );
   const edges = useMemo(
-    () =>
-      graph.edges.map((edge) => ({
-        ...edge,
-        style: {
-          ...edge.style,
-          opacity:
-            highlighted && (!highlighted.has(edge.source) || !highlighted.has(edge.target))
-              ? 0.12
-              : 0.72,
-        },
-      })),
+    () => styleEdges(graph.edges, highlighted?.edges ?? null),
     [graph.edges, highlighted],
   );
 

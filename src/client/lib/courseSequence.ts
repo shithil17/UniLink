@@ -2,7 +2,15 @@ import type { CourseMap, CourseStatus } from "../../shared/schemas/courses";
 import type { PrereqRule } from "../../shared/prereq";
 
 export const NODE_HEIGHT = 60;
-export const ROW_GAP_Y = 8;
+export const ROW_GAP_Y = 15;
+const ROUTE_CLEARANCE = 4;
+const PARALLEL_GAP = 6;
+const GUTTER_RUN_GAP = 24;
+const PORT_MARGIN = 10;
+// ceiling: fixed lane room between columns; revisit if a gutter ever needs more parallel lines.
+const COLUMN_GUTTER = 100;
+const MIN_NODE_WIDTH = 168;
+const MAX_NODE_WIDTH = 300;
 export const ROW_HEADER_HEIGHT = 36;
 export const ROW_HEIGHT = NODE_HEIGHT + ROW_GAP_Y * 2;
 export const LEFT_LABEL_WIDTH = 112;
@@ -59,6 +67,7 @@ export type SequenceLayout = {
   height: number;
   columns: number;
   columnWidth: number;
+  gridLeft: number;
   creditNotes: { code: string; credits: number; mark: string }[];
 };
 
@@ -229,8 +238,15 @@ export function layoutCourseSequence(
   const rowCourses = groups.map((group) => [...group.courses.flat(), ...group.extras]);
   const columns = Math.max(MIN_COLUMNS, ...rowCourses.map((courses) => courses.length));
   const sheetWidth = width;
-  const columnWidth = (sheetWidth - LEFT_LABEL_WIDTH - RIGHT_TOTAL_WIDTH) / columns;
-  const nodeWidth = columnWidth * 0.9;
+  const available = sheetWidth - LEFT_LABEL_WIDTH - RIGHT_TOTAL_WIDTH;
+  const nodeWidth = Math.min(
+    MAX_NODE_WIDTH,
+    Math.max(MIN_NODE_WIDTH, available / columns - COLUMN_GUTTER),
+  );
+  // Boxes grow with the sheet up to the cap; the gutter stays fixed and, once boxes are capped,
+  // the grid is centred instead of stretching the gaps.
+  const columnWidth = Math.min(available / columns, nodeWidth + COLUMN_GUTTER);
+  const gridLeft = LEFT_LABEL_WIDTH + (available - columnWidth * columns) / 2;
   const rows = groups.map((group, i) => ({
     id: group.id,
     label: group.label,
@@ -257,7 +273,7 @@ export function layoutCourseSequence(
     nodes.push({
       id: `total:${group.id}`,
       type: "sequenceTotal",
-      position: { x: sheetWidth - RIGHT_TOTAL_WIDTH, y: row.y + 10 },
+      position: { x: sheetWidth - RIGHT_TOTAL_WIDTH, y: row.y + ROW_GAP_Y },
       data: { credits: row.credits },
       width: RIGHT_TOTAL_WIDTH,
       height: NODE_HEIGHT,
@@ -284,9 +300,7 @@ export function layoutCourseSequence(
         const prereqColumns = leafRules(course.prereq).flatMap(({ code }) => {
           const id = codeToNode.get(code);
           const parent = id ? nodes.find((node) => node.id === id) : undefined;
-          return parent
-            ? [(parent.position.x - LEFT_LABEL_WIDTH + nodeWidth / 2) / columnWidth]
-            : [];
+          return parent ? [(parent.position.x - gridLeft + nodeWidth / 2) / columnWidth] : [];
         });
         const preferred = prereqColumns.length
           ? prereqColumns.reduce((sum, col) => sum + col, 0) / prereqColumns.length
@@ -300,8 +314,8 @@ export function layoutCourseSequence(
           free[0] ?? 0,
         );
       }
-      const y = row.y + 10;
-      const x = LEFT_LABEL_WIDTH + col * columnWidth + (columnWidth - nodeWidth) / 2;
+      const y = row.y + ROW_GAP_Y;
+      const x = gridLeft + col * columnWidth + (columnWidth - nodeWidth) / 2;
       if (course.split && course.mergedLab) {
         const [theorySlot, labSlot] = course.slots;
         const half = (nodeWidth - 4) / 2;
@@ -384,45 +398,178 @@ export function layoutCourseSequence(
   const courseNodes = new Map(
     nodes.filter((node) => node.type === "sequenceCourse").map((node) => [node.id, node]),
   );
-  const routedGutters = new Map<number, number>();
-  const gutterCounts = new Map<number, number>();
+  const rowOf = (id: string) => Math.round(courseNodes.get(id)!.position.y / ROW_HEIGHT);
+  const colOf = (id: string) => {
+    const node = courseNodes.get(id)!;
+    const center = node.position.x + (node.width ?? nodeWidth) / 2;
+    return Math.min(columns - 1, Math.max(0, Math.floor((center - gridLeft) / columnWidth)));
+  };
+  const groupBy = <T, K>(items: T[], key: (item: T) => K) => {
+    const groups = new Map<K, T[]>();
+    for (const item of items) groups.set(key(item), [...(groups.get(key(item)) ?? []), item]);
+    return groups;
+  };
+  // Lines whose ranges meet (within `pad`) get separate lanes; lines that never meet can share one.
+  const lanes = (items: { id: string; lo: number; hi: number }[], pad: number) => {
+    const ends: number[] = [];
+    const laneOf = new Map<string, number>();
+    for (const item of [...items].sort((a, b) => a.lo - b.lo || a.hi - b.hi)) {
+      let lane = ends.findIndex((end) => end + pad < item.lo);
+      if (lane < 0) lane = ends.length;
+      ends[lane] = item.hi;
+      laneOf.set(item.id, lane);
+    }
+    return { laneOf, count: ends.length };
+  };
+  const place = (lane: number, count: number, from: number, to: number) =>
+    from + ((to - from) * (lane + 0.5)) / count;
+
+  // Decide how each line leaves its source and enters its target. Same-column neighbours stay
+  // on the direct path; everything else leaves a side and enters a side beside the target column.
+  type Side = "left" | "right" | "top" | "bottom";
+  type Plan = { edge: SequenceEdge; exit: Side; enter: Side; gutter: number };
+  const plans: Plan[] = [];
+  const innerSide = (id: string): Side | null => {
+    const node = courseNodes.get(id)!;
+    if ((node.width ?? nodeWidth) >= nodeWidth - 1) return null;
+    const mid = gridLeft + (colOf(id) + 0.5) * columnWidth;
+    return node.position.x < mid ? "right" : "left";
+  };
   for (const edge of edges) {
-    const source = courseNodes.get(edge.source)!;
-    const target = courseNodes.get(edge.target)!;
-    if (target.position.y - source.position.y > ROW_HEIGHT) {
-      const targetColumn = Math.floor(
-        (target.position.x + (target.width ?? nodeWidth) / 2 - LEFT_LABEL_WIDTH) / columnWidth,
+    const rowS = rowOf(edge.source);
+    const rowT = rowOf(edge.target);
+    const colS = colOf(edge.source);
+    const colT = colOf(edge.target);
+    if (rowT <= rowS || (rowT === rowS + 1 && colS === colT)) continue;
+    let exit: Side;
+    let enter: Side;
+    let gutter: number;
+    if (colS === colT) {
+      exit = enter = colT < columns - 1 ? "right" : "left";
+      gutter = exit === "right" ? colT + 1 : colT;
+    } else {
+      const east = colT > colS;
+      exit = east ? "right" : "left";
+      enter = east ? "left" : "right";
+      gutter = east ? colT : colT + 1;
+      const lo = Math.min(colS, colT) + 1;
+      const hi = Math.max(colS, colT) - 1;
+      const blocked = [...courseNodes.keys()].some(
+        (id) => rowOf(id) === rowS && colOf(id) >= lo && colOf(id) <= hi,
       );
-      const gutter = targetColumn === 0 ? 1 : targetColumn;
-      gutterCounts.set(gutter, (gutterCounts.get(gutter) ?? 0) + 1);
+      if (blocked) exit = "bottom";
+    }
+    if (exit === innerSide(edge.source)) exit = "bottom";
+    if (enter === innerSide(edge.target)) enter = "top";
+    plans.push({ edge, exit, enter, gutter });
+  }
+
+  // Spread every use of a box side along it. Left-side ports sit in the upper half and right-side
+  // ports in the lower half, so a run leaving one box never lines up with a run entering its
+  // neighbour. Bottom ports use the left half and top ports the right half for the same reason.
+  const ports = new Map<string, { x: number; y: number }>();
+  const uses: { key: string; id: string; side: Side; other: string }[] = [];
+  for (const { edge, exit, enter } of plans) {
+    uses.push({ key: `source:${edge.id}`, id: edge.source, side: exit, other: edge.target });
+    uses.push({ key: `target:${edge.id}`, id: edge.target, side: enter, other: edge.source });
+  }
+  for (const [, group] of groupBy(uses, (use) => `${use.id}:${use.side}`)) {
+    const { id, side } = group[0]!;
+    const node = courseNodes.get(id)!;
+    const w = node.width ?? nodeWidth;
+    const h = node.height ?? NODE_HEIGHT;
+    const { x, y } = node.position;
+    const ordered = [...group].sort((a, b) => {
+      const na = courseNodes.get(a.other)!.position;
+      const nb = courseNodes.get(b.other)!.position;
+      return na.y - nb.y || na.x - nb.x;
+    });
+    ordered.forEach((use, index) => {
+      const n = ordered.length;
+      if (side === "left" || side === "right") {
+        const [from, to] =
+          side === "left" ? [y + PORT_MARGIN, y + h / 2 - 2] : [y + h / 2 + 2, y + h - PORT_MARGIN];
+        ports.set(use.key, { x: side === "left" ? x : x + w, y: place(index, n, from, to) });
+      } else {
+        const [from, to] =
+          side === "bottom"
+            ? [x + PORT_MARGIN, x + w / 2 - 2]
+            : [x + w / 2 + 2, x + w - PORT_MARGIN];
+        ports.set(use.key, { x: place(index, n, from, to), y: side === "bottom" ? y + h : y });
+      }
+    });
+  }
+
+  const gutterX = new Map<string, number>();
+  const half = Math.max(0, (columnWidth - nodeWidth) / 2 - ROUTE_CLEARANCE);
+  for (const [gutter, group] of groupBy(plans, (plan) => plan.gutter)) {
+    const { laneOf, count } = lanes(
+      group.map(({ edge }) => {
+        const start = ports.get(`source:${edge.id}`)!.y;
+        const end = ports.get(`target:${edge.id}`)!.y;
+        return { id: edge.id, lo: Math.min(start, end), hi: Math.max(start, end) };
+      }),
+      GUTTER_RUN_GAP,
+    );
+    const boundary = gridLeft + gutter * columnWidth;
+    const from = gutter === 0 ? boundary + ROUTE_CLEARANCE : boundary - half;
+    const to = gutter === columns ? boundary - ROUTE_CLEARANCE : boundary + half;
+    for (const { edge } of group) {
+      gutterX.set(edge.id, place(laneOf.get(edge.id)!, count, from, to));
     }
   }
-  for (const edge of edges) {
-    const source = courseNodes.get(edge.source)!;
-    const target = courseNodes.get(edge.target)!;
-    if (target.position.y - source.position.y <= ROW_HEIGHT) continue;
-    const sourceX = source.position.x + (source.width ?? nodeWidth) / 2;
-    const targetX = target.position.x + (target.width ?? nodeWidth) / 2;
-    const targetColumn = Math.floor((targetX - LEFT_LABEL_WIDTH) / columnWidth);
-    const gutter = targetColumn === 0 ? 1 : targetColumn;
-    const index = routedGutters.get(gutter) ?? 0;
-    routedGutters.set(gutter, index + 1);
-    const count = gutterCounts.get(gutter)!;
-    const spread = Math.min(6, columnWidth * 0.7);
-    const offset = count < 2 ? 0 : (index / (count - 1) - 0.5) * spread;
-    const gutterX = LEFT_LABEL_WIDTH + gutter * columnWidth + offset;
-    const sourceBottom = source.position.y + (source.height ?? NODE_HEIGHT);
-    const targetTop = target.position.y;
-    const belowSource = sourceBottom + ROW_GAP_Y / 2;
-    const aboveTarget = targetTop - ROW_GAP_Y / 2;
-    edge.data.points = [
-      { x: sourceX, y: sourceBottom },
-      { x: sourceX, y: belowSource },
-      { x: gutterX, y: belowSource },
-      { x: gutterX, y: aboveTarget },
-      { x: targetX, y: aboveTarget },
-      { x: targetX, y: targetTop },
-    ];
+
+  // Lines that drop out of the bottom of a box or come in over the top run along the row gap.
+  const laneY = new Map<string, number>();
+  const runs = new Map<number, { id: string; key: string; lo: number; hi: number }[]>();
+  for (const { edge, exit, enter } of plans) {
+    const gx = gutterX.get(edge.id)!;
+    for (const [side, gap, end] of [
+      [exit, rowOf(edge.source), "source"],
+      [enter, rowOf(edge.target) - 1, "target"],
+    ] as const) {
+      if (side !== "bottom" && side !== "top") continue;
+      const px = ports.get(`${end}:${edge.id}`)!.x;
+      runs.set(gap, [
+        ...(runs.get(gap) ?? []),
+        {
+          id: `${end}:${edge.id}`,
+          key: `${end}:${edge.id}`,
+          lo: Math.min(px, gx),
+          hi: Math.max(px, gx),
+        },
+      ]);
+    }
+  }
+  for (const [gap, items] of runs) {
+    const { laneOf, count } = lanes(items, PARALLEL_GAP);
+    const top = gap * ROW_HEIGHT + ROW_GAP_Y + NODE_HEIGHT + ROUTE_CLEARANCE;
+    const bottom = (gap + 1) * ROW_HEIGHT + ROW_GAP_Y - ROUTE_CLEARANCE;
+    for (const item of items) laneY.set(item.key, place(laneOf.get(item.id)!, count, top, bottom));
+  }
+
+  for (const { edge, exit, enter } of plans) {
+    const gx = gutterX.get(edge.id)!;
+    const start = ports.get(`source:${edge.id}`)!;
+    const end = ports.get(`target:${edge.id}`)!;
+    const points = [start];
+    if (exit === "bottom") {
+      const y = laneY.get(`source:${edge.id}`)!;
+      points.push({ x: start.x, y }, { x: gx, y });
+    } else {
+      points.push({ x: gx, y: start.y });
+    }
+    if (enter === "top") {
+      const y = laneY.get(`target:${edge.id}`)!;
+      points.push({ x: gx, y }, { x: end.x, y });
+    } else {
+      points.push({ x: gx, y: end.y });
+    }
+    points.push(end);
+    edge.data.points = points.filter(
+      (point, index) =>
+        index === 0 || point.x !== points[index - 1]!.x || point.y !== points[index - 1]!.y,
+    );
   }
   return {
     nodes,
@@ -432,6 +579,7 @@ export function layoutCourseSequence(
     height: groups.length * ROW_HEIGHT,
     columns,
     columnWidth,
+    gridLeft,
     creditNotes,
   };
 }
