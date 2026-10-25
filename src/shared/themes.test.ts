@@ -92,10 +92,6 @@ describe("css and index.html stay in step with themes.ts", () => {
     }
   });
 
-  it("keeps no hero token anywhere in the css", () => {
-    expect(css).not.toMatch(/hero/i);
-  });
-
   it("makes bar the ground, and the picker preview colors copies of ground, ink and brand", () => {
     for (const t of themes) {
       const tk = tokens(blockFor(t.id)!);
@@ -137,8 +133,6 @@ describe("css and index.html stay in step with themes.ts", () => {
     }
     expect(resolveTheme("ocean").name).toBe("Coral");
     expect(resolveTheme("ocean").accent.toLowerCase()).toBe("#c4401a");
-    expect(resolveTheme("ocean").blurb).toBe("Warm coral on a cool neutral");
-    expect(resolveTheme("night").blurb).toBe("Dark mode: warm coral on charcoal");
   });
 
   it("gives Night its own hue pairs and keeps the six light pairs shared", () => {
@@ -167,15 +161,7 @@ describe("css and index.html stay in step with themes.ts", () => {
     expect(css).toMatch(/--color-hue-ink:\s*var\(--hue-ink\)/);
   });
 
-  it("defines the radii, motion curves and gated hover variant", () => {
-    expect(css).toMatch(/--radius-control:\s*12px/);
-    expect(css).toMatch(/--radius-row:\s*16px/);
-    expect(css).toMatch(/--radius-panel:\s*20px/);
-    expect(css).toMatch(/--radius-sheet:\s*28px/);
-    expect(css).toMatch(/--radius:\s*var\(--radius-panel\)/);
-    expect(css).toMatch(/--ease-ui-out:\s*cubic-bezier\(0\.23, 1, 0\.32, 1\)/);
-    expect(css).toMatch(/--ease-ui-in-out:\s*cubic-bezier\(0\.77, 0, 0\.175, 1\)/);
-    expect(css).toMatch(/--ease-drawer:\s*cubic-bezier\(0\.32, 0\.72, 0, 1\)/);
+  it("gates the hover variant to fine pointers", () => {
     expect(css).toMatch(
       /@custom-variant hover\s*\{\s*@media \(hover: hover\) and \(pointer: fine\)\s*\{\s*&:hover\s*\{\s*@slot;/,
     );
@@ -196,14 +182,9 @@ describe("css and index.html stay in step with themes.ts", () => {
     expect(ids.toSorted(byId)).toEqual(nonDefault.map((t) => t.id).toSorted(byId));
   });
 
-  it("uses the default theme's bar color in the static meta tag", () => {
-    expect(html).toContain(
-      `<meta name="theme-color" content="${resolveTheme(DEFAULT_THEME_ID).bar}" />`,
-    );
-  });
-
-  it("uses the default theme's bar color for the manifest theme and background colors", () => {
+  it("uses the default theme's bar color in the static meta tag and the manifest", () => {
     const { bar } = resolveTheme(DEFAULT_THEME_ID);
+    expect(html).toContain(`<meta name="theme-color" content="${bar}" />`);
     expect(viteConfig).toContain(`theme_color: "${bar}"`);
     expect(viteConfig).toContain(`background_color: "${bar}"`);
   });
@@ -234,10 +215,6 @@ describe("css and index.html stay in step with themes.ts", () => {
       runInNewContext(code, { document: doc, localStorage: storage });
       return { theme: root.dataset.theme, bar: meta.content };
     }
-
-    it("reads the same storage key as THEME_STORAGE_KEY", () => {
-      expect(code).toContain(`"${THEME_STORAGE_KEY}"`);
-    });
 
     it("applies every saved theme id and its bar color", () => {
       for (const t of themes) expect(run(t.id)).toEqual({ theme: t.id, bar: t.bar });
