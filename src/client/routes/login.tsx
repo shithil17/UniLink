@@ -6,6 +6,7 @@ import { SampleWeek } from "@/components/auth/SampleWeek";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "@/lib/toast";
 import { errorMessage } from "@/lib/api";
 import { useLogin } from "@/lib/auth";
@@ -70,9 +71,8 @@ function LoginPage() {
           </Field>
           <Field data-invalid={Boolean(errors.password)}>
             <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="current-password"
               aria-invalid={Boolean(errors.password)}
               {...form.register("password")}

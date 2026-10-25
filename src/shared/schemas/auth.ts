@@ -75,6 +75,27 @@ export const changePasswordRequest = z.object({
   newPassword,
 });
 
+/**
+ * The client forms ask for the new password twice. The repeat is checked here and stripped before
+ * the request goes out, so the API never sees it.
+ */
+const confirmPassword = z.string().min(1, "Enter the password again");
+const PASSWORDS_DIFFER = "The passwords don't match";
+
+export const signupForm = signupRequest
+  .extend({ confirmPassword })
+  .refine((values) => values.password === values.confirmPassword, {
+    message: PASSWORDS_DIFFER,
+    path: ["confirmPassword"],
+  });
+
+export const changePasswordForm = changePasswordRequest
+  .extend({ confirmPassword })
+  .refine((values) => values.newPassword === values.confirmPassword, {
+    message: PASSWORDS_DIFFER,
+    path: ["confirmPassword"],
+  });
+
 /** The signed-in user as seen by themselves. Never includes the student ID. */
 export const me = z.object({
   username: z.string(),
@@ -86,4 +107,6 @@ export const me = z.object({
 export type SignupRequest = z.infer<typeof signupRequest>;
 export type LoginRequest = z.infer<typeof loginRequest>;
 export type ChangePasswordRequest = z.infer<typeof changePasswordRequest>;
+export type SignupForm = z.infer<typeof signupForm>;
+export type ChangePasswordForm = z.infer<typeof changePasswordForm>;
 export type Me = z.infer<typeof me>;

@@ -71,6 +71,7 @@ export function AuthScreen({
   footer,
   back,
   split,
+  wide,
   children,
 }: {
   title: string;
@@ -82,11 +83,16 @@ export function AuthScreen({
   back?: { to: "/settings"; label: string };
   /** Centre the column beside the `AuthAside` panel from `lg`. */
   split?: boolean;
+  /**
+   * Room for a form that pairs its fields in two columns: 640px from `md`, back to the narrow column
+   * beside `AuthAside` at `lg`, and 640px again from `xl`. `AppLayout` widens the wordmark to match.
+   */
+  wide?: boolean;
   children: ReactNode;
 }) {
   return (
     <section
-      className={`mx-auto w-full max-w-[420px] space-y-6 md:pt-6 ${split ? "lg:max-w-[400px] lg:pt-0" : ""}`}
+      className={`mx-auto w-full max-w-[420px] space-y-6 md:pt-6 ${wide ? "md:max-w-[640px]" : ""} ${split ? "lg:max-w-[400px] lg:pt-0" : ""} ${wide ? "xl:max-w-[640px]" : ""}`}
     >
       {back ? (
         <Link

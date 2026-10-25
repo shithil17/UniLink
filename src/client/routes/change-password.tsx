@@ -6,15 +6,16 @@ import { AuthScreen } from "@/components/auth/AuthForm";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "@/lib/toast";
 import { errorMessage } from "@/lib/api";
 import { useChangePassword } from "@/lib/auth";
 import { meQuery } from "@/lib/queries";
 import {
+  changePasswordForm,
   changePasswordRequest,
   PASSWORD_MIN_LENGTH,
-  type ChangePasswordRequest,
+  type ChangePasswordForm,
 } from "../../shared/schemas/auth";
 
 export const Route = createFileRoute("/change-password")({
@@ -29,9 +30,9 @@ export const Route = createFileRoute("/change-password")({
 function ChangePasswordPage() {
   const { data: user } = useQuery(meQuery);
   const change = useChangePassword();
-  const form = useForm<ChangePasswordRequest>({
-    resolver: zodResolver(changePasswordRequest),
-    defaultValues: { currentPassword: "", newPassword: "" },
+  const form = useForm<ChangePasswordForm>({
+    resolver: zodResolver(changePasswordForm),
+    defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
   });
   const { errors } = form.formState;
 
@@ -48,16 +49,17 @@ function ChangePasswordPage() {
     >
       <form
         onSubmit={form.handleSubmit((values) =>
-          change.mutate(values, { onError: (err) => toast.error(errorMessage(err)) }),
+          change.mutate(changePasswordRequest.parse(values), {
+            onError: (err) => toast.error(errorMessage(err)),
+          }),
         )}
         noValidate
       >
         <FieldGroup>
           <Field data-invalid={Boolean(errors.currentPassword)}>
             <FieldLabel htmlFor="currentPassword">Current password</FieldLabel>
-            <Input
+            <PasswordInput
               id="currentPassword"
-              type="password"
               autoComplete="current-password"
               aria-invalid={Boolean(errors.currentPassword)}
               {...form.register("currentPassword")}
@@ -66,15 +68,24 @@ function ChangePasswordPage() {
           </Field>
           <Field data-invalid={Boolean(errors.newPassword)}>
             <FieldLabel htmlFor="newPassword">New password</FieldLabel>
-            <Input
+            <PasswordInput
               id="newPassword"
-              type="password"
               autoComplete="new-password"
               aria-invalid={Boolean(errors.newPassword)}
               {...form.register("newPassword")}
             />
             <FieldDescription>At least {PASSWORD_MIN_LENGTH} characters.</FieldDescription>
             <FieldError errors={[errors.newPassword]} />
+          </Field>
+          <Field data-invalid={Boolean(errors.confirmPassword)}>
+            <FieldLabel htmlFor="confirmPassword">Confirm new password</FieldLabel>
+            <PasswordInput
+              id="confirmPassword"
+              autoComplete="new-password"
+              aria-invalid={Boolean(errors.confirmPassword)}
+              {...form.register("confirmPassword")}
+            />
+            <FieldError errors={[errors.confirmPassword]} />
           </Field>
           <Button type="submit" size="lg" className="w-full" disabled={change.isPending}>
             {change.isPending ? "Saving..." : "Change password"}

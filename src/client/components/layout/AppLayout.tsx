@@ -139,6 +139,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   // Signed out, log in and sign up go edge to edge from `lg`: `AuthAside` is the left column and
   // carries the wordmark. It sits outside `ScreenSwap` so it stays mounted between the two screens.
   const splitAuth = !hasTabs && isSplitAuthPath(pathname);
+  // Sign up pairs its fields from `md`, so the wordmark above it widens with the column (see `AuthScreen`).
+  const wideAuth = !hasTabs && pathname === "/signup";
   const wideCourses = pathname === "/courses" && (search as { view?: string }).view === "sequence";
 
   return (
@@ -253,7 +255,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         {hasTabs ? null : (
           // 420px content box plus the 16px insets: the same width as the auth column below.
           <header
-            className={`mx-auto max-w-[calc(420px+2rem)] px-4 pt-[calc(1.75rem+env(safe-area-inset-top))] ${splitAuth ? "lg:hidden" : ""}`}
+            className={`mx-auto max-w-[calc(420px+2rem)] px-4 pt-[calc(1.75rem+env(safe-area-inset-top))] ${wideAuth ? "md:max-w-[calc(640px+2rem)]" : ""} ${splitAuth ? "lg:hidden" : ""}`}
           >
             <Link
               to="/"
