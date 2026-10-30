@@ -554,8 +554,9 @@
  * and a faint shade on the bottom-right so it reads as a thick pane. Labels get a soft halo in the
  * surface color to stay legible over busy rows. Plain CSS, so it renders the same in WebKit and
  * Chromium. It slides away on scroll down and returns on scroll up (260ms ease-drawer on translate,
- * 200ms on opacity). Scoped below `md` so the desktop rail is untouched. Focus inside the bar keeps
- * it visible. Reduced motion keeps only an opacity fade.
+ * 200ms on opacity). Scoped below `md` so the desktop rail is untouched. Keyboard focus inside the bar
+ * keeps it visible; a tapped tab keeps plain focus, so `:focus-visible` (not `:focus-within`) lets
+ * it still hide. Reduced motion keeps only an opacity fade.
  */
 @media (width < 48rem) {
   .dock-glass {
@@ -579,7 +580,7 @@
   .dock-glass a svg {
     filter: drop-shadow(0 0 4px var(--color-surface));
   }
-  .dock-glass[data-dock-hidden]:not(:focus-within) {
+  .dock-glass[data-dock-hidden]:not(:has(:focus-visible)) {
     translate: 0 calc(100% + 0.75rem + env(safe-area-inset-bottom));
     opacity: 0;
     pointer-events: none;
@@ -605,7 +606,7 @@
     .dock-glass {
       transition: opacity 200ms var(--ease-ui-out);
     }
-    .dock-glass[data-dock-hidden]:not(:focus-within) {
+    .dock-glass[data-dock-hidden]:not(:has(:focus-visible)) {
       translate: none;
     }
   }
