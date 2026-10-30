@@ -143,6 +143,9 @@ export default defineConfig({
             injectRegister: false,
             includeAssets: ["favicon.svg", "apple-touch-icon-180x180.png"],
             manifest: {
+              // A fixed id, so browsers keep treating this as the same installed app (and update its
+              // icon) even if start_url ever changes.
+              id: "/",
               name: "UniLink",
               short_name: "UniLink",
               description: "An unofficial, student-run companion for NSU students",

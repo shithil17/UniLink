@@ -28,6 +28,7 @@ import { press } from "@/components/ui/press";
 import { Toaster } from "@/components/ui/sonner";
 import { badgeLabel } from "@/lib/inbox";
 import { AuthAside } from "@/components/auth/AuthForm";
+import { Logo } from "@/components/layout/Logo";
 import { activeTabIndex, isSplitAuthPath, mainTabs, type MainTab } from "@/lib/nav";
 import { meQuery, unreadCountQuery } from "@/lib/queries";
 
@@ -163,9 +164,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
             <Link
               to="/"
               aria-label="UniLink"
-              className={`mb-6 hidden h-11 items-center rounded-control px-3 md:flex ${wordmark} ${focusRing} ${railPinnedOpen || railPeekOpen ? "" : "justify-center px-0"}`}
+              className={`mb-6 hidden h-11 items-center gap-2 rounded-control px-3 md:flex ${wordmark} ${focusRing} ${railPinnedOpen || railPeekOpen ? "" : "justify-center px-0"}`}
             >
-              {railPinnedOpen || railPeekOpen ? "UniLink" : "U"}
+              <Logo className="h-6" />
+              {railPinnedOpen || railPeekOpen ? <span>UniLink</span> : null}
             </Link>
             <nav
               aria-label="Main"
@@ -259,8 +261,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
           >
             <Link
               to="/"
-              className={`-mx-3 inline-flex h-11 items-center rounded-control px-3 ${wordmark} ${focusRing}`}
+              className={`-mx-3 inline-flex h-11 items-center gap-2 rounded-control px-3 ${wordmark} ${focusRing}`}
             >
+              <Logo className="h-6" />
               UniLink
             </Link>
           </header>

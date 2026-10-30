@@ -12,6 +12,10 @@ const IPHONE_CHROME =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/126.0.0.0 Mobile/15E148 Safari/604.1";
 const IPHONE_FIREFOX =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/127.0 Mobile/15E148 Safari/605.1.15";
+const IPHONE_EDGE =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 EdgiOS/126.0.2592.56 Mobile/15E148 Safari/605.1.15";
+const OLD_IPHONE_CHROME =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 16_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/110.0.0.0 Mobile/15E148 Safari/604.1";
 const IPHONE_INSTAGRAM =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 330.0 Safari/604.1";
 const IPAD_SAFARI =
@@ -36,8 +40,14 @@ describe("shouldShowInstallHint", () => {
     );
   });
 
-  it("does not show in other iOS browsers", () => {
-    for (const userAgent of [IPHONE_CHROME, IPHONE_FIREFOX, IPHONE_INSTAGRAM]) {
+  it("shows in Chrome, Firefox and Edge on iOS 16.4 and later", () => {
+    for (const userAgent of [IPHONE_CHROME, IPHONE_FIREFOX, IPHONE_EDGE]) {
+      expect(shouldShowInstallHint({ ...base, userAgent })).toBe(true);
+    }
+  });
+
+  it("does not show in Chrome before iOS 16.4 or in in-app web views", () => {
+    for (const userAgent of [OLD_IPHONE_CHROME, IPHONE_INSTAGRAM]) {
       expect(shouldShowInstallHint({ ...base, userAgent })).toBe(false);
     }
   });

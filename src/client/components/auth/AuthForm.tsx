@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronLeftIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { SampleWeek } from "@/components/auth/SampleWeek";
+import { Logo } from "@/components/layout/Logo";
 import { focusRing } from "@/components/ui/focus";
 
 /** The link style used for quiet text links across the auth screens. */
@@ -30,8 +31,9 @@ export function AuthAside() {
     <aside className="hidden h-dvh w-[46%] max-w-[640px] shrink-0 flex-col overflow-y-auto bg-brand-soft p-12 text-brand-ink lg:sticky lg:top-0 lg:flex">
       <Link
         to="/"
-        className={`-mx-3 inline-flex h-11 w-fit items-center rounded-control px-3 text-[22px] leading-none font-bold tracking-[-0.02em] text-brand-ink ${focusRing}`}
+        className={`-mx-3 inline-flex h-11 w-fit items-center gap-2 rounded-control px-3 text-[22px] leading-none font-bold tracking-[-0.02em] text-brand-ink ${focusRing}`}
       >
+        <Logo className="h-6" />
         UniLink
       </Link>
       <div className="my-auto max-w-[440px] py-8">

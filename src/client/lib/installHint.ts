@@ -2,9 +2,11 @@
 
 export const INSTALL_HINT_STORAGE_KEY = "unilink-ios-install-hint-dismissed";
 
-// Browsers and in-app web views on iOS that carry "Safari" in the UA but cannot add to Home Screen the Safari way.
-const NOT_SAFARI =
-  /CriOS|FxiOS|EdgiOS|OPiOS|OPT\/|GSA\/|DuckDuckGo|FBAN|FBAV|Instagram|Line\/|Snapchat/i;
+// iOS browsers other than Safari that can add to the Home Screen from their Share menu (iOS 16.4+).
+const OTHER_INSTALLERS = /CriOS|FxiOS|EdgiOS/;
+
+// In-app web views and browsers on iOS that carry "Safari" in the UA but cannot add to Home Screen.
+const CANNOT_INSTALL = /OPiOS|OPT\/|GSA\/|DuckDuckGo|FBAN|FBAV|Instagram|Line\/|Snapchat/i;
 
 export type InstallHintEnv = {
   userAgent: string;
@@ -20,14 +22,23 @@ export function isIos(userAgent: string, maxTouchPoints = 0): boolean {
   return /Macintosh/.test(userAgent) && maxTouchPoints > 1;
 }
 
-export function isIosSafari(userAgent: string, maxTouchPoints = 0): boolean {
-  return (
-    isIos(userAgent, maxTouchPoints) && /Safari\//.test(userAgent) && !NOT_SAFARI.test(userAgent)
-  );
+/** iOS version from an iPhone or iPad user agent ("OS 17_5"), or null for the iPadOS Mac UA. */
+function iosVersion(userAgent: string): [number, number] | null {
+  const match = / OS (\d+)_(\d+)/.exec(userAgent);
+  return match ? [Number(match[1]), Number(match[2])] : null;
+}
+
+export function canAddToHomeScreen(userAgent: string, maxTouchPoints = 0): boolean {
+  if (!isIos(userAgent, maxTouchPoints) || !/Safari\//.test(userAgent)) return false;
+  if (CANNOT_INSTALL.test(userAgent)) return false;
+  if (!OTHER_INSTALLERS.test(userAgent)) return true;
+  // Chrome, Firefox and Edge got Add to Home Screen in iOS 16.4.
+  const version = iosVersion(userAgent);
+  return version !== null && (version[0] > 16 || (version[0] === 16 && version[1] >= 4));
 }
 
 export function shouldShowInstallHint(env: InstallHintEnv): boolean {
-  return !env.standalone && !env.dismissed && isIosSafari(env.userAgent, env.maxTouchPoints);
+  return !env.standalone && !env.dismissed && canAddToHomeScreen(env.userAgent, env.maxTouchPoints);
 }
 
 /** Storage can throw (private mode, blocked site data): treat that as "not dismissed". */

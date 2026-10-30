@@ -3,7 +3,7 @@ import { useState } from "react";
 import { readInstallHintEnv, saveDismissed, shouldShowInstallHint } from "@/lib/installHint";
 import { FloatingNote } from "./FloatingNotes";
 
-/** One-time "Add to Home Screen" hint for iOS Safari. Dismissal is remembered in localStorage. */
+/** One-time "Add to Home Screen" hint for iOS browsers that can add to the Home Screen. Dismissal is remembered in localStorage. */
 export function InstallHint() {
   const [visible, setVisible] = useState(() => shouldShowInstallHint(readInstallHintEnv()));
   if (!visible) return null;
