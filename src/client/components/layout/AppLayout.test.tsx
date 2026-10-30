@@ -162,6 +162,15 @@ describe("AppLayout rail", () => {
     ).toBe("false");
   });
 
+  it("closes at once when collapsed with the mouse, even though the pointer is still on it", async () => {
+    await renderShell(user("student"));
+    const rail = screen.getByRole("complementary", { name: "Sidebar" });
+    fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }), { detail: 1 });
+
+    expect(rail.getAttribute("data-collapsed")).toBe("true");
+    expect(rail.getAttribute("data-expanded")).toBe("false");
+  });
+
   it("keeps tab link names available when collapsed", async () => {
     await renderShell(user("student"));
     fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));

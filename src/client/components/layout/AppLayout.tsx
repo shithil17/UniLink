@@ -17,6 +17,7 @@ import {
   useState,
   type CSSProperties,
   type FocusEvent,
+  type MouseEvent,
   type PointerEvent,
   type ReactNode,
 } from "react";
@@ -70,6 +71,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [railPeekOpen, setRailPeekOpen] = useState(false);
   const railRef = useRef<HTMLElement>(null);
   const pointerInsideRail = useRef(false);
+  // Set by a mouse collapse: the pointer is still on the rail, so hover must not reopen it until the
+  // pointer has left once.
+  const peekSuppressed = useRef(false);
   const railTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -101,20 +105,21 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }
 
   function handleRailPointerEnter(event: PointerEvent<HTMLElement>) {
-    if (event.pointerType !== "mouse" || railPinnedOpen) return;
+    if (event.pointerType !== "mouse" || railPinnedOpen || peekSuppressed.current) return;
     pointerInsideRail.current = true;
     scheduleRailPeek(true, RAIL_OPEN_DELAY_MS);
   }
 
   function handleRailPointerLeave(event: PointerEvent<HTMLElement>) {
     if (event.pointerType !== "mouse" || railPinnedOpen) return;
+    peekSuppressed.current = false;
     pointerInsideRail.current = false;
     scheduleRailPeek(false, RAIL_CLOSE_DELAY_MS);
   }
 
   function handleRailFocus() {
     clearRailTimer();
-    if (!railPinnedOpen) setRailPeekOpen(true);
+    if (!railPinnedOpen && !peekSuppressed.current) setRailPeekOpen(true);
   }
 
   function handleRailBlur(event: FocusEvent<HTMLElement>) {
@@ -122,9 +127,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
     scheduleRailPeek(false, RAIL_CLOSE_DELAY_MS);
   }
 
-  function toggleRailPinnedOpen() {
-    setRailPinnedOpen((open) => !open);
-    setRailPeekOpen(railPinnedOpen);
+  function toggleRailPinnedOpen(event: MouseEvent<HTMLButtonElement>) {
+    clearRailTimer();
+    // `detail` is 0 for a keyboard press: keyboard users keep the peek so the focused button stays put.
+    const byMouse = event.detail > 0;
+    if (railPinnedOpen && byMouse) {
+      peekSuppressed.current = true;
+      pointerInsideRail.current = true;
+    }
+    setRailPinnedOpen(!railPinnedOpen);
+    setRailPeekOpen(railPinnedOpen && !byMouse);
   }
 
   const me = useQuery(meQuery);
