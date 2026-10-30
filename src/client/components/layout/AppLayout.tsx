@@ -266,20 +266,25 @@ export function AppLayout({ children }: { children: ReactNode }) {
       ) : null}
       {splitAuth ? <AuthAside /> : null}
       <div className={`min-w-0 flex-1 ${splitAuth ? "lg:flex lg:min-h-dvh lg:flex-col" : ""}`}>
-        {hasTabs ? null : (
-          // 420px content box plus the 16px insets: the same width as the auth column below.
-          <header
-            className={`mx-auto max-w-[calc(420px+2rem)] px-4 pt-[calc(1.75rem+env(safe-area-inset-top))] ${wideAuth ? "md:max-w-[calc(640px+2rem)]" : ""} ${splitAuth ? "lg:hidden" : ""}`}
+        {/*
+         * The wordmark header. With tabs it shows on phones only (the rail carries it from `md`);
+         * signed out it sits over the 420px auth column (plus the 16px insets).
+         */}
+        <header
+          className={
+            hasTabs
+              ? "px-4 pt-[calc(1rem+env(safe-area-inset-top))] md:hidden"
+              : `mx-auto max-w-[calc(420px+2rem)] px-4 pt-[calc(1.75rem+env(safe-area-inset-top))] ${wideAuth ? "md:max-w-[calc(640px+2rem)]" : ""} ${splitAuth ? "lg:hidden" : ""}`
+          }
+        >
+          <Link
+            to="/"
+            className={`-mx-3 inline-flex h-11 items-center gap-2 rounded-control px-3 ${wordmark} ${focusRing}`}
           >
-            <Link
-              to="/"
-              className={`-mx-3 inline-flex h-11 items-center gap-2 rounded-control px-3 ${wordmark} ${focusRing}`}
-            >
-              <Logo className="h-6" />
-              UniLink
-            </Link>
-          </header>
-        )}
+            <Logo className="h-6" />
+            UniLink
+          </Link>
+        </header>
         {/*
          * Phones clear the floating bar: 112px (12px inset + 68px bar + air) plus the home-indicator
          * inset. The column is 1240px wide with the rail, so the main part is 1240 minus the 240px rail.
@@ -287,7 +292,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <main
           className={`mx-auto w-full ${wideCourses ? "max-w-none" : railPinnedOpen ? "max-w-[calc(1240px-15rem)]" : "max-w-[calc(1240px-4.5rem)]"} px-4 md:px-8 ${
             hasTabs
-              ? "pt-[calc(1.75rem+env(safe-area-inset-top))] pb-[calc(7rem+env(safe-area-inset-bottom))] md:pt-9 md:pb-12"
+              ? "pt-3 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pt-9 md:pb-12"
               : "pt-6 pb-12"
           } ${splitAuth ? "lg:flex lg:max-w-none lg:flex-1 lg:items-center lg:justify-center lg:p-12" : ""}`}
         >

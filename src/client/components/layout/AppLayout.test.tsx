@@ -7,7 +7,7 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { Me } from "../../../shared/schemas/auth";
 import { AppLayout } from "./AppLayout";
@@ -64,6 +64,11 @@ describe("AppLayout navigation", () => {
     await renderShell(null);
     expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
     expect(screen.getByRole("link", { name: "UniLink" })).toBeTruthy();
+  });
+
+  it("keeps the wordmark in a header when signed in, for phones where the rail is hidden", async () => {
+    await renderShell(user("student"));
+    expect(within(screen.getByRole("banner")).getByRole("link", { name: "UniLink" })).toBeTruthy();
   });
 
   it("shows no tabs while a temporary password is being replaced", async () => {

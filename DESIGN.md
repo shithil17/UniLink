@@ -53,7 +53,7 @@ elevation:
 
 ## Overview
 
-Pocket Planner is a friendly, tactile student planner. Neutral grounds and flat surfaces keep course information easy to scan. Each palette has one accent for actions and navigation; six softer hues identify course data. The wordmark is “UniLink” in text, without a logo mark or NSU branding.
+Pocket Planner is a friendly, tactile student planner. Neutral grounds and flat surfaces keep course information easy to scan. Each palette has one accent for actions and navigation; six softer hues identify course data. The wordmark is the UniLink mark (a U with a dot: the stem in ink, the dot in the palette accent, so it follows the theme) beside “UniLink” in text, with no NSU branding.
 
 ## Colors
 
