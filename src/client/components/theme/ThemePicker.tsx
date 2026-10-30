@@ -11,7 +11,7 @@ import { useTheme } from "./themeContext";
  * A palette's accent as a 28px dot (Night shows its ink instead). Colors come from the registry,
  * not from tokens, because the swatch must keep showing its own palette whichever one is active.
  */
-function Swatch({ theme }: { theme: ThemeMeta }) {
+export function Swatch({ theme }: { theme: ThemeMeta }) {
   return (
     <span
       className="size-7 shrink-0 rounded-full"
@@ -25,7 +25,7 @@ function Swatch({ theme }: { theme: ThemeMeta }) {
  * All palettes as a radio group inside a flat panel: arrow keys move the choice, Tab enters and
  * leaves the group. The chosen row carries a check, so selection is never color alone.
  */
-export function ThemePicker() {
+export function ThemePicker({ inSheet = false }: { inSheet?: boolean }) {
   const { theme, setTheme } = useTheme();
   return (
     <RadioGroup
@@ -34,7 +34,11 @@ export function ThemePicker() {
       onValueChange={(id) => {
         setTheme(resolveTheme(id).id);
       }}
-      className="gap-0 overflow-hidden rounded-panel bg-surface md:rounded-[24px]"
+      // In a sheet the rows sit on the sheet's own surface, so no second panel behind them.
+      className={cn(
+        "gap-0",
+        !inSheet && "overflow-hidden rounded-panel bg-surface md:rounded-[24px]",
+      )}
     >
       {themes.map((t) => {
         const active = t.id === theme;
@@ -43,7 +47,8 @@ export function ThemePicker() {
             key={t.id}
             value={t.id}
             className={cn(
-              "flex min-h-14 w-full cursor-pointer items-center gap-3 border-t border-line px-4 py-2 text-left outline-none first:border-t-0 hover:bg-tint active:bg-tint",
+              "flex min-h-14 w-full cursor-pointer items-center gap-3 border-t border-line py-2 text-left outline-none first:border-t-0 hover:bg-tint active:bg-tint",
+              inSheet ? "px-5" : "px-4",
               focusRing,
               "focus-visible:-outline-offset-2",
               press,

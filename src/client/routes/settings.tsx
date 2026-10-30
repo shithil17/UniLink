@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { PushSwitch } from "@/components/push/PushSwitch";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { SectionHeader } from "@/components/layout/SectionHeader";
-import { ThemePicker } from "@/components/theme/ThemePicker";
+import { ThemeRow } from "@/components/theme/ThemeRow";
 import { focusRing } from "@/components/ui/focus";
 import { press } from "@/components/ui/press";
 import { meQuery, pushPublicKeyQuery } from "@/lib/queries";
@@ -62,7 +62,9 @@ function Settings() {
         </div>
       </Group>
       <Group title="Appearance">
-        <ThemePicker />
+        <div className={panel}>
+          <ThemeRow className={linkRow} />
+        </div>
       </Group>
       {push ? (
         <Group title="Notifications">
