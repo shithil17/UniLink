@@ -66,7 +66,7 @@ function readRailPinnedOpen() {
  *
  * The pill reads `--i`, the active tab's position in `mainTabs()`, so the bar works for five student
  * tabs and five mod tabs alike. With no active tab (a screen reached from elsewhere) the pill hides.
- * On phones the bar is frosted glass and slides away while scrolling down, back on scrolling up.
+ * On phones the bar slides away while scrolling down and back on scrolling up.
  */
 export function AppLayout({ children }: { children: ReactNode }) {
   const dockHidden = useDockHidden();
@@ -193,7 +193,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   "--n": tabs.length,
                 } as CSSProperties
               }
-              className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-10 grid h-[68px] grid-flow-col auto-cols-fr dock-glass rounded-full p-1.5 md:static md:flex md:h-auto md:flex-col md:gap-1.5 md:rounded-none md:bg-transparent md:p-0 md:shadow-none"
+              className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-10 grid h-[68px] grid-flow-col auto-cols-fr dock-autohide rounded-full bg-surface p-1.5 shadow-float md:static md:flex md:h-auto md:flex-col md:gap-1.5 md:rounded-none md:bg-transparent md:p-0 md:shadow-none"
             >
               {/* The pill sits behind the links (they are `relative`, so they paint over it). */}
               <span

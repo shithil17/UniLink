@@ -549,64 +549,33 @@
 }
 
 /*
- * Phone tab bar: the one glass surface in the app. Clear glass, not frosted: a light surface tint
- * over a small blur, so what scrolls behind stays recognisable, with a bright rim on the top-left
- * and a faint shade on the bottom-right so it reads as a thick pane. Labels get a soft halo in the
- * surface color to stay legible over busy rows. Plain CSS, so it renders the same in WebKit and
- * Chromium. It slides away on scroll down and returns on scroll up (260ms ease-drawer on translate,
- * 200ms on opacity). Scoped below `md` so the desktop rail is untouched. Keyboard focus inside the bar
- * keeps it visible; a tapped tab keeps plain focus, so `:focus-visible` (not `:focus-within`) lets
- * it still hide. Reduced motion keeps only an opacity fade.
+ * Phone tab bar auto-hide: it slides away on scroll down and returns on scroll up. Hiding is the
+ * slow, gentle move (480ms ease-in-out, the fade trailing the slide) so the bar is seen leaving
+ * rather than blinking out; returning is quicker (360ms ease-drawer) because the user asked for it.
+ * Scoped below `md` so the desktop rail is untouched. Keyboard focus inside the bar keeps it
+ * visible; a tapped tab keeps plain focus, so `:focus-visible` (not `:focus-within`) lets it still
+ * hide. Reduced motion keeps only an opacity fade.
  */
 @media (width < 48rem) {
-  .dock-glass {
-    background: color-mix(in oklab, var(--color-surface) 30%, transparent);
-    /* WebKit ignores custom properties inside the prefixed filter, so both stay literal. */
-    -webkit-backdrop-filter: blur(6px) saturate(190%) contrast(0.95);
-    backdrop-filter: blur(6px) saturate(190%) contrast(0.95);
-    box-shadow:
-      var(--shadow-float),
-      inset 1px 1.5px 0 color-mix(in oklab, var(--color-surface) 85%, transparent),
-      inset -1px -1px 0 color-mix(in oklab, var(--color-ink) 10%, transparent),
-      inset 0 0 0 0.5px color-mix(in oklab, var(--color-ink) 14%, transparent),
-      inset 0 0 14px color-mix(in oklab, var(--color-surface) 45%, transparent);
+  .dock-autohide {
     transition:
-      translate 260ms var(--ease-drawer),
-      opacity 200ms var(--ease-ui-out);
+      translate 360ms var(--ease-drawer),
+      opacity 240ms var(--ease-ui-out);
   }
-  .dock-glass a {
-    text-shadow: 0 0 6px var(--color-surface);
-  }
-  .dock-glass a svg {
-    filter: drop-shadow(0 0 4px var(--color-surface));
-  }
-  .dock-glass[data-dock-hidden]:not(:has(:focus-visible)) {
+  .dock-autohide[data-dock-hidden]:not(:has(:focus-visible)) {
     translate: 0 calc(100% + 0.75rem + env(safe-area-inset-bottom));
     opacity: 0;
     pointer-events: none;
-  }
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .dock-glass {
-      background: var(--color-surface);
-    }
-  }
-  @media (prefers-reduced-transparency: reduce) {
-    .dock-glass {
-      background: var(--color-surface);
-      -webkit-backdrop-filter: none;
-      backdrop-filter: none;
-    }
-    .dock-glass a,
-    .dock-glass a svg {
-      text-shadow: none;
-      filter: none;
-    }
+    transition:
+      translate 480ms cubic-bezier(0.45, 0, 0.25, 1),
+      opacity 320ms ease-in 160ms;
   }
   @media (prefers-reduced-motion: reduce) {
-    .dock-glass {
-      transition: opacity 200ms var(--ease-ui-out);
+    .dock-autohide,
+    .dock-autohide[data-dock-hidden]:not(:has(:focus-visible)) {
+      transition: opacity 240ms var(--ease-ui-out);
     }
-    .dock-glass[data-dock-hidden]:not(:has(:focus-visible)) {
+    .dock-autohide[data-dock-hidden]:not(:has(:focus-visible)) {
       translate: none;
     }
   }

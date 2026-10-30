@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
-// ceiling: 12px of downward travel before the dock hides, so a thumb jitter never hides it.
+// ceiling: 24px of downward travel before the dock hides, so a short flick or jitter never hides it.
 // Revisit if testers report it hiding too eagerly or too late.
-export const DOCK_HIDE_DELTA_PX = 12;
+export const DOCK_HIDE_DELTA_PX = 24;
 // ceiling: 8px of upward travel brings it back; smaller than the hide delta so reaching for the
 // bar feels instant. Revisit if it flickers on slow scrolls.
 export const DOCK_SHOW_DELTA_PX = 8;
