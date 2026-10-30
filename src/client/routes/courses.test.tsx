@@ -61,61 +61,65 @@ const summary: CgpaSummary = {
 
 afterEach(() => {
   cleanup();
+  localStorage.clear();
   vi.unstubAllGlobals();
 });
 
-describe("course sequence route", () => {
-  it("opens the CGPA summary over the sheet and lets the button hide it", async () => {
-    vi.stubGlobal("matchMedia", () => ({
-      matches: true,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-    }));
-    vi.stubGlobal(
-      "ResizeObserver",
-      class {
-        observe() {}
-        unobserve() {}
-        disconnect() {}
-      },
-    );
-    class Matrix {
-      m22 = 1;
-      inverse() {
-        return this;
-      }
-      scale() {
-        return this;
-      }
+function renderCourses(path: string) {
+  vi.stubGlobal("matchMedia", () => ({
+    matches: true,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }));
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+  class Matrix {
+    m22 = 1;
+    inverse() {
+      return this;
     }
-    vi.stubGlobal("DOMMatrixReadOnly", Matrix);
-    vi.stubGlobal("DOMMatrix", Matrix);
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(() => Promise.reject(new Error("No network in this test"))),
-    );
+    scale() {
+      return this;
+    }
+  }
+  vi.stubGlobal("DOMMatrixReadOnly", Matrix);
+  vi.stubGlobal("DOMMatrix", Matrix);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(() => Promise.reject(new Error("No network in this test"))),
+  );
 
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false, staleTime: Infinity, refetchOnMount: false } },
-    });
-    queryClient.setQueryData(["me"], me);
-    queryClient.setQueryData(["course-map"], map);
-    queryClient.setQueryData(["attempts", "list"], []);
-    queryClient.setQueryData(["attempts", "summary"], summary);
-    queryClient.setQueryData(["inbox", "unread-count"], { count: 0 });
-    const router = createRouter({
-      routeTree,
-      context: { queryClient },
-      history: createMemoryHistory({ initialEntries: ["/courses?view=sequence"] }),
-    });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity, refetchOnMount: false } },
+  });
+  queryClient.setQueryData(["me"], me);
+  queryClient.setQueryData(["course-map"], map);
+  queryClient.setQueryData(["attempts", "list"], []);
+  queryClient.setQueryData(["attempts", "summary"], summary);
+  queryClient.setQueryData(["inbox", "unread-count"], { count: 0 });
+  const router = createRouter({
+    routeTree,
+    context: { queryClient },
+    history: createMemoryHistory({ initialEntries: [path] }),
+  });
 
-    render(
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>,
-    );
+  render(
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>,
+  );
+}
 
-    await screen.findByRole("region", { name: "Course sequence sheet" });
+describe("course roadmap route", () => {
+  it("opens the CGPA summary over the sheet and lets the button hide it", async () => {
+    renderCourses("/courses?view=sequence");
+    await screen.findByRole("region", { name: "Course roadmap" });
     const summaryButton = screen.getByRole("button", { name: "CGPA summary" });
     expect(screen.queryByRole("heading", { name: "CGPA" })).toBeNull();
     fireEvent.click(summaryButton);
@@ -123,5 +127,37 @@ describe("course sequence route", () => {
     expect(summaryButton.getAttribute("aria-expanded")).toBe("true");
     fireEvent.click(summaryButton);
     await waitFor(() => expect(screen.queryByRole("heading", { name: "CGPA" })).toBeNull());
+  });
+
+  it("offers List and Roadmap, and the tile opens the roadmap without retiring itself", async () => {
+    renderCourses("/courses");
+    expect(await screen.findByRole("button", { name: "List" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Roadmap" })).toBeTruthy();
+    expect(screen.getByText("See your degree as a roadmap")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Open roadmap" }));
+    await screen.findByRole("region", { name: "Course roadmap" });
+    expect(localStorage.getItem("unilink-roadmap-tip")).toBeNull();
+  });
+
+  it("hides the tile only for now when dismissed without don't show again", async () => {
+    renderCourses("/courses");
+    fireEvent.click(await screen.findByRole("button", { name: "Hide roadmap tip" }));
+    expect(screen.queryByText("See your degree as a roadmap")).toBeNull();
+    expect(localStorage.getItem("unilink-roadmap-tip")).toBeNull();
+  });
+
+  it("hides the tile for good when dismissed with don't show again ticked", async () => {
+    renderCourses("/courses");
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Don't show again" }));
+    fireEvent.click(screen.getByRole("button", { name: "Hide roadmap tip" }));
+    expect(screen.queryByText("See your degree as a roadmap")).toBeNull();
+    expect(localStorage.getItem("unilink-roadmap-tip")).toBe("done");
+  });
+
+  it("does not show the tile when the tip is already done", async () => {
+    localStorage.setItem("unilink-roadmap-tip", "done");
+    renderCourses("/courses");
+    await screen.findByRole("button", { name: "Roadmap" });
+    expect(screen.queryByText("See your degree as a roadmap")).toBeNull();
   });
 });

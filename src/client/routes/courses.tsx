@@ -10,6 +10,7 @@ import { CategoryJump } from "@/components/courses/CategoryJump";
 import { CreditBar } from "@/components/courses/CreditBar";
 import { CourseSheet, type SheetTarget } from "@/components/courses/CourseSheet";
 import { CourseViewToggle } from "@/components/courses/CourseViewToggle";
+import { RoadmapTeaser } from "@/components/courses/RoadmapTeaser";
 import { focusRing } from "@/components/ui/focus";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBlock } from "@/components/ui/error-block";
@@ -82,7 +83,7 @@ function MapTitle({ sub }: { sub?: string }) {
       <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.01em] text-ink md:text-[32px]">
         Course map
       </h1>
-      {sub ? <p className="mt-1 text-soft">{sub}</p> : null}
+      {sub ? <p className="mt-1 text-balance text-soft">{sub}</p> : null}
     </div>
   );
 }
@@ -101,6 +102,7 @@ function CourseMapPage() {
       search: (previous) => ({ ...previous, view: next === "list" ? undefined : next }),
     });
 
+  const showSequence = view === "sequence" && desktop;
   if (map.isPending) return <MapLoading />;
   if (!map.data) {
     return (
@@ -141,7 +143,6 @@ function CourseMapPage() {
   const categoryNames = data.categories.map((c) => c.name);
   const electiveCategory = defaultElectiveCategory(data);
   const trailCategory = data.categories.find((c) => c.trails);
-  const showSequence = view === "sequence" && desktop;
   const standing = (
     <section aria-label="Degree standing" className={`${panel} grid gap-3`}>
       <p className="flex flex-wrap items-baseline gap-x-2">
@@ -204,7 +205,18 @@ function CourseMapPage() {
           </Suspense>
         </div>
       ) : (
-        <MapGrid header={header} main={list} side={<CgpaSummary />} />
+        <MapGrid
+          header={header}
+          main={list}
+          side={
+            <>
+              <CgpaSummary />
+              {desktop ? (
+                <RoadmapTeaser panelClass={panel} onOpen={() => setView("sequence")} />
+              ) : null}
+            </>
+          }
+        />
       )}
       <CourseSheet
         target={target}
@@ -220,7 +232,7 @@ function CourseMapPage() {
   );
 }
 
-/** The CGPA summary in Sequence, dropping down from its button over the sheet. */
+/** The CGPA summary in Roadmap, dropping down from its button over the sheet. */
 function CgpaPopover() {
   return (
     <Popover.Root>

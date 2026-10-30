@@ -265,7 +265,7 @@ export function SequenceCanvas({
     <section
       ref={container}
       className="sequence-sheet relative w-full overflow-hidden rounded-panel bg-surface"
-      aria-label="Course sequence sheet"
+      aria-label="Course roadmap"
     >
       <div
         className="sequence-table-header"
