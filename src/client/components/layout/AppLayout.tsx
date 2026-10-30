@@ -27,6 +27,7 @@ import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
 import { focusRing } from "@/components/ui/focus";
 import { press } from "@/components/ui/press";
 import { Toaster } from "@/components/ui/sonner";
+import { useDockHidden } from "@/lib/useDockHidden";
 import { badgeLabel } from "@/lib/inbox";
 import { AuthAside } from "@/components/auth/AuthForm";
 import { Logo } from "@/components/layout/Logo";
@@ -65,8 +66,10 @@ function readRailPinnedOpen() {
  *
  * The pill reads `--i`, the active tab's position in `mainTabs()`, so the bar works for five student
  * tabs and five mod tabs alike. With no active tab (a screen reached from elsewhere) the pill hides.
+ * On phones the bar is frosted glass and slides away while scrolling down, back on scrolling up.
  */
 export function AppLayout({ children }: { children: ReactNode }) {
+  const dockHidden = useDockHidden();
   const [railPinnedOpen, setRailPinnedOpen] = useState(readRailPinnedOpen);
   const [railPeekOpen, setRailPeekOpen] = useState(false);
   const railRef = useRef<HTMLElement>(null);
@@ -183,13 +186,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
             </Link>
             <nav
               aria-label="Main"
+              data-dock-hidden={dockHidden ? "" : undefined}
               style={
                 {
                   "--i": Math.max(activeIndex, 0),
                   "--n": tabs.length,
                 } as CSSProperties
               }
-              className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-10 grid h-[68px] grid-flow-col auto-cols-fr rounded-full bg-surface p-1.5 shadow-float md:static md:flex md:h-auto md:flex-col md:gap-1.5 md:rounded-none md:bg-transparent md:p-0 md:shadow-none"
+              className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-10 grid h-[68px] grid-flow-col auto-cols-fr dock-glass rounded-full p-1.5 md:static md:flex md:h-auto md:flex-col md:gap-1.5 md:rounded-none md:bg-transparent md:p-0 md:shadow-none"
             >
               {/* The pill sits behind the links (they are `relative`, so they paint over it). */}
               <span
@@ -209,7 +213,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     className={`relative flex flex-col items-center justify-center gap-0.5 rounded-full text-xs leading-[1.1] font-semibold text-soft outline-none aria-[current=page]:text-brand-ink md:min-h-12 md:flex-row md:justify-start md:gap-3 md:rounded-row md:px-3.5 md:text-[15px] md:leading-none md:aria-[current=page]:bg-brand-soft md:hover:bg-tint md:aria-[current=page]:hover:bg-brand-soft ${!railPinnedOpen && !railPeekOpen ? "md:size-12 md:justify-center md:gap-0 md:px-0" : ""} ${press} ${focusRing}`}
                   >
                     <Icon className="size-[22px] shrink-0" strokeWidth={1.75} aria-hidden="true" />
-                    <span className={!railPinnedOpen && !railPeekOpen ? "sr-only" : ""}>
+                    <span className={!railPinnedOpen && !railPeekOpen ? "md:sr-only" : ""}>
                       {label}
                       {showBadge ? <span className="sr-only">, {unread} unread</span> : null}
                     </span>

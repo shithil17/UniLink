@@ -184,4 +184,13 @@ describe("AppLayout rail", () => {
       expect(screen.getByRole("link", { name: label })).toBeTruthy();
     }
   });
+
+  it("hides tab labels only on the rail when collapsed, never on the phone tab bar", async () => {
+    localStorage.setItem("unilink-rail", "collapsed");
+    await renderShell(user("student"));
+
+    const label = screen.getByText("Home");
+    expect(label.classList.contains("sr-only")).toBe(false);
+    expect(label.classList.contains("md:sr-only")).toBe(true);
+  });
 });

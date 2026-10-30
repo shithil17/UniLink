@@ -549,6 +549,69 @@
 }
 
 /*
+ * Phone tab bar: the one glass surface in the app. Clear glass, not frosted: a light surface tint
+ * over a small blur, so what scrolls behind stays recognisable, with a bright rim on the top-left
+ * and a faint shade on the bottom-right so it reads as a thick pane. Labels get a soft halo in the
+ * surface color to stay legible over busy rows. Plain CSS, so it renders the same in WebKit and
+ * Chromium. It slides away on scroll down and returns on scroll up (260ms ease-drawer on translate,
+ * 200ms on opacity). Scoped below `md` so the desktop rail is untouched. Focus inside the bar keeps
+ * it visible. Reduced motion keeps only an opacity fade.
+ */
+@media (width < 48rem) {
+  .dock-glass {
+    background: color-mix(in oklab, var(--color-surface) 30%, transparent);
+    /* WebKit ignores custom properties inside the prefixed filter, so both stay literal. */
+    -webkit-backdrop-filter: blur(6px) saturate(190%) contrast(0.95);
+    backdrop-filter: blur(6px) saturate(190%) contrast(0.95);
+    box-shadow:
+      var(--shadow-float),
+      inset 1px 1.5px 0 color-mix(in oklab, var(--color-surface) 85%, transparent),
+      inset -1px -1px 0 color-mix(in oklab, var(--color-ink) 10%, transparent),
+      inset 0 0 0 0.5px color-mix(in oklab, var(--color-ink) 14%, transparent),
+      inset 0 0 14px color-mix(in oklab, var(--color-surface) 45%, transparent);
+    transition:
+      translate 260ms var(--ease-drawer),
+      opacity 200ms var(--ease-ui-out);
+  }
+  .dock-glass a {
+    text-shadow: 0 0 6px var(--color-surface);
+  }
+  .dock-glass a svg {
+    filter: drop-shadow(0 0 4px var(--color-surface));
+  }
+  .dock-glass[data-dock-hidden]:not(:focus-within) {
+    translate: 0 calc(100% + 0.75rem + env(safe-area-inset-bottom));
+    opacity: 0;
+    pointer-events: none;
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .dock-glass {
+      background: var(--color-surface);
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .dock-glass {
+      background: var(--color-surface);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+    .dock-glass a,
+    .dock-glass a svg {
+      text-shadow: none;
+      filter: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .dock-glass {
+      transition: opacity 200ms var(--ease-ui-out);
+    }
+    .dock-glass[data-dock-hidden]:not(:focus-within) {
+      translate: none;
+    }
+  }
+}
+
+/*
  * Floating PWA notes (update prompt, install hint): the toast's enter, a 16px rise with opacity
  * (300ms ease-drawer on transform, 200ms ease-ui-out on opacity). Reduced motion keeps the fade.
  */

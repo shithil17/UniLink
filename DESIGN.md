@@ -79,7 +79,7 @@ The fixed type scale is 12px small (1.2/600), 13px label (1.3/500), 15px body an
 
 ## Elevation
 
-Surfaces are flat. Only floating layers cast shadows: toast and floating tab bar use `0 10px 30px -10px var(--float-color)`; sheets use `0 -10px 30px -10px var(--float-color)`. Tiles, rows and course blocks have no shadow. An element does not combine a border and shadow.
+Surfaces are flat. Only floating layers cast shadows: toast and floating tab bar use `0 10px 30px -10px var(--float-color)`; sheets use `0 -10px 30px -10px var(--float-color)`. Tiles, rows and course blocks have no shadow. The one exception to flat surfaces is the phone tab bar: clear glass (surface at 30% over a light backdrop blur, with a bright rim) that slides away on scroll down and back on scroll up. An element does not combine a border and shadow.
 
 ## Components
 
@@ -127,4 +127,4 @@ Reduced-motion variants checked in code:
 
 **Do** use semantic theme tokens, keep one accent for actions, use hues only with course or notification data, preserve shape-coded course states, keep touch targets at least 44px, and check layouts on phone and desktop.
 
-**Don't** use raw colors or Tailwind palette colors in components, gradients, glass, glows, backdrop blur, resting card shadows, `dark:` variants, color-only states, or shadows on elements with borders. Do not use color hues for app chrome.
+**Don't** use raw colors or Tailwind palette colors in components, gradients, glass, glows, backdrop blur (except the phone tab bar), resting card shadows, `dark:` variants, color-only states, or shadows on elements with borders. Do not use color hues for app chrome.
