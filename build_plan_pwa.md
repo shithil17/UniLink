@@ -23,6 +23,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - (2026-10-20) Faculty now covers every NSU department, each with a department, optional initials, an NSU page and a hidden flag; students search and filter the picker by name, initials and department; mods manage faculty (add, edit, hide, show again) in the panel.
 - (2026-10-20) Mods manage curriculum courses in the panel (`/mod/courses`): add, edit (including prerequisites as text, such as `CSE215 and (MAT120 or MAT125)`) and hide or show again with a reason, never delete (`courses.hidden`, migration 0011). Hidden courses leave students' maps unless the student already has an attempt on them. Re-importing a version still replaces all its courses, edits included, and the import screen warns. A slot with alternatives shows all its codes joined with "/" until the student takes one.
 - (2026-10-21) Elective trails and open electives: a curriculum can list its specialized elective trails (CSE: six trails, at least two courses from one trail). Students fill trail elective slots by picking from the trail list, see their trail progress on the map, and get title and credits filled in from a course code for open electives. CSE498 Internship/Co-op is on the CSE map as a non-credit course (Phase 4).
+- (2026-11-02) New Phase 9b: a Planner view in Courses. Students set a target CGPA (saved to the account), try mock grades on past and future courses (kept in the browser only), and get advice that prefers doing better in remaining courses and suggests the fewest retakes only when the target needs them. It runs before Phase 10.
 
 ---
 
@@ -193,7 +194,7 @@ Tests sit next to the code: `*.test.ts` for unit tests and `*.api.test.ts` for A
 
 ## Phase numbering
 
-Phases are numbered 0 to 18 in **build order, not strict sequence**. Two developer tracks run in parallel (see Suggested Build Order). Within a track, do one phase at a time and pass its gate before moving on. A phase may start once its **Depends on** phases have passed their gates. Stretch work uses the `S` prefix (S1 to S3) and stays parked until the go/no-go at the start of Sprint 4. Phase 4b (design language) was inserted on 2026-10-20 and keeps the letter so later numbers stay stable.
+Phases are numbered 0 to 18 in **build order, not strict sequence**. Two developer tracks run in parallel (see Suggested Build Order). Within a track, do one phase at a time and pass its gate before moving on. A phase may start once its **Depends on** phases have passed their gates. Stretch work uses the `S` prefix (S1 to S3) and stays parked until the go/no-go at the start of Sprint 4. Phase 4b (design language) was inserted on 2026-10-20 and keeps the letter so later numbers stay stable. Phase 9b (grade planner) was inserted the same way on 2026-11-02.
 
 Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" checklists inside a phase are the non-developer work tied to that feature. They do not block the dev's gate unless the gate says so.
 
@@ -814,6 +815,68 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ---
 
+## Phase 9b — Grade planner & retake advisor
+
+**Owner:** Dev A · **When:** Sprint 2, after Phase 9 and before Phase 10 · **Depends on:** Phase 4 (course map), Phase 6 (grading, attempts)
+
+**Goal:** On a new Planner view in Courses, students set a target CGPA, try mock grades on past and future courses to see the CGPA they would get, and get advice on whether doing well in their remaining courses reaches the target or whether a few retakes are worth paying for.
+
+> **Justification:** Retakes cost extra tuition, and students usually guess at the trade-off. All the data needed (attempts, the course map, the retake rule) already exists, so this is pure arithmetic on top of `grading.ts`, with no AI and one small table column.
+
+> **Design decisions (locked in, 2026-11-02):**
+>
+> - **Where:** a third Courses view, **Planner** (`/courses?view=planner`), next to List and Roadmap. Unlike Roadmap it works on phones too: the view toggle shows List and Planner on phones and all three views from `md` up.
+> - **Target CGPA:** saved to the account as `users.target_cgpa`, stored as integer hundredths (e.g. `350` for 3.50), nullable. The shared Zod schema accepts 0.01 to 4.00 in steps of 0.01; the server also refuses a target at or below the student's real CGPA (`target_not_above_current`). If the real CGPA later reaches the target, the planner shows it as reached rather than an error. Writes go through `rateLimit()`. Like attempts, the target is owner-only: no route reads another user's target, and mods and admins cannot read it.
+> - **Mock grades** stay in the browser only (`localStorage`, keyed by user id and curriculum version), with a "Clear mock grades" action. They are never sent to the server and never change real attempts, CGPA or retake badges anywhere else in the app. `ceiling:` mocks do not follow the student across devices. Revisit if students ask to keep plans on more than one device.
+>   - On a **past** course, a mock is a hypothetical retake attempt and is offered only while `canRetake()` allows a retake. Best grade still counts, so a mock below the current best changes nothing (the row says so).
+>   - On a **future** course (a slot with no graded attempt, including elective slots with no course picked yet, using the slot's credits), a mock is a hypothetical first attempt.
+>   - Grades offered are the letter grades of `NSU_SCALE` only (no I, W or WV).
+> - **Projected CGPA** = `cgpa()` over the real attempts plus the mocks, through the same `grading.ts` functions, so the planner can never disagree with the CGPA summary when there are no mocks.
+> - **Horizon:** the rest of the degree. Remaining credits are the course map's unfinished, non-excluded, credit-bearing slots (degree required minus earned). A course with only an F is a remaining course: passing it replaces the F's grade points without adding to the graded credits, so the math works per course record, never on totals.
+> - **Realistic ceiling grade** comes from the student's own history: the upper-quartile best grade across their graded courses (best grade per course, F counts, I/W/WV/non-credit/excluded don't), snapped **down** to a scale grade. With fewer than `PLANNER_HISTORY_MIN_COURSES` graded courses, the fallback grade `PLANNER_FALLBACK_CEILING` is used and the screen says so. The ceiling is shown ("Based on your grades, we assume up to A-") but is not editable. Mock grades are not part of the history.
+> - **Advice, future first:** retakes cost extra, so the advisor only suggests them when needed.
+>   1. Work out the average grade point the student needs over the remaining future credits (not already mocked) to reach the target.
+>   2. If that average is at or below the ceiling grade, advise **no retakes**: "Average about B+ (3.3) in your remaining 54 credits".
+>   3. Otherwise, add retakes one at a time, greedily: a course is a candidate when `canRetake()` allows it, it is graded and credit-bearing, and the ceiling grade beats its best grade. Pick the candidate with the largest grade-point gain per credit (ceiling points minus current best points, which is also the CGPA gain per credit of tuition paid); break ties by more credits, then course code. Stop as soon as the needed future average fits under the ceiling. Show the chosen retakes with the grade to aim for and the new needed average.
+>   4. If the target is out of reach even with every candidate retaken at the ceiling, say so and show the highest CGPA reachable by graduation.
+>   5. A required course whose only grade is F is not an optional retake: it has to be passed anyway, so it sits in the remaining credits, never in the suggested-retake list.
+> - The advisor is a pure function in `src/shared/planner.ts` (it runs in the client, like `grading.ts`, with no new read endpoint). It takes the scale and the retake policy as the existing **Strategy** objects. Planner constants (`PLANNER_HISTORY_MIN_COURSES`, `PLANNER_FALLBACK_CEILING`, `PLANNER_MAX_SUGGESTIONS`) are defined in shared code and re-exported from `src/server/limits.ts` with `ceiling:` comments, like the other client-side limits.
+> - All advice text is built by the planner code from fixed templates. It never says a grade is guaranteed; the screen carries one line: "Estimates only. Retake rules and fees are set by NSU."
+> - No AI and no notifications: the planner never leaves the student's device except to save the target.
+
+### Checklist — Target & advisor logic
+
+- [ ] Migration: `users.target_cgpa` (integer hundredths, nullable). Shared schema `targetCgpaInput` in `src/shared/schemas/`.
+- [ ] `GET` and `PUT /api/attempts/target` in the attempts feature, next to `/summary` (owner only, rate-limited, refuses a target at or below the real CGPA). The repo layer keeps it out of every mod and admin read.
+- [ ] `src/shared/planner.ts`: `realisticCeiling(records)`, `projectedCgpa(records, mocks)`, `neededAverage(records, remaining, target)`, `adviseRetakes(...)` returning `no_retakes_needed | retakes_suggested | out_of_reach | reached`.
+- [ ] Planner constants in shared code, re-exported from `limits.ts` with `ceiling:` comments.
+
+### Checklist — Planner view
+
+- [ ] `CourseViewToggle` gains Planner and shows on phones (List and Planner; Roadmap stays `md` and up).
+- [ ] Target CGPA field (shadcn form + React Hook Form + `targetCgpaInput`), with the current and projected CGPA side by side.
+- [ ] Course rows with a mock grade picker: past courses (retake mock, only when a retake is allowed) and future slots (first-attempt mock). Rows with a mock are marked; "Clear mock grades" resets them.
+- [ ] Advice panel: the outcome, the needed average in remaining credits, the suggested retakes (course, current best, grade to aim for, credits), the ceiling grade and where it came from, and the "Estimates only" line.
+- [ ] Empty states: no course map, no graded courses yet (advice uses the fallback ceiling and says so), no target set.
+
+### Checklist — Docs & QA (C, D)
+
+- [ ] C: planner activity diagram (target → needed average → no retakes / retakes / out of reach). SRS requirements for the planner.
+- [ ] D: planner screens in `docs/screens.md` and test cases, including two hand-calculated scenarios (one reaches the target with no retakes, one needs retakes).
+
+### Checklist — Test Scripts & Smoke Tests
+
+- [ ] `src/shared/planner.test.ts`: projected CGPA equals `cgpa()` with no mocks; a mock below the best grade changes nothing; a mock on a course that can't be retaken is ignored; F-only course passed in the future replaces the F without growing graded credits; ceiling from history (upper quartile, snapped down) and the fallback below the minimum course count; no retakes when the needed average fits; greedy picks the largest gain per credit and stops as soon as the target fits; a required F-only course is never suggested as a retake; out of reach reports the highest reachable CGPA; a target already reached.
+- [ ] `src/server/features/attempts/target.api.test.ts`: owner can set and read it, a target at or below the real CGPA is refused, out-of-range values are refused, another user's target is never readable (404), the rate limit applies.
+- [ ] Run: `vp test planner target`
+
+### Test Gate 9b
+
+- [ ] **Planner and target tests pass.**
+- [ ] **(Manual) On a phone, D's two hand-calculated scenarios match the planner's projected CGPA and advice.**
+
+---
+
 ## Phase 10 — Resource sharing
 
 **Owner:** Dev A · **When:** Sprint 3 (Weeks 5-6) · **Depends on:** Phase 5, Phase 6, Phase 7, Phase 8
@@ -1213,7 +1276,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ```
             Week 0      Weeks 1-2       Weeks 3-4             Weeks 5-6        Week 7             Week 8
 Both/B:   P0 + P1 ──→ P2 → P3 → P4b → P7 → P8 → P9 ───────→ P12 ─────────→ P15 → P16 ──────→ P17 ─┐
-Dev A:    P0 ───────→ P4 ──────────→ P5 → P6 ─────────────→ P10 → P11 ───→ P13 → P14 ──────→ bugs ├→ P18
+Dev A:    P0 ───────→ P4 ──────────→ P5 → P6 → P9b ───────→ P10 → P11 ───→ P13 → P14 ──────→ bugs ├→ P18
 C / D:    Docs & QA subsections inside each phase ─────────────────────────────────────────────────┘
                                                                          ▲ core feature freeze (end of Week 6)
 ```
@@ -1224,6 +1287,7 @@ C / D:    Docs & QA subsections inside each phase ──────────
 - P8 (held-post notifications) needs P5's `notify()`. P5 is Dev A's first Sprint 2 task. Until it lands, Dev B codes against the signature in `docs/api-contracts.md`.
 - P10 (resources) needs P7 (reports) and P8 (`screen()`). P12 (rides) needs the same.
 - P14 needs D's calibration set (started in Sprint 3, finished early in Week 7) and P13's match endpoint for the gate.
+- P9b (grade planner) needs P6's `grading.ts` and attempts. It lands before P10 starts.
 - P15 and P16 need P12's shared post kit. P16 also needs P15's post photos kit.
 
 **Parallelism:** the two dev tracks run in parallel throughout. `cron.ts`, `limits.ts` and `src/server/db/schema.ts` are shared files: add your own job, limit or table in its own block, and never edit another phase's block in the same pull request. Rebase often in Weeks 5 to 7.
