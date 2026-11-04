@@ -846,10 +846,10 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Target & advisor logic
 
-- [ ] Migration: `users.target_cgpa` (integer hundredths, nullable). Shared schema `targetCgpaInput` in `src/shared/schemas/`.
-- [ ] `GET` and `PUT /api/attempts/target` in the attempts feature, next to `/summary` (owner only, rate-limited, refuses a target at or below the real CGPA). The repo layer keeps it out of every mod and admin read.
-- [ ] `src/shared/planner.ts`: `realisticCeiling(records)`, `projectedCgpa(records, mocks)`, `neededAverage(records, remaining, target)`, `adviseRetakes(...)` returning `no_retakes_needed | retakes_suggested | out_of_reach | reached`.
-- [ ] Planner constants in shared code, re-exported from `limits.ts` with `ceiling:` comments.
+- [x] Migration: `users.target_cgpa` (integer hundredths, nullable). Shared schema `targetCgpaInput` in `src/shared/schemas/`.
+- [x] `GET` and `PUT /api/attempts/target` in the attempts feature, next to `/summary` (owner only, rate-limited, refuses a target at or below the real CGPA). The repo layer keeps it out of every mod and admin read.
+- [x] `src/shared/planner.ts`: `realisticCeiling(records)`, `projectedCgpa(records, mocks)`, `neededAverage(records, remaining, target)`, `adviseRetakes(...)` returning `no_retakes_needed | retakes_suggested | out_of_reach | reached`.
+- [x] Planner constants in shared code, re-exported from `limits.ts` with `ceiling:` comments.
 
 ### Checklist — Planner view
 
@@ -866,8 +866,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/planner.test.ts`: projected CGPA equals `cgpa()` with no mocks; a mock below the best grade changes nothing; a mock on a course that can't be retaken is ignored; F-only course passed in the future replaces the F without growing graded credits; ceiling from history (upper quartile, snapped down) and the fallback below the minimum course count; no retakes when the needed average fits; greedy picks the largest gain per credit and stops as soon as the target fits; a required F-only course is never suggested as a retake; out of reach reports the highest reachable CGPA; a target already reached.
-- [ ] `src/server/features/attempts/target.api.test.ts`: owner can set and read it, a target at or below the real CGPA is refused, out-of-range values are refused, another user's target is never readable (404), the rate limit applies.
+- [x] `src/shared/planner.test.ts`: projected CGPA equals `cgpa()` with no mocks; a mock below the best grade changes nothing; a mock on a course that can't be retaken is ignored; F-only course passed in the future replaces the F without growing graded credits; ceiling from history (upper quartile, snapped down) and the fallback below the minimum course count; no retakes when the needed average fits; greedy picks the largest gain per credit and stops as soon as the target fits; a required F-only course is never suggested as a retake; out of reach reports the highest reachable CGPA; a target already reached.
+- [x] `src/server/features/attempts/target.api.test.ts`: owner can set and read it, a target at or below the real CGPA is refused, out-of-range values are refused, another user's target is never readable (404), the rate limit applies.
 - [ ] Run: `vp test planner target`
 
 ### Test Gate 9b

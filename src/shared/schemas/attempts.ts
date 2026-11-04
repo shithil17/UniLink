@@ -68,8 +68,27 @@ export const cgpaSummary = z.object({
   categories: z.array(categoryCredits),
 });
 
+/** The planner's target CGPA: 0.01 to 4.00 in steps of 0.01. */
+export const TARGET_CGPA_MIN = 0.01;
+export const TARGET_CGPA_MAX = 4;
+
+const onHundredth = (n: number) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-9;
+
+export const targetCgpaInput = z.object({
+  targetCgpa: z
+    .number({ error: "Enter a number between 0.01 and 4.00." })
+    .min(TARGET_CGPA_MIN, "Enter a number between 0.01 and 4.00.")
+    .max(TARGET_CGPA_MAX, "Enter a number between 0.01 and 4.00.")
+    .refine(onHundredth, "Use at most two decimal places."),
+});
+
+/** The saved target, or null when none is set. */
+export const targetCgpaResponse = z.object({ targetCgpa: z.number().nullable() });
+
 export type AttemptInput = z.infer<typeof attemptInput>;
 export type AttemptFullInput = z.infer<typeof attemptFullInput>;
 export type AttemptUpdate = z.infer<typeof attemptUpdate>;
 export type Attempt = z.infer<typeof attempt>;
 export type CgpaSummary = z.infer<typeof cgpaSummary>;
+export type TargetCgpaInput = z.infer<typeof targetCgpaInput>;
+export type TargetCgpaResponse = z.infer<typeof targetCgpaResponse>;

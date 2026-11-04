@@ -54,6 +54,8 @@ export const users = sqliteTable(
     postingBlockedUntil: integer("posting_blocked_until"),
     // Set when the probing cooldown last triggered, and kept until a mod clears it. The mod panel shows it.
     probingFlaggedAt: integer("probing_flagged_at"),
+    // Grade planner target CGPA in hundredths (350 = 3.50). Private and owner-only: no mod or admin read selects it.
+    targetCgpa: integer("target_cgpa"),
     createdAt: integer("created_at").notNull(),
   },
   (t) => [check("users_role_check", sql`${t.role} in ('student', 'mod', 'admin')`)],

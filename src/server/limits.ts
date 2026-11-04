@@ -18,6 +18,11 @@ import {
   ROUTINE_ROOM_MAX_LENGTH,
   ROUTINE_SECTION_MAX,
 } from "../shared/schemas/routine.ts";
+import {
+  PLANNER_FALLBACK_CEILING,
+  PLANNER_HISTORY_MIN_COURSES,
+  PLANNER_MAX_SUGGESTIONS,
+} from "../shared/planner.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
 
 // Every limit, cap, cooldown, expiry and threshold lives here. Feature code imports these, never inlines numbers.
@@ -69,6 +74,14 @@ export const limits = {
   },
   // ceiling: a whole transcript entered in one sitting is roughly 50 attempts. Revisit if students hit it.
   attemptWrites: { limit: 200, windowMs: HOUR },
+  // ceiling: a student sets a target once and nudges it a few times while planning; this stops a loop from churning the row. Revisit if students report hitting it.
+  targetWrites: { limit: 30, windowMs: HOUR },
+  // ceiling: the planner runs in the browser. With fewer graded courses than this (about two terms) the student's own history says too little about their ceiling, so the fallback grade is assumed. Defined in shared code. Revisit once real transcripts show a better cut-off.
+  plannerHistoryMinCourses: PLANNER_HISTORY_MIN_COURSES,
+  // ceiling: the grade assumed as the realistic ceiling while history is thin. Optimistic enough to avoid pushing retakes on a new student, and never promised. Defined in shared code. Revisit if advice for new students proves too hopeful.
+  plannerFallbackCeiling: PLANNER_FALLBACK_CEILING,
+  // ceiling: each retake costs a student extra tuition, so advice names a handful at most. Defined in shared code. Revisit if students need longer plans.
+  plannerMaxSuggestions: PLANNER_MAX_SUGGESTIONS,
   // ceiling: bounds D1 rows per user and term; a term is five or six courses, each a lecture and sometimes a lab. Revisit if students report hitting it.
   routineEntriesMax: 40,
   // ceiling: a term is entered in one sitting, a few dozen writes; this stops a loop from churning rows. Revisit if students report hitting it.
