@@ -1,5 +1,11 @@
 import { courseRecords } from "../../shared/courseRecords";
-import { bestAttempt, canRetake, gradePoints, isPassingGrade } from "../../shared/grading";
+import {
+  bestAttempt,
+  canRetake,
+  gradePoints,
+  isPassingGrade,
+  isWaivedCourse,
+} from "../../shared/grading";
 import {
   PLANNER_HISTORY_MIN_COURSES,
   type Advice,
@@ -67,7 +73,6 @@ export function buildPlannerModel(
 
   // The codes finished slots are filled by; an unfinished slot must not reuse them, whatever the order.
   const finishedCodes = new Set<string>();
-  const waivedCodes = new Set(map.extras.filter((c) => c.waived).map((c) => c.code));
   for (const category of map.categories) {
     for (const slot of category.slots) {
       if (slot.nonCredit || slot.status !== "done") continue;
@@ -77,7 +82,6 @@ export function buildPlannerModel(
           : (slot.filledBy ?? slotLabel(slot).code);
       if (!code) continue;
       finishedCodes.add(code);
-      if (slot.waived || slot.studentCourse?.waived) waivedCodes.add(code);
     }
   }
   const futureCodes = new Set<string>();
@@ -161,7 +165,7 @@ export function buildPlannerModel(
   const futureKeys = new Set(future.map((r) => r.key));
   const titleOf = titles(map);
   for (const record of records) {
-    if (futureKeys.has(record.code) || waivedCodes.has(record.code)) continue;
+    if (futureKeys.has(record.code) || isWaivedCourse(record.attempts)) continue;
     const best = bestAttempt(record.attempts);
     if (!best) continue;
     addPast({

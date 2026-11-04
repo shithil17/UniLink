@@ -12,7 +12,6 @@
 import {
   BELOW_B_PLUS_POLICY,
   NSU_SCALE,
-  WAIVED,
   bestAttempt,
   canRetake,
   cgpa,
@@ -20,6 +19,7 @@ import {
   gradePoints,
   gradedCredits,
   isPassingGrade,
+  isWaivedCourse,
   type CourseRecord,
   type GradeScale,
   type RetakePolicy,
@@ -392,7 +392,7 @@ function finishCgpa(
  * Courses worth a retake, best first: the policy allows it, the course is graded and credit-bearing,
  * its predicted grade, rounded to the nearest scale grade, beats its best, it has no mock, and it is
  * not one of the remaining courses (those have to be passed anyway, so they are never an optional
- * retake), and none of its attempts is waived (it has no planner row). A failed course outside the remaining ones, such as an extra course, is a candidate.
+ * retake), and it is not a waived course (those have no planner row). A failed course outside the remaining ones, such as an extra course, is a candidate.
  * Largest gain per credit first, then more credits, then course code.
  */
 function retakeCandidates(
@@ -405,7 +405,7 @@ function retakeCandidates(
   for (const record of records) {
     if (record.nonCredit || record.excluded || skip.has(record.code)) continue;
     // A waived course has no planner row, so it is never suggested either.
-    if (record.attempts.some((a) => a.grade === WAIVED)) continue;
+    if (isWaivedCourse(record.attempts)) continue;
     const best = bestAttempt(record.attempts, rules.scale);
     if (!best) continue;
     if (!canRetake(record.attempts, rules.policy, rules.scale)) continue;

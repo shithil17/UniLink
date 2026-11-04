@@ -269,6 +269,36 @@ describe("courses in the CGPA with no slot row", () => {
     expect(m.lockedCount).toBe(0);
   });
 
+  it("gives a waived alternative no row, even when another alternative filled the slot", () => {
+    const m = buildPlannerModel(
+      map([
+        slot({
+          code: "ENG115",
+          status: "done",
+          filledBy: "ENG115",
+          chosenCode: "ENG115",
+          alternatives: [{ code: "BEN205", title: "Bangla" }],
+        }),
+      ]),
+      [attempt("ENG115", "C"), attempt("BEN205", "F"), attempt("BEN205", "WV")],
+    );
+    expect(m.retakes.map((r) => r.key)).toEqual(["ENG115"]);
+  });
+
+  it("keeps a course with a real pass and a waiver as a retake, and every row reaches the maximum", () => {
+    const done = (code: string) => slot({ code, status: "done", filledBy: code, chosenCode: code });
+    const m = buildPlannerModel(map([done("CSE101"), done("CSE102")]), [
+      attempt("CSE101", "D"),
+      attempt("CSE101", "WV"),
+      attempt("CSE102", "C"),
+    ]);
+    expect(m.retakes.map((r) => r.key)).toEqual(["CSE101", "CSE102"]);
+    const advice = adviseRetakes(m.records, [], m.remaining, 4);
+    if (advice.kind !== "out_of_reach") throw new Error(`got ${advice.kind}`);
+    const allA = mocksForRows(m.retakes, { CSE101: "A", CSE102: "A" });
+    expect(advice.maxCgpa).toBeCloseTo(projectedCgpa(m.records, allA) ?? 0);
+  });
+
   it("gives an F then waived extra course no row and no suggestion", () => {
     const m = buildPlannerModel(withExtras([], [extra("BUS101", { done: true, waived: true })]), [
       attempt("BUS101", "F"),

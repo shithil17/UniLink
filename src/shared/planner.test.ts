@@ -355,7 +355,19 @@ describe("adviseRetakes", () => {
     expect(advice.maxCgpa ?? 0).toBeGreaterThanOrEqual(advice.bestCaseCgpa ?? 99);
   });
 
-  it("does not suggest retaking a course that has a waived attempt", () => {
+  it("still suggests a course with a real pass and a waiver, like its planner row", () => {
+    const records = [
+      rec("A1", 3, ["A"]),
+      rec("A2", 3, ["A"]),
+      rec("A3", 3, ["A"]),
+      rec("W1", 3, ["D", "WV"]),
+    ];
+    const advice = adviseRetakes(records, [], [], 3.5);
+    if (!("retakes" in advice)) throw new Error(`got ${advice.kind}`);
+    expect(advice.retakes.map((r) => r.code)).toEqual(["W1"]);
+  });
+
+  it("does not suggest retaking a waived course", () => {
     // An F then a WV: the best attempt is the F, but the course is waived and has no planner row.
     const records = [
       rec("A1", 3, ["A"]),
