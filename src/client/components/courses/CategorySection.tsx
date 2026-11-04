@@ -15,7 +15,7 @@ import {
 import { STATE_LABEL, stateKind } from "@/lib/stateKind";
 import type { CourseMap, CourseStatus } from "../../../shared/schemas/courses";
 import { slotLabel } from "../../../shared/slotChoice";
-import { CourseCode } from "./CourseCode";
+import { CourseRowBody } from "./CourseRowBody";
 import { StateMark } from "./StateMark";
 
 type Category = CourseMap["categories"][number];
@@ -104,27 +104,23 @@ function CourseRow({
   return (
     <li data-hue={courseHue(hueFrom)}>
       <button type="button" className={tapRowClass} onClick={onOpen}>
-        <StateMark status={status} waived={waived} inCourse />
-        <div className="min-w-0 flex-1">
-          <p
-            className={`text-[15px] leading-[1.35] font-medium text-ink ${open ? "line-clamp-2" : "truncate"}`}
-          >
-            {title}
-          </p>
-          <p className="mt-1 flex min-w-0 items-center gap-2">
-            <CourseCode
-              code={code}
-              hueFrom={hueFrom}
-              className={open ? "min-w-0 shrink whitespace-normal wrap-anywhere" : undefined}
-            />
-            <StatusWord status={status} waived={waived} />
-            {note ? (
-              <span className="min-w-0 truncate text-[13px] leading-[1.3] font-medium text-faint">
-                · {note}
-              </span>
-            ) : null}
-          </p>
-        </div>
+        <CourseRowBody
+          code={code}
+          title={title}
+          status={status}
+          waived={waived}
+          open={open}
+          meta={
+            <>
+              <StatusWord status={status} waived={waived} />
+              {note ? (
+                <span className="min-w-0 truncate text-[13px] leading-[1.3] font-medium text-faint">
+                  · {note}
+                </span>
+              ) : null}
+            </>
+          }
+        />
         {trailing}
         {credits}
       </button>
