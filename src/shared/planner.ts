@@ -51,6 +51,11 @@ export const PLANNER_MAX_SUGGESTIONS = 5;
 // about two phone screens long. Revisit if students keep opening the full list.
 export const PLANNER_ROWS_SHOWN = 10;
 
+// ceiling: the smallest CGPA change worth listing under "retakes that help most". Below this a retake
+// does not move the CGPA at two decimals, so it is not worth its tuition. Revisit if students want
+// the full list.
+export const PLANNER_MIN_RETAKE_EFFECT = 0.01;
+
 /** Float noise below this is not a difference: comparing 3.7 against a computed 3.7000000000000004. */
 const EPSILON = 1e-9;
 
@@ -125,12 +130,14 @@ type Finish = {
 
 export type Advice =
   | (AdviceBase & { kind: "reached"; cgpa: number })
+  /** Too few graded courses to predict from: only the average the target needs, no verdict. */
+  | (AdviceBase & { kind: "too_early"; neededAverage: number | null })
   | (AdviceBase & Finish & { kind: "no_retakes_needed" })
   | (AdviceBase & Finish & { kind: "retakes_suggested"; retakes: SuggestedRetake[] })
   | (AdviceBase &
       Finish & {
         kind: "out_of_reach";
-        /** The retakes that help most, at most `PLANNER_MAX_SUGGESTIONS`; the finish counts them. */
+        /** The retakes that help most, at most `PLANNER_MAX_SUGGESTIONS`, leaving out any too small to move the CGPA. The finish counts these. */
         retakes: SuggestedRetake[];
         /** The CGPA with every remaining course and eligible retake at the ceiling grade or its prediction, whichever is higher. */
         bestCaseCgpa: number | null;
@@ -441,18 +448,32 @@ const byTotalGain = (list: readonly SuggestedRetake[]) =>
     return a.credits - b.credits || a.code.localeCompare(b.code);
   });
 
+/** What `too_early` says: the one figure that needs no prediction. */
+function tooEarlyText(
+  needed: number | null,
+  { remainingCredits }: AdviceBase | Omit<AdviceBase, "text">,
+) {
+  if (needed !== null && needed > 4 + EPSILON) return "You'd need retakes on top of straight A's.";
+  if (needed === null || needed <= 0) return "Any passing grades get you there.";
+  return `You need about a ${needed.toFixed(2)} average in your remaining ${remainingCredits} credits.`;
+}
+
 /**
  * Advice for reaching `target`. Mocks count: mocked remaining courses leave the remaining credits and
  * mocked past courses are not suggested as retakes.
  *
  * 1. Nothing is left to take and the projected CGPA meets the target: `reached`. With courses left
  *    the answer is the predicted finish, even when the CGPA is at the target today.
- * 2. The predicted graduation CGPA, with no retakes, meets it: `no_retakes_needed`.
- * 3. Otherwise retakes are added one at a time, largest predicted gain per credit first, stopping as
+ * 2. With fewer than `PLANNER_HISTORY_MIN_COURSES` graded courses the predictions are mostly the
+ *    fallback average, so there is no verdict and no retake: `too_early`, with the average the target
+ *    needs. A target even straight A's can't reach is still `out_of_reach`: that is arithmetic.
+ * 3. The predicted graduation CGPA, with no retakes, meets it: `no_retakes_needed`.
+ * 4. Otherwise retakes are added one at a time, largest predicted gain per credit first, stopping as
  *    soon as the predicted finish meets the target: `retakes_suggested`.
- * 4. If that fails within `PLANNER_MAX_SUGGESTIONS`, the smallest set of retakes with the largest total
+ * 5. If that fails within `PLANNER_MAX_SUGGESTIONS`, the smallest set of retakes with the largest total
  *    gain that meets the target is suggested instead (gains add, so that is the top few by total gain).
- * 5. If no such set exists: `out_of_reach`, with the predicted finish, the retakes that help most, the
+ * 6. If no such set exists: `out_of_reach`, with the predicted finish, the retakes that help most
+ *    (those that move the CGPA by at least `PLANNER_MIN_RETAKE_EFFECT`), the
  *    best case (every course at the student's ceiling grade or its prediction, whichever is higher, so
  *    it never falls below the predicted finish) and `maxCgpa` (the top grade everywhere), so
  *    `possible` tells a stretch from an impossible target.
@@ -501,6 +522,25 @@ export function adviseRetakes(
   const meets = (f: Finish) => f.predictedCgpa !== null && f.predictedCgpa >= target - EPSILON;
 
   const none = finish([]);
+  const skip = new Set([...remaining.map((r) => r.code), ...mockedCodes]);
+  // Each course scores the higher of its prediction and the case's grade, so a case never lands
+  // below the prediction (a student strong in one category keeps that strength in the best case).
+  const caseCgpa = (points: number) =>
+    finishCgpa(
+      withMocks,
+      open,
+      (r) => Math.max(predictRemaining(r), points),
+      gainOf(retakeCandidates(records, skip, (r) => Math.max(predict(r), points), rules)),
+      rules.scale,
+    );
+  const maxCgpa = caseCgpa(gradesByPoints(rules.scale)[0][1]);
+  const possible = maxCgpa !== null && maxCgpa >= target - EPSILON;
+  const thinHistory = o.source === "fallback";
+  if (thinHistory && possible && remainingCredits > 0) {
+    const { neededAverage } = none;
+    return { ...base, kind: "too_early", neededAverage, text: tooEarlyText(neededAverage, base) };
+  }
+
   if (meets(none)) {
     return { ...base, ...none, kind: "no_retakes_needed", text: "On track without retakes." };
   }
@@ -513,8 +553,7 @@ export function adviseRetakes(
     text: `Retaking ${plural(retakes.length, "course", "courses")} gets you there.`,
   });
 
-  const skip = new Set([...remaining.map((r) => r.code), ...mockedCodes]);
-  const candidates = retakeCandidates(records, skip, predict, rules);
+  const candidates = thinHistory ? [] : retakeCandidates(records, skip, predict, rules);
   const picked: SuggestedRetake[] = [];
   let state = none;
   for (const candidate of candidates) {
@@ -533,23 +572,16 @@ export function adviseRetakes(
     if (meets(f)) return suggested(set, f);
   }
 
-  // Short of the target: report where the best retakes get the student, and the best case.
-  const best = ranked.slice(0, PLANNER_MAX_SUGGESTIONS);
-  const final = finish(best);
+  // Short of the target: report where the best retakes get the student, and the best case. One too
+  // small to move the CGPA is left out, of the list and of the finish, so the figures match the list.
+  const finishCredits =
+    gradedCredits(withMocks, rules.scale) + newCredits(withMocks, open, rules.scale);
+  const listed = ranked
+    .slice(0, PLANNER_MAX_SUGGESTIONS)
+    .filter((r) => totalGain(r) / finishCredits >= PLANNER_MIN_RETAKE_EFFECT - EPSILON);
+  const final = finish(listed);
   const tooManyRetakes = meets(finish(candidates));
-  // Each course scores the higher of its prediction and the case's grade, so a case never lands
-  // below the prediction (a student strong in one category keeps that strength in the best case).
-  const caseCgpa = (points: number) =>
-    finishCgpa(
-      withMocks,
-      open,
-      (r) => Math.max(predictRemaining(r), points),
-      gainOf(retakeCandidates(records, skip, (r) => Math.max(predict(r), points), rules)),
-      rules.scale,
-    );
   const bestCaseCgpa = caseCgpa(ceiling.points);
-  const maxCgpa = caseCgpa(gradesByPoints(rules.scale)[0][1]);
-  const possible = maxCgpa !== null && maxCgpa >= target - EPSILON;
   let text: string;
   if (final.predictedCgpa === null) {
     text = "Nothing to plan with yet.";
@@ -564,7 +596,7 @@ export function adviseRetakes(
     ...base,
     ...final,
     kind: "out_of_reach",
-    retakes: best,
+    retakes: listed,
     bestCaseCgpa,
     maxCgpa,
     possible,

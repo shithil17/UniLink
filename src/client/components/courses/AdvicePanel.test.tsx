@@ -46,6 +46,31 @@ const NO_TARGET = "Set a target CGPA to see what you need.";
 const ESTIMATE = "Estimates only. Retake rules and fees are set by NSU.";
 
 describe("AdvicePanel", () => {
+  it("shows only the needed average while it is too early, with no prediction or retakes", () => {
+    const { predictedCgpa: _, ...rest } = base;
+    render(
+      <AdvicePanel
+        advice={{
+          ...rest,
+          kind: "too_early",
+          neededAverage: 3.5,
+          text: "You need about a 3.50 average in your remaining 121 credits.",
+          outlook: { ...base.outlook, source: "fallback", gradedCourses: 3 },
+        }}
+        realReached={false}
+        rows={rows}
+        targetState="ready"
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "Too early to call" })).toBeTruthy();
+    expect(screen.getByText(/You need about a 3.50 average/)).toBeTruthy();
+    expect(screen.getByText(/Predictions start at/)).toBeTruthy();
+    expect(screen.queryByText("Predicted at graduation")).toBeNull();
+    expect(screen.queryByText("Your usual average there")).toBeNull();
+    expect(screen.queryByText("Best case")).toBeNull();
+    expect(screen.queryByText("Retakes that help most")).toBeNull();
+  });
+
   it("calls a target that top grades could still reach a stretch, and one they could not out of reach", () => {
     const { rerender } = render(
       <AdvicePanel

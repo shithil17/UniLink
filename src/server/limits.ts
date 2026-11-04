@@ -24,6 +24,7 @@ import {
   PLANNER_FALLBACK_AVERAGE,
   PLANNER_HISTORY_MIN_COURSES,
   PLANNER_MAX_SUGGESTIONS,
+  PLANNER_MIN_RETAKE_EFFECT,
   PLANNER_PRIOR_COURSES,
   PLANNER_ROWS_SHOWN,
 } from "../shared/planner.ts";
@@ -90,6 +91,8 @@ export const limits = {
   plannerPriorCourses: PLANNER_PRIOR_COURSES,
   // ceiling: each retake costs a student extra tuition, so advice names a handful at most. Defined in shared code. Revisit if students need longer plans.
   plannerMaxSuggestions: PLANNER_MAX_SUGGESTIONS,
+  // ceiling: the smallest CGPA change worth listing under "retakes that help most"; below it a retake doesn't move the CGPA at two decimals. Defined in shared code. Revisit if students want the full list.
+  plannerMinRetakeEffect: PLANNER_MIN_RETAKE_EFFECT,
   // ceiling: rows a planner list shows before "Show all": a term or two of courses, about two phone screens. Defined in shared code for the client list. Revisit if students keep opening the full list.
   plannerRowsShown: PLANNER_ROWS_SHOWN,
   // ceiling: the NSU scale tops out at 4.00, so a target above it can never be met and one at or below 0 means nothing. Defined in shared code for the client form. Revisit if NSU changes its scale.

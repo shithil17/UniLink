@@ -13,6 +13,8 @@ function outcomeTitle(advice: Advice, realReached: boolean): string {
   switch (advice.kind) {
     case "reached":
       return realReached ? "Target reached" : "Reached with your mock grades";
+    case "too_early":
+      return "Too early to call";
     case "no_retakes_needed":
       return "No retakes needed";
     case "retakes_suggested":
@@ -116,7 +118,7 @@ export function AdvicePanel({
     );
   }
   const details: { label: string; value: string }[] = [];
-  if (advice.kind !== "reached") {
+  if (advice.kind !== "reached" && advice.kind !== "too_early") {
     if (advice.predictedCgpa !== null) {
       details.push({ label: "Predicted at graduation", value: advice.predictedCgpa.toFixed(2) });
     }
