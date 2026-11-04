@@ -20,9 +20,10 @@ import {
 } from "../shared/schemas/routine.ts";
 import {
   PLANNER_FALLBACK_CEILING,
-  PLANNER_FALLBACK_TYPICAL,
+  PLANNER_FALLBACK_AVERAGE,
   PLANNER_HISTORY_MIN_COURSES,
   PLANNER_MAX_SUGGESTIONS,
+  PLANNER_PRIOR_COURSES,
 } from "../shared/planner.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
 
@@ -77,12 +78,14 @@ export const limits = {
   attemptWrites: { limit: 200, windowMs: HOUR },
   // ceiling: a student sets a target once and nudges it a few times while planning; this stops a loop from churning the row. Revisit if students report hitting it.
   targetWrites: { limit: 30, windowMs: HOUR },
-  // ceiling: the planner runs in the browser. With fewer graded courses than this (about two terms) the student's own history says too little about their ceiling, so the fallback grade is assumed. Defined in shared code. Revisit once real transcripts show a better cut-off.
+  // ceiling: the planner runs in the browser. With fewer graded courses than this (about two terms) the student's own history says too little about their ceiling, so the fallback ceiling is assumed and predictions are called rough. Defined in shared code. Revisit once real transcripts show a better cut-off.
   plannerHistoryMinCourses: PLANNER_HISTORY_MIN_COURSES,
-  // ceiling: the grade assumed as the realistic ceiling while history is thin. Optimistic enough to avoid pushing retakes on a new student, and never promised. Defined in shared code. Revisit if advice for new students proves too hopeful.
+  // ceiling: the best grade assumed while history is thin; it only bounds the best case. Defined in shared code. Revisit if advice for new students proves too hopeful.
   plannerFallbackCeiling: PLANNER_FALLBACK_CEILING,
-  // ceiling: the grade assumed as a student's usual grade while history is thin; remaining courses are planned at it, so a lower value suggests retakes sooner. Defined in shared code. Revisit if advice for new students proves too hopeful or too gloomy.
-  plannerFallbackTypical: PLANNER_FALLBACK_TYPICAL,
+  // ceiling: the average a student with no history is predicted at; predictions move from it toward the student's own grades. Defined in shared code. Revisit once real transcripts show the usual first-year average.
+  plannerFallbackAverage: PLANNER_FALLBACK_AVERAGE,
+  // ceiling: how many courses' worth of weight that starting point keeps in each prediction; larger trusts a student's own category grades less. Defined in shared code. Revisit once predictions can be checked against real results.
+  plannerPriorCourses: PLANNER_PRIOR_COURSES,
   // ceiling: each retake costs a student extra tuition, so advice names a handful at most. Defined in shared code. Revisit if students need longer plans.
   plannerMaxSuggestions: PLANNER_MAX_SUGGESTIONS,
   // ceiling: bounds D1 rows per user and term; a term is five or six courses, each a lecture and sometimes a lab. Revisit if students report hitting it.

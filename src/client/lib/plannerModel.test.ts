@@ -83,6 +83,9 @@ describe("buildPlannerModel", () => {
 
   it("builds the same records the server's CGPA summary uses", () => {
     expect(cgpa(model.records)).toBe(buildCgpaSummary(sample, attempts as never).cgpa);
+    // Each record is filed under its course map category, which the advisor predicts grades by.
+    expect(model.records.find((r) => r.code === "CSE101")?.category).toBe("Core");
+    expect(model.remaining.find((r) => r.code === "CSE103")?.category).toBe("Core");
   });
 
   it("feeds the advisor: passing the F-only course replaces the F without growing graded credits", () => {
@@ -95,9 +98,7 @@ describe("buildPlannerModel", () => {
     expect(gradedCredits(applyMocks(model.records, mocks))).toBe(gradedCredits(model.records));
     // And a slot with a mock leaves the credits the advisor still plans for.
     const advice = adviseRetakes(model.records, mocks, model.remaining, 3.25);
-    if (advice.kind !== "no_retakes_needed" && advice.kind !== "retakes_suggested") {
-      throw new Error(`unexpected advice ${advice.kind}`);
-    }
+    if (advice.kind === "reached") throw new Error("unexpected advice reached");
     expect(advice.remainingCredits).toBe(model.remaining.reduce((n, r) => n + r.credits, 0) - 3);
   });
 
@@ -129,38 +130,30 @@ describe("targetReached", () => {
 });
 
 describe("historyLine", () => {
-  const grade = (g: string, points: number, source: "history" | "fallback", gradedCourses = 9) => ({
-    grade: g,
-    points,
+  const ceiling = (source: "history" | "fallback", gradedCourses: number) => ({
+    grade: "A",
+    points: 4,
+    source,
+    gradedCourses,
+  });
+  const outlook = (source: "history" | "fallback", gradedCourses: number) => ({
+    overall: 3.25,
+    average: gradedCourses === 0 ? null : 3.22,
+    byCategory: {},
     source,
     gradedCourses,
   });
 
-  it("names the usual grade for remaining courses and the ceiling for retakes", () => {
-    const line = historyLine({
-      typical: grade("B+", 3.3, "history"),
-      ceiling: grade("A", 4, "history"),
-    });
-    expect(line).toBe(
-      "Based on your grades, we plan your remaining courses at your usual B+ and assume up to A in a retake.",
+  it("says predictions come from the student's own grades by category", () => {
+    expect(historyLine({ outlook: outlook("history", 18), ceiling: ceiling("history", 18) })).toBe(
+      "Each remaining course is predicted from your own grades in its category (your average so far is 3.22). At best we assume A.",
     );
   });
 
-  it("names the grade once when the usual grade is also the ceiling", () => {
-    const line = historyLine({
-      typical: grade("A", 4, "history"),
-      ceiling: grade("A", 4, "history"),
-    });
-    expect(line).toBe(
-      "Based on your grades, we plan your remaining courses and any retake at your usual A.",
-    );
-  });
-
-  it("says when the grades are fallbacks", () => {
-    const line = historyLine({
-      typical: grade("B+", 3.3, "fallback", 2),
-      ceiling: grade("A-", 3.7, "fallback", 2),
-    });
-    expect(line).toMatch(/^Only 2 graded courses so far/);
+  it("says when predictions are rough", () => {
+    const line = historyLine({ outlook: outlook("fallback", 2), ceiling: ceiling("fallback", 2) });
+    expect(line).toMatch(/^Only 2 graded courses so far, so predictions are rough/);
+    const none = historyLine({ outlook: outlook("fallback", 0), ceiling: ceiling("fallback", 0) });
+    expect(none).toMatch(/^No graded courses yet/);
   });
 });

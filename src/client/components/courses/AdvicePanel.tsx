@@ -15,7 +15,10 @@ function outcomeTitle(advice: Advice, realReached: boolean): string {
     case "retakes_suggested":
       return advice.retakes.length === 1 ? "One retake would help" : "A few retakes would help";
     case "out_of_reach":
-      return advice.tooManyRetakes ? "Too many retakes needed" : "Out of reach by graduation";
+      if (advice.tooManyRetakes) return "Too many retakes needed";
+      return advice.bestCaseCgpa !== null && advice.bestCaseCgpa >= advice.target
+        ? "A stretch at your usual grades"
+        : "Out of reach by graduation";
   }
 }
 
@@ -28,7 +31,7 @@ function Detail({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** The outcome, the average still needed, the suggested retakes and the ceiling behind them. */
+/** The outcome, the predicted finish against what the target needs, the retakes and what the predictions rest on. */
 export function AdvicePanel({
   advice,
   realReached,
@@ -55,18 +58,22 @@ export function AdvicePanel({
     );
   }
   const details: { label: string; value: string }[] = [];
-  if (
-    (advice.kind === "no_retakes_needed" || advice.kind === "retakes_suggested") &&
-    advice.neededAverage !== null
-  ) {
-    details.push(
-      {
-        label: "Average needed",
-        value: `${advice.neededAverage.toFixed(2)} (a flat ${advice.neededGrade})`,
-      },
-      { label: "In remaining credits", value: formatCredits(advice.remainingCredits) },
-    );
+  if (advice.kind !== "reached") {
+    if (advice.predictedCgpa !== null) {
+      details.push({ label: "Predicted at graduation", value: advice.predictedCgpa.toFixed(2) });
+    }
+    if (advice.neededAverage !== null && advice.predictedAverage !== null) {
+      details.push(
+        {
+          label: `Needed in your remaining ${formatCredits(advice.remainingCredits)} credits`,
+          value: advice.neededAverage > 4 ? "over 4.00" : advice.neededAverage.toFixed(2),
+        },
+        { label: "Your usual average there", value: advice.predictedAverage.toFixed(2) },
+      );
+    }
   }
+  const retakes =
+    advice.kind === "retakes_suggested" || advice.kind === "out_of_reach" ? advice.retakes : [];
   const titleOf = (code: string) => rows.find((r) => r.key === code)?.title;
   return (
     <section aria-labelledby="planner-advice-title" className={panel}>
@@ -81,13 +88,13 @@ export function AdvicePanel({
           ))}
         </dl>
       ) : null}
-      {advice.kind === "retakes_suggested" ? (
+      {retakes.length > 0 ? (
         <>
           <h3 className="border-t border-line pt-3 text-sm font-semibold text-ink">
-            Suggested retakes
+            {advice.kind === "retakes_suggested" ? "Suggested retakes" : "Retakes that help most"}
           </h3>
           <ul className="mt-1 text-sm">
-            {advice.retakes.map((retake) => (
+            {retakes.map((retake) => (
               <li
                 key={retake.code}
                 data-hue={courseHue(retake.code)}

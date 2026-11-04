@@ -833,20 +833,21 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 >   - Grades offered are the letter grades of `NSU_SCALE` only (no I, W or WV).
 > - **Projected CGPA** = `cgpa()` over the real attempts plus the mocks, through the same `grading.ts` functions, so the planner can never disagree with the CGPA summary when there are no mocks.
 > - **Horizon:** the rest of the degree. Remaining credits are the course map's unfinished, non-excluded, credit-bearing slots (degree required minus earned). A course with only an F is a remaining course: passing it replaces the F's grade points without adding to the graded credits, so the math works per course record, never on totals.
-> - **Two grades from the student's own history** (best grade per graded course; F counts, I/W/WV/non-credit/excluded don't; mock grades are not part of it), each snapped **down** to a scale grade:
->   - The **typical grade** is the median. The remaining courses are planned at it.
->   - The **ceiling grade** is the upper quartile. A retake aims for it.
+> - **Predicted grades** come from the student's own history (best grade per graded course; F counts, I/W/WV/non-credit/excluded don't; mock grades never count):
+>   - **Overall:** the student's credit-weighted average so far, pulled toward `PLANNER_FALLBACK_AVERAGE` with `PLANNER_PRIOR_COURSES` courses of weight, so a new student starts near it and moves toward their own grades.
+>   - **By category** (the course map category, e.g. General Education, Major Core): the student's average in that category, pulled toward the overall prediction the same way. A remaining course, or a retake, is predicted at its category's value, or the overall one when the category has no grades yet.
+>   - **Ceiling:** the upper-quartile best grade, snapped down, or `PLANNER_FALLBACK_CEILING` with fewer than `PLANNER_HISTORY_MIN_COURSES` graded courses. It bounds only the best case.
 >
->   With fewer than `PLANNER_HISTORY_MIN_COURSES` graded courses, the fallbacks `PLANNER_FALLBACK_TYPICAL` and `PLANNER_FALLBACK_CEILING` are used, and the screen says so. The typical grade is never above the ceiling. Both are shown ("Based on your grades, we plan your remaining courses at your usual B+ and assume up to A in a retake") and neither is editable.
->   Revised 2026-11-05: the needed average used to be compared with the ceiling. An upper-quartile grade is what a student gets in their best courses, not an average they can hold across every remaining course, so a student with a 3.22 CGPA was told "no retakes" while needing 3.97 in 81 credits.
+>   The screen says what the predictions rest on ("Each remaining course is predicted from your own grades in its category (your average so far is 3.22). At best we assume A."), and that they are rough while history is thin. Nothing is editable.
+>   Revised 2026-11-05: the first version compared the needed average with the ceiling grade, then with the median grade. Both told a student with A's in Core and D's in General Education (CGPA 3.22) that a 3.97 average over 81 credits needed no retakes: one grade from the whole history hides that grades differ by kind of course, and a needed average under the best grade is possible, not likely.
 >
-> - **Advice, future first:** retakes cost extra, so the advisor only suggests them when needed.
->   1. Work out the average grade point the student needs over the remaining future credits (not already mocked) to reach the target.
->   2. If that average is at or below the **typical grade**, advise **no retakes**: "Average about B+ (3.3) in your remaining 54 credits".
->   3. Otherwise, add retakes one at a time, greedily: a course is a candidate when `canRetake()` allows it, it is graded and credit-bearing, and the ceiling grade beats its best grade. Pick the candidate with the largest grade-point gain per credit (ceiling points minus current best points, which is also the CGPA gain per credit of tuition paid); break ties by more credits, then course code. Stop as soon as the needed future average is at or below the typical grade. Show the chosen retakes with the grade to aim for (the ceiling) and the new needed average. More than `PLANNER_MAX_SUGGESTIONS` retakes counts as out of reach ("would take more than 5 retakes").
->   4. If the target is out of reach even with every candidate retaken at the ceiling, say so and show the highest CGPA reachable by graduation with the typical grade in the remaining courses and the ceiling in every retake.
+> - **Advice compares the predicted finish with the target.** Retakes cost extra, so the advisor suggests them only when the predicted finish falls short.
+>   1. If the projected CGPA (real grades plus mocks) already meets the target: **reached**.
+>   2. Predict the graduation CGPA with every unmocked remaining course at its predicted grade. If it meets the target: **no retakes**, with the predicted finish, the average the target needs in the remaining credits, and the student's usual average there.
+>   3. Otherwise add retakes one at a time, greedily: a course is a candidate when `canRetake()` allows it, it is graded and credit-bearing, it has no mock, and its predicted grade beats its best grade. Pick the largest predicted gain per credit (predicted points minus current best points, which is also the CGPA gain per credit of tuition paid); break ties by more credits, then course code. Stop as soon as the predicted finish meets the target. Show each retake with its current best and the likely grade (the prediction, to the nearest scale grade).
+>   4. If every helpful retake still falls short, or it takes more than `PLANNER_MAX_SUGGESTIONS`: **out of reach**, showing the predicted finish with the retakes that help most (at most `PLANNER_MAX_SUGGESTIONS`) and the best case (the ceiling grade in every remaining course and every eligible retake). When the best case reaches the target the screen calls it "a stretch at your usual grades"; otherwise "out of reach by graduation".
 >   5. A required course whose only grade is F is not an optional retake: it has to be passed anyway, so it sits in the remaining credits, never in the suggested-retake list.
-> - The advisor is a pure function in `src/shared/planner.ts` (it runs in the client, like `grading.ts`, with no new read endpoint). It takes the scale and the retake policy as the existing **Strategy** objects. Planner constants (`PLANNER_HISTORY_MIN_COURSES`, `PLANNER_FALLBACK_TYPICAL`, `PLANNER_FALLBACK_CEILING`, `PLANNER_MAX_SUGGESTIONS`) are defined in shared code and re-exported from `src/server/limits.ts` with `ceiling:` comments, like the other client-side limits.
+> - The advisor is a pure function in `src/shared/planner.ts` (it runs in the client, like `grading.ts`, with no new read endpoint). It takes the scale and the retake policy as the existing **Strategy** objects. Planner constants (`PLANNER_HISTORY_MIN_COURSES`, `PLANNER_FALLBACK_AVERAGE`, `PLANNER_PRIOR_COURSES`, `PLANNER_FALLBACK_CEILING`, `PLANNER_MAX_SUGGESTIONS`) are defined in shared code and re-exported from `src/server/limits.ts` with `ceiling:` comments, like the other client-side limits.
 > - All advice text is built by the planner code from fixed templates. It never says a grade is guaranteed; the screen carries one line: "Estimates only. Retake rules and fees are set by NSU."
 > - No AI and no notifications: the planner never leaves the student's device except to save the target.
 
@@ -854,7 +855,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 - [x] Migration: `users.target_cgpa` (integer hundredths, nullable). Shared schema `targetCgpaInput` in `src/shared/schemas/`.
 - [x] `GET` and `PUT /api/attempts/target` in the attempts feature, next to `/summary` (owner only, rate-limited, refuses a target at or below the real CGPA). The repo layer keeps it out of every mod and admin read.
-- [x] `src/shared/planner.ts`: `realisticCeiling(records)`, `typicalGrade(records)`, `projectedCgpa(records, mocks)`, `neededAverage(records, remaining, target)`, `adviseRetakes(...)` returning `no_retakes_needed | retakes_suggested | out_of_reach | reached`.
+- [x] `src/shared/planner.ts`: `realisticCeiling(records)`, `outlook(records)`, `projectedCgpa(records, mocks)`, `neededAverage(records, remaining, target)`, `adviseRetakes(...)` returning `no_retakes_needed | retakes_suggested | out_of_reach | reached`.
 - [x] Planner constants in shared code, re-exported from `limits.ts` with `ceiling:` comments.
 
 ### Checklist — Planner view
@@ -862,7 +863,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] `CourseViewToggle` gains Planner and shows on phones (List and Planner; Roadmap stays `md` and up).
 - [x] Target CGPA field (shadcn form + React Hook Form + `targetCgpaInput`), with the current and projected CGPA side by side.
 - [x] Course rows with a mock grade picker: past courses (retake mock, only when a retake is allowed) and future slots (first-attempt mock). Rows with a mock are marked; "Clear mock grades" resets them.
-- [x] Advice panel: the outcome, the needed average in remaining credits, the suggested retakes (course, current best, grade to aim for, credits), the typical and ceiling grades and where they came from, and the "Estimates only" line.
+- [x] Advice panel: the outcome, the needed average in remaining credits, the suggested retakes (course, current best, grade to aim for, credits), the predicted finish, what the predictions rest on, and the "Estimates only" line.
 - [x] Empty states: no course map, no graded courses yet (advice uses the fallback ceiling and says so), no target set.
 
 ### Checklist — Docs & QA (C, D)
@@ -872,7 +873,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [x] `src/shared/planner.test.ts`: projected CGPA equals `cgpa()` with no mocks; a mock below the best grade changes nothing; a mock on a course that can't be retaken is ignored; F-only course passed in the future replaces the F without growing graded credits; ceiling from history (upper quartile, snapped down), typical grade (median, snapped down) and the fallbacks below the minimum course count; no retakes when the needed average fits under the typical grade; retakes when the needed average is under the ceiling but above the typical grade; greedy picks the largest gain per credit and stops as soon as the target fits; a required F-only course is never suggested as a retake; out of reach reports the highest reachable CGPA; a target already reached.
+- [x] `src/shared/planner.test.ts`: projected CGPA equals `cgpa()` with no mocks; a mock below the best grade changes nothing; a mock on a course that can't be retaken is ignored; F-only course passed in the future replaces the F without growing graded credits; ceiling from history (upper quartile, snapped down) and the fallback below the minimum course count; predictions by category pulled toward the overall average, and the fallback with no history; no retakes when the predicted finish meets the target; a needed average under the ceiling but above the usual grades is not called reachable; retakes predicted from the course's category; greedy picks the largest gain per credit and stops as soon as the target fits; a required F-only course is never suggested as a retake; out of reach reports the predicted finish and the best case, as a stretch or as out of reach; a target already reached.
 - [x] `src/server/features/attempts/target.api.test.ts`: owner can set and read it, a target at or below the real CGPA is refused, out-of-range values are refused, another user's target is never readable (404), the rate limit applies.
 - [x] Run: `vp test planner target`
 

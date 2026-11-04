@@ -53,7 +53,7 @@ export function buildPlannerModel(
   map: CourseMap,
   attempts: readonly { courseCode: string; grade: string }[],
 ): PlannerModel {
-  const records = courseRecords(map, attempts);
+  const records = withCategories(courseRecords(map, attempts), map);
   const recordOf = new Map(records.map((r) => [r.code, r]));
   const future: PlannerRow[] = [];
   const retakes: PlannerRow[] = [];
@@ -143,11 +143,28 @@ export function buildPlannerModel(
 
   return {
     records,
-    remaining: future.map((r) => ({ code: r.key, credits: r.credits })),
+    remaining: future.map((r) => ({ code: r.key, credits: r.credits, category: r.category })),
     future,
     retakes,
     lockedCount,
   };
+}
+
+/** Files each record under its course map category, which the advisor predicts grades by. */
+function withCategories(records: PlannerCourse[], map: CourseMap): PlannerCourse[] {
+  const categoryOf = new Map<string, string>();
+  const add = (code: string, category: string) => {
+    if (!categoryOf.has(code)) categoryOf.set(code, category);
+  };
+  for (const category of map.categories) {
+    for (const slot of category.slots) {
+      add(slot.code, category.name);
+      for (const alternative of slot.alternatives) add(alternative.code, category.name);
+      if (slot.studentCourse) add(slot.studentCourse.code, category.name);
+    }
+  }
+  for (const course of map.extras) add(course.code, course.category);
+  return records.map((r) => ({ ...r, category: categoryOf.get(r.code) }));
 }
 
 /** The mocks for the rows that have a picked grade; picks for rows that no longer exist are dropped. */
@@ -180,17 +197,14 @@ export function targetReached(current: number | null, target: number | null): bo
 /** Shown with every outcome: the advice is arithmetic on grades, never a promise. */
 export const ESTIMATE_NOTE = "Estimates only. Retake rules and fees are set by NSU.";
 
-/** The grades the advice assumes and where they come from, in the words the student reads. */
-export function historyLine({ typical, ceiling }: Pick<Advice, "typical" | "ceiling">): string {
-  if (ceiling.source === "history") {
-    if (typical.grade === ceiling.grade) {
-      return `Based on your grades, we plan your remaining courses and any retake at your usual ${typical.grade}.`;
-    }
-    return `Based on your grades, we plan your remaining courses at your usual ${typical.grade} and assume up to ${ceiling.grade} in a retake.`;
+/** What the predictions rest on, in the words the student reads. */
+export function historyLine({ outlook, ceiling }: Pick<Advice, "outlook" | "ceiling">): string {
+  if (outlook.source === "history" && outlook.average !== null) {
+    return `Each remaining course is predicted from your own grades in its category (your average so far is ${outlook.average.toFixed(2)}). At best we assume ${ceiling.grade}.`;
   }
   const have =
-    ceiling.gradedCourses === 0
+    outlook.gradedCourses === 0
       ? "No graded courses yet"
-      : `Only ${ceiling.gradedCourses} graded ${ceiling.gradedCourses === 1 ? "course" : "courses"} so far`;
-  return `${have}, so until you have ${PLANNER_HISTORY_MIN_COURSES} we plan your remaining courses at ${typical.grade} and assume up to ${ceiling.grade} in a retake.`;
+      : `Only ${outlook.gradedCourses} graded ${outlook.gradedCourses === 1 ? "course" : "courses"} so far`;
+  return `${have}, so predictions are rough until you have ${PLANNER_HISTORY_MIN_COURSES}. They start near ${outlook.overall.toFixed(2)} and follow your grades as you add them.`;
 }
