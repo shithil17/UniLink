@@ -161,6 +161,12 @@ export type RetakePolicy = {
 
 export const BELOW_B_PLUS_POLICY: RetakePolicy = { name: "below-b-plus", blockedFrom: "B+" };
 
+/** A course whose only pass is a waiver. A real pass wins over a waiver, so that course stays graded. */
+export function isWaivedCourse(attempts: readonly { grade: string }[]): boolean {
+  const waived = attempts.some((a) => a.grade === WAIVED);
+  return waived && !attempts.some((a) => a.grade !== WAIVED && isPassingGrade(a.grade));
+}
+
 /**
  * Whether one more attempt at a course is allowed, given its other attempts. Blocked once the best
  * graded attempt reaches the policy's cutoff. I, W and WV never block, and attempts are unlimited

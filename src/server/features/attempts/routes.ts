@@ -4,7 +4,9 @@ import {
   attemptInput,
   attemptListQuery,
   attemptUpdate,
+  targetCgpaInput,
   type Attempt,
+  type CgpaSummary,
 } from "../../../shared/schemas/attempts";
 import { getDb, type Db } from "../../db/client";
 import { limits } from "../../limits";
@@ -14,6 +16,7 @@ import type { AppEnv } from "../../middleware/types";
 import { attemptsRepo, type AttemptRow } from "../../repos/attempts";
 import { facultyRepo } from "../../repos/faculty";
 import { studentCoursesRepo } from "../../repos/studentCourses";
+import { usersRepo } from "../../repos/users";
 import { validateJson, validateQuery } from "../../validate";
 import { isKnownCourseCode, loadCurriculum } from "../courses/curriculum";
 import { buildCourseMap, EMPTY_COURSE_MAP } from "../courses/map";
@@ -71,6 +74,22 @@ async function writeLimited(c: Context<AppEnv>, db: Db) {
   return hit.allowed ? null : rateLimitedResponse(c, hit);
 }
 
+/** The signed-in user's CGPA summary, built the same way for `/summary` and the target check. */
+async function ownSummary(db: Db, uid: number): Promise<CgpaSummary> {
+  const loaded = await loadCurriculum(db, uid);
+  const own = await attemptsRepo(db, uid).listOwn();
+  const map = loaded
+    ? buildCourseMap({
+        ...loaded,
+        attempts: own,
+        studentCourses: await studentCoursesRepo(db, uid).listOwn(),
+      })
+    : EMPTY_COURSE_MAP;
+  return buildCgpaSummary(map, own);
+}
+
+const toHundredths = (cgpa: number) => Math.round(cgpa * 100);
+
 const termColumns = (term: { year: number; season: "spring" | "summer" | "fall" } | null) => ({
   termYear: term?.year ?? null,
   termSeason: term?.season ?? null,
@@ -88,18 +107,36 @@ export const attemptRoutes = new Hono<AppEnv>()
     const rows = await attemptsRepo(db, userId(c)).listOwn(courseCode);
     return c.json(await toAttempts(db, rows));
   })
-  .get("/summary", async (c) => {
+  .get("/summary", async (c) => c.json(await ownSummary(getDb(c.env.DB), userId(c))))
+  .get("/target", async (c) => {
+    const hundredths = await usersRepo(getDb(c.env.DB)).getTargetCgpa(userId(c));
+    return c.json({ targetCgpa: hundredths === null ? null : hundredths / 100 });
+  })
+  .put("/target", validateJson(targetCgpaInput), async (c) => {
+    const { targetCgpa } = c.req.valid("json");
     const db = getDb(c.env.DB);
-    const loaded = await loadCurriculum(db, userId(c));
-    const own = await attemptsRepo(db, userId(c)).listOwn();
-    const map = loaded
-      ? buildCourseMap({
-          ...loaded,
-          attempts: own,
-          studentCourses: await studentCoursesRepo(db, userId(c)).listOwn(),
-        })
-      : EMPTY_COURSE_MAP;
-    return c.json(buildCgpaSummary(map, own));
+    const hit = await rateLimit(
+      db,
+      `attempts-target:user:${userId(c)}`,
+      limits.targetWrites.limit,
+      limits.targetWrites.windowMs,
+    );
+    if (!hit.allowed) return rateLimitedResponse(c, hit);
+
+    const hundredths = toHundredths(targetCgpa);
+    const current = (await ownSummary(db, userId(c))).cgpa;
+    // Compared in hundredths with a hair of slack, so float noise in the CGPA cannot let an equal target through.
+    if (current !== null && hundredths <= current * 100 + 1e-9) {
+      return c.json(
+        {
+          error: "target_not_above_current",
+          message: `Your CGPA is already ${current.toFixed(2)}. Set a target above it.`,
+        },
+        409,
+      );
+    }
+    await usersRepo(db).setTargetCgpa(userId(c), hundredths);
+    return c.json({ targetCgpa: hundredths / 100 });
   })
   .post("/", validateJson(attemptInput), async (c) => {
     const body = c.req.valid("json");

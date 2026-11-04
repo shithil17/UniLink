@@ -172,6 +172,21 @@ export function usersRepo(db: Db) {
           .get()) ?? null
       );
     },
+    /**
+     * The planner target in hundredths (350 = 3.50), or null when none is set. Owner-only: this is
+     * the one read of the column, and it takes the signed-in user's own id.
+     */
+    async getTargetCgpa(id: number): Promise<number | null> {
+      const row = await db
+        .select({ targetCgpa: users.targetCgpa })
+        .from(users)
+        .where(eq(users.id, id))
+        .get();
+      return row?.targetCgpa ?? null;
+    },
+    async setTargetCgpa(id: number, hundredths: number): Promise<void> {
+      await db.update(users).set({ targetCgpa: hundredths }).where(eq(users.id, id));
+    },
     /** Public handles for ids, for labels. Ids that no longer exist are missing from the map. */
     async usernamesByIds(ids: number[]): Promise<Map<number, string>> {
       const found = new Map<number, string>();

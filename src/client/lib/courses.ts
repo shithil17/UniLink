@@ -1,6 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { attempt, type AttemptInput, type AttemptUpdate } from "../../shared/schemas/attempts";
+import {
+  attempt,
+  targetCgpaResponse,
+  type AttemptInput,
+  type AttemptUpdate,
+  type TargetCgpaInput,
+} from "../../shared/schemas/attempts";
 import {
   courseCodeInput,
   courseLookup,
@@ -8,8 +14,8 @@ import {
   studentCourse,
   type StudentCourseInput,
 } from "../../shared/schemas/courses";
-import { ApiError, apiDelete, apiGet, apiPatch, apiPost } from "./api";
-import { courseMapQuery } from "./queries";
+import { ApiError, apiDelete, apiGet, apiPatch, apiPost, apiPut } from "./api";
+import { courseMapQuery, targetCgpaQuery } from "./queries";
 
 /**
  * Refresh the map and everything built from attempts (history, CGPA summary) after anything that
@@ -105,5 +111,14 @@ export function useCourseLookup(code: string) {
           throw err;
         },
       ),
+  });
+}
+
+/** Saves the planner's target CGPA. The saved value replaces the cached one on success. */
+export function useSaveTarget() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: TargetCgpaInput) => apiPut("/api/attempts/target", targetCgpaResponse, body),
+    onSuccess: (saved) => queryClient.setQueryData(targetCgpaQuery.queryKey, saved),
   });
 }

@@ -102,6 +102,7 @@ function renderCourses(path: string) {
   queryClient.setQueryData(["course-map"], map);
   queryClient.setQueryData(["attempts", "list"], []);
   queryClient.setQueryData(["attempts", "summary"], summary);
+  queryClient.setQueryData(["planner", "target"], { targetCgpa: null });
   queryClient.setQueryData(["inbox", "unread-count"], { count: 0 });
   const router = createRouter({
     routeTree,
@@ -115,6 +116,52 @@ function renderCourses(path: string) {
     </QueryClientProvider>,
   );
 }
+
+describe("course planner route", () => {
+  it("is a third view in the toggle, and lists the unfinished course with a mock picker", async () => {
+    renderCourses("/courses?view=planner");
+    const planner = await screen.findByRole("button", { name: "Planner" });
+    expect(planner.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("heading", { name: "Your CGPA" })).toBeTruthy();
+    // No target yet: the advice panel asks for one.
+    expect(screen.getByText(/Set a target CGPA/)).toBeTruthy();
+    expect(screen.getByText("Estimates only. Retake rules and fees are set by NSU.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: /^Upcoming/ }));
+    expect(await screen.findByRole("combobox", { name: "Mock grade for CSE101" })).toBeTruthy();
+  });
+
+  it("shows a refused target as an error on the field, not a toast", async () => {
+    renderCourses("/courses?view=planner");
+    const input = await screen.findByLabelText("Target CGPA");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              error: "target_not_above_current",
+              message: "Set a target above it.",
+            }),
+            { status: 409, headers: { "content-type": "application/json" } },
+          ),
+        ),
+      ),
+    );
+    fireEvent.change(input, { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save target" }));
+    expect(await screen.findByText("Set a target above it.")).toBeTruthy();
+    expect(input.getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("rejects a value outside 0.01 to 4.00 before it reaches the server", async () => {
+    renderCourses("/courses?view=planner");
+    const input = await screen.findByLabelText("Target CGPA");
+    fireEvent.change(input, { target: { value: "4.5" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save target" }));
+    expect(await screen.findByText("Enter a number between 0.01 and 4.00.")).toBeTruthy();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
 
 describe("course roadmap route", () => {
   it("opens the CGPA summary over the sheet and lets the button hide it", async () => {

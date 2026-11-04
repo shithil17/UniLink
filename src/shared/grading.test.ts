@@ -9,6 +9,7 @@ import {
   gradeLabel,
   gradePoints,
   isPassingGrade,
+  isWaivedCourse,
   NSU_SCALE,
   retakeRefusal,
   WAIVED,
@@ -140,6 +141,20 @@ describe("cgpa", () => {
     const retaken = course(3, ["F", "D", "C", "B"]);
     expect(earnedCredits([retaken])).toBe(3);
     expect(gradedCredits([retaken])).toBe(3);
+  });
+});
+
+describe("isWaivedCourse", () => {
+  const graded = (...grades: string[]) => grades.map((grade) => ({ grade }));
+  it("is true when a waiver is the only pass", () => {
+    expect(isWaivedCourse(graded("WV"))).toBe(true);
+    expect(isWaivedCourse(graded("F", "WV"))).toBe(true);
+  });
+  it("is false with a real pass or no waiver", () => {
+    expect(isWaivedCourse(graded("D", "WV"))).toBe(false);
+    expect(isWaivedCourse(graded("WV", "B"))).toBe(false);
+    expect(isWaivedCourse(graded("F"))).toBe(false);
+    expect(isWaivedCourse([])).toBe(false);
   });
 });
 
