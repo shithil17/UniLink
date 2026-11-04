@@ -8,6 +8,8 @@
     "start:preview": "vp preview",
     "cf:types": "wrangler types",
     "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio --config drizzle.studio.config.ts",
+    "db:pull:staging": "node scripts/pull-staging.ts",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:staging": "wrangler d1 migrations apply DB --env staging --remote",
     "db:migrate:prod": "wrangler d1 migrations apply DB --env production --remote",
@@ -49,6 +51,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.67.0",
     "@cloudflare/vitest-plugin": "1.5.0",
+    "@libsql/client": "^0.18.0",
     "@tanstack/router-plugin": "1.168.48",
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",
