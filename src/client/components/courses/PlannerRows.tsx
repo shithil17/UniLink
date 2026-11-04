@@ -33,6 +33,9 @@ function Row({
 }) {
   const note = mockNote(row, grade);
   const hueFrom = row.code.split("/")[0];
+  // An open choice slot shows several codes in one pill, which may wrap. A single code
+  // stays whole, as in the List view.
+  const choice = row.code.includes("/");
   const detail = [
     `${formatCredits(row.credits)} cr`,
     row.best ? `best ${row.best}` : row.category,
@@ -50,7 +53,7 @@ function Row({
             <CourseCode
               code={row.code}
               hueFrom={hueFrom}
-              className="min-w-0 shrink whitespace-normal wrap-anywhere"
+              className={choice ? "min-w-0 shrink whitespace-normal wrap-anywhere" : undefined}
             />
             <span className="min-w-0 truncate text-[13px] leading-[1.3] font-medium text-faint tabular-nums">
               {detail}
