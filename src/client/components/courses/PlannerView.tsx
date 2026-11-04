@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBlock } from "@/components/ui/error-block";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { buildPlannerModel, mocksForRows, targetReached } from "@/lib/plannerModel";
 import { loadMocks, mocksStorageKey, saveMocks, type MockPicks } from "@/lib/plannerMocks";
 import { attemptsQuery, meQuery, targetCgpaQuery } from "@/lib/queries";
@@ -12,14 +13,20 @@ import { cgpa } from "../../../shared/grading";
 import { adviseRetakes, projectedCgpa } from "../../../shared/planner";
 import type { CourseMap } from "../../../shared/schemas/courses";
 import { AdvicePanel } from "./AdvicePanel";
-import { PlannerSection } from "./PlannerRows";
+import { PlannerList } from "./PlannerRows";
 import { TargetPanel } from "./TargetPanel";
 
 type Parts = { side: ReactNode; main: ReactNode };
+type PlannerTab = "advice" | "retakes" | "upcoming";
+
+function TabCount({ count }: { count: number }) {
+  return <span className="font-medium tabular-nums">{count}</span>;
+}
 
 /**
- * The Planner view: target and advice up front, then the courses to try mock grades on. Hands its
- * two parts to `children` so the courses screen can place them in its own grid.
+ * The Planner view: the target up front, then one of advice, retakes or upcoming courses. Tabs keep
+ * the retakes in the first screen instead of under every remaining course. Hands its two parts to
+ * `children` so the courses screen can place them in its own grid.
  */
 export function PlannerView({
   map,
@@ -78,6 +85,7 @@ function PlannerBody({
   children: (parts: Parts) => ReactNode;
 }) {
   const [picks, setPicks] = useState<MockPicks>(() => loadMocks(storageKey));
+  const [tab, setTab] = useState<PlannerTab>("advice");
   const target = useQuery(targetCgpaQuery).data?.targetCgpa ?? null;
   const model = useMemo(() => buildPlannerModel(map, attempts), [map, attempts]);
   const rows = useMemo(() => [...model.future, ...model.retakes], [model]);
@@ -103,43 +111,61 @@ function PlannerBody({
   };
 
   // Only the compact CGPA and target block is the (sticky) side column. The advice can grow with
-  // its retakes, so it flows with the page, above the courses.
+  // its retakes, so it flows with the page.
   const side = <TargetPanel current={current} projected={projected} mockCount={mocks.length} />;
+  const advicePanel = (
+    <AdvicePanel advice={advice} realReached={targetReached(current, target)} rows={rows} />
+  );
+  const mockBar = (
+    <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+      <p className="min-w-0 flex-1 basis-48 text-sm text-soft">
+        Try a grade on any course. Mocks stay on this device.
+      </p>
+      {mocks.length > 0 ? (
+        <Button variant="outline" size="sm" onClick={clear}>
+          Clear mock grades
+        </Button>
+      ) : null}
+    </div>
+  );
+  // A list that has emptied since the tab was picked falls back to the advice.
+  const listEmpty =
+    (tab === "retakes" && model.retakes.length === 0) ||
+    (tab === "upcoming" && model.future.length === 0);
 
   const main =
     rows.length === 0 ? (
       <>
-        <AdvicePanel advice={advice} realReached={targetReached(current, target)} rows={rows} />
+        {advicePanel}
         <div className="overflow-hidden rounded-panel bg-surface md:rounded-[24px]">
           <EmptyState icon={CalculatorIcon} title="Nothing left to plan" />
         </div>
       </>
     ) : (
-      <>
-        <AdvicePanel advice={advice} realReached={targetReached(current, target)} rows={rows} />
-        <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">
-          <p className="min-w-0 flex-1 basis-48 text-sm text-soft">
-            Try a grade on any course. Mocks stay on this device.
-          </p>
-          {mocks.length > 0 ? (
-            <Button variant="outline" size="sm" onClick={clear}>
-              Clear mock grades
-            </Button>
+      <Tabs
+        value={listEmpty ? "advice" : tab}
+        onValueChange={(value) => setTab(value as PlannerTab)}
+        className="min-w-0 gap-4"
+      >
+        <TabsList aria-label="Planner" className="w-full">
+          <TabsTrigger value="advice" className="px-2!">
+            Advice
+          </TabsTrigger>
+          {model.retakes.length > 0 ? (
+            <TabsTrigger value="retakes" className="px-2!">
+              Retakes <TabCount count={model.retakes.length} />
+            </TabsTrigger>
           ) : null}
-        </div>
-        {model.future.length > 0 ? (
-          <PlannerSection
-            id="planner-future"
-            title="Still to take"
-            rows={model.future}
-            picks={picks}
-            onPick={pick}
-          />
-        ) : null}
-        {model.retakes.length > 0 ? (
-          <PlannerSection
-            id="planner-retakes"
-            title="Could retake"
+          {model.future.length > 0 ? (
+            <TabsTrigger value="upcoming" className="px-2!">
+              Upcoming <TabCount count={model.future.length} />
+            </TabsTrigger>
+          ) : null}
+        </TabsList>
+        <TabsContent value="advice">{advicePanel}</TabsContent>
+        <TabsContent value="retakes" className="grid gap-3">
+          {mockBar}
+          <PlannerList
             hint={
               model.lockedCount > 0
                 ? `${model.lockedCount} ${model.lockedCount === 1 ? "course" : "courses"} hidden: already B+ or better.`
@@ -149,8 +175,12 @@ function PlannerBody({
             picks={picks}
             onPick={pick}
           />
-        ) : null}
-      </>
+        </TabsContent>
+        <TabsContent value="upcoming" className="grid gap-3">
+          {mockBar}
+          <PlannerList rows={model.future} picks={picks} onPick={pick} />
+        </TabsContent>
+      </Tabs>
     );
 
   return children({ side, main });

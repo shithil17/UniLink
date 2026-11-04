@@ -72,6 +72,16 @@ describe("buildPlannerModel", () => {
     expect(model.lockedCount).toBe(1);
   });
 
+  it("lists the worst retake first", () => {
+    const done = (code: string) => slot({ code, status: "done", filledBy: code, chosenCode: code });
+    const { retakes } = buildPlannerModel(map([done("CSE101"), done("CSE102"), done("CSE103")]), [
+      attempt("CSE101", "B-"),
+      attempt("CSE102", "D"),
+      attempt("CSE103", "C"),
+    ]);
+    expect(retakes.map((r) => r.key)).toEqual(["CSE102", "CSE103", "CSE101"]);
+  });
+
   it("lists unfinished credit-bearing slots as first-attempt rows, F-only and open electives included", () => {
     expect(model.future.map((r) => r.key)).toEqual(["CSE103", "slot:Core:3", "slot:Core:6"]);
     expect(model.future.find((r) => r.key === "CSE103")?.best).toBe("F");

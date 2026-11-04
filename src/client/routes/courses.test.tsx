@@ -123,10 +123,11 @@ describe("course planner route", () => {
     const planner = await screen.findByRole("button", { name: "Planner" });
     expect(planner.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("heading", { name: "Your CGPA" })).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "Mock grade for CSE101" })).toBeTruthy();
     // No target yet: the advice panel asks for one.
     expect(screen.getByText(/Set a target CGPA/)).toBeTruthy();
     expect(screen.getByText("Estimates only. Retake rules and fees are set by NSU.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("tab", { name: /^Upcoming/ }));
+    expect(await screen.findByRole("combobox", { name: "Mock grade for CSE101" })).toBeTruthy();
   });
 
   it("shows a refused target as an error on the field, not a toast", async () => {

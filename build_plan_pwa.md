@@ -868,6 +868,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] Target CGPA field (shadcn form + React Hook Form + `targetCgpaInput`), with the current and projected CGPA side by side.
 - [x] Course rows with a mock grade picker: past courses (retake mock, only when a retake is allowed) and future slots (first-attempt mock). Rows with a mock are marked; "Clear mock grades" resets them.
 - [x] Advice panel: the outcome, the needed average in remaining credits, the suggested retakes (course, current best, grade to aim for, credits), the predicted finish, what the predictions rest on, and the "Estimates only" line.
+- [x] (2026-11-05) One page, three tabs under the CGPA block: Advice, Retakes (worst grade first) and Upcoming, so retakes are not buried under every remaining course. A long list opens on its first 10 rows plus any row with a mock, with "Show all" for the rest.
 - [x] Empty states: no course map, no graded courses yet (advice uses the fallback ceiling and says so), no target set.
 
 ### Checklist — Docs & QA (C, D)

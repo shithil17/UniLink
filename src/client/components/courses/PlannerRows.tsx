@@ -1,9 +1,11 @@
-import { SectionHeader } from "@/components/layout/SectionHeader";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { courseHue } from "@/lib/courseHue";
 import { formatCredits } from "@/lib/courseMap";
 import { mockChangesNothing, type PlannerRow } from "@/lib/plannerModel";
 import { MOCK_GRADES, type MockPicks } from "@/lib/plannerMocks";
+import { PLANNER_ROWS_SHOWN } from "../../../shared/planner";
 import { CourseRowBody } from "./CourseRowBody";
 import { OptionSelect } from "./OptionSelect";
 
@@ -81,33 +83,40 @@ function Row({
 
 const panel = "overflow-hidden rounded-panel bg-surface md:rounded-[24px]";
 
-/** A titled panel of course rows, each with a mock grade picker. */
-export function PlannerSection({
-  id,
-  title,
+/**
+ * A panel of course rows, each with a mock grade picker. A long list opens as a preview so the page
+ * stays short; a row with a mock always shows, so a pick never disappears behind "Show all".
+ */
+export function PlannerList({
   hint,
   rows,
   picks,
   onPick,
 }: {
-  id: string;
-  title: string;
   hint?: string;
   rows: readonly PlannerRow[];
   picks: MockPicks;
   onPick: (key: string, grade: string | null) => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded
+    ? rows
+    : rows.filter((row, index) => index < PLANNER_ROWS_SHOWN || picks[row.key]);
   return (
-    <section aria-labelledby={id}>
-      <SectionHeader id={id} title={title} count={rows.length} />
-      {hint ? <p className="-mt-1 pb-3 text-sm text-faint">{hint}</p> : null}
+    <div className="grid gap-3">
       <div className={panel}>
         <ul>
-          {rows.map((row) => (
+          {shown.map((row) => (
             <Row key={row.key} row={row} grade={picks[row.key]} onPick={onPick} />
           ))}
         </ul>
       </div>
-    </section>
+      {shown.length < rows.length ? (
+        <Button variant="outline" size="sm" onClick={() => setExpanded(true)}>
+          Show all {rows.length}
+        </Button>
+      ) : null}
+      {hint ? <p className="text-sm text-faint">{hint}</p> : null}
+    </div>
   );
 }

@@ -141,6 +141,9 @@ export function buildPlannerModel(
     });
   }
 
+  // Worst grade first: those gain the most from a retake, and a long list opens on its first rows.
+  retakes.sort((a, b) => (gradePoints(a.best ?? "") ?? 0) - (gradePoints(b.best ?? "") ?? 0));
+
   return {
     records,
     remaining: future.map((r) => ({ code: r.key, credits: r.credits, category: r.category })),

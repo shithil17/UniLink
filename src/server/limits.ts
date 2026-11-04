@@ -24,6 +24,7 @@ import {
   PLANNER_HISTORY_MIN_COURSES,
   PLANNER_MAX_SUGGESTIONS,
   PLANNER_PRIOR_COURSES,
+  PLANNER_ROWS_SHOWN,
 } from "../shared/planner.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
 
@@ -88,6 +89,8 @@ export const limits = {
   plannerPriorCourses: PLANNER_PRIOR_COURSES,
   // ceiling: each retake costs a student extra tuition, so advice names a handful at most. Defined in shared code. Revisit if students need longer plans.
   plannerMaxSuggestions: PLANNER_MAX_SUGGESTIONS,
+  // ceiling: rows a planner list shows before "Show all": a term or two of courses, about two phone screens. Defined in shared code for the client list. Revisit if students keep opening the full list.
+  plannerRowsShown: PLANNER_ROWS_SHOWN,
   // ceiling: bounds D1 rows per user and term; a term is five or six courses, each a lecture and sometimes a lab. Revisit if students report hitting it.
   routineEntriesMax: 40,
   // ceiling: a term is entered in one sitting, a few dozen writes; this stops a loop from churning rows. Revisit if students report hitting it.

@@ -44,6 +44,10 @@ export const PLANNER_PRIOR_COURSES = 3;
 // need longer plans.
 export const PLANNER_MAX_SUGGESTIONS = 5;
 
+// ceiling: rows a planner list shows before "Show all", a term or two of courses, so the page stays
+// about two phone screens long. Revisit if students keep opening the full list.
+export const PLANNER_ROWS_SHOWN = 10;
+
 /** Float noise below this is not a difference: comparing 3.7 against a computed 3.7000000000000004. */
 const EPSILON = 1e-9;
 
