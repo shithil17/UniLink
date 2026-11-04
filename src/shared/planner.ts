@@ -26,6 +26,10 @@ export const PLANNER_HISTORY_MIN_COURSES = 8;
 // ceiling: the grade assumed as the realistic ceiling while history is thin. Never promised. Revisit
 // if advice for new students proves too hopeful.
 export const PLANNER_FALLBACK_CEILING = "A-";
+// ceiling: the grade assumed as a student's usual grade while history is thin. Future courses are
+// planned at this grade, so a lower value suggests retakes sooner. Revisit if advice for new
+// students proves too hopeful or too gloomy.
+export const PLANNER_FALLBACK_TYPICAL = "B+";
 // ceiling: each retake costs extra tuition, so advice names a handful at most. Revisit if students
 // need longer plans.
 export const PLANNER_MAX_SUGGESTIONS = 5;
@@ -51,14 +55,20 @@ export type PlannerMock = { code: string; credits: number; grade: string };
 /** A course map slot still to finish. A slot whose `code` matches a record is an F-only course. */
 export type RemainingCourse = { code: string; credits: number };
 
-export type CeilingGrade = {
+/** A grade drawn from the student's own history, or a fallback when it is too thin. */
+export type HistoryGrade = {
   grade: string;
   points: number;
-  /** "history": the upper quartile of the student's own grades. "fallback": too few graded courses. */
+  /** "history": a quantile of the student's own grades. "fallback": too few graded courses. */
   source: "history" | "fallback";
-  /** Graded courses the ceiling was drawn from. */
+  /** Graded courses the grade was drawn from. */
   gradedCourses: number;
 };
+
+/** The best grade the student reaches: what a retake aims for. */
+export type CeilingGrade = HistoryGrade;
+/** The grade the student usually gets: what the remaining courses are planned at. */
+export type TypicalGrade = HistoryGrade;
 
 export type SuggestedRetake = {
   code: string;
@@ -70,7 +80,7 @@ export type SuggestedRetake = {
   gainPerCredit: number;
 };
 
-type AdviceBase = { target: number; ceiling: CeilingGrade; text: string };
+type AdviceBase = { target: number; ceiling: CeilingGrade; typical: TypicalGrade; text: string };
 
 export type Advice =
   | (AdviceBase & { kind: "reached"; cgpa: number })
@@ -90,7 +100,10 @@ export type Advice =
     })
   | (AdviceBase & {
       kind: "out_of_reach";
-      /** The CGPA with every remaining course and every eligible retake at the ceiling, or null with nothing to go on. */
+      /**
+       * The CGPA with every remaining course at the typical grade and every eligible retake at the
+       * ceiling, or null with nothing to go on.
+       */
       highestCgpa: number | null;
       /** True when the target is reachable, but only with more retakes than the advisor will suggest. */
       tooManyRetakes: boolean;
@@ -161,39 +174,71 @@ function snapUp(points: number, scale: GradeScale): [string, number] {
   return [...grades].reverse().find(([, p]) => p >= points - EPSILON) ?? grades[0];
 }
 
-/** The 75th percentile of ascending values, interpolating between neighbours. */
-function upperQuartile(sorted: readonly number[]): number {
-  const position = 0.75 * (sorted.length - 1);
+/** The `q` quantile (0 to 1) of ascending values, interpolating between neighbours. */
+function quantile(sorted: readonly number[], q: number): number {
+  const position = q * (sorted.length - 1);
   const low = Math.floor(position);
   const high = Math.min(low + 1, sorted.length - 1);
   return sorted[low] + (position - low) * (sorted[high] - sorted[low]);
 }
 
+/** Best grade points per graded course (F counts; I, W, WV, non-credit and excluded do not), ascending. */
+function historyPoints(records: readonly PlannerCourse[], scale: GradeScale): number[] {
+  const points: number[] = [];
+  for (const record of records) {
+    if (record.nonCredit || record.excluded) continue;
+    const best = bestAttempt(record.attempts, scale);
+    if (best) points.push(gradePoints(best.grade, scale) ?? 0);
+  }
+  return points.sort((a, b) => a - b);
+}
+
+/** The `q` quantile of the history snapped down to a scale grade, or `fallback` while history is thin. */
+function historyGrade(
+  records: readonly PlannerCourse[],
+  q: number,
+  fallback: string,
+  rules: PlannerRules,
+): HistoryGrade {
+  const points = historyPoints(records, rules.scale);
+  if (points.length < PLANNER_HISTORY_MIN_COURSES) {
+    return {
+      grade: fallback,
+      points: gradePoints(fallback, rules.scale) ?? 0,
+      source: "fallback",
+      gradedCourses: points.length,
+    };
+  }
+  const [grade, snapped] = snapDown(quantile(points, q), rules.scale);
+  return { grade, points: snapped, source: "history", gradedCourses: points.length };
+}
+
 /**
- * The grade the planner assumes the student can reach: the upper quartile of their best grade per
- * graded course (F counts; I, W, WV, non-credit and excluded courses do not), snapped down to a scale
- * grade. Below `PLANNER_HISTORY_MIN_COURSES` graded courses it is the fallback grade instead.
+ * The best grade the planner assumes the student can reach, which is what a retake aims for: the
+ * upper quartile of their best grade per graded course, snapped down to a scale grade. Below
+ * `PLANNER_HISTORY_MIN_COURSES` graded courses it is the fallback grade instead.
  */
 export function realisticCeiling(
   records: readonly PlannerCourse[],
   rules: PlannerRules = DEFAULT_RULES,
 ): CeilingGrade {
-  const points: number[] = [];
-  for (const record of records) {
-    if (record.nonCredit || record.excluded) continue;
-    const best = bestAttempt(record.attempts, rules.scale);
-    if (best) points.push(gradePoints(best.grade, rules.scale) ?? 0);
-  }
-  if (points.length < PLANNER_HISTORY_MIN_COURSES) {
-    return {
-      grade: PLANNER_FALLBACK_CEILING,
-      points: gradePoints(PLANNER_FALLBACK_CEILING, rules.scale) ?? 0,
-      source: "fallback",
-      gradedCourses: points.length,
-    };
-  }
-  const [grade, snapped] = snapDown(upperQuartile(points.sort((a, b) => a - b)), rules.scale);
-  return { grade, points: snapped, source: "history", gradedCourses: points.length };
+  return historyGrade(records, 0.75, PLANNER_FALLBACK_CEILING, rules);
+}
+
+/**
+ * The grade the student usually gets, which is what the remaining courses are planned at: the
+ * median of the same history, snapped down. A needed average is compared with this, never with the
+ * ceiling, because one good grade now and then does not make an average across every course. Below
+ * `PLANNER_HISTORY_MIN_COURSES` graded courses it is the fallback grade, and it is never above the
+ * ceiling.
+ */
+export function typicalGrade(
+  records: readonly PlannerCourse[],
+  rules: PlannerRules = DEFAULT_RULES,
+): TypicalGrade {
+  const typical = historyGrade(records, 0.5, PLANNER_FALLBACK_TYPICAL, rules);
+  const ceiling = realisticCeiling(records, rules);
+  return typical.points > ceiling.points ? { ...ceiling } : typical;
 }
 
 // --- Needed average ---
@@ -282,12 +327,13 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
  * remaining credits and mocked past courses are not suggested again.
  *
  * 1. The projected CGPA already meets the target: `reached`.
- * 2. The needed average over the unmocked remaining credits fits under the ceiling grade:
- *    `no_retakes_needed`.
- * 3. Otherwise retakes are added one at a time, largest gain per credit first, stopping as soon as
- *    the needed average fits: `retakes_suggested`.
+ * 2. The needed average over the unmocked remaining credits is at or below the typical grade (what
+ *    the student usually gets): `no_retakes_needed`.
+ * 3. Otherwise retakes at the ceiling grade are added one at a time, largest gain per credit first,
+ *    stopping as soon as the needed average is at or below the typical grade: `retakes_suggested`.
  * 4. If even every candidate retaken at the ceiling cannot get there (or it takes more than
- *    `PLANNER_MAX_SUGGESTIONS` retakes): `out_of_reach`, with the highest CGPA reachable.
+ *    `PLANNER_MAX_SUGGESTIONS` retakes): `out_of_reach`, with the highest CGPA reachable with the
+ *    typical grade in the remaining courses and the ceiling in every retake.
  */
 export function adviseRetakes(
   records: readonly PlannerCourse[],
@@ -298,7 +344,8 @@ export function adviseRetakes(
 ): Advice {
   // Mocks are not part of the history the ceiling comes from.
   const ceiling = realisticCeiling(records, rules);
-  const base = { target, ceiling };
+  const typical = typicalGrade(records, rules);
+  const base = { target, ceiling, typical };
 
   const projected = projectedCgpa(records, mocks, rules);
   if (projected !== null && projected >= target - EPSILON) {
@@ -329,7 +376,7 @@ export function adviseRetakes(
       return { fits: now !== null && now >= target - EPSILON, needed: null };
     }
     const needed = neededAverage(withMocks, open, target, rules);
-    return { fits: needed !== null && needed <= ceiling.points + EPSILON, needed };
+    return { fits: needed !== null && needed <= typical.points + EPSILON, needed };
   };
 
   const none = check([]);
@@ -345,7 +392,7 @@ export function adviseRetakes(
     };
   }
 
-  const highest = highestReachable(records, mocks, open, candidates, ceiling, rules);
+  const highest = highestReachable(records, mocks, open, candidates, typical, rules);
   if (highest === null || highest < target - EPSILON) {
     return outOfReach(base, highest, false);
   }
@@ -393,21 +440,21 @@ export function adviseRetakes(
   };
 }
 
-/** The CGPA with every open remaining course and every candidate retake at the ceiling grade. */
+/** The CGPA with every open remaining course at the typical grade and every candidate retaken at the ceiling. */
 function highestReachable(
   records: readonly PlannerCourse[],
   mocks: readonly PlannerMock[],
   open: readonly RemainingCourse[],
   candidates: readonly Candidate[],
-  ceiling: CeilingGrade,
+  typical: TypicalGrade,
   rules: PlannerRules,
 ): number | null {
-  const atCeiling = open.map((r) => ({ code: r.code, credits: r.credits, grade: ceiling.grade }));
-  return projectedCgpa(records, [...mocks, ...atCeiling, ...candidates.map((c) => c.mock)], rules);
+  const atTypical = open.map((r) => ({ code: r.code, credits: r.credits, grade: typical.grade }));
+  return projectedCgpa(records, [...mocks, ...atTypical, ...candidates.map((c) => c.mock)], rules);
 }
 
 function outOfReach(
-  base: { target: number; ceiling: CeilingGrade },
+  base: { target: number; ceiling: CeilingGrade; typical: TypicalGrade },
   highest: number | null,
   tooManyRetakes: boolean,
 ): Advice {
@@ -416,9 +463,9 @@ function outOfReach(
   if (highest === null) {
     text = `There is nothing to plan with yet, so ${target} cannot be worked out.`;
   } else if (tooManyRetakes) {
-    text = `Reaching ${target} would take more than ${plural(PLANNER_MAX_SUGGESTIONS, "retake", "retakes")}. Retaking every eligible course at ${base.ceiling.grade} and getting ${base.ceiling.grade} in the rest reaches about ${floorCgpa(highest)}.`;
+    text = `Reaching ${target} would take more than ${plural(PLANNER_MAX_SUGGESTIONS, "retake", "retakes")}. Retaking every eligible course at ${base.ceiling.grade} and getting your usual ${base.typical.grade} in the rest reaches about ${floorCgpa(highest)}.`;
   } else {
-    text = `${target} looks out of reach by graduation. With ${base.ceiling.grade} in every remaining course and every eligible retake, the highest CGPA you could reach is about ${floorCgpa(highest)}.`;
+    text = `${target} looks out of reach by graduation. With your usual ${base.typical.grade} in the remaining courses and ${base.ceiling.grade} in every eligible retake, you would reach about ${floorCgpa(highest)}.`;
   }
   return { ...base, kind: "out_of_reach", highestCgpa: highest, tooManyRetakes, text };
 }

@@ -1,6 +1,6 @@
 import { courseHue } from "@/lib/courseHue";
 import { formatCredits } from "@/lib/courseMap";
-import { ceilingLine, ESTIMATE_NOTE, type PlannerRow } from "@/lib/plannerModel";
+import { ESTIMATE_NOTE, historyLine, type PlannerRow } from "@/lib/plannerModel";
 import type { Advice } from "../../../shared/planner";
 import { CourseCode } from "./CourseCode";
 
@@ -110,9 +110,7 @@ export function AdvicePanel({
           </ul>
         </>
       ) : null}
-      <p className="mt-3 border-t border-line pt-3 text-sm text-soft">
-        {ceilingLine(advice.ceiling)}
-      </p>
+      <p className="mt-3 border-t border-line pt-3 text-sm text-soft">{historyLine(advice)}</p>
       <p className="mt-2 text-[13px] text-faint">{ESTIMATE_NOTE}</p>
     </section>
   );

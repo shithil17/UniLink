@@ -180,14 +180,17 @@ export function targetReached(current: number | null, target: number | null): bo
 /** Shown with every outcome: the advice is arithmetic on grades, never a promise. */
 export const ESTIMATE_NOTE = "Estimates only. Retake rules and fees are set by NSU.";
 
-/** Where the assumed ceiling comes from, in the words the student reads. */
-export function ceilingLine(ceiling: Advice["ceiling"]): string {
+/** The grades the advice assumes and where they come from, in the words the student reads. */
+export function historyLine({ typical, ceiling }: Pick<Advice, "typical" | "ceiling">): string {
   if (ceiling.source === "history") {
-    return `Based on your grades, we assume up to ${ceiling.grade}.`;
+    if (typical.grade === ceiling.grade) {
+      return `Based on your grades, we plan your remaining courses and any retake at your usual ${typical.grade}.`;
+    }
+    return `Based on your grades, we plan your remaining courses at your usual ${typical.grade} and assume up to ${ceiling.grade} in a retake.`;
   }
   const have =
     ceiling.gradedCourses === 0
       ? "No graded courses yet"
       : `Only ${ceiling.gradedCourses} graded ${ceiling.gradedCourses === 1 ? "course" : "courses"} so far`;
-  return `${have}, so we assume up to ${ceiling.grade} until you have ${PLANNER_HISTORY_MIN_COURSES}.`;
+  return `${have}, so until you have ${PLANNER_HISTORY_MIN_COURSES} we plan your remaining courses at ${typical.grade} and assume up to ${ceiling.grade} in a retake.`;
 }

@@ -20,6 +20,7 @@ import {
 } from "../shared/schemas/routine.ts";
 import {
   PLANNER_FALLBACK_CEILING,
+  PLANNER_FALLBACK_TYPICAL,
   PLANNER_HISTORY_MIN_COURSES,
   PLANNER_MAX_SUGGESTIONS,
 } from "../shared/planner.ts";
@@ -80,6 +81,8 @@ export const limits = {
   plannerHistoryMinCourses: PLANNER_HISTORY_MIN_COURSES,
   // ceiling: the grade assumed as the realistic ceiling while history is thin. Optimistic enough to avoid pushing retakes on a new student, and never promised. Defined in shared code. Revisit if advice for new students proves too hopeful.
   plannerFallbackCeiling: PLANNER_FALLBACK_CEILING,
+  // ceiling: the grade assumed as a student's usual grade while history is thin; remaining courses are planned at it, so a lower value suggests retakes sooner. Defined in shared code. Revisit if advice for new students proves too hopeful or too gloomy.
+  plannerFallbackTypical: PLANNER_FALLBACK_TYPICAL,
   // ceiling: each retake costs a student extra tuition, so advice names a handful at most. Defined in shared code. Revisit if students need longer plans.
   plannerMaxSuggestions: PLANNER_MAX_SUGGESTIONS,
   // ceiling: bounds D1 rows per user and term; a term is five or six courses, each a lecture and sometimes a lab. Revisit if students report hitting it.

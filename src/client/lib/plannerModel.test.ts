@@ -3,7 +3,13 @@ import { buildCgpaSummary } from "../../server/features/attempts/summary";
 import { cgpa, gradedCredits } from "../../shared/grading";
 import { adviseRetakes, applyMocks, projectedCgpa } from "../../shared/planner";
 import type { CourseMap } from "../../shared/schemas/courses";
-import { buildPlannerModel, mockChangesNothing, mocksForRows, targetReached } from "./plannerModel";
+import {
+  buildPlannerModel,
+  historyLine,
+  mockChangesNothing,
+  mocksForRows,
+  targetReached,
+} from "./plannerModel";
 
 type Slot = CourseMap["categories"][number]["slots"][number];
 
@@ -88,7 +94,7 @@ describe("buildPlannerModel", () => {
     // The F already counted as a graded course, so passing it grows no graded credits.
     expect(gradedCredits(applyMocks(model.records, mocks))).toBe(gradedCredits(model.records));
     // And a slot with a mock leaves the credits the advisor still plans for.
-    const advice = adviseRetakes(model.records, mocks, model.remaining, 3.5);
+    const advice = adviseRetakes(model.records, mocks, model.remaining, 3.25);
     if (advice.kind !== "no_retakes_needed" && advice.kind !== "retakes_suggested") {
       throw new Error(`unexpected advice ${advice.kind}`);
     }
@@ -119,5 +125,42 @@ describe("targetReached", () => {
     expect(targetReached(3.49, 3.5)).toBe(false);
     expect(targetReached(null, 3.5)).toBe(false);
     expect(targetReached(3.5, null)).toBe(false);
+  });
+});
+
+describe("historyLine", () => {
+  const grade = (g: string, points: number, source: "history" | "fallback", gradedCourses = 9) => ({
+    grade: g,
+    points,
+    source,
+    gradedCourses,
+  });
+
+  it("names the usual grade for remaining courses and the ceiling for retakes", () => {
+    const line = historyLine({
+      typical: grade("B+", 3.3, "history"),
+      ceiling: grade("A", 4, "history"),
+    });
+    expect(line).toBe(
+      "Based on your grades, we plan your remaining courses at your usual B+ and assume up to A in a retake.",
+    );
+  });
+
+  it("names the grade once when the usual grade is also the ceiling", () => {
+    const line = historyLine({
+      typical: grade("A", 4, "history"),
+      ceiling: grade("A", 4, "history"),
+    });
+    expect(line).toBe(
+      "Based on your grades, we plan your remaining courses and any retake at your usual A.",
+    );
+  });
+
+  it("says when the grades are fallbacks", () => {
+    const line = historyLine({
+      typical: grade("B+", 3.3, "fallback", 2),
+      ceiling: grade("A-", 3.7, "fallback", 2),
+    });
+    expect(line).toMatch(/^Only 2 graded courses so far/);
   });
 });
