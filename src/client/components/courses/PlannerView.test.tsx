@@ -38,7 +38,7 @@ const taken = slot({ code: "CSE101", status: "done", filledBy: "CSE101", chosenC
 
 function renderPlanner(courseMap: CourseMap) {
   const client = new QueryClient({
-    defaultOptions: { queries: { staleTime: Infinity, retry: false } },
+    defaultOptions: { queries: { staleTime: Infinity, retry: false, refetchOnMount: false } },
   });
   client.setQueryData(meQuery.queryKey, { username: "tester" } as never);
   client.setQueryData(attemptsQuery.queryKey, [{ courseCode: "CSE101", grade: "D" }] as never);
