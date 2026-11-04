@@ -109,7 +109,7 @@ export function TargetPanel({
           <h2 id="planner-target-title" className="text-base font-semibold text-ink">
             Your CGPA
           </h2>
-          {reached ? <Badge variant="soft">Target reached</Badge> : null}
+          {reached ? <Badge variant="soft">At target today</Badge> : null}
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-4">
           <Figure

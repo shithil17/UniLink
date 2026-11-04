@@ -72,4 +72,34 @@ describe("AdvicePanel", () => {
       screen.getAllByText("Estimates only. Retake rules and fees are set by NSU."),
     ).toHaveLength(1);
   });
+
+  it("shows the best case and straight A's figures when the target is out of reach", () => {
+    render(
+      <AdvicePanel advice={outOfReach({ possible: false })} realReached={false} rows={rows} />,
+    );
+    expect(screen.getByText("Best case at A-").nextSibling?.textContent).toBe("3.50");
+    expect(screen.getByText("Straight A's").nextSibling?.textContent).toBe("3.60");
+  });
+
+  it("leaves those rows out when the figures are missing", () => {
+    const advice = { ...outOfReach({ possible: false }), bestCaseCgpa: null, maxCgpa: null };
+    render(<AdvicePanel advice={advice as Advice} realReached={false} rows={rows} />);
+    expect(screen.queryByText("Straight A's")).toBeNull();
+    expect(screen.queryByText(/^Best case at/)).toBeNull();
+  });
+
+  it("says any passing grade instead of a negative or zero needed average", () => {
+    const needed = (n: number) => ({ ...outOfReach({ possible: false }), neededAverage: n });
+    const label = /^Needed in your remaining/;
+    const { rerender } = render(
+      <AdvicePanel advice={needed(-6.5)} realReached={false} rows={rows} />,
+    );
+    expect(screen.getByText(label).nextSibling?.textContent).toBe("Any passing grade");
+    rerender(<AdvicePanel advice={needed(0)} realReached={false} rows={rows} />);
+    expect(screen.getByText(label).nextSibling?.textContent).toBe("Any passing grade");
+    rerender(<AdvicePanel advice={needed(3.25)} realReached={false} rows={rows} />);
+    expect(screen.getByText(label).nextSibling?.textContent).toBe("3.25");
+    rerender(<AdvicePanel advice={needed(4.1)} realReached={false} rows={rows} />);
+    expect(screen.getByText(label).nextSibling?.textContent).toBe("over 4.00");
+  });
 });

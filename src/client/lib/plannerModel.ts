@@ -1,5 +1,5 @@
 import { courseRecords } from "../../shared/courseRecords";
-import { bestAttempt, canRetake, gradePoints } from "../../shared/grading";
+import { bestAttempt, canRetake, gradePoints, isPassingGrade } from "../../shared/grading";
 import {
   PLANNER_HISTORY_MIN_COURSES,
   type Advice,
@@ -43,11 +43,15 @@ type Slot = Category["slots"][number];
 /**
  * The planner's inputs from the course map and the attempts the courses screen already loads.
  *
- * - Past courses: a passing, graded course (a slot or an extra course) offers a retake mock only
- *   while `canRetake()` allows one.
+ * - Past courses: a graded course that counts in the CGPA (a slot, an extra course, or an F left on
+ *   one alternative after another was passed) offers a retake mock only while `canRetake()` allows
+ *   one.
  * - Future courses: every unfinished, credit-bearing slot, including elective slots with no course
  *   picked yet (the slot's own credits, a unique key instead of a code). A slot whose course has
  *   only an F is one of these: its code matches the F record, so a mock there passes the F.
+ * - A code keys one row at most. Slots that share a chosen code ("choose any") keep it on the first
+ *   unfinished slot only; the rest, and any slot whose code a finished slot already used, get their
+ *   own unique key.
  */
 export function buildPlannerModel(
   map: CourseMap,
@@ -58,11 +62,37 @@ export function buildPlannerModel(
   const future: PlannerRow[] = [];
   const retakes: PlannerRow[] = [];
   let lockedCount = 0;
+  // Codes a past row already accounts for, so none is counted or keyed twice.
+  const counted = new Set<string>();
+
+  // The codes finished slots are filled by; an unfinished slot must not reuse them, whatever the order.
+  const finishedCodes = new Set<string>();
+  const waivedCodes = new Set(map.extras.filter((c) => c.waived).map((c) => c.code));
+  for (const category of map.categories) {
+    for (const slot of category.slots) {
+      if (slot.nonCredit || slot.status !== "done") continue;
+      const code =
+        slot.kind === "elective"
+          ? slot.studentCourse?.code
+          : (slot.filledBy ?? slotLabel(slot).code);
+      if (!code) continue;
+      finishedCodes.add(code);
+      if (slot.waived || slot.studentCourse?.waived) waivedCodes.add(code);
+    }
+  }
+  const futureCodes = new Set<string>();
+  /** The row key for an unfinished slot: its code if that is free, else its own unique key. */
+  const futureKey = (code: string | null, unique: string) => {
+    if (!code || finishedCodes.has(code) || futureCodes.has(code)) return unique;
+    futureCodes.add(code);
+    return code;
+  };
 
   const addPast = (row: Omit<PlannerRow, "kind" | "best">) => {
     const record = recordOf.get(row.key);
     const best = record ? bestAttempt(record.attempts) : null;
-    if (!record || !best || record.nonCredit || record.excluded) return;
+    if (!record || !best || record.nonCredit || record.excluded || counted.has(row.key)) return;
+    counted.add(row.key);
     if (!canRetake(record.attempts)) {
       lockedCount++;
       return;
@@ -90,7 +120,7 @@ export function buildPlannerModel(
           if (done) {
             if (!filler.waived) addPast({ ...row, credits: filler.credits });
           } else {
-            addFuture({ ...row, credits: filler.credits });
+            addFuture({ ...row, key: futureKey(filler.code, unique), credits: filler.credits });
           }
         } else {
           addFuture({
@@ -116,10 +146,9 @@ export function buildPlannerModel(
         return;
       }
       // Not done: a course with attempts (an F, an incomplete) keeps its code so a mock replaces them.
-      const key = slot.chosenCode ?? unique;
       addFuture({
         ...base,
-        key,
+        key: futureKey(slot.chosenCode, unique),
         code: label.code,
         title: label.title,
         credits: slot.credits,
@@ -127,16 +156,22 @@ export function buildPlannerModel(
     });
   }
 
-  // Student courses beyond the elective placeholders are real graded courses too: retake candidates.
-  for (const course of map.extras) {
-    if (course.excluded || !course.done || course.waived) continue;
+  // Any other course the CGPA counts has no slot row: an extra course, or an F left on one
+  // alternative after another was passed. It goes through the same path, so it is a retake or locked.
+  const futureKeys = new Set(future.map((r) => r.key));
+  const titleOf = titles(map);
+  for (const record of records) {
+    if (futureKeys.has(record.code) || waivedCodes.has(record.code)) continue;
+    const best = bestAttempt(record.attempts);
+    if (!best) continue;
     addPast({
-      key: course.code,
-      code: course.code,
-      title: course.title,
-      credits: course.credits,
-      category: course.category,
-      status: "done",
+      key: record.code,
+      code: record.code,
+      title: titleOf.get(record.code) ?? record.code,
+      credits: record.credits,
+      category: record.category ?? "",
+      // A passed course is done; a failed one is still open to take again.
+      status: isPassingGrade(best.grade) ? "done" : "available",
       waived: false,
     });
   }
@@ -151,6 +186,23 @@ export function buildPlannerModel(
     retakes,
     lockedCount,
   };
+}
+
+/** The title of every code a record can name: slots, their alternatives, student courses and extras. */
+function titles(map: CourseMap): Map<string, string> {
+  const out = new Map<string, string>();
+  const add = (code: string, title: string) => {
+    if (!out.has(code)) out.set(code, title);
+  };
+  for (const category of map.categories) {
+    for (const slot of category.slots) {
+      add(slot.code, slot.title);
+      for (const alternative of slot.alternatives) add(alternative.code, alternative.title);
+      if (slot.studentCourse) add(slot.studentCourse.code, slot.studentCourse.title);
+    }
+  }
+  for (const course of map.extras) add(course.code, course.title);
+  return out;
 }
 
 /** Files each record under its course map category, which the advisor predicts grades by. */
@@ -206,5 +258,5 @@ export function historyLine({ outlook, ceiling }: Pick<Advice, "outlook" | "ceil
     return `Predicted from your grades by category (average ${outlook.average.toFixed(2)}), assuming ${ceiling.grade} at best.`;
   }
   const so = outlook.gradedCourses === 0 ? "none" : `${outlook.gradedCourses}`;
-  return `Rough until you have ${PLANNER_HISTORY_MIN_COURSES} graded courses (${so} so far).`;
+  return `Rough until you have ${PLANNER_HISTORY_MIN_COURSES} graded courses (${so} so far), assuming ${ceiling.grade} at best.`;
 }

@@ -21,6 +21,11 @@ function outcomeTitle(advice: Advice, realReached: boolean): string {
   }
 }
 
+function neededLabel(needed: number): string {
+  if (needed <= 0) return "Any passing grade";
+  return needed > 4 ? "over 4.00" : needed.toFixed(2);
+}
+
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3 border-b border-line py-2 last:border-b-0">
@@ -101,10 +106,21 @@ export function AdvicePanel({
       details.push(
         {
           label: `Needed in your remaining ${formatCredits(advice.remainingCredits)} credits`,
-          value: advice.neededAverage > 4 ? "over 4.00" : advice.neededAverage.toFixed(2),
+          value: neededLabel(advice.neededAverage),
         },
         { label: "Your usual average there", value: advice.predictedAverage.toFixed(2) },
       );
+    }
+    if (advice.kind === "out_of_reach") {
+      if (advice.bestCaseCgpa !== null) {
+        details.push({
+          label: `Best case at ${advice.ceiling.grade}`,
+          value: advice.bestCaseCgpa.toFixed(2),
+        });
+      }
+      if (advice.maxCgpa !== null) {
+        details.push({ label: "Straight A's", value: advice.maxCgpa.toFixed(2) });
+      }
     }
   }
   const retakes =

@@ -5,6 +5,7 @@ import {
   USER_SEARCH_MAX_LENGTH,
   USER_SEARCH_MIN_LENGTH,
 } from "../shared/schemas/moderation.ts";
+import { TARGET_CGPA_MAX, TARGET_CGPA_MIN } from "../shared/schemas/attempts.ts";
 import {
   FACULTY_DESIGNATION_MAX_LENGTH,
   FACULTY_INITIALS_MAX_LENGTH,
@@ -91,6 +92,8 @@ export const limits = {
   plannerMaxSuggestions: PLANNER_MAX_SUGGESTIONS,
   // ceiling: rows a planner list shows before "Show all": a term or two of courses, about two phone screens. Defined in shared code for the client list. Revisit if students keep opening the full list.
   plannerRowsShown: PLANNER_ROWS_SHOWN,
+  // ceiling: the NSU scale tops out at 4.00, so a target above it can never be met and one at or below 0 means nothing. Defined in shared code for the client form. Revisit if NSU changes its scale.
+  targetCgpa: { min: TARGET_CGPA_MIN, max: TARGET_CGPA_MAX },
   // ceiling: bounds D1 rows per user and term; a term is five or six courses, each a lecture and sometimes a lab. Revisit if students report hitting it.
   routineEntriesMax: 40,
   // ceiling: a term is entered in one sitting, a few dozen writes; this stops a loop from churning rows. Revisit if students report hitting it.

@@ -5,8 +5,9 @@
 // The model: every remaining course, and every retake, is predicted from the student's own grades in
 // the same category (General Education, Core, ...), pulled toward their overall average while a
 // category has few courses. The advisor compares the graduation CGPA those predictions give with the
-// target. A retake is suggested only when its predicted grade beats the course's current best, and
-// the retakes that gain most per credit of tuition come first.
+// target. A retake is suggested only when the grade it shows (the prediction, to the nearest scale
+// grade) beats the course's current best, so every counted gain is one the student sees. The retakes
+// that gain most per credit of tuition come first.
 
 import {
   BELOW_B_PLUS_POLICY,
@@ -97,7 +98,7 @@ export type SuggestedRetake = {
   currentBest: string;
   /** The predicted grade, to the nearest scale grade: what a retake is likely to land. */
   aimFor: string;
-  /** Predicted grade points gained per credit, which is also the CGPA gain per credit of tuition paid. */
+  /** Grade points gained per credit from `currentBest` to `aimFor`, which is also the CGPA gain per credit of tuition paid. */
   gainPerCredit: number;
 };
 
@@ -387,9 +388,10 @@ function finishCgpa(
 
 /**
  * Courses worth a retake, best first: the policy allows it, the course is graded and credit-bearing,
- * its predicted grade beats its best, it has no mock, and it is not one of the remaining courses (an
- * F-only course has to be passed anyway, so it is never an optional retake). Largest predicted gain
- * per credit first, then more credits, then course code.
+ * its predicted grade, rounded to the nearest scale grade, beats its best, it has no mock, and it is
+ * not one of the remaining courses (those have to be passed anyway, so they are never an optional
+ * retake). A failed course outside the remaining ones, such as an extra course, is a candidate.
+ * Largest gain per credit first, then more credits, then course code.
  */
 function retakeCandidates(
   records: readonly PlannerCourse[],
@@ -401,16 +403,18 @@ function retakeCandidates(
   for (const record of records) {
     if (record.nonCredit || record.excluded || skip.has(record.code)) continue;
     const best = bestAttempt(record.attempts, rules.scale);
-    if (!best || !isPassingGrade(best.grade)) continue;
+    if (!best) continue;
     if (!canRetake(record.attempts, rules.policy, rules.scale)) continue;
-    const predicted = pointsOf(record);
-    const gain = predicted - (gradePoints(best.grade, rules.scale) ?? 0);
+    // The gain is to the grade shown, so a retake that reads B -> B is never counted.
+    const aimFor = nearestGrade(pointsOf(record), rules.scale);
+    const gain =
+      (gradePoints(aimFor, rules.scale) ?? 0) - (gradePoints(best.grade, rules.scale) ?? 0);
     if (gain <= EPSILON) continue;
     out.push({
       code: record.code,
       credits: record.credits,
       currentBest: best.grade,
-      aimFor: nearestGrade(predicted, rules.scale),
+      aimFor,
       gainPerCredit: gain,
     });
   }

@@ -120,6 +120,156 @@ describe("buildPlannerModel", () => {
   });
 });
 
+describe("shared course codes", () => {
+  const either = [{ code: "CSE200", title: "Either" }];
+  const same = (over: Partial<Slot> = {}) =>
+    slot({ code: "CSE200", chosenCode: "CSE200", ...over });
+  const keysOf = (m: ReturnType<typeof buildPlannerModel>) =>
+    [...m.future, ...m.retakes].map((r) => r.key);
+
+  it("keys a code once: later unfinished slots that chose it use their own keys", () => {
+    const shared = buildPlannerModel(
+      map([
+        same({ code: "CSE201", alternatives: either }),
+        same({ code: "CSE202", alternatives: either }),
+        same({ code: "CSE203", alternatives: either }),
+        slot({ code: "CSE204" }),
+      ]),
+      [attempt("CSE200", "F")],
+    );
+    expect(shared.future.map((r) => r.key)).toEqual([
+      "CSE200",
+      "slot:Core:1",
+      "slot:Core:2",
+      "slot:Core:3",
+    ]);
+    expect(new Set(shared.remaining.map((r) => r.code)).size).toBe(4);
+
+    // Before the fix all three slots keyed CSE200: the advisor added grade points for each but
+    // credited the F once, so the finish went past 4.0.
+    const advice = adviseRetakes(shared.records, [], shared.remaining, 3.9);
+    if (advice.kind === "reached") throw new Error("unexpected reached");
+    expect(advice.predictedCgpa).toBeLessThanOrEqual(4);
+    // Only the one slot that holds the F's record is graded; the others add new credits.
+    expect(advice.remainingCredits).toBe(12);
+  });
+
+  it("a mock on the shared code clears one slot, not all of them", () => {
+    const shared = buildPlannerModel(
+      map([
+        same({ code: "CSE201", alternatives: either }),
+        same({ code: "CSE202", alternatives: either }),
+      ]),
+      [attempt("CSE200", "F")],
+    );
+    const mocks = mocksForRows(shared.future, { CSE200: "B" });
+    expect(mocks).toHaveLength(1);
+    const advice = adviseRetakes(shared.records, mocks, shared.remaining, 3.9);
+    if (advice.kind === "reached") throw new Error("unexpected reached");
+    expect(advice.remainingCredits).toBe(3);
+  });
+
+  it("a code a finished slot used never keys a future row, in either slot order", () => {
+    const done = same({
+      code: "CSE201",
+      alternatives: either,
+      status: "done",
+      filledBy: "CSE200",
+    });
+    const open = same({ code: "CSE202", alternatives: either });
+    for (const slots of [
+      [done, open],
+      [open, done],
+    ]) {
+      const m = buildPlannerModel(map(slots), [attempt("CSE200", "B-")]);
+      expect(m.retakes.map((r) => r.key)).toEqual(["CSE200"]);
+      expect(m.future.map((r) => r.key)).toEqual([expect.stringMatching(/^slot:Core:\d$/)]);
+      expect(new Set(keysOf(m)).size).toBe(2);
+    }
+  });
+
+  it("an elective filler already used by another slot gets its own key", () => {
+    const filler = { code: "EEE100", title: "Circuits", credits: 3 } as Slot["studentCourse"];
+    const elective = (code: string) =>
+      slot({ kind: "elective", code, studentCourse: filler, status: "available" });
+    const m = buildPlannerModel(map([elective("ELEC1"), elective("ELEC2")]), []);
+    expect(m.future.map((r) => r.key)).toEqual(["EEE100", "slot:Core:1"]);
+  });
+});
+
+describe("courses in the CGPA with no slot row", () => {
+  const extra = (code: string, over: Partial<CourseMap["extras"][number]> = {}) => ({
+    id: 1,
+    code,
+    title: `Extra ${code}`,
+    credits: 3,
+    category: "Open Elective",
+    excluded: false,
+    createdAt: 0,
+    done: false,
+    waived: false,
+    ...over,
+  });
+  const withExtras = (slots: Slot[], extras: CourseMap["extras"]): CourseMap => ({
+    ...map(slots),
+    extras,
+  });
+
+  it("an F on an extra course becomes a retake row, open and not marked done", () => {
+    const m = buildPlannerModel(withExtras([], [extra("BUS101")]), [attempt("BUS101", "F")]);
+    expect(m.retakes).toEqual([
+      expect.objectContaining({
+        key: "BUS101",
+        title: "Extra BUS101",
+        category: "Open Elective",
+        best: "F",
+        status: "available",
+      }),
+    ]);
+  });
+
+  it("an F left on an alternative after another was passed becomes a retake row", () => {
+    const m = buildPlannerModel(
+      map([
+        slot({
+          code: "ENG115",
+          alternatives: [{ code: "BEN205", title: "Bangla" }],
+          status: "done",
+          filledBy: "ENG115",
+          chosenCode: "ENG115",
+        }),
+      ]),
+      [attempt("ENG115", "A"), attempt("BEN205", "F")],
+    );
+    expect(m.retakes).toEqual([
+      expect.objectContaining({ key: "BEN205", title: "Bangla", category: "Core", best: "F" }),
+    ]);
+    expect(m.lockedCount).toBe(1);
+  });
+
+  it("the advisor suggests retaking the failed extra, so a reachable target is not out of reach", () => {
+    // Eight B+ slots (not retakable) and an F on an extra: 2.93 now, 3.1 is only reachable by retaking the F.
+    const done = (code: string) => slot({ code, status: "done", filledBy: code, chosenCode: code });
+    const codes = ["CSE111", "CSE112", "CSE113", "CSE114", "CSE115", "CSE116", "CSE117", "CSE118"];
+    const m = buildPlannerModel(withExtras(codes.map(done), [extra("BUS101")]), [
+      ...codes.map((c) => attempt(c, "B+")),
+      attempt("BUS101", "F"),
+    ]);
+    const advice = adviseRetakes(m.records, [], m.remaining, 3.1);
+    expect(advice.kind).toBe("retakes_suggested");
+    if (advice.kind !== "retakes_suggested") return;
+    expect(advice.retakes.map((r) => r.code)).toEqual(["BUS101"]);
+  });
+
+  it("keeps a waived extra course out", () => {
+    const m = buildPlannerModel(withExtras([], [extra("BUS101", { done: true, waived: true })]), [
+      attempt("BUS101", "WV"),
+    ]);
+    expect(m.retakes).toEqual([]);
+    expect(m.lockedCount).toBe(0);
+  });
+});
+
 describe("mockChangesNothing", () => {
   const row = buildPlannerModel(sample, attempts).retakes[0];
   it("is true for a grade at or below the best, false above it", () => {
@@ -162,8 +312,10 @@ describe("historyLine", () => {
 
   it("says when predictions are rough", () => {
     const line = historyLine({ outlook: outlook("fallback", 2), ceiling: ceiling("fallback", 2) });
-    expect(line).toMatch(/^Rough until you have \d+ graded courses \(2 so far\)\.$/);
+    expect(line).toMatch(
+      /^Rough until you have \d+ graded courses \(2 so far\), assuming A at best\.$/,
+    );
     const none = historyLine({ outlook: outlook("fallback", 0), ceiling: ceiling("fallback", 0) });
-    expect(none).toMatch(/\(none so far\)\.$/);
+    expect(none).toMatch(/\(none so far\), assuming A at best\.$/);
   });
 });

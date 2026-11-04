@@ -10,7 +10,7 @@ import { buildPlannerModel, mocksForRows, targetReached } from "@/lib/plannerMod
 import { loadMocks, mocksStorageKey, saveMocks, type MockPicks } from "@/lib/plannerMocks";
 import { attemptsQuery, meQuery, targetCgpaQuery } from "@/lib/queries";
 import { cgpa } from "../../../shared/grading";
-import { adviseRetakes, projectedCgpa } from "../../../shared/planner";
+import { adviseRetakes, DEFAULT_RULES, projectedCgpa } from "../../../shared/planner";
 import type { CourseMap } from "../../../shared/schemas/courses";
 import { AdvicePanel } from "./AdvicePanel";
 import { PlannerList } from "./PlannerRows";
@@ -168,7 +168,7 @@ function PlannerBody({
           <PlannerList
             hint={
               model.lockedCount > 0
-                ? `${model.lockedCount} ${model.lockedCount === 1 ? "course" : "courses"} hidden: already B+ or better.`
+                ? `${model.lockedCount} ${model.lockedCount === 1 ? "course" : "courses"} hidden: already ${DEFAULT_RULES.policy.blockedFrom} or better.`
                 : undefined
             }
             rows={model.retakes}
