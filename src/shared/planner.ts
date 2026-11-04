@@ -127,6 +127,10 @@ export type Advice =
         retakes: SuggestedRetake[];
         /** The CGPA with the ceiling grade in every remaining course and every eligible retake. */
         bestCaseCgpa: number | null;
+        /** The CGPA with the scale's top grade in every remaining course and every eligible retake. */
+        maxCgpa: number | null;
+        /** `maxCgpa` meets the target: unlikely at the usual grades (a stretch), but not impossible. */
+        possible: boolean;
         /** True when the target is predicted reachable, but only with more retakes than the advisor lists. */
         tooManyRetakes: boolean;
       });
@@ -324,6 +328,24 @@ const creditsOf = (list: readonly { credits: number }[]) =>
   list.reduce((sum, r) => sum + r.credits, 0);
 
 /**
+ * The average grade point needed over `remaining` to finish on `target`, with `extra` grade points
+ * already earned from retakes (a retake adds points but no graded credits). Null with none remaining.
+ */
+function neededFor(
+  records: readonly PlannerCourse[],
+  remaining: readonly RemainingCourse[],
+  target: number,
+  extra: number,
+  scale: GradeScale,
+): number | null {
+  const remainingCredits = creditsOf(remaining);
+  if (remainingCredits <= 0) return null;
+  const done = gradedCredits(records, scale);
+  const weighted = (cgpa(records, scale) ?? 0) * done + extra;
+  return (target * (done + newCredits(records, remaining, scale)) - weighted) / remainingCredits;
+}
+
+/**
  * The average grade point the student needs over the `remaining` credits to finish on `target`, or
  * null when there are none. Per course record, not totals: a remaining course that already has a
  * graded F is in the CGPA at 0.0, so passing it adds points but no graded credits, while a course
@@ -335,13 +357,7 @@ export function neededAverage(
   target: number,
   rules: PlannerRules = DEFAULT_RULES,
 ): number | null {
-  const remainingCredits = creditsOf(remaining);
-  if (remainingCredits <= 0) return null;
-  const done = gradedCredits(records, rules.scale);
-  const weighted = (cgpa(records, rules.scale) ?? 0) * done;
-  return (
-    (target * (done + newCredits(records, remaining, rules.scale)) - weighted) / remainingCredits
-  );
+  return neededFor(records, remaining, target, 0, rules.scale);
 }
 
 /**
@@ -400,24 +416,33 @@ function retakeCandidates(
   );
 }
 
-const fmtCgpa = (n: number) => n.toFixed(2);
-/** Rounds down, so a CGPA just short of a target never reads as the target. */
-const floorCgpa = (n: number) => fmtCgpa(Math.floor(n * 100 + EPSILON) / 100);
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 const gainOf = (retakes: readonly SuggestedRetake[]) =>
   retakes.reduce((sum, r) => sum + r.gainPerCredit * r.credits, 0);
+const totalGain = (r: SuggestedRetake) => r.gainPerCredit * r.credits;
+
+/** Candidates by total predicted gain, best first; ties go to fewer credits (cheaper), then code. */
+const byTotalGain = (list: readonly SuggestedRetake[]) =>
+  [...list].sort((a, b) => {
+    const diff = totalGain(b) - totalGain(a);
+    if (Math.abs(diff) > EPSILON) return diff;
+    return a.credits - b.credits || a.code.localeCompare(b.code);
+  });
 
 /**
  * Advice for reaching `target`. Mocks count: mocked remaining courses leave the remaining credits and
  * mocked past courses are not suggested as retakes.
  *
- * 1. The projected CGPA already meets the target: `reached`.
+ * 1. Nothing is left to take and the projected CGPA meets the target: `reached`. With courses left
+ *    the answer is the predicted finish, even when the CGPA is at the target today.
  * 2. The predicted graduation CGPA, with no retakes, meets it: `no_retakes_needed`.
  * 3. Otherwise retakes are added one at a time, largest predicted gain per credit first, stopping as
  *    soon as the predicted finish meets the target: `retakes_suggested`.
- * 4. If every helpful retake still falls short (or it takes more than `PLANNER_MAX_SUGGESTIONS`):
- *    `out_of_reach`, with the predicted finish, the retakes that help most, and the best case (the
- *    ceiling grade everywhere), so "unlikely" and "impossible" read differently.
+ * 4. If that fails within `PLANNER_MAX_SUGGESTIONS`, the smallest set of retakes with the largest total
+ *    gain that meets the target is suggested instead (gains add, so that is the top few by total gain).
+ * 5. If no such set exists: `out_of_reach`, with the predicted finish, the retakes that help most, the
+ *    best case (the student's ceiling grade everywhere) and `maxCgpa` (the top grade everywhere), so
+ *    `possible` tells a stretch from an impossible target.
  */
 export function adviseRetakes(
   records: readonly PlannerCourse[],
@@ -431,48 +456,49 @@ export function adviseRetakes(
   const mockedCodes = new Set(mocks.map((m) => m.code));
   const open = remaining.filter((r) => !mockedCodes.has(r.code));
   const remainingCredits = creditsOf(open);
+  // A remaining course that already has a record is F-only: it has to be passed, so it is predicted
+  // no lower than the lowest passing grade.
+  const recordCodes = new Set(records.map((r) => r.code));
+  const passFloor =
+    gradesByPoints(rules.scale)
+      .filter(([g]) => isPassingGrade(g))
+      .at(-1)?.[1] ?? 0;
   const predict = (r: { category?: string }) => predictedPoints(o, r.category);
+  const predictRemaining = (r: RemainingCourse) =>
+    recordCodes.has(r.code) ? Math.max(predict(r), passFloor) : predict(r);
   const predictedAverage =
     remainingCredits > 0
-      ? open.reduce((sum, r) => sum + predict(r) * r.credits, 0) / remainingCredits
+      ? open.reduce((sum, r) => sum + predictRemaining(r) * r.credits, 0) / remainingCredits
       : null;
   const base = { target, ceiling, outlook: o, remainingCredits, predictedAverage };
 
   const projected = projectedCgpa(records, mocks, rules);
-  if (projected !== null && projected >= target - EPSILON) {
-    return {
-      ...base,
-      kind: "reached",
-      cgpa: projected,
-      text: `Your CGPA of ${fmtCgpa(projected)} is at or above your target of ${fmtCgpa(target)}.`,
-    };
+  if (remainingCredits <= 0 && projected !== null && projected >= target - EPSILON) {
+    return { ...base, kind: "reached", cgpa: projected, text: "Target reached." };
   }
 
   const withMocks = applyMocks(records, mocks, rules);
   const finish = (retakes: readonly SuggestedRetake[]): Finish => {
     const extra = gainOf(retakes);
-    const predictedCgpa = finishCgpa(withMocks, open, predict, extra, rules.scale);
-    const done = gradedCredits(withMocks, rules.scale);
-    // The retakes' points count as already earned when working out what the rest must average.
-    const needed =
-      remainingCredits > 0
-        ? (target * (done + newCredits(withMocks, open, rules.scale)) -
-            ((cgpa(withMocks, rules.scale) ?? 0) * done + extra)) /
-          remainingCredits
-        : null;
-    return { predictedCgpa, neededAverage: needed };
+    return {
+      predictedCgpa: finishCgpa(withMocks, open, predictRemaining, extra, rules.scale),
+      neededAverage: neededFor(withMocks, open, target, extra, rules.scale),
+    };
   };
   const meets = (f: Finish) => f.predictedCgpa !== null && f.predictedCgpa >= target - EPSILON;
 
   const none = finish([]);
   if (meets(none)) {
-    return {
-      ...base,
-      ...none,
-      kind: "no_retakes_needed",
-      text: `At your usual grades you would graduate around ${floorCgpa(none.predictedCgpa ?? 0)}, so ${fmtCgpa(target)} is within reach without retakes.`,
-    };
+    return { ...base, ...none, kind: "no_retakes_needed", text: "On track without retakes." };
   }
+
+  const suggested = (retakes: SuggestedRetake[], state: Finish): Advice => ({
+    ...base,
+    ...state,
+    kind: "retakes_suggested",
+    retakes,
+    text: `Retaking ${plural(retakes.length, "course", "courses")} gets you there.`,
+  });
 
   const skip = new Set([...remaining.map((r) => r.code), ...mockedCodes]);
   const candidates = retakeCandidates(records, skip, predict, rules);
@@ -483,49 +509,50 @@ export function adviseRetakes(
     picked.push(candidate);
     state = finish(picked);
   }
-  if (meets(state)) {
-    const codes = picked.map((r) => r.code).join(", ");
-    return {
-      ...base,
-      ...state,
-      kind: "retakes_suggested",
-      retakes: picked,
-      text: `At your usual grades you would graduate around ${floorCgpa(none.predictedCgpa ?? 0)}. Retaking ${codes} would bring that to about ${floorCgpa(state.predictedCgpa ?? 0)}, enough for ${fmtCgpa(target)}.`,
-    };
+  if (meets(state)) return suggested(picked, state);
+
+  // Greedy by gain per credit can fill the slots with small courses. Gains add, so the best set of k
+  // retakes is the k with the largest total gain: take the smallest k that meets the target.
+  const ranked = byTotalGain(candidates);
+  for (let k = 1; k <= Math.min(PLANNER_MAX_SUGGESTIONS, ranked.length); k++) {
+    const set = ranked.slice(0, k);
+    const f = finish(set);
+    if (meets(f)) return suggested(set, f);
   }
 
-  // Short of the target: report where every helpful retake gets the student, and the best case.
-  const all = finish(candidates);
-  const tooManyRetakes = meets(all);
-  const bestRetakes = retakeCandidates(records, skip, () => ceiling.points, rules);
-  const bestCaseCgpa = finishCgpa(
-    withMocks,
-    open,
-    () => ceiling.points,
-    gainOf(bestRetakes),
-    rules.scale,
-  );
-  const tgt = fmtCgpa(target);
+  // Short of the target: report where the best retakes get the student, and the best case.
+  const best = ranked.slice(0, PLANNER_MAX_SUGGESTIONS);
+  const final = finish(best);
+  const tooManyRetakes = meets(finish(candidates));
+  const caseCgpa = (points: number) =>
+    finishCgpa(
+      withMocks,
+      open,
+      () => points,
+      gainOf(retakeCandidates(records, skip, () => points, rules)),
+      rules.scale,
+    );
+  const bestCaseCgpa = caseCgpa(ceiling.points);
+  const maxCgpa = caseCgpa(gradesByPoints(rules.scale)[0][1]);
+  const possible = maxCgpa !== null && maxCgpa >= target - EPSILON;
   let text: string;
-  if (state.predictedCgpa === null) {
-    text = `There is nothing to plan with yet, so ${tgt} cannot be worked out.`;
+  if (final.predictedCgpa === null) {
+    text = "Nothing to plan with yet.";
   } else if (tooManyRetakes) {
-    text = `Reaching ${tgt} at your usual grades would take more than ${plural(PLANNER_MAX_SUGGESTIONS, "retake", "retakes")}. The ${plural(picked.length, "retake", "retakes")} below would bring you to about ${floorCgpa(state.predictedCgpa)}.`;
-  } else if (bestCaseCgpa !== null && bestCaseCgpa >= target - EPSILON) {
-    const lift =
-      picked.length > 0
-        ? `, or about ${floorCgpa(state.predictedCgpa)} with the retakes below`
-        : "";
-    text = `${tgt} is a stretch. At your usual grades you would graduate around ${floorCgpa(none.predictedCgpa ?? 0)}${lift}. Reaching it means grades well above your usual ones in your remaining courses.`;
+    text = `Needs more than ${plural(PLANNER_MAX_SUGGESTIONS, "retake", "retakes")}.`;
+  } else if (possible) {
+    text = "A stretch: you'd need grades well above your usual.";
   } else {
-    text = `${tgt} is out of reach by graduation: even ${ceiling.grade} in every remaining course and every eligible retake gives about ${floorCgpa(bestCaseCgpa ?? 0)}.`;
+    text = "Out of reach by graduation.";
   }
   return {
     ...base,
-    ...state,
+    ...final,
     kind: "out_of_reach",
-    retakes: picked,
+    retakes: best,
     bestCaseCgpa,
+    maxCgpa,
+    possible,
     tooManyRetakes,
     text,
   };

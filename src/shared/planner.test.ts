@@ -24,6 +24,9 @@ const rec = (
   extra: Partial<PlannerCourse> = {},
 ): PlannerCourse => ({ code, credits, attempts: grades.map((grade) => ({ grade })), ...extra });
 
+const gainOf = (retakes: { gainPerCredit: number; credits: number }[]) =>
+  retakes.reduce((sum, r) => sum + r.gainPerCredit * r.credits, 0);
+
 const mock = (code: string, grade: string, credits = 3) => ({ code, credits, grade });
 
 describe("projectedCgpa", () => {
@@ -221,10 +224,27 @@ describe("adviseRetakes", () => {
   // A D retake in GenEd is predicted at genPts (about 1.74), adding (genPts - 1) * 3 points.
   const perRetake = ((genPts - 1) * 3) / 30;
 
-  it("is reached when the CGPA is already at the target, with or without mocks", () => {
-    expect(adviseRetakes(split, [], remaining, 2.5)).toMatchObject({ kind: "reached", cgpa: 2.5 });
+  it("is reached when nothing is left and the CGPA is at the target, with or without mocks", () => {
+    expect(adviseRetakes(split, [], [], 2.5)).toMatchObject({ kind: "reached", cgpa: 2.5 });
     const mocked = adviseRetakes([rec("CSE111", 3, ["B"])], [mock("F1", "A", 3)], [], 3.5);
     expect(mocked.kind).toBe("reached");
+    // Every remaining course mocked also leaves nothing to take.
+    const allMocked = adviseRetakes(split, [mock("R1", "A"), mock("R2", "A")], remaining, 2.5);
+    expect(allMocked.kind).toBe("reached");
+  });
+
+  it("is not reached while courses remain, even with the CGPA at the target", () => {
+    // CGPA is 2.5 today, but both remaining courses are General Education, predicted near C-.
+    const weak = [
+      { code: "R1", credits: 3, category: "GenEd" },
+      { code: "R2", credits: 3, category: "GenEd" },
+    ];
+    const advice = adviseRetakes(split, [], weak, 2.5);
+    // Usual grades give (60 + 6 * genPts) / 30, about 2.35: retakes are needed to hold 2.5.
+    if (advice.kind !== "retakes_suggested") throw new Error(`got ${advice.kind}`);
+    expect(advice.retakes.length).toBeGreaterThan(0);
+    expect(advice.predictedCgpa).toBeCloseTo((60 + 6 * genPts + gainOf(advice.retakes)) / 30, 10);
+    expect(advice.text).not.toMatch(/guarantee/i);
   });
 
   it("advises no retakes when the predicted finish meets the target", () => {
@@ -250,6 +270,7 @@ describe("adviseRetakes", () => {
     expect(usual + 2 * perRetake).toBeGreaterThan(2.6);
     const advice = adviseRetakes(split, [], remaining, 2.6);
     if (advice.kind !== "retakes_suggested") throw new Error(`got ${advice.kind}`);
+    expect(advice.text).toBe("Retaking 2 courses gets you there.");
     expect(advice.retakes.map((r) => r.code)).toEqual(["D1", "D2"]);
     // The retake is predicted from the student's GenEd grades (about 1.74, nearest C-), not an A.
     expect(advice.retakes[0]).toMatchObject({ currentBest: "D", aimFor: "C-", credits: 3 });
@@ -297,17 +318,60 @@ describe("adviseRetakes", () => {
     expect(advice.retakes.map((r) => r.code)).toEqual(["D1", "D2", "D3", "D4"]);
     expect(advice.predictedCgpa).toBeCloseTo(usual + 4 * perRetake, 10);
     expect(advice.bestCaseCgpa).toBeCloseTo(4, 10);
+    expect(advice.maxCgpa).toBeCloseTo(4, 10);
+    expect(advice.possible).toBe(true);
     expect(advice.text).toContain("stretch");
   });
 
-  it("calls a target out of reach when even the best case falls short", () => {
-    // Two C courses, nothing remaining, thin history: the best case is both at A- (3.7).
+  it("calls a target a stretch, not out of reach, when only top grades reach it", () => {
+    // Two C courses, thin history: the ceiling case is A- in both (3.7), but A A would give 4.0.
     const records = [rec("CSE118", 3, ["C"]), rec("CSE119", 3, ["C"])];
     const advice = adviseRetakes(records, [], [], 3.8);
     if (advice.kind !== "out_of_reach") throw new Error(`got ${advice.kind}`);
     expect(advice.bestCaseCgpa).toBeCloseTo(3.7, 10);
-    expect(advice.text).toContain("out of reach");
-    expect(advice.text).toContain("3.70");
+    expect(advice.maxCgpa).toBeCloseTo(4, 10);
+    expect(advice.possible).toBe(true);
+    expect(advice.text).toContain("stretch");
+  });
+
+  it("calls a target out of reach when even straight A's fall short", () => {
+    // Four B+ courses can't be retaken (3.3 each); one 3-credit course remains. Best: 51.6 / 15.
+    const records = Array.from({ length: 4 }, (_, i) => rec(`B${i}`, 3, ["B+"]));
+    const advice = adviseRetakes(records, [], [{ code: "R1", credits: 3 }], 3.9);
+    if (advice.kind !== "out_of_reach") throw new Error(`got ${advice.kind}`);
+    expect(advice.maxCgpa).toBeCloseTo((4 * 3 * 3.3 + 3 * 4) / 15, 10);
+    expect(advice.possible).toBe(false);
+    expect(advice.tooManyRetakes).toBe(false);
+    expect(advice.text).toBe("Out of reach by graduation.");
+  });
+
+  it("finds a working set of retakes when greedy by gain per credit fills the slots with labs", () => {
+    // Ten A's lift the prediction to about 3.13. Five 1-credit D labs gain the most per credit but
+    // only about 10.6 points in all; five 3-credit C courses gain about 16.9.
+    const history = Array.from({ length: 10 }, (_, i) => rec(`A${i}`, 3, ["A"]));
+    const labs = Array.from({ length: 5 }, (_, i) => rec(`LAB${i}`, 1, ["D"]));
+    const courses = Array.from({ length: 5 }, (_, i) => rec(`CSE${i}`, 3, ["C"]));
+    const records = [...history, ...labs, ...courses];
+    const base = cgpa(records) ?? 0; // 155 points over 50 credits
+    const five = adviseRetakes(records, [], [], base + 14 / 50);
+    if (five.kind !== "retakes_suggested") throw new Error(`got ${five.kind}`);
+    expect(five.retakes.map((r) => r.code)).toEqual(courses.map((c) => c.code));
+    // 11 points are enough with four courses, and four is the smallest working size.
+    const four = adviseRetakes(records, [], [], base + 11 / 50);
+    if (four.kind !== "retakes_suggested") throw new Error(`got ${four.kind}`);
+    expect(four.retakes.map((r) => r.code)).toEqual(["CSE0", "CSE1", "CSE2", "CSE3"]);
+    expect(four.predictedCgpa).toBeGreaterThanOrEqual(base + 11 / 50 - 1e-9);
+  });
+
+  it("predicts a remaining F-only course no lower than the lowest passing grade", () => {
+    // Eight F's in one category predict that category far below a D (1.0); the course must be passed.
+    const failed = Array.from({ length: 8 }, (_, i) => rec(`F${i}`, 3, ["F"], { category: "X" }));
+    expect(outlook(failed).byCategory.X.predicted).toBeLessThan(1);
+    const advice = adviseRetakes(failed, [], [{ code: "F0", credits: 3, category: "X" }], 4);
+    expect(advice.predictedAverage).toBeCloseTo(1, 10);
+    // 24 graded credits at 0.0, F0 passed at D: 3 points over 24 credits.
+    if (advice.kind === "reached") throw new Error("not reached");
+    expect(advice.predictedCgpa).toBeCloseTo(3 / 24, 10);
   });
 
   it("refuses to list more retakes than the cap", () => {
