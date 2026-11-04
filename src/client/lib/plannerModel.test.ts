@@ -146,14 +146,14 @@ describe("historyLine", () => {
 
   it("says predictions come from the student's own grades by category", () => {
     expect(historyLine({ outlook: outlook("history", 18), ceiling: ceiling("history", 18) })).toBe(
-      "Each remaining course is predicted from your own grades in its category (your average so far is 3.22). At best we assume A.",
+      "Predicted from your grades by category (average 3.22), assuming A at best.",
     );
   });
 
   it("says when predictions are rough", () => {
     const line = historyLine({ outlook: outlook("fallback", 2), ceiling: ceiling("fallback", 2) });
-    expect(line).toMatch(/^Only 2 graded courses so far, so predictions are rough/);
+    expect(line).toMatch(/^Rough until you have \d+ graded courses \(2 so far\)\.$/);
     const none = historyLine({ outlook: outlook("fallback", 0), ceiling: ceiling("fallback", 0) });
-    expect(none).toMatch(/^No graded courses yet/);
+    expect(none).toMatch(/\(none so far\)\.$/);
   });
 });

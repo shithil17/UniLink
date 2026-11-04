@@ -36,6 +36,11 @@ function TargetForm({ saved, reached }: { saved: number | null; reached: boolean
     defaultValues: { targetCgpa: saved ?? undefined },
   });
   const { errors } = form.formState;
+  const help = reached
+    ? "Set a higher target to keep going."
+    : saved === null
+      ? "From 0.01 to 4.00, above your CGPA."
+      : null;
 
   const submit = form.handleSubmit((values) =>
     save.mutate(values, {
@@ -66,7 +71,7 @@ function TargetForm({ saved, reached }: { saved: number | null; reached: boolean
             autoComplete="off"
             placeholder="3.50"
             aria-invalid={Boolean(errors.targetCgpa)}
-            aria-describedby="planner-target-help"
+            aria-describedby={help ? "planner-target-help" : undefined}
             className="tabular-nums"
             {...form.register("targetCgpa", { valueAsNumber: true })}
           />
@@ -75,13 +80,7 @@ function TargetForm({ saved, reached }: { saved: number | null; reached: boolean
           </Button>
         </div>
         <FieldError errors={[errors.targetCgpa]} />
-        <FieldDescription id="planner-target-help">
-          {reached
-            ? "You have reached this target. Set a higher one to keep going."
-            : saved === null
-              ? "A number from 0.01 to 4.00, above your current CGPA."
-              : "Saved to your account. Your mock grades never leave this device."}
-        </FieldDescription>
+        {help ? <FieldDescription id="planner-target-help">{help}</FieldDescription> : null}
       </Field>
     </form>
   );
@@ -113,22 +112,21 @@ export function TargetPanel({
           {reached ? <Badge variant="soft">Target reached</Badge> : null}
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-4">
-          <Figure label="Current" value={current} />
+          <Figure
+            label="Current"
+            value={current}
+            note={current === null ? "No grades yet" : undefined}
+          />
           <Figure
             label="Projected"
             value={projected}
             note={
               mockCount === 0
-                ? "Same as current until you add a mock grade"
+                ? undefined
                 : `With ${mockCount} mock ${mockCount === 1 ? "grade" : "grades"}`
             }
           />
         </dl>
-        {current === null ? (
-          <p className="mt-3 text-sm text-soft">
-            Record a graded course and your CGPA shows up here. Mock grades still work meanwhile.
-          </p>
-        ) : null}
         <div className="mt-4 border-t border-line pt-4">
           {target.isPending ? (
             <div aria-busy="true" className="grid gap-2">

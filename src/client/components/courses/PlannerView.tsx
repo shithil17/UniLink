@@ -4,7 +4,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBlock } from "@/components/ui/error-block";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { buildPlannerModel, mocksForRows, targetReached } from "@/lib/plannerModel";
 import { loadMocks, mocksStorageKey, saveMocks, type MockPicks } from "@/lib/plannerMocks";
 import { attemptsQuery, meQuery, targetCgpaQuery } from "@/lib/queries";
@@ -33,12 +33,14 @@ export function PlannerView({
   if (attempts.isPending) {
     return children({
       side: (
-        <div aria-busy="true" className="grid gap-4">
-          <Skeleton className="h-64 rounded-panel" />
-          <Skeleton className="h-40 rounded-panel" />
+        // Bars on a surface panel: a bare `track` block would sit almost flat on the page.
+        <div aria-busy="true" className="grid gap-3 rounded-panel bg-surface p-5 md:rounded-[24px]">
+          <Skeleton className="h-5 w-24" />
+          <Skeleton className="h-10 w-3/4" />
+          <Skeleton className="h-12" />
         </div>
       ),
-      main: <Skeleton className="h-64 rounded-panel" />,
+      main: <SkeletonRows rows={4} label="Loading your planner" />,
     });
   }
   if (!attempts.data) {
@@ -100,28 +102,24 @@ function PlannerBody({
     setPicks({});
   };
 
-  const side = (
-    <div className="grid gap-4">
-      <TargetPanel current={current} projected={projected} mockCount={mocks.length} />
-      <AdvicePanel advice={advice} realReached={targetReached(current, target)} rows={rows} />
-    </div>
-  );
+  // Only the compact CGPA and target block is the (sticky) side column. The advice can grow with
+  // its retakes, so it flows with the page, above the courses.
+  const side = <TargetPanel current={current} projected={projected} mockCount={mocks.length} />;
 
   const main =
     rows.length === 0 ? (
-      <div className="overflow-hidden rounded-panel bg-surface md:rounded-[24px]">
-        <EmptyState
-          icon={CalculatorIcon}
-          title="Nothing left to plan"
-          description="Every course in your map is done and can't be retaken."
-        />
-      </div>
+      <>
+        <AdvicePanel advice={advice} realReached={targetReached(current, target)} rows={rows} />
+        <div className="overflow-hidden rounded-panel bg-surface md:rounded-[24px]">
+          <EmptyState icon={CalculatorIcon} title="Nothing left to plan" />
+        </div>
+      </>
     ) : (
       <>
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-          <p className="min-w-0 flex-1 basis-56 text-sm text-soft">
-            Try a grade on any course. Mock grades stay on this device and never change your real
-            grades.
+        <AdvicePanel advice={advice} realReached={targetReached(current, target)} rows={rows} />
+        <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <p className="min-w-0 flex-1 basis-48 text-sm text-soft">
+            Try a grade on any course. Mocks stay on this device.
           </p>
           {mocks.length > 0 ? (
             <Button variant="outline" size="sm" onClick={clear}>
@@ -144,7 +142,7 @@ function PlannerBody({
             title="Could retake"
             hint={
               model.lockedCount > 0
-                ? `${model.lockedCount} ${model.lockedCount === 1 ? "course is" : "courses are"} left out: a retake needs a best grade below B+.`
+                ? `${model.lockedCount} ${model.lockedCount === 1 ? "course" : "courses"} hidden: already B+ or better.`
                 : undefined
             }
             rows={model.retakes}

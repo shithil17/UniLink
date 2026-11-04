@@ -33,8 +33,7 @@ export function CgpaSummaryView({ summary }: { summary: Summary }) {
       </p>
       {summary.cgpa === null ? (
         <p className="mt-1 text-sm text-soft">
-          Record a graded course and your CGPA shows up here. Waived, incomplete and withdrawn
-          courses don't count.
+          Record a graded course to see it. Waived, incomplete and withdrawn courses don't count.
         </p>
       ) : null}
       <dl className="mt-4 border-t border-line text-sm">

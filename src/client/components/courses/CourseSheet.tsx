@@ -233,7 +233,9 @@ function StudentCourseDetails({
       <>
         <SheetHeader>
           <SheetTitle>Edit {course.code}</SheetTitle>
-          <SheetDescription>Your own course in {course.category}.</SheetDescription>
+          <SheetDescription className="sr-only">
+            Your own course in {course.category}.
+          </SheetDescription>
         </SheetHeader>
         <div className="px-5">
           <StudentCourseForm

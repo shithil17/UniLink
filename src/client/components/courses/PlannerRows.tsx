@@ -17,8 +17,8 @@ const gradeOptions = [
 function mockNote(row: PlannerRow, grade: string | undefined): string | null {
   if (!grade || row.best === null) return null;
   return mockChangesNothing(row, grade)
-    ? `Changes nothing: your best stays ${row.best}.`
-    : `Counts as a retake: ${row.best} becomes ${grade}.`;
+    ? `No change: your best stays ${row.best}.`
+    : `Retake: ${row.best} becomes ${grade}.`;
 }
 
 function Row({
@@ -39,7 +39,8 @@ function Row({
   return (
     <li
       data-hue={courseHue(hueFrom)}
-      className={`border-t border-line px-4 py-3 first:border-t-0 ${grade ? "bg-tint" : ""}`}
+      // A mocked row takes the accent wash: `tint` is the page colour, so it would read as a hole in the panel.
+      className={`border-t border-line px-4 py-3 first:border-t-0 ${grade ? "bg-brand-soft" : ""}`}
     >
       <div className="flex min-h-[60px] items-center gap-3">
         <CourseRowBody
@@ -55,7 +56,7 @@ function Row({
                 {detail}
               </span>
               {grade ? (
-                <Badge variant="soft" className="shrink-0">
+                <Badge variant="solid" className="shrink-0">
                   Mock
                 </Badge>
               ) : null}
@@ -99,7 +100,7 @@ export function PlannerSection({
   return (
     <section aria-labelledby={id}>
       <SectionHeader id={id} title={title} count={rows.length} />
-      {hint ? <p className="-mt-1 pb-3 text-sm text-soft">{hint}</p> : null}
+      {hint ? <p className="-mt-1 pb-3 text-sm text-faint">{hint}</p> : null}
       <div className={panel}>
         <ul>
           {rows.map((row) => (

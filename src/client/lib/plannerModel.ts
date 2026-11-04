@@ -197,14 +197,11 @@ export function targetReached(current: number | null, target: number | null): bo
 /** Shown with every outcome: the advice is arithmetic on grades, never a promise. */
 export const ESTIMATE_NOTE = "Estimates only. Retake rules and fees are set by NSU.";
 
-/** What the predictions rest on, in the words the student reads. */
+/** What the predictions rest on, in a line. */
 export function historyLine({ outlook, ceiling }: Pick<Advice, "outlook" | "ceiling">): string {
   if (outlook.source === "history" && outlook.average !== null) {
-    return `Each remaining course is predicted from your own grades in its category (your average so far is ${outlook.average.toFixed(2)}). At best we assume ${ceiling.grade}.`;
+    return `Predicted from your grades by category (average ${outlook.average.toFixed(2)}), assuming ${ceiling.grade} at best.`;
   }
-  const have =
-    outlook.gradedCourses === 0
-      ? "No graded courses yet"
-      : `Only ${outlook.gradedCourses} graded ${outlook.gradedCourses === 1 ? "course" : "courses"} so far`;
-  return `${have}, so predictions are rough until you have ${PLANNER_HISTORY_MIN_COURSES}. They start near ${outlook.overall.toFixed(2)} and follow your grades as you add them.`;
+  const so = outlook.gradedCourses === 0 ? "none" : `${outlook.gradedCourses}`;
+  return `Rough until you have ${PLANNER_HISTORY_MIN_COURSES} graded courses (${so} so far).`;
 }

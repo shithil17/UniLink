@@ -222,7 +222,7 @@ function CourseMapPage() {
             </div>
             {standing}
           </div>
-          <Suspense fallback={<Skeleton className="h-80 rounded-panel" />}>
+          <Suspense fallback={<SkeletonRows rows={4} label="Loading the roadmap" />}>
             <SequenceCanvas map={data} onOpen={(next) => setTarget(next)} />
           </Suspense>
         </div>
@@ -263,7 +263,7 @@ function CgpaPopover() {
   return (
     <Popover.Root>
       <Popover.Trigger
-        className={`group inline-flex min-h-10 items-center gap-1.5 rounded-control border border-edge bg-surface px-3 text-[13px] font-semibold text-ink hover:bg-tint data-[popup-open]:bg-chip ${focusRing}`}
+        className={`group inline-flex min-h-10 items-center gap-1.5 rounded-control border border-edge bg-surface px-3 text-[13px] font-semibold text-ink hover:bg-tint data-[popup-open]:bg-brand-soft ${focusRing}`}
       >
         CGPA summary
         <ChevronDown

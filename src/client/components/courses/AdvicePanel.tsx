@@ -1,8 +1,9 @@
+import { ArrowRightIcon } from "lucide-react";
 import { courseHue } from "@/lib/courseHue";
 import { formatCredits } from "@/lib/courseMap";
 import { ESTIMATE_NOTE, historyLine, type PlannerRow } from "@/lib/plannerModel";
 import type { Advice } from "../../../shared/planner";
-import { CourseCode } from "./CourseCode";
+import { CourseRowBody } from "./CourseRowBody";
 
 const panel = "rounded-panel bg-surface p-5 md:rounded-[24px]";
 
@@ -16,9 +17,7 @@ function outcomeTitle(advice: Advice, realReached: boolean): string {
       return advice.retakes.length === 1 ? "One retake would help" : "A few retakes would help";
     case "out_of_reach":
       if (advice.tooManyRetakes) return "Too many retakes needed";
-      return advice.bestCaseCgpa !== null && advice.bestCaseCgpa >= advice.target
-        ? "A stretch at your usual grades"
-        : "Out of reach by graduation";
+      return advice.possible ? "A stretch" : "Out of reach";
   }
 }
 
@@ -28,6 +27,45 @@ function Detail({ label, value }: { label: string; value: string }) {
       <dt className="text-soft">{label}</dt>
       <dd className="text-right text-ink tabular-nums">{value}</dd>
     </div>
+  );
+}
+
+/** One suggested retake as a course row: the course on the left, the grade it moves from and to on the right. */
+function RetakeRow({
+  retake,
+  title,
+}: {
+  retake: Extract<Advice, { retakes: unknown }>["retakes"][number];
+  title: string;
+}) {
+  return (
+    <li
+      data-hue={courseHue(retake.code)}
+      className="flex min-h-[60px] items-center gap-3 border-t border-line px-5 py-2.5"
+    >
+      <CourseRowBody
+        code={retake.code}
+        title={title}
+        status="done"
+        waived={false}
+        meta={
+          <span className="shrink-0 text-[13px] leading-[1.3] font-medium text-faint tabular-nums">
+            {formatCredits(retake.credits)} cr
+          </span>
+        }
+      />
+      <span className="sr-only">
+        {retake.currentBest} to {retake.aimFor}
+      </span>
+      <span
+        aria-hidden="true"
+        className="flex shrink-0 items-center gap-1 text-[15px] font-semibold text-ink tabular-nums"
+      >
+        <span className="text-faint">{retake.currentBest}</span>
+        <ArrowRightIcon className="size-3.5 text-faint" strokeWidth={2} />
+        {retake.aimFor}
+      </span>
+    </li>
   );
 }
 
@@ -49,10 +87,7 @@ export function AdvicePanel({
         <h2 id="planner-advice-title" className="text-base font-semibold text-ink">
           Advice
         </h2>
-        <p className="mt-2 text-sm text-soft">
-          Set a target CGPA and you will see the average you need in your remaining courses, and any
-          retakes worth paying for.
-        </p>
+        <p className="mt-2 text-sm text-soft">Set a target CGPA to see what you need.</p>
         <p className="mt-3 text-[13px] text-faint">{ESTIMATE_NOTE}</p>
       </section>
     );
@@ -74,7 +109,7 @@ export function AdvicePanel({
   }
   const retakes =
     advice.kind === "retakes_suggested" || advice.kind === "out_of_reach" ? advice.retakes : [];
-  const titleOf = (code: string) => rows.find((r) => r.key === code)?.title;
+  const titleOf = (code: string) => rows.find((r) => r.key === code)?.title ?? code;
   return (
     <section aria-labelledby="planner-advice-title" className={panel}>
       <h2 id="planner-advice-title" className="text-base font-semibold text-ink">
@@ -90,35 +125,20 @@ export function AdvicePanel({
       ) : null}
       {retakes.length > 0 ? (
         <>
-          <h3 className="border-t border-line pt-3 text-sm font-semibold text-ink">
+          <h3 className="mt-3 border-t border-line pt-3 pb-1 text-sm font-semibold text-ink">
             {advice.kind === "retakes_suggested" ? "Suggested retakes" : "Retakes that help most"}
           </h3>
-          <ul className="mt-1 text-sm">
+          <ul className="-mx-5">
             {retakes.map((retake) => (
-              <li
-                key={retake.code}
-                data-hue={courseHue(retake.code)}
-                className="flex items-center gap-3 border-b border-line py-2.5 last:border-b-0"
-              >
-                <div className="min-w-0 flex-1">
-                  <CourseCode code={retake.code} />
-                  {titleOf(retake.code) ? (
-                    <p className="mt-1 truncate text-[13px] text-soft">{titleOf(retake.code)}</p>
-                  ) : null}
-                </div>
-                <span className="shrink-0 text-ink tabular-nums">
-                  {retake.currentBest} to {retake.aimFor}
-                </span>
-                <span className="w-12 shrink-0 text-right text-soft tabular-nums">
-                  {formatCredits(retake.credits)} cr
-                </span>
-              </li>
+              <RetakeRow key={retake.code} retake={retake} title={titleOf(retake.code)} />
             ))}
           </ul>
         </>
       ) : null}
-      <p className="mt-3 border-t border-line pt-3 text-sm text-soft">{historyLine(advice)}</p>
-      <p className="mt-2 text-[13px] text-faint">{ESTIMATE_NOTE}</p>
+      <div className="mt-3 grid gap-1 border-t border-line pt-3 text-[13px] leading-[1.35] text-faint">
+        <p>{historyLine(advice)}</p>
+        <p>{ESTIMATE_NOTE}</p>
+      </div>
     </section>
   );
 }
