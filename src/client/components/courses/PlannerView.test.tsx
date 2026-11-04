@@ -1,12 +1,15 @@
 // @vitest-environment happy-dom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { attemptsQuery, meQuery, targetCgpaQuery } from "@/lib/queries";
 import type { CourseMap } from "../../../shared/schemas/courses";
 import { PlannerView } from "./PlannerView";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 type Slot = CourseMap["categories"][number]["slots"][number];
 
@@ -36,13 +39,15 @@ const map = (slots: Slot[]): CourseMap => ({
 
 const taken = slot({ code: "CSE101", status: "done", filledBy: "CSE101", chosenCode: "CSE101" });
 
-function renderPlanner(courseMap: CourseMap) {
+function renderPlanner(courseMap: CourseMap, target: "saved" | "none" = "saved") {
   const client = new QueryClient({
     defaultOptions: { queries: { staleTime: Infinity, retry: false, refetchOnMount: false } },
   });
   client.setQueryData(meQuery.queryKey, { username: "tester" } as never);
   client.setQueryData(attemptsQuery.queryKey, [{ courseCode: "CSE101", grade: "D" }] as never);
-  client.setQueryData(targetCgpaQuery.queryKey, { targetCgpa: 3.5 } as never);
+  if (target === "saved") {
+    client.setQueryData(targetCgpaQuery.queryKey, { targetCgpa: 3.5 } as never);
+  }
   render(
     <QueryClientProvider client={client}>
       <PlannerView map={courseMap}>{({ main }) => main}</PlannerView>
@@ -71,5 +76,18 @@ describe("PlannerView", () => {
     renderPlanner(map([taken]));
     expect(screen.getByRole("tab", { name: "Retakes 1" })).toBeTruthy();
     expect(screen.queryByRole("tab", { name: /Upcoming/ })).toBeNull();
+  });
+
+  it("does not ask for a target while it loads, and says so when it failed to load", async () => {
+    const prompt = "Set a target CGPA to see what you need.";
+    vi.stubGlobal("fetch", () => new Promise(() => {}));
+    renderPlanner(map([taken]), "none");
+    expect(screen.queryByText(prompt)).toBeNull();
+    cleanup();
+
+    vi.stubGlobal("fetch", () => Promise.reject(new TypeError("offline")));
+    renderPlanner(map([taken]), "none");
+    expect(await screen.findByText("No advice until your target loads.")).toBeTruthy();
+    expect(screen.queryByText(prompt)).toBeNull();
   });
 });

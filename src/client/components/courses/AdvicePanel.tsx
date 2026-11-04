@@ -1,7 +1,9 @@
 import { ArrowRightIcon } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { courseHue } from "@/lib/courseHue";
 import { formatCredits } from "@/lib/courseMap";
 import { ESTIMATE_NOTE, historyLine, type PlannerRow } from "@/lib/plannerModel";
+import type { CourseStatus } from "../../../shared/schemas/courses";
 import type { Advice } from "../../../shared/planner";
 import { CourseRowBody } from "./CourseRowBody";
 
@@ -39,9 +41,11 @@ function Detail({ label, value }: { label: string; value: string }) {
 function RetakeRow({
   retake,
   title,
+  status,
 }: {
   retake: Extract<Advice, { retakes: unknown }>["retakes"][number];
   title: string;
+  status: CourseStatus;
 }) {
   return (
     <li
@@ -51,7 +55,7 @@ function RetakeRow({
       <CourseRowBody
         code={retake.code}
         title={title}
-        status="done"
+        status={status}
         waived={false}
         meta={
           <span className="shrink-0 text-[13px] leading-[1.3] font-medium text-faint tabular-nums">
@@ -79,12 +83,15 @@ export function AdvicePanel({
   advice,
   realReached,
   rows,
+  targetState,
 }: {
-  /** Null while no target is set. */
+  /** Null while no target is known: not set, still loading or failed to load. */
   advice: Advice | null;
   /** The real CGPA, not just the projected one, has reached the target. */
   realReached: boolean;
   rows: readonly PlannerRow[];
+  /** Whether the saved target is known. Only matters while `advice` is null. */
+  targetState: "ready" | "loading" | "failed";
 }) {
   if (!advice) {
     return (
@@ -92,7 +99,18 @@ export function AdvicePanel({
         <h2 id="planner-advice-title" className="text-base font-semibold text-ink">
           Advice
         </h2>
-        <p className="mt-2 text-sm text-soft">Set a target CGPA to see what you need.</p>
+        {targetState === "loading" ? (
+          <div aria-busy="true" className="mt-3 grid gap-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+        ) : (
+          <p className="mt-2 text-sm text-soft">
+            {targetState === "failed"
+              ? "No advice until your target loads."
+              : "Set a target CGPA to see what you need."}
+          </p>
+        )}
         <p className="mt-3 text-[13px] text-faint">{ESTIMATE_NOTE}</p>
       </section>
     );
@@ -114,7 +132,7 @@ export function AdvicePanel({
     if (advice.kind === "out_of_reach") {
       if (advice.bestCaseCgpa !== null) {
         details.push({
-          label: `Best case at ${advice.ceiling.grade}`,
+          label: "Best case",
           value: advice.bestCaseCgpa.toFixed(2),
         });
       }
@@ -125,7 +143,6 @@ export function AdvicePanel({
   }
   const retakes =
     advice.kind === "retakes_suggested" || advice.kind === "out_of_reach" ? advice.retakes : [];
-  const titleOf = (code: string) => rows.find((r) => r.key === code)?.title ?? code;
   return (
     <section aria-labelledby="planner-advice-title" className={panel}>
       <h2 id="planner-advice-title" className="text-base font-semibold text-ink">
@@ -145,9 +162,17 @@ export function AdvicePanel({
             {advice.kind === "retakes_suggested" ? "Suggested retakes" : "Retakes that help most"}
           </h3>
           <ul className="-mx-5">
-            {retakes.map((retake) => (
-              <RetakeRow key={retake.code} retake={retake} title={titleOf(retake.code)} />
-            ))}
+            {retakes.map((retake) => {
+              const row = rows.find((r) => r.key === retake.code);
+              return (
+                <RetakeRow
+                  key={retake.code}
+                  retake={retake}
+                  title={row?.title ?? retake.code}
+                  status={row?.status ?? "done"}
+                />
+              );
+            })}
           </ul>
         </>
       ) : null}

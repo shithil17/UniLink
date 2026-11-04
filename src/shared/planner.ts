@@ -12,6 +12,7 @@
 import {
   BELOW_B_PLUS_POLICY,
   NSU_SCALE,
+  WAIVED,
   bestAttempt,
   canRetake,
   cgpa,
@@ -30,8 +31,9 @@ import {
 // little about their ceiling, so the fallback ceiling is assumed and the screen says the predictions
 // are rough. Revisit once real transcripts show a better cut-off.
 export const PLANNER_HISTORY_MIN_COURSES = 8;
-// ceiling: the best grade assumed while history is thin. It only bounds the best case. Revisit if
-// advice for new students proves too hopeful.
+// ceiling: the best grade assumed while history is thin. It only sets the best case's grade; a
+// course already predicted higher keeps its prediction. Revisit if advice for new students proves
+// too hopeful.
 export const PLANNER_FALLBACK_CEILING = "A-";
 // ceiling: the average a student with no history is predicted at. Every prediction starts here and
 // moves toward the student's own grades as they add courses. Revisit once real transcripts show the
@@ -130,9 +132,9 @@ export type Advice =
         kind: "out_of_reach";
         /** The retakes that help most, at most `PLANNER_MAX_SUGGESTIONS`; the finish counts them. */
         retakes: SuggestedRetake[];
-        /** The CGPA with the ceiling grade in every remaining course and every eligible retake. */
+        /** The CGPA with every remaining course and eligible retake at the ceiling grade or its prediction, whichever is higher. */
         bestCaseCgpa: number | null;
-        /** The CGPA with the scale's top grade in every remaining course and every eligible retake. */
+        /** The CGPA with the scale's top grade in every remaining course and eligible retake. */
         maxCgpa: number | null;
         /** `maxCgpa` meets the target: unlikely at the usual grades (a stretch), but not impossible. */
         possible: boolean;
@@ -236,8 +238,8 @@ function history(records: readonly PlannerCourse[], scale: GradeScale) {
 /**
  * The best grade the planner assumes the student can reach: the upper quartile of their best grade
  * per graded course, snapped down to a scale grade. Below `PLANNER_HISTORY_MIN_COURSES` graded
- * courses it is the fallback grade instead. It only bounds the best case; predictions come from
- * `outlook()`.
+ * courses it is the fallback grade instead. It sets the best case's grade, but a course predicted
+ * higher keeps its prediction; predictions come from `outlook()`.
  */
 export function realisticCeiling(
   records: readonly PlannerCourse[],
@@ -390,7 +392,7 @@ function finishCgpa(
  * Courses worth a retake, best first: the policy allows it, the course is graded and credit-bearing,
  * its predicted grade, rounded to the nearest scale grade, beats its best, it has no mock, and it is
  * not one of the remaining courses (those have to be passed anyway, so they are never an optional
- * retake). A failed course outside the remaining ones, such as an extra course, is a candidate.
+ * retake), and none of its attempts is waived (it has no planner row). A failed course outside the remaining ones, such as an extra course, is a candidate.
  * Largest gain per credit first, then more credits, then course code.
  */
 function retakeCandidates(
@@ -402,6 +404,8 @@ function retakeCandidates(
   const out: SuggestedRetake[] = [];
   for (const record of records) {
     if (record.nonCredit || record.excluded || skip.has(record.code)) continue;
+    // A waived course has no planner row, so it is never suggested either.
+    if (record.attempts.some((a) => a.grade === WAIVED)) continue;
     const best = bestAttempt(record.attempts, rules.scale);
     if (!best) continue;
     if (!canRetake(record.attempts, rules.policy, rules.scale)) continue;
@@ -449,7 +453,8 @@ const byTotalGain = (list: readonly SuggestedRetake[]) =>
  * 4. If that fails within `PLANNER_MAX_SUGGESTIONS`, the smallest set of retakes with the largest total
  *    gain that meets the target is suggested instead (gains add, so that is the top few by total gain).
  * 5. If no such set exists: `out_of_reach`, with the predicted finish, the retakes that help most, the
- *    best case (the student's ceiling grade everywhere) and `maxCgpa` (the top grade everywhere), so
+ *    best case (every course at the student's ceiling grade or its prediction, whichever is higher, so
+ *    it never falls below the predicted finish) and `maxCgpa` (the top grade everywhere), so
  *    `possible` tells a stretch from an impossible target.
  */
 export function adviseRetakes(
@@ -532,12 +537,14 @@ export function adviseRetakes(
   const best = ranked.slice(0, PLANNER_MAX_SUGGESTIONS);
   const final = finish(best);
   const tooManyRetakes = meets(finish(candidates));
+  // Each course scores the higher of its prediction and the case's grade, so a case never lands
+  // below the prediction (a student strong in one category keeps that strength in the best case).
   const caseCgpa = (points: number) =>
     finishCgpa(
       withMocks,
       open,
-      () => points,
-      gainOf(retakeCandidates(records, skip, () => points, rules)),
+      (r) => Math.max(predictRemaining(r), points),
+      gainOf(retakeCandidates(records, skip, (r) => Math.max(predict(r), points), rules)),
       rules.scale,
     );
   const bestCaseCgpa = caseCgpa(ceiling.points);

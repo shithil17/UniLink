@@ -255,8 +255,8 @@ export const ESTIMATE_NOTE = "Estimates only. Retake rules and fees are set by N
 /** What the predictions rest on, in a line. */
 export function historyLine({ outlook, ceiling }: Pick<Advice, "outlook" | "ceiling">): string {
   if (outlook.source === "history" && outlook.average !== null) {
-    return `Predicted from your grades by category (average ${outlook.average.toFixed(2)}), assuming ${ceiling.grade} at best.`;
+    return `Predicted from your grades by category (average ${outlook.average.toFixed(2)}).`;
   }
   const so = outlook.gradedCourses === 0 ? "none" : `${outlook.gradedCourses}`;
-  return `Rough until you have ${PLANNER_HISTORY_MIN_COURSES} graded courses (${so} so far), assuming ${ceiling.grade} at best.`;
+  return `Rough until you have ${PLANNER_HISTORY_MIN_COURSES} graded courses (${so} so far). Best case assumes ${ceiling.grade}.`;
 }

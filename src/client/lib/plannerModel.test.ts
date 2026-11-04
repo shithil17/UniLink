@@ -268,6 +268,17 @@ describe("courses in the CGPA with no slot row", () => {
     expect(m.retakes).toEqual([]);
     expect(m.lockedCount).toBe(0);
   });
+
+  it("gives an F then waived extra course no row and no suggestion", () => {
+    const m = buildPlannerModel(withExtras([], [extra("BUS101", { done: true, waived: true })]), [
+      attempt("BUS101", "F"),
+      attempt("BUS101", "WV"),
+    ]);
+    expect(m.retakes).toEqual([]);
+    const advice = adviseRetakes(m.records, [], m.remaining, 4);
+    const codes = "retakes" in advice ? advice.retakes.map((r) => r.code) : [];
+    expect(codes).not.toContain("BUS101");
+  });
 });
 
 describe("mockChangesNothing", () => {
@@ -306,16 +317,16 @@ describe("historyLine", () => {
 
   it("says predictions come from the student's own grades by category", () => {
     expect(historyLine({ outlook: outlook("history", 18), ceiling: ceiling("history", 18) })).toBe(
-      "Predicted from your grades by category (average 3.22), assuming A at best.",
+      "Predicted from your grades by category (average 3.22).",
     );
   });
 
   it("says when predictions are rough", () => {
     const line = historyLine({ outlook: outlook("fallback", 2), ceiling: ceiling("fallback", 2) });
     expect(line).toMatch(
-      /^Rough until you have \d+ graded courses \(2 so far\), assuming A at best\.$/,
+      /^Rough until you have \d+ graded courses \(2 so far\)\. Best case assumes A\.$/,
     );
     const none = historyLine({ outlook: outlook("fallback", 0), ceiling: ceiling("fallback", 0) });
-    expect(none).toMatch(/\(none so far\), assuming A at best\.$/);
+    expect(none).toMatch(/\(none so far\)\. Best case assumes A\.$/);
   });
 });

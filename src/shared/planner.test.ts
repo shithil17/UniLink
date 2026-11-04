@@ -334,6 +334,46 @@ describe("adviseRetakes", () => {
     expect(advice.text).toContain("stretch");
   });
 
+  it("never puts the best case below the prediction: a strong category keeps its strength", () => {
+    // Three A's in Core and nine B+ elsewhere make the ceiling B+ (3.3), yet Core is predicted near
+    // 3.7. With 60 Core credits left, a flat B+ best case would read well below the prediction.
+    const history = [
+      ...Array.from({ length: 3 }, (_, i) => rec(`A${i}`, 3, ["A"], { category: "Core" })),
+      ...Array.from({ length: 9 }, (_, i) => rec(`B${i}`, 3, ["B+"], { category: "Other" })),
+    ];
+    const left = Array.from({ length: 20 }, (_, i) => ({
+      code: `R${i}`,
+      credits: 3,
+      category: "Core",
+    }));
+    expect(realisticCeiling(history).points).toBeCloseTo(3.3, 10);
+    const advice = adviseRetakes(history, [], left, 4);
+    if (advice.kind !== "out_of_reach") throw new Error(`got ${advice.kind}`);
+    expect(advice.predictedCgpa).not.toBeNull();
+    expect(advice.predictedCgpa ?? 0).toBeGreaterThan(3.55);
+    expect(advice.bestCaseCgpa ?? 0).toBeGreaterThanOrEqual(advice.predictedCgpa ?? 99);
+    expect(advice.maxCgpa ?? 0).toBeGreaterThanOrEqual(advice.bestCaseCgpa ?? 99);
+  });
+
+  it("does not suggest retaking a course that has a waived attempt", () => {
+    // An F then a WV: the best attempt is the F, but the course is waived and has no planner row.
+    const records = [
+      rec("A1", 3, ["A"]),
+      rec("A2", 3, ["A"]),
+      rec("A3", 3, ["A"]),
+      rec("W1", 3, ["F", "WV"], { category: "Extra" }),
+    ];
+    const advice = adviseRetakes(records, [], [], 3.9);
+    const codes = advice.kind === "out_of_reach" ? advice.retakes.map((r) => r.code) : [];
+    expect(codes).not.toContain("W1");
+    expect(advice.kind).toBe("out_of_reach");
+    // The same F on a course with no waiver is the retake (guards the test above).
+    const unwaived = [...records.slice(0, 3), rec("W1", 3, ["F"], { category: "Extra" })];
+    const other = adviseRetakes(unwaived, [], [], 3.9);
+    if (other.kind !== "out_of_reach") throw new Error(`got ${other.kind}`);
+    expect(other.retakes.map((r) => r.code)).toContain("W1");
+  });
+
   it("calls a target out of reach when even straight A's fall short", () => {
     // Four B+ courses can't be retaken (3.3 each); one 3-credit course remains. Best: 51.6 / 15.
     const records = Array.from({ length: 4 }, (_, i) => rec(`B${i}`, 3, ["B+"]));

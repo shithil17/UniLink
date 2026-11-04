@@ -86,7 +86,9 @@ function PlannerBody({
 }) {
   const [picks, setPicks] = useState<MockPicks>(() => loadMocks(storageKey));
   const [tab, setTab] = useState<PlannerTab>("advice");
-  const target = useQuery(targetCgpaQuery).data?.targetCgpa ?? null;
+  const targetQuery = useQuery(targetCgpaQuery);
+  const target = targetQuery.data?.targetCgpa ?? null;
+  const targetState = targetQuery.data ? "ready" : targetQuery.isPending ? "loading" : "failed";
   const model = useMemo(() => buildPlannerModel(map, attempts), [map, attempts]);
   const rows = useMemo(() => [...model.future, ...model.retakes], [model]);
   const mocks = useMemo(() => mocksForRows(rows, picks), [rows, picks]);
@@ -114,7 +116,12 @@ function PlannerBody({
   // its retakes, so it flows with the page.
   const side = <TargetPanel current={current} projected={projected} mockCount={mocks.length} />;
   const advicePanel = (
-    <AdvicePanel advice={advice} realReached={targetReached(current, target)} rows={rows} />
+    <AdvicePanel
+      advice={advice}
+      realReached={targetReached(current, target)}
+      rows={rows}
+      targetState={targetState}
+    />
   );
   const mockBar = (
     <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">

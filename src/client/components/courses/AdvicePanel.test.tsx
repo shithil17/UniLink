@@ -42,21 +42,39 @@ const rows: PlannerRow[] = [
   },
 ];
 
+const NO_TARGET = "Set a target CGPA to see what you need.";
+const ESTIMATE = "Estimates only. Retake rules and fees are set by NSU.";
+
 describe("AdvicePanel", () => {
   it("calls a target that top grades could still reach a stretch, and one they could not out of reach", () => {
     const { rerender } = render(
-      <AdvicePanel advice={outOfReach({ possible: true })} realReached={false} rows={rows} />,
+      <AdvicePanel
+        advice={outOfReach({ possible: true })}
+        realReached={false}
+        rows={rows}
+        targetState="ready"
+      />,
     );
     expect(screen.getByRole("heading", { name: "A stretch" })).toBeTruthy();
     rerender(
-      <AdvicePanel advice={outOfReach({ possible: false })} realReached={false} rows={rows} />,
+      <AdvicePanel
+        advice={outOfReach({ possible: false })}
+        realReached={false}
+        rows={rows}
+        targetState="ready"
+      />,
     );
     expect(screen.getByRole("heading", { name: "Out of reach" })).toBeTruthy();
   });
 
   it("lists each retake as a course row with its title, credits and grade change", () => {
     render(
-      <AdvicePanel advice={outOfReach({ possible: false })} realReached={false} rows={rows} />,
+      <AdvicePanel
+        advice={outOfReach({ possible: false })}
+        realReached={false}
+        rows={rows}
+        targetState="ready"
+      />,
     );
     expect(screen.getByText("Calculus I")).toBeTruthy();
     expect(screen.getByText("MAT116")).toBeTruthy();
@@ -66,7 +84,12 @@ describe("AdvicePanel", () => {
 
   it("states the estimate note once", () => {
     render(
-      <AdvicePanel advice={outOfReach({ possible: false })} realReached={false} rows={rows} />,
+      <AdvicePanel
+        advice={outOfReach({ possible: false })}
+        realReached={false}
+        rows={rows}
+        targetState="ready"
+      />,
     );
     expect(
       screen.getAllByText("Estimates only. Retake rules and fees are set by NSU."),
@@ -75,31 +98,90 @@ describe("AdvicePanel", () => {
 
   it("shows the best case and straight A's figures when the target is out of reach", () => {
     render(
-      <AdvicePanel advice={outOfReach({ possible: false })} realReached={false} rows={rows} />,
+      <AdvicePanel
+        advice={outOfReach({ possible: false })}
+        realReached={false}
+        rows={rows}
+        targetState="ready"
+      />,
     );
-    expect(screen.getByText("Best case at A-").nextSibling?.textContent).toBe("3.50");
+    expect(screen.getByText("Best case").nextSibling?.textContent).toBe("3.50");
     expect(screen.getByText("Straight A's").nextSibling?.textContent).toBe("3.60");
   });
 
   it("leaves those rows out when the figures are missing", () => {
     const advice = { ...outOfReach({ possible: false }), bestCaseCgpa: null, maxCgpa: null };
-    render(<AdvicePanel advice={advice as Advice} realReached={false} rows={rows} />);
+    render(
+      <AdvicePanel advice={advice as Advice} realReached={false} rows={rows} targetState="ready" />,
+    );
     expect(screen.queryByText("Straight A's")).toBeNull();
-    expect(screen.queryByText(/^Best case at/)).toBeNull();
+    expect(screen.queryByText(/^Best case/)).toBeNull();
   });
 
   it("says any passing grade instead of a negative or zero needed average", () => {
     const needed = (n: number) => ({ ...outOfReach({ possible: false }), neededAverage: n });
     const label = /^Needed in your remaining/;
     const { rerender } = render(
-      <AdvicePanel advice={needed(-6.5)} realReached={false} rows={rows} />,
+      <AdvicePanel advice={needed(-6.5)} realReached={false} rows={rows} targetState="ready" />,
     );
     expect(screen.getByText(label).nextSibling?.textContent).toBe("Any passing grade");
-    rerender(<AdvicePanel advice={needed(0)} realReached={false} rows={rows} />);
+    rerender(
+      <AdvicePanel advice={needed(0)} realReached={false} rows={rows} targetState="ready" />,
+    );
     expect(screen.getByText(label).nextSibling?.textContent).toBe("Any passing grade");
-    rerender(<AdvicePanel advice={needed(3.25)} realReached={false} rows={rows} />);
+    rerender(
+      <AdvicePanel advice={needed(3.25)} realReached={false} rows={rows} targetState="ready" />,
+    );
     expect(screen.getByText(label).nextSibling?.textContent).toBe("3.25");
-    rerender(<AdvicePanel advice={needed(4.1)} realReached={false} rows={rows} />);
+    rerender(
+      <AdvicePanel advice={needed(4.1)} realReached={false} rows={rows} targetState="ready" />,
+    );
     expect(screen.getByText(label).nextSibling?.textContent).toBe("over 4.00");
+  });
+
+  it("marks a retake of a failed extra course as available, not done", () => {
+    const extra: PlannerRow[] = [{ ...rows[0]!, status: "available" }];
+    const { container, rerender } = render(
+      <AdvicePanel
+        advice={outOfReach({ possible: false })}
+        realReached={false}
+        rows={extra}
+        targetState="ready"
+      />,
+    );
+    const marked = () => container.querySelector("li [data-state]")?.getAttribute("data-state");
+    expect(marked()).toBe("available");
+    // No matching row: falls back to the code and a done mark.
+    rerender(
+      <AdvicePanel
+        advice={outOfReach({ possible: false })}
+        realReached={false}
+        rows={[]}
+        targetState="ready"
+      />,
+    );
+    expect(marked()).toBe("done");
+  });
+
+  it("prompts for a target only once the target is known to be unset", () => {
+    render(<AdvicePanel advice={null} realReached={false} rows={rows} targetState="ready" />);
+    expect(screen.getByText(NO_TARGET)).toBeTruthy();
+    expect(screen.getByText(ESTIMATE)).toBeTruthy();
+  });
+
+  it("shows loading bars and no prompt while the target loads", () => {
+    const { container } = render(
+      <AdvicePanel advice={null} realReached={false} rows={rows} targetState="loading" />,
+    );
+    expect(container.querySelector('[aria-busy="true"]')).toBeTruthy();
+    expect(screen.queryByText(NO_TARGET)).toBeNull();
+    expect(screen.getByText(ESTIMATE)).toBeTruthy();
+  });
+
+  it("says there is no advice, not to set a target, when the target failed to load", () => {
+    render(<AdvicePanel advice={null} realReached={false} rows={rows} targetState="failed" />);
+    expect(screen.getByText("No advice until your target loads.")).toBeTruthy();
+    expect(screen.queryByText(NO_TARGET)).toBeNull();
+    expect(screen.getByText(ESTIMATE)).toBeTruthy();
   });
 });
