@@ -853,11 +853,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Planner view
 
-- [ ] `CourseViewToggle` gains Planner and shows on phones (List and Planner; Roadmap stays `md` and up).
-- [ ] Target CGPA field (shadcn form + React Hook Form + `targetCgpaInput`), with the current and projected CGPA side by side.
-- [ ] Course rows with a mock grade picker: past courses (retake mock, only when a retake is allowed) and future slots (first-attempt mock). Rows with a mock are marked; "Clear mock grades" resets them.
-- [ ] Advice panel: the outcome, the needed average in remaining credits, the suggested retakes (course, current best, grade to aim for, credits), the ceiling grade and where it came from, and the "Estimates only" line.
-- [ ] Empty states: no course map, no graded courses yet (advice uses the fallback ceiling and says so), no target set.
+- [x] `CourseViewToggle` gains Planner and shows on phones (List and Planner; Roadmap stays `md` and up).
+- [x] Target CGPA field (shadcn form + React Hook Form + `targetCgpaInput`), with the current and projected CGPA side by side.
+- [x] Course rows with a mock grade picker: past courses (retake mock, only when a retake is allowed) and future slots (first-attempt mock). Rows with a mock are marked; "Clear mock grades" resets them.
+- [x] Advice panel: the outcome, the needed average in remaining credits, the suggested retakes (course, current best, grade to aim for, credits), the ceiling grade and where it came from, and the "Estimates only" line.
+- [x] Empty states: no course map, no graded courses yet (advice uses the fallback ceiling and says so), no target set.
 
 ### Checklist — Docs & QA (C, D)
 

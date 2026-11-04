@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query";
-import { attempt, cgpaSummary } from "../../shared/schemas/attempts";
+import { attempt, cgpaSummary, targetCgpaResponse } from "../../shared/schemas/attempts";
 import { me } from "../../shared/schemas/auth";
 import { courseMap } from "../../shared/schemas/courses";
 import { healthResponse } from "../../shared/schemas/health";
@@ -88,4 +88,10 @@ export const cgpaSummaryQuery = queryOptions({
 export const routineQuery = queryOptions({
   queryKey: ["routine", "list"],
   queryFn: () => apiGet("/api/routine", z.array(routineEntry)),
+});
+
+/** The planner's saved target CGPA (a decimal), or null when none is set. Only the planner writes it. */
+export const targetCgpaQuery = queryOptions({
+  queryKey: ["planner", "target"],
+  queryFn: () => apiGet("/api/attempts/target", targetCgpaResponse),
 });

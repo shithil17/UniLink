@@ -24,6 +24,8 @@ export function OptionSelect({
   placeholder,
   invalid,
   disabled,
+  ariaLabel,
+  className,
 }: {
   id: string;
   value: string | null;
@@ -32,6 +34,9 @@ export function OptionSelect({
   placeholder?: string;
   invalid?: boolean;
   disabled?: boolean;
+  /** The trigger's name when no visible label points at it (one picker per row). */
+  ariaLabel?: string;
+  className?: string;
 }) {
   return (
     <Select
@@ -42,7 +47,12 @@ export function OptionSelect({
         if (v !== null) onChange(v);
       }}
     >
-      <SelectTrigger id={id} className="w-full" aria-invalid={invalid}>
+      <SelectTrigger
+        id={id}
+        className={className ?? "w-full"}
+        aria-invalid={invalid}
+        aria-label={ariaLabel}
+      >
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

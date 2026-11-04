@@ -9,7 +9,8 @@ import { CgpaSummary } from "@/components/courses/CgpaSummary";
 import { CategoryJump } from "@/components/courses/CategoryJump";
 import { CreditBar } from "@/components/courses/CreditBar";
 import { CourseSheet, type SheetTarget } from "@/components/courses/CourseSheet";
-import { CourseViewToggle } from "@/components/courses/CourseViewToggle";
+import { CourseViewToggle, type CourseView } from "@/components/courses/CourseViewToggle";
+import { PlannerView } from "@/components/courses/PlannerView";
 import { RoadmapTeaser } from "@/components/courses/RoadmapTeaser";
 import { focusRing } from "@/components/ui/focus";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -26,7 +27,7 @@ const SequenceCanvas = lazy(() =>
 );
 
 export const Route = createFileRoute("/courses")({
-  validateSearch: z.object({ view: z.enum(["list", "sequence"]).optional() }),
+  validateSearch: z.object({ view: z.enum(["list", "sequence", "planner"]).optional() }),
   beforeLoad: async ({ context }) => {
     if (!(await context.queryClient.ensureQueryData(meQuery).catch(() => null))) {
       throw redirect({ to: "/login" });
@@ -51,10 +52,13 @@ function MapGrid({
   header,
   main,
   side,
+  sideFirst = false,
 }: {
   header: ReactNode;
   main?: ReactNode;
   side?: ReactNode;
+  /** On a phone the side column comes before the main one (the planner's target and advice). */
+  sideFirst?: boolean;
 }) {
   return (
     <div
@@ -64,12 +68,22 @@ function MapGrid({
           : "grid max-w-3xl grid-cols-1 gap-6"
       }
     >
-      <div className="grid grid-cols-1 gap-4 xl:col-start-1 xl:row-start-1">{header}</div>
+      <div
+        className={`grid grid-cols-1 gap-4 xl:order-none xl:col-start-1 xl:row-start-1 ${sideFirst ? "order-1" : ""}`}
+      >
+        {header}
+      </div>
       {main ? (
-        <div className="grid grid-cols-1 gap-6 xl:col-start-1 xl:row-start-2">{main}</div>
+        <div
+          className={`grid grid-cols-1 gap-6 xl:order-none xl:col-start-1 xl:row-start-2 ${sideFirst ? "order-3" : ""}`}
+        >
+          {main}
+        </div>
       ) : null}
       {side ? (
-        <div className="xl:sticky xl:top-22 xl:col-start-2 xl:row-span-2 xl:row-start-1">
+        <div
+          className={`xl:sticky xl:top-22 xl:order-none xl:col-start-2 xl:row-span-2 xl:row-start-1 ${sideFirst ? "order-2" : ""}`}
+        >
           {side}
         </div>
       ) : null}
@@ -97,12 +111,14 @@ function CourseMapPage() {
   const retake = useMemo(() => (attempts ? retakeCodes(attempts) : undefined), [attempts]);
   const [target, setTarget] = useState<SheetTarget | null>(null);
   const close = () => setTarget(null);
-  const setView = (next: "list" | "sequence") =>
+  const setView = (next: CourseView) =>
     void navigate({
       search: (previous) => ({ ...previous, view: next === "list" ? undefined : next }),
     });
 
   const showSequence = view === "sequence" && desktop;
+  // Roadmap is not offered on a phone, so a link to it there shows the list.
+  const shownView: CourseView = view === "sequence" && !desktop ? "list" : view;
   if (map.isPending) return <MapLoading />;
   if (!map.data) {
     return (
@@ -158,13 +174,19 @@ function CourseMapPage() {
   );
   const header = (
     <>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <MapTitle sub={`${curriculum.programName} · ${curriculum.version}`} />
-        <CourseViewToggle view={view} onChange={setView} />
+        <CourseViewToggle view={shownView} onChange={setView} />
       </div>
       {standing}
       <CategoryJump names={categoryNames} extras />
     </>
+  );
+  const plannerHeader = (
+    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+      <MapTitle sub={`${curriculum.programName} · ${curriculum.version}`} />
+      <CourseViewToggle view={shownView} onChange={setView} />
+    </div>
   );
   const list = (
     <>
@@ -194,7 +216,7 @@ function CourseMapPage() {
             <div className="flex items-start justify-between gap-3">
               <MapTitle sub={`${curriculum.programName} · ${curriculum.version}`} />
               <div className="flex shrink-0 items-center gap-2">
-                <CourseViewToggle view={view} onChange={setView} />
+                <CourseViewToggle view={shownView} onChange={setView} />
                 <CgpaPopover />
               </div>
             </div>
@@ -204,6 +226,10 @@ function CourseMapPage() {
             <SequenceCanvas map={data} onOpen={(next) => setTarget(next)} />
           </Suspense>
         </div>
+      ) : shownView === "planner" ? (
+        <PlannerView map={data}>
+          {({ side, main }) => <MapGrid header={plannerHeader} main={main} side={side} sideFirst />}
+        </PlannerView>
       ) : (
         <MapGrid
           header={header}
