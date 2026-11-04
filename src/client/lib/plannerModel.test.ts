@@ -128,14 +128,17 @@ describe("shared course codes", () => {
     [...m.future, ...m.retakes].map((r) => r.key);
 
   it("keys a code once: later unfinished slots that chose it use their own keys", () => {
+    // Enough graded courses for a prediction, which is what used to go past 4.0.
+    const history = ["CSE301", "CSE302", "CSE303", "CSE304", "CSE305", "CSE306", "CSE307"];
     const shared = buildPlannerModel(
       map([
         same({ code: "CSE201", alternatives: either }),
         same({ code: "CSE202", alternatives: either }),
         same({ code: "CSE203", alternatives: either }),
         slot({ code: "CSE204" }),
+        ...history.map((code) => slot({ code, status: "done", filledBy: code, chosenCode: code })),
       ]),
-      [attempt("CSE200", "F")],
+      [attempt("CSE200", "F"), ...history.map((code) => attempt(code, "A"))],
     );
     expect(shared.future.map((r) => r.key)).toEqual([
       "CSE200",
@@ -148,7 +151,7 @@ describe("shared course codes", () => {
     // Before the fix all three slots keyed CSE200: the advisor added grade points for each but
     // credited the F once, so the finish went past 4.0.
     const advice = adviseRetakes(shared.records, [], shared.remaining, 3.9);
-    if (advice.kind === "reached") throw new Error("unexpected reached");
+    if (!("predictedCgpa" in advice)) throw new Error(`got ${advice.kind}`);
     expect(advice.predictedCgpa).toBeLessThanOrEqual(4);
     // Only the one slot that holds the F's record is graded; the others add new credits.
     expect(advice.remainingCredits).toBe(12);
@@ -346,17 +349,39 @@ describe("historyLine", () => {
   });
 
   it("says predictions come from the student's own grades by category", () => {
-    expect(historyLine({ outlook: outlook("history", 18), ceiling: ceiling("history", 18) })).toBe(
-      "Predicted from your grades by category (average 3.22).",
-    );
+    expect(
+      historyLine({
+        kind: "no_retakes_needed",
+        outlook: outlook("history", 18),
+        ceiling: ceiling("history", 18),
+      }),
+    ).toBe("Predicted from your grades by category (average 3.22).");
   });
 
   it("says when predictions are rough", () => {
-    const line = historyLine({ outlook: outlook("fallback", 2), ceiling: ceiling("fallback", 2) });
+    const kind = "out_of_reach";
+    const line = historyLine({
+      kind,
+      outlook: outlook("fallback", 2),
+      ceiling: ceiling("fallback", 2),
+    });
     expect(line).toMatch(
       /^Rough until you have \d+ graded courses \(2 so far\)\. Best case assumes A\.$/,
     );
-    const none = historyLine({ outlook: outlook("fallback", 0), ceiling: ceiling("fallback", 0) });
+    const none = historyLine({
+      kind,
+      outlook: outlook("fallback", 0),
+      ceiling: ceiling("fallback", 0),
+    });
     expect(none).toMatch(/\(none so far\)\. Best case assumes A\.$/);
+  });
+
+  it("says when predictions start, with no best case, while it is too early", () => {
+    const line = historyLine({
+      kind: "too_early",
+      outlook: outlook("fallback", 3),
+      ceiling: ceiling("fallback", 3),
+    });
+    expect(line).toMatch(/^Predictions start at \d+ graded courses \(3 so far\)\.$/);
   });
 });

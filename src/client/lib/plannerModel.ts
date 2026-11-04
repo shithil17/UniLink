@@ -257,10 +257,17 @@ export function targetReached(current: number | null, target: number | null): bo
 export const ESTIMATE_NOTE = "Estimates only. Retake rules and fees are set by NSU.";
 
 /** What the predictions rest on, in a line. */
-export function historyLine({ outlook, ceiling }: Pick<Advice, "outlook" | "ceiling">): string {
+export function historyLine({
+  kind,
+  outlook,
+  ceiling,
+}: Pick<Advice, "kind" | "outlook" | "ceiling">): string {
   if (outlook.source === "history" && outlook.average !== null) {
     return `Predicted from your grades by category (average ${outlook.average.toFixed(2)}).`;
   }
   const so = outlook.gradedCourses === 0 ? "none" : `${outlook.gradedCourses}`;
+  if (kind === "too_early") {
+    return `Predictions start at ${PLANNER_HISTORY_MIN_COURSES} graded courses (${so} so far).`;
+  }
   return `Rough until you have ${PLANNER_HISTORY_MIN_COURSES} graded courses (${so} so far). Best case assumes ${ceiling.grade}.`;
 }
