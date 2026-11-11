@@ -20,7 +20,8 @@
     },
   ],
   "ai": { "binding": "AI" },
-  "triggers": { "crons": [] },
+  // Daily at 21:00 UTC (03:00 Asia/Dhaka): cleanup jobs in src/server/cron.ts. Triggers are not inherited by envs.
+  "triggers": { "crons": ["0 21 * * *"] },
   "env": {
     "staging": {
       "d1_databases": [
@@ -32,7 +33,7 @@
         },
       ],
       "ai": { "binding": "AI" },
-      "triggers": { "crons": [] },
+      "triggers": { "crons": ["0 21 * * *"] },
     },
     "production": {
       "d1_databases": [
@@ -44,7 +45,7 @@
         },
       ],
       "ai": { "binding": "AI" },
-      "triggers": { "crons": [] },
+      "triggers": { "crons": ["0 21 * * *"] },
     },
   },
 }

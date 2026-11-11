@@ -25,6 +25,7 @@ export const auditActions = {
   automodApprove: "automod_approve",
   automodHold: "automod_hold",
   automodReject: "automod_reject",
+  cronPurge: "cron_purge",
 } as const;
 
 export type AuditAction = (typeof auditActions)[keyof typeof auditActions];
@@ -75,6 +76,7 @@ const LABELS: Record<AuditAction, string> = {
   automod_approve: "Published a post",
   automod_hold: "Held a post for review",
   automod_reject: "Rejected a post",
+  cron_purge: "Purged expired content",
 };
 
 /** Plain words for an audit action; an action from another phase falls back to its raw name. */

@@ -1,6 +1,7 @@
 import { auditActions } from "../shared/auditActions";
 import { audit } from "./audit";
 import type { Db } from "./db/client";
+import { resourceRequests, resourceSubmissions } from "./db/schema";
 import { softDeleteRepo, type SoftDeletableTable } from "./repos/softDelete";
 
 /** Content tables by audit target type. */
@@ -9,9 +10,12 @@ export type SoftDeleteTargets = Readonly<Record<string, SoftDeletableTable>>;
 /**
  * Every table mods can soft-delete from, keyed by the target type written to the audit log. A content
  * type adds one line here when it ships (its table needs `id`, `deleted_at`, `deleted_by`); `softDelete()`
- * and `reverse()` then work on it with no other change. Empty until the first post type exists.
+ * and `reverse()` then work on it with no other change.
  */
-export const softDeleteTargets: SoftDeleteTargets = {};
+export const softDeleteTargets: SoftDeleteTargets = {
+  resource_request: resourceRequests,
+  resource_submission: resourceSubmissions,
+};
 
 export type SoftDeleteInput = {
   /** The mod's user id. */

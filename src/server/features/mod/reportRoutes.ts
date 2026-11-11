@@ -32,7 +32,7 @@ export const reportRoutes = new Hono<AppEnv>()
     );
     if (!hit.allowed) return rateLimitedResponse(c, hit);
 
-    const target = await reportTargets[body.targetType].find(db, body.targetId);
+    const target = await reportTargets[body.targetType].find(db, body.targetId, user.id);
     if (!target) return c.json({ error: "not_found", message: "That can't be found." }, 404);
     if (target.ownerId === user.id) {
       return c.json(

@@ -28,7 +28,13 @@ import {
   PLANNER_PRIOR_COURSES,
   PLANNER_ROWS_SHOWN,
 } from "../shared/planner.ts";
+import {
+  RESOURCE_EXPIRY_MAX_MS,
+  RESOURCE_EXPIRY_MIN_MS,
+  RESOURCE_NOTE_MAX_LENGTH,
+} from "../shared/schemas/resources.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
+import { RESOURCE_URL_MAX_LENGTH } from "../shared/urlAllowlist.ts";
 
 // Every limit, cap, cooldown, expiry and threshold lives here. Feature code imports these, never inlines numbers.
 
@@ -129,6 +135,28 @@ export const limits = {
   auditFilterMaxLength: AUDIT_FILTER_MAX_LENGTH,
   // ceiling: 12 characters from a 32-letter alphabet is about 60 bits, plenty for a password that must be replaced at the next login. Revisit if the alphabet or the login rules change.
   tempPasswordLength: 12,
+  // ceiling: a request or link note is a sentence or two; a link is a host and an id. Defined in shared code for the client forms. Revisit if honest notes or links are refused.
+  resourceField: { noteMax: RESOURCE_NOTE_MAX_LENGTH, urlMax: RESOURCE_URL_MAX_LENGTH },
+  // ceiling: a request stays open from an hour to two months: long enough to span a term's material, short enough that stale asks do not pile up. Defined in shared code for the client form. Revisit if students want longer.
+  resourceExpiry: { minMs: RESOURCE_EXPIRY_MIN_MS, maxMs: RESOURCE_EXPIRY_MAX_MS },
+  // ceiling: an honest student asks for a few things a day; this stops a loop from notifying the whole cohort. Revisit if students report hitting it.
+  resourceRequestCreate: { limit: 5, windowMs: DAY },
+  // ceiling: one student keeps a handful of asks going at once. Past this, a new request is a 409 until one is fulfilled or lapses. Revisit if students report hitting it.
+  resourceOpenRequestsMax: 10,
+  // ceiling: sending a link is quick, so this is generous but stops a loop. Revisit if helpers report hitting it.
+  resourceSubmit: { limit: 20, windowMs: HOUR },
+  // ceiling: accepting and turning down links is a few taps per request. Revisit if students report hitting it.
+  resourceDecide: { limit: 60, windowMs: HOUR },
+  // ceiling: one helper sends a request a couple of links at most (a retry after a refused one). Revisit if students report hitting it.
+  resourceSubmissionsPerUser: 3,
+  // ceiling: a requester reads the links one by one; more than this is a pile, not help. Past it, new links are a 409. Revisit if requests routinely fill up.
+  resourceSubmissionsPerRequest: 25,
+  // ceiling: a notify() call writes one D1 batch (16 rows per statement), so a very large cohort stays inside one request's subrequest budget. Students past the cap are not told; the request is still open to any link. Revisit on a paid plan or when a fan-out moves to a queue.
+  resourceFanoutMax: 1000,
+  // ceiling: a phone screen shows about this many rows; more arrive through the cursor. Revisit if the list feels short.
+  resourcePage: { defaultSize: 20, maxSize: 50 },
+  // ceiling: three months: long enough to find the link again after the exam, short enough to keep shared links from piling up. The UI states it. Revisit if students ask for longer.
+  resourceFulfilledKeepMs: 90 * DAY,
   /** The screening pipeline: what the rules accept and how long the model step may take. */
   screen: {
     // ceiling: the longest screened field (a description or note) is a few paragraphs; a wall of text is spam. Per-post-type schemas set tighter caps. Revisit if honest posts are rejected for length.

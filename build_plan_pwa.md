@@ -908,9 +908,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist
 
-- [ ] `resource_requests` and `resource_submissions` tables with moderation status, expiry and `fulfilled_at`. Indexes for the fan-out query (attempts by course and faculty).
-- [ ] Create request (screened, fan-out notify), list my requests, submit link (allowlist, cooldown, screened), accept, reject, report.
-- [ ] `cron.ts` with the two resource jobs. A cron trigger added in `wrangler.jsonc` for both environments.
+- [x] `resource_requests` and `resource_submissions` tables with moderation status, expiry and `fulfilled_at`. Indexes for the fan-out query (attempts by course and faculty).
+- [x] Create request (screened, fan-out notify), list my requests, submit link (allowlist, cooldown, screened), accept, reject, report.
+- [x] `cron.ts` with the two resource jobs. A cron trigger added in `wrangler.jsonc` for both environments.
 - [ ] Screens: new request, my requests with their submissions, submit to a request (reached from the notification), clear expiry and purge wording.
 
 ### Checklist — Docs & QA (C, D)
@@ -920,9 +920,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/urlAllowlist.test.ts`: allowed hosts, look-alike hosts (`drive.google.com.evil.io`), http rejected.
-- [ ] `src/server/features/resources/resources.api.test.ts`: the fan-out matches the course, the faculty and both, the requester is excluded, only the requester sees the link, accepting one fulfils the request, the cooldown blocks new accounts, expiry filtering, the cron purge timing, a report on a submission reaches the queue.
-- [ ] Run: `vp test resources urlAllowlist`
+- [x] `src/shared/urlAllowlist.test.ts`: allowed hosts, look-alike hosts (`drive.google.com.evil.io`), http rejected.
+- [x] `src/server/features/resources/resources.api.test.ts`: the fan-out matches the course, the faculty and both, the requester is excluded, only the requester sees the link, accepting one fulfils the request, the cooldown blocks new accounts, expiry filtering, the cron purge timing, a report on a submission reaches the queue.
+- [x] Run: `vp test resources urlAllowlist`
 
 ### Test Gate 10
 

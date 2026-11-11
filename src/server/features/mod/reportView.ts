@@ -16,7 +16,7 @@ export async function toModReports(db: Db, rows: ReportWithReporter[]): Promise<
   }
   return rows.map((r) => ({
     id: r.id,
-    targetType: r.targetType as "user",
+    targetType: r.targetType as ModReportView["targetType"],
     targetId: r.targetId,
     targetLabel: labels.get(`${r.targetType}:${r.targetId}`) ?? null,
     reporter: r.reporter,
