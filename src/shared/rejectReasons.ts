@@ -11,16 +11,13 @@ export type ReasonCategory = z.infer<typeof reasonCategory>;
  * because that would tell someone how to get around the screen.
  */
 const MESSAGES: Record<ReasonCategory, string> = {
-  prohibited_item:
-    "This post looks like it's about something that can't be posted on UniLink. You can edit it and send it again.",
+  prohibited_item: "This post looks like it's about something that can't be posted on UniLink.",
   personal_data:
-    "This post seems to include personal details, like an ID or a card number. Take those out and send it again.",
-  scam_or_spam:
-    "This post looks like it could be spam or a scam. If that's not what it is, edit it and send it again.",
-  abuse_or_harassment:
-    "This post has wording that could hurt or harass someone. You can change it and send it again.",
-  off_topic: "This post doesn't seem to fit here. You can edit it and send it again.",
-  fine: "A moderator looked at this post and decided it can't go up as written. You can edit it and send it again.",
+    "This post seems to include personal details, like an ID or a card number, which can't be posted on UniLink.",
+  scam_or_spam: "This post looks like it could be spam or a scam.",
+  abuse_or_harassment: "This post has wording that could hurt or harass someone.",
+  off_topic: "This post doesn't seem to fit here.",
+  fine: "A moderator looked at this post and decided it can't go up as written.",
 };
 
 /** The author-facing message for a rejection in this category. */

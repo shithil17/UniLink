@@ -30,7 +30,17 @@ export const reasonCategory = z.enum([
 ]);
 
 /** What a report can point at. Each post type adds one value here when it ships. */
-export const reportTargetType = z.enum(["user"]);
+export const reportTargetType = z.enum(["user", "resource_request", "resource_submission"]);
+
+/**
+ * The report targets a mod can remove from the queue: the ones with a table in `softDeleteTargets`
+ * (a user is banned from the Users screen instead). Shared so the queue only offers Remove where the
+ * server will take it; a test keeps this list and `softDeleteTargets` in step.
+ */
+export const removableReportTargets: readonly z.infer<typeof reportTargetType>[] = [
+  "resource_request",
+  "resource_submission",
+];
 
 /** Contact details; only ever returned by the per-post contact endpoint, never in feeds. */
 export const contacts = z.object({

@@ -6,6 +6,7 @@ import {
   NOTIFICATION_HUE,
   notificationCopy,
   notificationHue,
+  notificationTarget,
   timeAgo,
 } from "./inbox";
 
@@ -25,6 +26,46 @@ describe("notificationCopy", () => {
       expect(copy.title.length).toBeGreaterThan(0);
       expect(copy.detail.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("notificationCopy for a removal", () => {
+  it("names the kind and shows the moderator's reason", () => {
+    const link = notificationCopy("content_removed", {
+      kind: "resource_submission",
+      reason: "Not course material",
+    });
+    expect(link.title).toBe("A moderator removed a link you sent to a request");
+    expect(link.detail).toBe("Reason: Not course material");
+    expect(
+      notificationCopy("content_removed", { kind: "resource_request", reason: "Spam request" })
+        .title,
+    ).toBe("A moderator removed your request for materials");
+  });
+
+  it("falls back to fixed words for a payload that does not parse", () => {
+    const copy = notificationCopy("content_removed", { kind: "nope", reason: "x" });
+    expect(copy.title).toBe("A moderator removed something you posted");
+    expect(copy.detail).toBe("It was taken down by a moderator.");
+  });
+});
+
+describe("notificationCopy for a moderator's decision", () => {
+  it("tells the author of a link only the requester can see it, a request that others can", () => {
+    const link = notificationCopy("post_approved", { targetType: "resource_submission" });
+    expect(link.detail).toMatch(/student who asked can see/);
+    expect(link.title).toBe("Your link was approved");
+    expect(link.title).not.toMatch(/live/);
+    expect(notificationCopy("post_approved", { targetType: "resource_request" }).title).toBe(
+      "Your post is live",
+    );
+    expect(notificationCopy("post_approved", { targetType: "resource_request" }).detail).toMatch(
+      /other students can see/,
+    );
+  });
+
+  it("does not promise an edit-and-resend flow", () => {
+    expect(notificationCopy("post_rejected").detail).not.toMatch(/edit|send it again/i);
   });
 });
 
@@ -54,5 +95,61 @@ describe("timeAgo", () => {
   });
   it("falls back to a date after a week", () => {
     expect(timeAgo(Date.UTC(2026, 9, 1, 12), now)).toBe("1 Oct");
+  });
+});
+
+describe("notificationTarget", () => {
+  it("opens the submit screen for a request that matches you", () => {
+    expect(notificationTarget("resource_requested", { requestId: 7 })).toEqual({
+      to: "/resources/$requestId",
+      params: { requestId: "7" },
+    });
+  });
+
+  it("opens my requests for a link sent to my request", () => {
+    expect(notificationTarget("resource_submitted", { requestId: 7 })).toEqual({
+      to: "/resources",
+    });
+  });
+
+  it("opens the Materials screen for removed content, and nowhere for an unknown kind", () => {
+    expect(notificationTarget("content_removed", { kind: "resource_submission" })).toEqual({
+      to: "/resources",
+      search: { tab: "help" },
+    });
+    expect(notificationTarget("content_removed", { kind: "resource_request" })).toEqual({
+      to: "/resources",
+    });
+    expect(notificationTarget("content_removed", { kind: "nope" })).toBeNull();
+    expect(notificationTarget("content_removed", undefined)).toBeNull();
+  });
+
+  it("opens Materials for a moderator's decision, the Help tab for a link and never a request page", () => {
+    for (const type of ["post_approved", "post_rejected"] as const) {
+      expect(notificationTarget(type, { targetType: "resource_request", targetId: 9 })).toEqual({
+        to: "/resources",
+      });
+      expect(notificationTarget(type, { targetType: "resource_submission", targetId: 9 })).toEqual({
+        to: "/resources",
+        search: { tab: "help" },
+      });
+      expect(notificationTarget(type, { targetType: "nope", targetId: 9 })).toBeNull();
+      expect(notificationTarget(type, {})).toBeNull();
+    }
+  });
+
+  it("goes nowhere for an accepted link, where the request is closed to everyone else", () => {
+    expect(notificationTarget("resource_accepted", { requestId: 7 })).toBeNull();
+  });
+
+  it("goes nowhere when the request id is missing or not a positive whole number", () => {
+    expect(notificationTarget("resource_requested", {})).toBeNull();
+    expect(notificationTarget("resource_requested", { requestId: "7" })).toBeNull();
+    expect(notificationTarget("resource_requested", { requestId: -1 })).toBeNull();
+    expect(notificationTarget("resource_requested", undefined)).toBeNull();
+  });
+
+  it("has no screen for the kinds that are only read", () => {
+    expect(notificationTarget("push_test", {})).toBeNull();
   });
 });

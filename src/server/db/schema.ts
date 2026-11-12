@@ -10,6 +10,7 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import type { PrereqRule } from "../../shared/prereq";
+import { moderationColumns, moderationConstraints } from "./moderationColumns";
 
 // Key/value facts about the database itself (schema version and similar).
 export const appMeta = sqliteTable("app_meta", {
@@ -40,6 +41,8 @@ export const users = sqliteTable(
       .notNull()
       .default("student"),
     bannedAt: integer("banned_at"),
+    // The mod's reason for the ban, shown to the user when they try to log in. Null when not banned.
+    banReason: text("ban_reason"),
     mustChangePassword: integer("must_change_password", { mode: "boolean" })
       .notNull()
       .default(false),
@@ -277,7 +280,13 @@ export const attempts = sqliteTable(
     facultyId: integer("faculty_id").references(() => faculty.id, { onDelete: "set null" }),
     createdAt: integer("created_at").notNull(),
   },
-  (t) => [index("attempts_user_idx").on(t.userId)],
+  (t) => [
+    index("attempts_user_idx").on(t.userId),
+    // The resource fan-out finds who took a course, a faculty member's class, or both. The user id is last
+    // so each lookup is answered from the index alone. Faculty-only requests use the second one.
+    index("attempts_course_faculty_idx").on(t.courseCode, t.facultyId, t.userId),
+    index("attempts_faculty_course_idx").on(t.facultyId, t.courseCode, t.userId),
+  ],
 );
 
 // A course a student adds themselves (an elective they took). Private to the owner.
@@ -368,4 +377,78 @@ export const pushSubscriptions = sqliteTable(
     createdAt: integer("created_at").notNull(),
   },
   (t) => [index("push_subscriptions_user_idx").on(t.userId)],
+);
+
+// A student asks for study material by course, faculty member, or both. Matching students are
+// notified; others answer with links. Open requests are hard-deleted by cron once they lapse, and a
+// fulfilled one some months after it was fulfilled (src/server/cron.ts). Never carries contact details.
+export const resourceRequests = sqliteTable(
+  "resource_requests",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    // The requester. Deleting the user deletes their requests.
+    authorId: integer("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // A course code as typed by the student, upper-cased. Matches `attempts.course_code` exactly.
+    courseCode: text("course_code"),
+    facultyId: integer("faculty_id").references(() => faculty.id, { onDelete: "cascade" }),
+    note: text("note"),
+    ...moderationColumns,
+    // The requester's chosen lapse time. After it the request is expired, whatever its status.
+    expiresAt: integer("expires_at").notNull(),
+    // Set once, when the requester accepts a link. Null while the request is open or lapsed.
+    fulfilledAt: integer("fulfilled_at"),
+    // The link the requester accepted. A plain id, not a foreign key: the table pair would reference each other.
+    acceptedSubmissionId: integer("accepted_submission_id"),
+    createdAt: integer("created_at").notNull(),
+    deletedAt: integer("deleted_at"),
+    deletedBy: integer("deleted_by").references(() => users.id, { onDelete: "set null" }),
+  },
+  (t) => [
+    ...moderationConstraints("resource_requests", t),
+    check(
+      "resource_requests_target_check",
+      sql`${t.courseCode} is not null or ${t.facultyId} is not null`,
+    ),
+    // "My requests", newest first.
+    index("resource_requests_author_idx").on(t.authorId, t.id),
+    // The cron purges: open ones past their expiry, fulfilled ones past their keep period.
+    index("resource_requests_expires_idx").on(t.expiresAt),
+    index("resource_requests_fulfilled_idx").on(t.fulfilledAt),
+    // "Help others": open requests for a course the student took, any faculty.
+    index("resource_requests_course_idx").on(t.courseCode, t.expiresAt),
+    // "Help others": open faculty-only requests for a faculty member the student had.
+    index("resource_requests_faculty_idx").on(t.facultyId, t.expiresAt),
+  ],
+);
+
+// A link someone sent for a request. Only the requester sees `url`. Deleted with its request.
+export const resourceSubmissions = sqliteTable(
+  "resource_submissions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    requestId: integer("request_id")
+      .notNull()
+      .references(() => resourceRequests.id, { onDelete: "cascade" }),
+    // The uploader. Named `author_id` like every post table.
+    authorId: integer("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // A safe https URL by the rule in src/shared/resourceUrl.ts.
+    url: text("url").notNull(),
+    note: text("note"),
+    ...moderationColumns,
+    // Set when the requester turns the link down. Acceptance lives on the request.
+    rejectedAt: integer("rejected_at"),
+    createdAt: integer("created_at").notNull(),
+    deletedAt: integer("deleted_at"),
+    deletedBy: integer("deleted_by").references(() => users.id, { onDelete: "set null" }),
+  },
+  (t) => [
+    ...moderationConstraints("resource_submissions", t),
+    // The requester's list of links, and the per-request caps.
+    index("resource_submissions_request_idx").on(t.requestId, t.id),
+    index("resource_submissions_author_idx").on(t.authorId, t.requestId),
+  ],
 );

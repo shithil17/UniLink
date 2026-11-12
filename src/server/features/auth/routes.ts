@@ -1,6 +1,6 @@
 import { Hono, type Context } from "hono";
 import { changePasswordRequest, loginRequest, signupRequest } from "../../../shared/schemas/auth";
-import type { Me } from "../../../shared/schemas/auth";
+import type { AccountBannedResponse, Me } from "../../../shared/schemas/auth";
 import { parseStudentId } from "../../../shared/studentId";
 import { getDb } from "../../db/client";
 import { limits } from "../../limits";
@@ -123,10 +123,13 @@ export const authRoutes = new Hono<AppEnv>()
     };
     if (!(await verifyPassword(body.password, stored))) return c.json(BAD_CREDENTIALS, 401);
     if (user.bannedAt !== null) {
-      return c.json(
-        { error: "account_banned", message: "This account is suspended. Contact a mod." },
-        403,
-      );
+      const banned: AccountBannedResponse = {
+        error: "account_banned",
+        message: "This account is suspended.",
+        reason: user.banReason,
+        contact: c.env.ADMIN_CONTACT_EMAIL?.trim() || null,
+      };
+      return c.json(banned, 403);
     }
     if (needsRehash(stored)) await users.updatePassword(user.id, await hashPassword(body.password));
     await startSession(c, user.id);

@@ -85,6 +85,9 @@ export const modUsersQuery = pageQuery.extend({ q: usernameSearch.optional() });
 /** The search box: empty means no search (the newest users). */
 export const userSearchForm = z.object({ q: z.union([usernameSearch, z.literal("")]) });
 
+/** The users page's `?q=`: the same rule the API applies, and anything else reads as no search. */
+export const userSearchParams = z.object({ q: usernameSearch.optional().catch(undefined) });
+
 export const modUserPage = page(modUser);
 
 export const temporaryPassword = z.object({ temporaryPassword: z.string() });
@@ -125,6 +128,8 @@ export const modReport = z.object({
   targetId: z.string(),
   /** A public label for the target (a username for a user), or null when it no longer exists. */
   targetLabel: z.string().nullable(),
+  /** The username of whoever owns the target (the user themself for a user report), or null when they no longer exist. */
+  targetAuthor: z.string().nullable(),
   reporter: z.string().nullable(),
   reason: z.string(),
   status: reportStatus,

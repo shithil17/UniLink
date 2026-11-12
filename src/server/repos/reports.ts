@@ -76,6 +76,30 @@ export function reportsRepo(db: Db) {
         .get();
       return row?.n ?? 0;
     },
+    /**
+     * Closes every open report on one target as handled, in one UPDATE, and returns what it closed.
+     * Uses `reports_target_idx`.
+     */
+    async resolveOpenForTarget(
+      targetType: string,
+      targetId: string,
+      by: number,
+      note: string,
+      now: number,
+    ): Promise<ReportRow[]> {
+      return db
+        .update(reports)
+        .set({ status: "resolved", resolvedBy: by, resolvedAt: now, resolveNote: note })
+        .where(
+          and(
+            eq(reports.targetType, targetType),
+            eq(reports.targetId, targetId),
+            eq(reports.status, "open"),
+          ),
+        )
+        .returning()
+        .all();
+    },
     /** Closes an open report. Null when it is already closed (or does not exist): one UPDATE, no read first. */
     async resolve(
       id: number,

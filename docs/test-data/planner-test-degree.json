@@ -1,0 +1,141 @@
+{
+  "program": "42",
+  "name": "Planner test degree",
+  "version": "Planner test",
+  "effectiveFromYear": 26,
+  "totalCredits": 36,
+  "courses": [
+    {
+      "kind": "course",
+      "code": "TST101",
+      "title": "Planner test general 1",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "TST102",
+      "title": "Planner test general 2",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "TST103",
+      "title": "Planner test general 3",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "TST104",
+      "title": "Planner test general 4",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 1,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "TST105",
+      "title": "Planner test general 5",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "TST106",
+      "title": "Planner test general 6",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "TST107",
+      "title": "Planner test general 7",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "TST108",
+      "title": "Planner test general 8",
+      "credits": 3,
+      "category": "General Education",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "TST201",
+      "title": "Planner test major 1",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "TST202",
+      "title": "Planner test major 2",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 2,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "TST203",
+      "title": "Planner test major 3",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    },
+    {
+      "kind": "course",
+      "code": "TST204",
+      "title": "Planner test major 4",
+      "credits": 3,
+      "category": "Major Core",
+      "nonCredit": false,
+      "semester": 3,
+      "alternatives": [],
+      "prereq": null
+    }
+  ]
+}

@@ -3,6 +3,9 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BookOpenIcon,
   CalendarDaysIcon,
+  CheckIcon,
+  EllipsisIcon,
+  HandHelpingIcon,
   HouseIcon,
   InboxIcon,
   PanelLeftCloseIcon,
@@ -26,17 +29,26 @@ import { InstallHint } from "@/components/pwa/InstallHint";
 import { UpdatePrompt } from "@/components/pwa/UpdatePrompt";
 import { focusRing } from "@/components/ui/focus";
 import { press } from "@/components/ui/press";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
 import { useDockHidden } from "@/lib/useDockHidden";
 import { badgeLabel } from "@/lib/inbox";
 import { AuthAside } from "@/components/auth/AuthForm";
 import { Logo } from "@/components/layout/Logo";
-import { activeTabIndex, isSplitAuthPath, mainTabs, type MainTab } from "@/lib/nav";
+import { activeTab, barPillIndex, isSplitAuthPath, mainTabs, type MainTab } from "@/lib/nav";
 import { meQuery, unreadCountQuery } from "@/lib/queries";
 
 const tabIcons: Record<MainTab["to"], LucideIcon> = {
   "/": HouseIcon,
   "/courses": BookOpenIcon,
+  "/resources": HandHelpingIcon,
   "/routine": CalendarDaysIcon,
   "/inbox": InboxIcon,
   "/mod": ShieldCheckIcon,
@@ -64,9 +76,10 @@ function readRailPinnedOpen() {
  * breakpoint, so there is one set of links to test and to tab through. Signed out (or while a
  * temporary password is being replaced) there are no tabs and no rail, only the wordmark.
  *
- * The pill reads `--i`, the active tab's position in `mainTabs()`, so the bar works for five student
- * tabs and five mod tabs alike. With no active tab (a screen reached from elsewhere) the pill hides.
- * On phones the bar slides away while scrolling down and back on scrolling up.
+ * The rail lists every tab. The phone bar shows only the `inBar` tabs plus a More button that opens
+ * a bottom sheet with the rest; those links are hidden below `md` and More stands in for them. The
+ * pill reads `--i` from `barPillIndex()`, so it sits on More while a More screen is open, and hides
+ * with no active tab. On phones the bar slides away while scrolling down and back on scrolling up.
  */
 export function AppLayout({ children }: { children: ReactNode }) {
   const dockHidden = useDockHidden();
@@ -149,7 +162,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const search = useRouterState({ select: (s) => s.location.search });
 
   const tabs = mainTabs(me.data);
-  const activeIndex = activeTabIndex(tabs, pathname);
+  const pillIndex = barPillIndex(tabs, pathname);
+  const current = activeTab(tabs, pathname);
+  const moreTabs = tabs.filter((t) => !t.inBar);
+  const barSlots = tabs.length - moreTabs.length + (moreTabs.length > 0 ? 1 : 0);
   const hasTabs = tabs.length > 0;
   const username = me.data?.username ?? "";
   // Signed out, log in and sign up go edge to edge from `lg`: `AuthAside` is the left column and
@@ -189,8 +205,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
               data-dock-hidden={dockHidden ? "" : undefined}
               style={
                 {
-                  "--i": Math.max(activeIndex, 0),
-                  "--n": tabs.length,
+                  "--i": Math.max(pillIndex, 0),
+                  "--n": barSlots,
                 } as CSSProperties
               }
               className="fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-10 grid h-[68px] grid-flow-col auto-cols-fr dock-autohide rounded-full bg-surface p-1.5 shadow-float md:static md:flex md:h-auto md:flex-col md:gap-1.5 md:rounded-none md:bg-transparent md:p-0 md:shadow-none"
@@ -199,10 +215,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <span
                 aria-hidden="true"
                 data-testid="tab-pill"
-                data-hidden={activeIndex < 0 ? "" : undefined}
+                data-hidden={pillIndex < 0 ? "" : undefined}
                 className="pointer-events-none absolute inset-y-1.5 left-1.5 w-[calc((100%-0.75rem)/var(--n))] translate-x-[calc(var(--i)*100%)] rounded-full bg-brand-soft opacity-100 data-hidden:opacity-0 motion-safe:transition-[translate,opacity] motion-safe:duration-[280ms] motion-safe:ease-drawer md:hidden"
               />
-              {tabs.map(({ to, label }) => {
+              {tabs.map(({ to, label, inBar }) => {
                 const Icon = tabIcons[to];
                 const showBadge = to === "/inbox" && unread > 0;
                 return (
@@ -210,7 +226,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     key={to}
                     to={to}
                     activeOptions={{ exact: to === "/" }}
-                    className={`relative flex flex-col items-center justify-center gap-0.5 rounded-full text-xs leading-[1.1] font-semibold text-soft outline-none aria-[current=page]:text-brand-ink md:min-h-12 md:flex-row md:justify-start md:gap-3 md:rounded-row md:px-3.5 md:text-[15px] md:leading-none md:aria-[current=page]:bg-brand-soft md:hover:bg-tint md:aria-[current=page]:hover:bg-brand-soft ${!railPinnedOpen && !railPeekOpen ? "md:size-12 md:justify-center md:gap-0 md:px-0" : ""} ${press} ${focusRing}`}
+                    className={`relative flex flex-col items-center justify-center gap-0.5 rounded-full text-xs leading-[1.1] font-semibold text-soft outline-none aria-[current=page]:text-brand-ink md:min-h-12 md:flex-row md:justify-start md:gap-3 md:rounded-row md:px-3.5 md:text-[15px] md:leading-none md:aria-[current=page]:bg-brand-soft md:hover:bg-tint md:aria-[current=page]:hover:bg-brand-soft ${inBar ? "" : "max-md:hidden"} ${!railPinnedOpen && !railPeekOpen ? "md:size-12 md:justify-center md:gap-0 md:px-0" : ""} ${press} ${focusRing}`}
                   >
                     <Icon className="size-[22px] shrink-0" strokeWidth={1.75} aria-hidden="true" />
                     <span className={!railPinnedOpen && !railPeekOpen ? "md:sr-only" : ""}>
@@ -228,6 +244,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   </Link>
                 );
               })}
+              {moreTabs.length > 0 ? <MoreMenu tabs={moreTabs} current={current} /> : null}
             </nav>
             {/* Username only, never the student ID (the client never receives it). */}
             <div
@@ -311,6 +328,77 @@ export function AppLayout({ children }: { children: ReactNode }) {
       </FloatingNotes>
       <Toaster />
     </div>
+  );
+}
+
+/**
+ * The phone bar's last slot: opens a bottom sheet with the tabs that do not fit the bar, one row
+ * each with a plain line under the name. It takes the active colour (and the pill) while one of
+ * those screens is open, so the bar always shows where you are. Hidden from `md`, where the rail
+ * lists every tab.
+ */
+function MoreMenu({ tabs, current }: { tabs: MainTab[]; current: MainTab | undefined }) {
+  const [open, setOpen] = useState(false);
+  const inMore = current !== undefined && tabs.includes(current);
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger
+        data-current={inMore ? "" : undefined}
+        render={
+          <button
+            type="button"
+            className={`relative flex flex-col items-center justify-center gap-0.5 rounded-full text-xs leading-[1.1] font-semibold text-soft outline-none data-current:text-brand-ink md:hidden ${press} ${focusRing}`}
+          />
+        }
+      >
+        <EllipsisIcon className="size-[22px] shrink-0" strokeWidth={1.75} aria-hidden="true" />
+        <span>
+          More
+          {inMore ? <span className="sr-only">, {current.label} open</span> : null}
+        </span>
+      </SheetTrigger>
+      <SheetContent side="bottom" className="data-[side=bottom]:gap-0">
+        <SheetHeader>
+          <SheetTitle>More</SheetTitle>
+          <SheetDescription className="sr-only">The rest of UniLink.</SheetDescription>
+        </SheetHeader>
+        <nav aria-label="More">
+          <ul className="divide-y divide-line">
+            {tabs.map((tab) => {
+              const Icon = tabIcons[tab.to];
+              const isCurrent = tab === current;
+              return (
+                <li key={tab.to}>
+                  <Link
+                    to={tab.to}
+                    onClick={() => setOpen(false)}
+                    aria-current={isCurrent ? "page" : undefined}
+                    className={`flex min-h-[60px] items-center gap-3.5 px-5 py-2.5 text-ink focus-visible:-outline-offset-2 ${focusRing} ${isCurrent ? "bg-brand-soft" : "hover:bg-tint active:bg-tint"}`}
+                  >
+                    <Icon
+                      aria-hidden="true"
+                      strokeWidth={1.75}
+                      className={`size-[22px] shrink-0 ${isCurrent ? "text-brand-ink" : "text-soft"}`}
+                    />
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className={`text-[15px] ${isCurrent ? "font-bold" : "font-medium"}`}>
+                        {tab.label}
+                      </span>
+                      {tab.hint ? (
+                        <span className="text-[13px] leading-[1.3] text-soft">{tab.hint}</span>
+                      ) : null}
+                    </span>
+                    {isCurrent ? (
+                      <CheckIcon aria-hidden="true" className="size-5 shrink-0 text-brand-ink" />
+                    ) : null}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+      </SheetContent>
+    </Sheet>
   );
 }
 

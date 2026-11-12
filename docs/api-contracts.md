@@ -19,29 +19,33 @@ Rules that apply to every endpoint:
 
 ## Auth
 
-| Method | Path                        | Auth   | Schema                              |
-| ------ | --------------------------- | ------ | ----------------------------------- |
-| POST   | `/api/auth/signup`          | public | `auth.ts` → `signupRequest` → `me`  |
-| POST   | `/api/auth/login`           | public | `auth.ts` → `loginRequest` → `me`   |
-| POST   | `/api/auth/logout`          | user   | –                                   |
-| POST   | `/api/auth/change-password` | user   | `auth.ts` → `changePasswordRequest` |
-| GET    | `/api/auth/me`              | user   | `auth.ts` → `me`                    |
+| Method | Path                        | Auth   | Schema                                                                                          |
+| ------ | --------------------------- | ------ | ----------------------------------------------------------------------------------------------- |
+| POST   | `/api/auth/signup`          | public | `auth.ts` → `signupRequest` → `me`                                                              |
+| POST   | `/api/auth/login`           | public | `auth.ts` → `loginRequest` → `me` (a banned account answers 403 `accountBannedResponse`, below) |
+| POST   | `/api/auth/logout`          | user   | –                                                                                               |
+| POST   | `/api/auth/change-password` | user   | `auth.ts` → `changePasswordRequest`                                                             |
+| GET    | `/api/auth/me`              | user   | `auth.ts` → `me`                                                                                |
+
+A banned account that gives the right password gets 403 `{ error: "account_banned", message: "This account is suspended.", reason: string \| null, contact: string \| null }` (`auth.ts` → `accountBannedResponse`, used by the server and the login screen). `reason` is the mod's ban reason (stored in `users.ban_reason`, cleared on unban) and `contact` is the Worker var `ADMIN_CONTACT_EMAIL` (null when empty or unset). The check runs after the password check, so a wrong password gets the usual 401 `invalid_credentials` and never the reason.
 
 ## Courses, attempts and student courses
 
-| Method | Path                       | Auth | Schema                                                                               |
-| ------ | -------------------------- | ---- | ------------------------------------------------------------------------------------ |
-| GET    | `/api/courses/map`         | user | `courses.ts` → `courseMap` (empty state: `curriculum: null`)                         |
-| POST   | `/api/courses/import`      | mod  | `courses.ts` → `curriculumImportEnvelope` (rows checked one by one) → `importResult` |
-| GET    | `/api/attempts`            | user | `attempts.ts` → `attempt[]` (own only)                                               |
-| POST   | `/api/attempts`            | user | `attempts.ts` → `attemptInput` → `attempt`                                           |
-| GET    | `/api/attempts/summary`    | user | CGPA, earned and remaining credits by category (own only)                            |
-| PATCH  | `/api/attempts/:id`        | user | `attempts.ts` → `attemptUpdate` → `attempt`                                          |
-| DELETE | `/api/attempts/:id`        | user | –                                                                                    |
-| GET    | `/api/student-courses`     | user | `courses.ts` → `studentCourse[]` (own only)                                          |
-| POST   | `/api/student-courses`     | user | `courses.ts` → `studentCourseInput` → `studentCourse`                                |
-| PATCH  | `/api/student-courses/:id` | user | `courses.ts` → `studentCourseUpdate` → `studentCourse` (code is fixed once added)    |
-| DELETE | `/api/student-courses/:id` | user | – (also deletes the course's attempts)                                               |
+| Method | Path                       | Auth | Schema                                                                                                                                               |
+| ------ | -------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/courses/map`         | user | `courses.ts` → `courseMap` (empty state: `curriculum: null`)                                                                                         |
+| POST   | `/api/courses/import`      | mod  | `courses.ts` → `curriculumImportEnvelope` (rows checked one by one) → `importResult`                                                                 |
+| GET    | `/api/attempts`            | user | `attempts.ts` → `attempt[]` (own only)                                                                                                               |
+| POST   | `/api/attempts`            | user | `attempts.ts` → `attemptInput` → `attempt`                                                                                                           |
+| GET    | `/api/attempts/summary`    | user | CGPA, earned and remaining credits by category (own only)                                                                                            |
+| GET    | `/api/attempts/target`     | user | `attempts.ts` → `targetCgpaResponse`: the planner's saved target (own only), or null                                                                 |
+| PUT    | `/api/attempts/target`     | user | `targetCgpaInput` → `targetCgpaResponse`. 0.01 to 4.00; 409 `target_not_above_current` when not above the CGPA; rate-limited (`limits.targetWrites`) |
+| PATCH  | `/api/attempts/:id`        | user | `attempts.ts` → `attemptUpdate` → `attempt`                                                                                                          |
+| DELETE | `/api/attempts/:id`        | user | –                                                                                                                                                    |
+| GET    | `/api/student-courses`     | user | `courses.ts` → `studentCourse[]` (own only)                                                                                                          |
+| POST   | `/api/student-courses`     | user | `courses.ts` → `studentCourseInput` → `studentCourse`                                                                                                |
+| PATCH  | `/api/student-courses/:id` | user | `courses.ts` → `studentCourseUpdate` → `studentCourse` (code is fixed once added)                                                                    |
+| DELETE | `/api/student-courses/:id` | user | – (also deletes the course's attempts)                                                                                                               |
 
 Attempts and student courses are readable by their owner only, never by mods or admins (enforced in the repo layer); another user's student course id is a 404. An attempt's course code must be in the user's curriculum (a slot code or an alternative) or one of their student courses (400 `unknown_course`). A student course code must not clash with the curriculum or their other courses (409 `code_taken`), its category must be one of the curriculum's categories (400 `unknown_category`), and adding past `limits.studentCoursesMax` is a 409 `student_course_limit`. The import keeps valid rows and lists the rest in `rejected`; a file with no valid row is a 422 and changes nothing. **An import of a program and version that already exist replaces every course of that version, including changes made in the mod Courses screen** (added, edited and hidden courses are all reset; the course ids change).
 
@@ -100,27 +104,28 @@ An endpoint must be on a known push service host (400 `unknown_push_service`). S
 
 Schemas are in `moderation.ts`. Mod routes need the mod role (admins pass too); admin routes need the admin role. Every action takes a `reason` (3 to 300 characters) and writes an audit row with a before-snapshot.
 
-| Method | Path                                | Auth  | Schema / note                                                                                                                                                                                 |
-| ------ | ----------------------------------- | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/api/reports`                      | user  | `reportRequest` → `reportCreated`. Rate-limited (`limits.reportCreate`); 404 unknown target, 400 own target, 409 `already_reported` (one open report per reporter per target)                 |
-| GET    | `/api/mod/users`                    | mod   | `modUsersQuery` (`q` = username prefix, cursor) → `modUserPage`. Handle and state only: no student ID, email or name                                                                          |
-| POST   | `/api/mod/users/:id/ban`            | mod   | `reasonBody`. Deletes the user's sessions. 409 if already banned                                                                                                                              |
-| POST   | `/api/mod/users/:id/unban`          | mod   | `reasonBody`. 409 if not banned                                                                                                                                                               |
-| POST   | `/api/mod/users/:id/reset-password` | mod   | `reasonBody` → `temporaryPassword` (shown once, `no-store`). Sets `must_change_password`, deletes sessions                                                                                    |
-| GET    | `/api/mod/id-conflict?key=`         | mod   | `idConflictQuery` → `idConflictResult`. The only response with a student ID; a hit is logged (`id_lookup`)                                                                                    |
-| POST   | `/api/mod/id-conflict/release`      | mod   | `releaseKeyRequest`. Bans the holder and replaces the key with `released:<id>` so its owner can sign up                                                                                       |
-| POST   | `/api/mod/users/:id/clear-probing`  | mod   | `reasonBody`. Clears the probing flag and any running cooldown, and restarts the rejection count. Reversible by an admin. 409 `not_flagged`                                                   |
-| GET    | `/api/mod/queue`                    | mod   | `pageQuery` → `modQueuePage`. Held posts (`pending_review`) then open reports in one list, oldest first within each; `total` is the whole queue. 400 on a cursor that is not from this list   |
-| POST   | `/api/mod/posts/:type/:id/approve`  | mod   | `approvePostRequest` (reason optional). Publishes a held post, audits it and notifies the author (`post_approved`). 404 unknown post type, 409 `not_held`                                     |
-| POST   | `/api/mod/posts/:type/:id/reject`   | mod   | `rejectPostRequest` (`reason` for the audit log, `category` for the author). Rejects a held post, audits it and notifies the author (`post_rejected`, with the category). 404, 409 `not_held` |
-| GET    | `/api/mod/reports`                  | mod   | `modReportsQuery` (`status`, default `open`; open runs oldest first) → `modReportPage`                                                                                                        |
-| POST   | `/api/mod/reports/:id/resolve`      | mod   | `resolveReportRequest` (`resolved` or `dismissed`). 409 if already closed                                                                                                                     |
-| GET    | `/api/mod/queue`                    | mod   | held posts merged into the report list (not built yet)                                                                                                                                        |
-| POST   | `/api/mod/queue/:id/approve`        | mod   | – (not built yet)                                                                                                                                                                             |
-| POST   | `/api/mod/queue/:id/reject`         | mod   | – (not built yet)                                                                                                                                                                             |
-| POST   | `/api/admin/users/:id/role`         | admin | `roleChangeRequest`: student to mod or mod to student                                                                                                                                         |
-| GET    | `/api/admin/audit`                  | admin | `auditQuery` (filters: `actor`, `targetType`, `targetId`) → `auditPage`. Never returns the snapshot                                                                                           |
-| POST   | `/api/admin/audit/:id/reverse`      | admin | `reasonBody` → `reverseResult`                                                                                                                                                                |
+| Method | Path                                | Auth  | Schema / note                                                                                                                                                                                                                                                                             |
+| ------ | ----------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/reports`                      | user  | `reportRequest` → `reportCreated`. Rate-limited (`limits.reportCreate`); 404 unknown target, 400 own target, 409 `already_reported` (one open report per reporter per target)                                                                                                             |
+| GET    | `/api/mod/users`                    | mod   | `modUsersQuery` (`q` = username prefix, cursor) → `modUserPage`. Handle and state only: no student ID, email or name                                                                                                                                                                      |
+| POST   | `/api/mod/users/:id/ban`            | mod   | `reasonBody`. Deletes the user's sessions and stores the reason as `ban_reason`, which the user sees at login. 409 if already banned                                                                                                                                                      |
+| POST   | `/api/mod/users/:id/unban`          | mod   | `reasonBody`. Clears `ban_reason`. 409 if not banned                                                                                                                                                                                                                                      |
+| POST   | `/api/mod/users/:id/reset-password` | mod   | `reasonBody` → `temporaryPassword` (shown once, `no-store`). Sets `must_change_password`, deletes sessions                                                                                                                                                                                |
+| GET    | `/api/mod/id-conflict?key=`         | mod   | `idConflictQuery` → `idConflictResult`. The only response with a student ID; a hit is logged (`id_lookup`)                                                                                                                                                                                |
+| POST   | `/api/mod/id-conflict/release`      | mod   | `releaseKeyRequest`. Bans the holder and replaces the key with `released:<id>` so its owner can sign up                                                                                                                                                                                   |
+| POST   | `/api/mod/users/:id/clear-probing`  | mod   | `reasonBody`. Clears the probing flag and any running cooldown, and restarts the rejection count. Reversible by an admin. 409 `not_flagged`                                                                                                                                               |
+| GET    | `/api/mod/queue`                    | mod   | `pageQuery` → `modQueuePage`. Held posts (`pending_review`) then open reports in one list, oldest first within each; `total` is the whole queue. 400 on a cursor that is not from this list                                                                                               |
+| POST   | `/api/mod/posts/:type/:id/approve`  | mod   | `approvePostRequest` (reason optional). Publishes a held post, audits it and notifies the author (`post_approved`). 404 unknown post type, 409 `not_held`                                                                                                                                 |
+| POST   | `/api/mod/posts/:type/:id/reject`   | mod   | `rejectPostRequest` (`reason` for the audit log, `category` for the author). Rejects a held post, audits it and notifies the author (`post_rejected`, with the category). 404, 409 `not_held`                                                                                             |
+| GET    | `/api/mod/reports`                  | mod   | `modReportsQuery` (`status`, default `open`; open runs oldest first) → `modReportPage`                                                                                                                                                                                                    |
+| POST   | `/api/mod/reports/:id/remove`       | mod   | `reasonBody`. Soft-deletes the reported request or link (`softDelete()`, audited, reversible by an admin) and closes every open report on it as handled (one `resolve_report` row each). 404 unknown report, 409 `already_resolved`, `not_removable` (a user report) or `already_removed` |
+| POST   | `/api/mod/reports/:id/resolve`      | mod   | `resolveReportRequest` (`resolved` or `dismissed`). 409 if already closed                                                                                                                                                                                                                 |
+| GET    | `/api/mod/queue`                    | mod   | held posts merged into the report list (not built yet)                                                                                                                                                                                                                                    |
+| POST   | `/api/mod/queue/:id/approve`        | mod   | – (not built yet)                                                                                                                                                                                                                                                                         |
+| POST   | `/api/mod/queue/:id/reject`         | mod   | – (not built yet)                                                                                                                                                                                                                                                                         |
+| POST   | `/api/admin/users/:id/role`         | admin | `roleChangeRequest`: student to mod or mod to student                                                                                                                                                                                                                                     |
+| GET    | `/api/admin/audit`                  | admin | `auditQuery` (filters: `actor`, `targetType`, `targetId`) → `auditPage`. Never returns the snapshot                                                                                                                                                                                       |
+| POST   | `/api/admin/audit/:id/reverse`      | admin | `reasonBody` → `reverseResult`                                                                                                                                                                                                                                                            |
 
 Who may be acted on (`src/shared/modPolicy.ts`, enforced on the server, mirrored on the screens): nobody acts on themselves or on an admin; a mod acts on students only; an admin acts on students and mods (403 `forbidden_target`).
 
@@ -128,14 +133,19 @@ Reversal rules (`src/server/reverse.ts`): ban, unban, role change, key release a
 
 ## Resources
 
-| Method | Path                                      | Auth | Schema                                     |
-| ------ | ----------------------------------------- | ---- | ------------------------------------------ |
-| POST   | `/api/resources/requests`                 | user | `resources.ts` → `resourceRequestInput`    |
-| GET    | `/api/resources/requests/mine`            | user | `resources.ts` → `page(resourceRequest)`   |
-| PATCH  | `/api/resources/requests/:id`             | user | `resources.ts` → `resourceRequestInput`    |
-| POST   | `/api/resources/requests/:id/submissions` | user | `resources.ts` → `resourceSubmissionInput` |
-| POST   | `/api/resources/submissions/:id/accept`   | user | requester only                             |
-| POST   | `/api/resources/submissions/:id/reject`   | user | requester only                             |
+Requests and links are user-written posts: each goes through `submitPost()` and `screen()`. A link must pass `parseResourceUrl()` in `src/shared/resourceUrl.ts` (a public `https` site, no shortener). Reports use `POST /api/reports` with the target types `resource_request` and `resource_submission`. Only the requester ever receives a link address.
+
+| Method | Path                                      | Auth | Schema / note                                                                                                                                                                           |
+| ------ | ----------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/resources/requests`                 | user | `resourceRequestInput` → `resourceRequest`. Course, faculty or both. Rate-limited per day; 409 `too_many_open`; 429 for a new account or the probing cooldown                           |
+| GET    | `/api/resources/requests/mine`            | user | `pageQuery` → page of `resourceRequest` with the links sent to each (`resourceSubmissionForRequester`: link, sender username, same-faculty flag)                                        |
+| GET    | `/api/resources/requests/helpable`        | user | `helpableResourceRequestList`. Open requests the student can help with; no requester and no link; same faculty first; at most `limits.resourceHelpableMax`                              |
+| GET    | `/api/resources/requests/:id`             | user | `resourceRequestDetail`: the request and the caller's own links to it. 404 when unknown, removed or not visible, and for anyone but the requester when it is held, expired or fulfilled |
+| POST   | `/api/resources/requests/:id/submissions` | user | `resourceSubmissionInput` (`url`, `note`). 400 `own_request`, 409 `closed`, 409 `too_many_links`; rate-limited per hour; 429 for a new account                                          |
+| POST   | `/api/resources/submissions/:id/accept`   | user | Requester only (404 otherwise). One guarded update; fulfils the request and tells the uploader                                                                                          |
+| POST   | `/api/resources/submissions/:id/reject`   | user | Requester only (404 otherwise). Marks the link turned down; the uploader is not told                                                                                                    |
+
+There is no route to edit or delete a request or a link. Expired and old fulfilled requests are hard-deleted by the daily cron (`src/server/cron.ts`).
 
 ## Rides, lost and found, marketplace
 
@@ -167,15 +177,15 @@ Schemas: `rides.ts` (`rideInput`, `rideFeedQuery`, `rideSummary`), `lostFound.ts
 | Method | Path                             | Auth  | Schema                                                                                              |
 | ------ | -------------------------------- | ----- | --------------------------------------------------------------------------------------------------- |
 | GET    | `/api/faculty`                   | user  | `faculty.ts` → `page(facultyOption)`: visible faculty, `?q=&department=&cursor=&limit=` (see below) |
-| GET    | `/api/faculty/profiles`          | user  | Phase 11: `faculty.ts` → `page(facultySummary)`, `?q=` keyword                                      |
-| GET    | `/api/faculty/:slug`             | user  | Phase 11: profile + recent papers                                                                   |
+| GET    | `/api/faculty/profiles`          | user  | Phase O1: `faculty.ts` → `page(facultySummary)`, `?q=` keyword                                      |
+| GET    | `/api/faculty/:slug`             | user  | Phase O1: profile + recent papers                                                                   |
 | GET    | `/api/mod/faculty`               | mod   | `faculty.ts` → `page(modFaculty)`: same query plus `?hidden=include`                                |
 | POST   | `/api/mod/faculty`               | mod   | `facultyInput` → `modFaculty` (201)                                                                 |
 | PATCH  | `/api/mod/faculty/:id`           | mod   | `facultyPatch` (any of the input fields) → `modFaculty`                                             |
 | POST   | `/api/mod/faculty/:id/hide`      | mod   | `facultyHideRequest` (`reason`) → `modFaculty`                                                      |
 | POST   | `/api/mod/faculty/:id/unhide`    | mod   | `facultyHideRequest` (`reason`) → `modFaculty`                                                      |
-| PUT    | `/api/admin/faculty/:id/summary` | admin | Phase 11: `faculty.ts` → `facultySummaryUpdate`                                                     |
-| POST   | `/api/finder/match`              | user  | Phase 11: `faculty.ts` → `finderMatchRequest` → `finderMatchResponse`                               |
+| PUT    | `/api/admin/faculty/:id/summary` | admin | Phase O1: `faculty.ts` → `facultySummaryUpdate`                                                     |
+| POST   | `/api/finder/match`              | user  | Phase O2: `faculty.ts` → `finderMatchRequest` → `finderMatchResponse`                               |
 
 `GET /api/faculty` returns `{ items: [{ id, name, initials | null, designation, department }], nextCursor }`, a page of `limits.facultyPage` rows (`limit` up to the max). `q` searches the whole directory on the server: every word must start a word of the name, or the text (spaces removed) must start the initials, without regard to case, accents on the query or titles like "Dr."; results rank exact initials, then initials prefixes, then names, each by name. `department` narrows it. Without `q` the order is name, then id. `nextCursor` is the id of the last row and is only valid for the same `q` and `department`; a cursor naming no row is `400`. `GET /api/mod/faculty` takes the same query and returns the same shape with `modFaculty` items; it lists visible rows only unless `hidden=include`. Hidden faculty are left out, but an attempt that already names a hidden faculty member still carries `faculty: { name, initials }` (see `attempt` in `attempts.ts`), so the student's own history keeps the name.
 

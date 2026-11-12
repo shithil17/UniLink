@@ -522,6 +522,22 @@
   font-weight: 600;
   line-height: 1.3;
 }
+/*
+ * A long toast (the suspended-account notice: several lines and a Dismiss button) cannot be a
+ * one-line pill. It keeps the toast's ink ground and float shadow but takes the panel radius,
+ * top-aligns its icon and wraps its text.
+ */
+.toaster .cn-toast.cn-toast-wide[data-sonner-toast][data-styled="true"] {
+  align-items: flex-start;
+  max-width: min(100%, 420px);
+  padding: 14px 18px 4px 14px;
+  border-radius: var(--radius-panel);
+  font-size: 15px;
+  line-height: 1.4;
+}
+.toaster .cn-toast-wide [data-icon] {
+  margin-top: 2px;
+}
 .toaster .cn-toast [data-description] {
   color: inherit;
   font-size: 13px;

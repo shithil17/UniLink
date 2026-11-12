@@ -1,4 +1,5 @@
 import { auditActionLabel, auditActions } from "../../shared/auditActions";
+import { removedName } from "../../shared/removedNames";
 import { DEPARTMENTS } from "../../shared/departments";
 import type { Role } from "../../shared/modPolicy";
 import { notificationCopy } from "../../shared/notificationCopy";
@@ -169,8 +170,18 @@ export function releaseKeyConfirm(holder: UserTarget, reason: string): ConfirmCo
 
 // ---- Reports and held posts -------------------------------------------------------------------
 
+const MISSING_TARGET: Record<ModReport["targetType"], string> = {
+  user: "Removed account",
+  resource_request: "A removed request",
+  resource_submission: "A removed link",
+};
+
+/** What a report row calls its target when the label is gone, by what kind of target it was. */
+export const missingTargetLabel = (targetType: ModReport["targetType"]): string =>
+  MISSING_TARGET[targetType];
+
 export function resolveReportConfirm(
-  report: Pick<ModReport, "targetLabel" | "reporter" | "reason">,
+  report: Pick<ModReport, "targetType" | "targetLabel" | "reporter" | "reason">,
   outcome: "resolved" | "dismissed",
 ): ConfirmContent {
   const handled = outcome === "resolved";
@@ -181,12 +192,39 @@ export function resolveReportConfirm(
       ? "This report will be marked as handled."
       : "This report will be dismissed without action.",
     facts: [
-      { label: "Reported", value: report.targetLabel ?? "Removed account" },
+      { label: "Reported", value: report.targetLabel ?? missingTargetLabel(report.targetType) },
       { label: "Reported by", value: report.reporter ?? "A removed account" },
       { label: "Their reason", value: excerpt(report.reason) },
     ],
     effects: [
       `It moves to ${handled ? "Handled" : "Dismissed"}. Nothing happens to the reported account or post.`,
+    ],
+  };
+}
+
+/** "request" or "link" for a report target a mod can remove, or null when Remove isn't offered. */
+export function removableName(targetType: ModReport["targetType"]): "request" | "link" | null {
+  return removedName(targetType);
+}
+
+export function removeReportedConfirm(
+  report: Pick<ModReport, "targetType" | "targetLabel" | "reporter">,
+  reason: string,
+): ConfirmContent {
+  const name = removableName(report.targetType) ?? "post";
+  return {
+    title: `Remove ${name}`,
+    confirmLabel: `Remove ${name}`,
+    destructive: true,
+    lead: `This ${name} will be removed for everyone.`,
+    facts: [
+      { label: "Removing", value: report.targetLabel ?? `A removed ${name}` },
+      { label: "Reported by", value: report.reporter ?? "A removed account" },
+      reasonFact(reason),
+    ],
+    effects: [
+      "Every open report on it closes as handled.",
+      "Your reason stays in the audit log. An admin can reverse the removal from there.",
     ],
   };
 }
@@ -198,14 +236,17 @@ const postFacts = (post: ModQueuePost): Fact[] => [
 ];
 
 export function approvePostConfirm(post: ModQueuePost): ConfirmContent {
+  const { detail } = notificationCopy("post_approved", { targetType: post.targetType });
   return {
     title: "Approve post",
     confirmLabel: "Approve post",
     lead: "This held post will go live.",
     facts: postFacts(post),
     effects: [
-      "Other students can see it now.",
-      `The author gets an inbox message: "${notificationCopy("post_approved").detail}"`,
+      removedName(post.targetType) === "link"
+        ? "The student who asked can see it now."
+        : "Other students can see it now.",
+      `The author gets an inbox message: "${detail}"`,
     ],
   };
 }
@@ -240,7 +281,6 @@ const REVERSAL_EFFECT: Record<string, string> = {
   [auditActions.roleChange]: "Their role goes back to what it was.",
   [auditActions.releaseKey]:
     "The ID goes back to this account and the ban is put back as it was. It's refused if someone has taken the ID since.",
-  [auditActions.softDelete]: "The post is live again.",
   [auditActions.clearProbingFlag]:
     "The flag and the posting pause come back. The count of rejected posts doesn't.",
   [auditActions.facultyEdit]:
@@ -253,24 +293,32 @@ const REVERSAL_EFFECT: Record<string, string> = {
   [auditActions.courseUnhide]: "The course is hidden again.",
 };
 
+/**
+ * What putting an action back does. A restored removal only clears the removal: a request that was
+ * still held when it was removed stays held, so this never says it is live.
+ */
+export function reversalEffect(action: string, targetType: string): string {
+  if (action === auditActions.softDelete) {
+    return `The ${removedName(targetType) ?? "post"} is restored to how it was before it was removed.`;
+  }
+  return REVERSAL_EFFECT[action] ?? "It puts back what the action changed.";
+}
+
 export function reverseConfirm(entry: AuditEntry, reason: string): ConfirmContent {
   const what = entry.targetLabel ?? `${entry.targetType} ${entry.targetId}`;
   return {
     title: "Reverse action",
     confirmLabel: "Reverse action",
     destructive: true,
-    lead: `"${auditActionLabel(entry.action)}" on ${what} will be put back.`,
+    lead: `"${auditActionLabel(entry.action, entry.targetType)}" on ${what} will be put back.`,
     facts: [
-      { label: "Action", value: auditActionLabel(entry.action) },
+      { label: "Action", value: auditActionLabel(entry.action, entry.targetType) },
       { label: "Target", value: what },
       { label: "Done by", value: entry.actor },
       { label: "Entry", value: String(entry.id) },
       { label: "Your reason", value: reason },
     ],
-    effects: [
-      REVERSAL_EFFECT[entry.action] ?? "It puts back what the action changed.",
-      "The reversal is logged too.",
-    ],
+    effects: [reversalEffect(entry.action, entry.targetType), "The reversal is logged too."],
   };
 }
 

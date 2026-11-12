@@ -3,9 +3,10 @@ import { badContactKinds, type ContactKind } from "../../shared/contact.ts";
 import type { reasonCategory } from "../../shared/schemas/common.ts";
 import type { ruleName } from "../../shared/schemas/moderation.ts";
 import { NSU_PROGRAM_CODES, STUDENT_ID_PATTERN } from "../../shared/studentId.ts";
+import { resourceUrlProblem } from "../../shared/resourceUrl.ts";
 import { parseWebp } from "../../shared/webp.ts";
 import { limits } from "../limits";
-import { BANNED_WORDS, LINK_TLDS, URL_ALLOWLIST } from "./data";
+import { BANNED_WORDS, LINK_TLDS } from "./data";
 
 export type ReasonCategory = z.infer<typeof reasonCategory>;
 export type RuleName = z.infer<typeof ruleName>;
@@ -198,29 +199,23 @@ function bareDomains(): RegExp {
   );
 }
 
-function hostOf(raw: string): string | null {
+/**
+ * The link as `resourceUrlProblem` expects it: trailing punctuation off, and `https://` put in front
+ * of a bare domain or a `www.` link. An `http://` link keeps its scheme, so it is refused.
+ */
+function asLink(raw: string): string {
   const cleaned = raw.replace(TRAILING_PUNCTUATION, "");
-  try {
-    return new URL(
-      /^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`,
-    ).hostname.toLowerCase();
-  } catch {
-    return null;
-  }
+  return /^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`;
 }
 
-/** A host is allowed if it is, or is a subdomain of, an allowlisted host. `a.com.evil.io` is not. */
-export function isAllowedHost(host: string): boolean {
-  return URL_ALLOWLIST.some((allowed) => host === allowed || host.endsWith(`.${allowed}`));
-}
-
+/**
+ * Post text follows the same link rule as the resource link field: a public https site is fine, while
+ * `http`, a link shortener, an IP address, a private name, a login or port in the address, and a link
+ * that does not parse are all held back.
+ */
 function hasDisallowedUrl(text: string): boolean {
   const found = [...text.matchAll(SCHEME_URL), ...text.matchAll(bareDomains())];
-  return found.some((m) => {
-    const host = hostOf(m[0]);
-    // An unparseable link is held back too: it is not one we can vouch for.
-    return host === null || !isAllowedHost(host);
-  });
+  return found.some((m) => resourceUrlProblem(asLink(m[0])) !== null);
 }
 
 // ---- Banned words --------------------------------------------------------------------------

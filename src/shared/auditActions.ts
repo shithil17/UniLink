@@ -1,3 +1,5 @@
+import { removedName } from "./removedNames";
+
 // The audit actions the moderation tools write, shared so the server and the audit screen agree.
 // Other phases write their own action strings; the screen prints those as is.
 
@@ -25,6 +27,7 @@ export const auditActions = {
   automodApprove: "automod_approve",
   automodHold: "automod_hold",
   automodReject: "automod_reject",
+  cronPurge: "cron_purge",
 } as const;
 
 export type AuditAction = (typeof auditActions)[keyof typeof auditActions];
@@ -75,9 +78,16 @@ const LABELS: Record<AuditAction, string> = {
   automod_approve: "Published a post",
   automod_hold: "Held a post for review",
   automod_reject: "Rejected a post",
+  cron_purge: "Purged expired content",
 };
 
-/** Plain words for an audit action; an action from another phase falls back to its raw name. */
-export function auditActionLabel(action: string): string {
+/**
+ * Plain words for an audit action; an action from another phase falls back to its raw name. A
+ * removal names what was removed ("Removed a link") when `targetType` says, else "a post".
+ */
+export function auditActionLabel(action: string, targetType?: string): string {
+  if (action === auditActions.softDelete) {
+    return `Removed a ${(targetType && removedName(targetType)) || "post"}`;
+  }
   return (LABELS as Record<string, string | undefined>)[action] ?? action;
 }

@@ -3,41 +3,73 @@ import type { Me } from "../../shared/schemas/auth";
 type Role = Me["role"];
 
 export type MainTab = {
-  to: "/" | "/courses" | "/routine" | "/inbox" | "/mod" | "/settings";
+  to: "/" | "/courses" | "/resources" | "/routine" | "/inbox" | "/mod" | "/settings";
   label: string;
+  /** On the phone tab bar. The rest sit in the bar's More sheet; the desktop rail shows them all. */
+  inBar: boolean;
+  /** One plain line under the label in the More sheet. */
+  hint?: string;
 };
 
-const homeTab: MainTab = { to: "/", label: "Home" };
-const coursesTab: MainTab = { to: "/courses", label: "Courses" };
-const routineTab: MainTab = { to: "/routine", label: "Routine" };
-const inboxTab: MainTab = { to: "/inbox", label: "Inbox" };
-const modTab: MainTab = { to: "/mod", label: "Mod" };
-const settingsTab: MainTab = { to: "/settings", label: "Settings" };
+const homeTab: MainTab = { to: "/", label: "Home", inBar: true };
+const coursesTab: MainTab = { to: "/courses", label: "Courses", inBar: true };
+const materialsTab: MainTab = { to: "/resources", label: "Materials", inBar: true };
+const routineTab: MainTab = {
+  to: "/routine",
+  label: "Routine",
+  inBar: false,
+  hint: "Your classes for the week",
+};
+const inboxTab: MainTab = { to: "/inbox", label: "Inbox", inBar: true };
+const modTab: MainTab = {
+  to: "/mod",
+  label: "Mod",
+  inBar: false,
+  hint: "Held posts, users and curriculum",
+};
+const settingsTab: MainTab = {
+  to: "/settings",
+  label: "Settings",
+  inBar: false,
+  hint: "Theme, password and account",
+};
 
 /**
- * The top-level destinations, in bar order. Signed-out users and anyone forced to change their
+ * Every top-level destination, in rail order. Signed-out users and anyone forced to change their
  * password get none: every tab would just bounce them back, so the shell shows the wordmark only.
- * Students get the Routine tab; mods and admins get the Mod tab in its place, which keeps the bar
- * at five. Mods and admins still have their own routine, reached from Home ("Full routine").
+ *
+ * ceiling: the phone bar holds four tabs plus More, so a fifth daily destination has to replace one
+ * (Home already shows today's classes, which is why Routine moved to More). New destinations go
+ * into More. Revisit if More grows past about six rows or usage shows a More item opened daily.
  */
 export function mainTabs(
   user: { role: Role; mustChangePassword: boolean } | null | undefined,
 ): MainTab[] {
   if (!user || user.mustChangePassword) return [];
   return user.role === "student"
-    ? [homeTab, coursesTab, routineTab, inboxTab, settingsTab]
-    : [homeTab, coursesTab, inboxTab, modTab, settingsTab];
+    ? [homeTab, coursesTab, materialsTab, routineTab, inboxTab, settingsTab]
+    : [homeTab, coursesTab, materialsTab, routineTab, inboxTab, modTab, settingsTab];
+}
+
+function isInside(to: MainTab["to"], pathname: string) {
+  // Matches the router's own active test: Home only on "/", every other tab on its path and below.
+  return to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`);
+}
+
+/** The tab the pathname is inside, if any (a screen such as change password has none). */
+export function activeTab(tabs: readonly MainTab[], pathname: string): MainTab | undefined {
+  return tabs.find(({ to }) => isInside(to, pathname));
 }
 
 /**
- * The position of the tab the pathname is inside, or -1 when none is (a screen reached from
- * elsewhere, such as a mod's own routine). The tab bar's sliding pill sits at this index. Matches the
- * router's own active test: Home only on "/", every other tab on its path and anything below it.
+ * The slot the phone bar's sliding pill sits in: a bar tab's position, the More slot (after the bar
+ * tabs) for a tab that lives in the More sheet, or -1 when no tab is active.
  */
-export function activeTabIndex(tabs: readonly MainTab[], pathname: string): number {
-  return tabs.findIndex(({ to }) =>
-    to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(`${to}/`),
-  );
+export function barPillIndex(tabs: readonly MainTab[], pathname: string): number {
+  const bar = tabs.filter((t) => t.inBar);
+  const active = activeTab(tabs, pathname);
+  if (!active) return -1;
+  return active.inBar ? bar.indexOf(active) : bar.length;
 }
 
 export type ModSection = {

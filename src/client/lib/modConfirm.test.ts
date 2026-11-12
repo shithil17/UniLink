@@ -8,7 +8,10 @@ import {
   facultyChanges,
   facultyEditConfirm,
   facultyHiddenConfirm,
+  missingTargetLabel,
   rejectPostConfirm,
+  removableName,
+  removeReportedConfirm,
   releaseKeyConfirm,
   resolveReportConfirm,
   reverseConfirm,
@@ -84,15 +87,29 @@ describe("user action summaries", () => {
 describe("report and post summaries", () => {
   it("says a dismissed report leaves the reported account alone", () => {
     const dismiss = resolveReportConfirm(
-      { targetLabel: "sam_1", reporter: "rafi_2", reason: "rude" },
+      { targetType: "user", targetLabel: "sam_1", reporter: "rafi_2", reason: "rude" },
       "dismissed",
     );
     expect(dismiss.facts.map((f) => f.value)).toEqual(["sam_1", "rafi_2", "rude"]);
     expect(dismiss.effects[0]).toMatch(/Nothing happens/);
   });
 
+  it("names a missing target by what kind it was, not always as an account", () => {
+    expect(missingTargetLabel("user")).toBe("Removed account");
+    expect(missingTargetLabel("resource_request")).toBe("A removed request");
+    expect(missingTargetLabel("resource_submission")).toBe("A removed link");
+    const handled = resolveReportConfirm(
+      { targetType: "resource_submission", targetLabel: null, reporter: null, reason: "x" },
+      "resolved",
+    );
+    expect(handled.facts[0]).toEqual({ label: "Reported", value: "A removed link" });
+  });
+
   it("tells the author about an approval and shows the message a rejection sends", () => {
     expect(approvePostConfirm(post).effects.join(" ")).toMatch(/inbox message/);
+    const link = approvePostConfirm({ ...post, targetType: "resource_submission" });
+    expect(link.effects[0]).toBe("The student who asked can see it now.");
+    expect(link.effects[1]).toContain("student who asked can see");
     const reject = rejectPostConfirm(post, {
       category: "scam_or_spam",
       reason: "looks like a scam",
@@ -125,6 +142,32 @@ describe("reversal summary", () => {
     expect(reverse.lead).toContain("rafi_2");
     expect(reverse.facts).toContainEqual({ label: "Done by", value: "mod_1" });
     expect(reverse.effects[0]).toMatch(/unbanned/);
+  });
+});
+
+describe("reversing a removal", () => {
+  const removal: AuditEntry = {
+    id: 20,
+    actor: "mod_1",
+    action: "soft_delete",
+    targetType: "resource_submission",
+    targetId: "4",
+    targetLabel: null,
+    reason: "not course material",
+    createdAt: 1,
+    reverses: null,
+    reversedBy: null,
+    reversible: true,
+  };
+
+  it("names a link or a request and never claims it is live", () => {
+    const link = reverseConfirm(removal, "mistake");
+    expect(link.lead).toContain("Removed a link");
+    expect(link.effects[0]).toBe("The link is restored to how it was before it was removed.");
+    const request = reverseConfirm({ ...removal, targetType: "resource_request" }, "mistake");
+    expect(request.lead).toContain("Removed a request");
+    expect(request.effects[0]).toMatch(/^The request is restored/);
+    expect(request.effects[0]).not.toMatch(/live/);
   });
 });
 
@@ -176,5 +219,32 @@ describe("excerpt", () => {
     expect(excerpt("a\n  b")).toBe("a b");
     expect(excerpt("x".repeat(200), 20)).toHaveLength(20);
     expect(excerpt("x".repeat(200), 20).endsWith("…")).toBe(true);
+  });
+});
+
+describe("removeReportedConfirm", () => {
+  it("names what is removed, the reporter and the reason, and says it can be reversed", () => {
+    const c = removeReportedConfirm(
+      {
+        targetType: "resource_submission",
+        targetLabel: "https://example-site.com/x",
+        reporter: "sam_1",
+      },
+      "not course material",
+    );
+    expect(c.title).toBe("Remove link");
+    expect(c.destructive).toBe(true);
+    expect(c.facts).toEqual([
+      { label: "Removing", value: "https://example-site.com/x" },
+      { label: "Reported by", value: "sam_1" },
+      { label: "Reason", value: "not course material" },
+    ]);
+    expect(c.effects.join(" ")).toMatch(/reverse/);
+  });
+
+  it("is offered for requests and links, not users", () => {
+    expect(removableName("resource_request")).toBe("request");
+    expect(removableName("resource_submission")).toBe("link");
+    expect(removableName("user")).toBeNull();
   });
 });

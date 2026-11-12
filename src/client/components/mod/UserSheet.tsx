@@ -144,6 +144,11 @@ function UserActions({
                 id={`reason-${user.id}`}
                 register={form.register("reason")}
                 error={form.formState.errors.reason}
+                hint={
+                  user.bannedAt === null
+                    ? "It goes in the audit log. If you ban this user, they also see it when they try to log in, so keep it civil."
+                    : undefined
+                }
               />
               <div className="grid gap-2 sm:grid-cols-2">
                 {user.bannedAt === null ? (

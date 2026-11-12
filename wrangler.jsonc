@@ -20,7 +20,12 @@
     },
   ],
   "ai": { "binding": "AI" },
-  "triggers": { "crons": [] },
+  // Where a banned user is told to reach the admins (shown at login). Empty means no address is shown.
+  // Set the real address per environment in this file (a deploy overwrites dashboard-set vars, and the
+  // address is public, so it is not a secret). Vars are not inherited by envs, so each repeats it.
+  "vars": { "ADMIN_CONTACT_EMAIL": "" },
+  // Daily at 21:00 UTC (03:00 Asia/Dhaka): cleanup jobs in src/server/cron.ts. Triggers are not inherited by envs.
+  "triggers": { "crons": ["0 21 * * *"] },
   "env": {
     "staging": {
       "d1_databases": [
@@ -32,7 +37,8 @@
         },
       ],
       "ai": { "binding": "AI" },
-      "triggers": { "crons": [] },
+      "vars": { "ADMIN_CONTACT_EMAIL": "" },
+      "triggers": { "crons": ["0 21 * * *"] },
     },
     "production": {
       "d1_databases": [
@@ -44,7 +50,8 @@
         },
       ],
       "ai": { "binding": "AI" },
-      "triggers": { "crons": [] },
+      "vars": { "ADMIN_CONTACT_EMAIL": "" },
+      "triggers": { "crons": ["0 21 * * *"] },
     },
   },
 }

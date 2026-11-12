@@ -1,13 +1,20 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { timeAgo } from "@/lib/inbox";
 import { confidenceLabel, categoryLabel, postTypeLabel, ruleLabel } from "@/lib/modQueue";
 import { useDecidePost, useResolveReport } from "@/lib/mod";
-import { approvePostConfirm, resolveReportConfirm } from "@/lib/modConfirm";
+import {
+  approvePostConfirm,
+  missingTargetLabel,
+  removableName,
+  resolveReportConfirm,
+} from "@/lib/modConfirm";
 import { toast } from "@/lib/toast";
 import { useConfirm } from "@/lib/useConfirm";
 import { modRowMin } from "./modStyles";
+import { RemoveReportedSheet } from "./RemoveReportedSheet";
 import type { ModQueuePost, ModReport } from "../../../shared/schemas/moderation";
 
 /** A held post: what was written, who wrote it, what the screen made of it, and approve or reject. */
@@ -89,6 +96,9 @@ export function PostRow({
 export function ReportRow({ report, now }: { report: ModReport; now: number }) {
   const resolve = useResolveReport();
   const confirm = useConfirm();
+  const [removing, setRemoving] = useState(false);
+  // With no label the target is gone, so there is nothing left to remove.
+  const removable = report.targetLabel === null ? null : removableName(report.targetType);
   const act = (outcome: "resolved" | "dismissed", done: string) =>
     confirm.ask({
       ...resolveReportConfirm(report, outcome),
@@ -102,7 +112,7 @@ export function ReportRow({ report, now }: { report: ModReport; now: number }) {
     <div className={`space-y-3 px-4 py-3.5 ${modRowMin}`}>
       <div className="flex items-baseline justify-between gap-3">
         <p className="min-w-0 truncate text-[15px] font-semibold text-ink">
-          {report.targetLabel ?? "Removed account"}
+          {report.targetLabel ?? missingTargetLabel(report.targetType)}
         </p>
         <time
           dateTime={new Date(report.createdAt).toISOString()}
@@ -118,14 +128,19 @@ export function ReportRow({ report, now }: { report: ModReport; now: number }) {
       ) : null}
       {report.status === "open" ? (
         <div className="flex flex-wrap gap-2">
-          {report.targetLabel ? (
+          {report.targetAuthor ? (
             <Link
               to="/mod/users"
-              search={{ q: report.targetLabel }}
+              search={{ q: report.targetAuthor }}
               className={buttonVariants({ variant: "outline", size: "sm" })}
             >
               Review user
             </Link>
+          ) : null}
+          {removable ? (
+            <Button variant="outline" size="sm" onClick={() => setRemoving(true)}>
+              Remove
+            </Button>
           ) : null}
           <Button variant="outline" size="sm" onClick={() => act("dismissed", "Report dismissed")}>
             Dismiss
@@ -134,6 +149,9 @@ export function ReportRow({ report, now }: { report: ModReport; now: number }) {
             Mark handled
           </Button>
         </div>
+      ) : null}
+      {removable && report.status === "open" ? (
+        <RemoveReportedSheet report={report} open={removing} onClose={() => setRemoving(false)} />
       ) : null}
       {confirm.element}
     </div>

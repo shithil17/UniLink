@@ -6,25 +6,6 @@ type Category = z.infer<typeof reasonCategory>;
 // Starting values for the deterministic rules. Mods and the calibration set will grow both lists;
 // a change here is a data change, not a logic change.
 
-/**
- * Hosts a post may link to. A host matches itself and any subdomain of it. Everything else is held back
- * as a possible scam or tracking link. The resource-sharing allowlist (Drive and similar) is separate.
- */
-export const URL_ALLOWLIST: readonly string[] = [
-  "northsouth.edu",
-  "nsu.edu",
-  "google.com",
-  "forms.gle",
-  "youtube.com",
-  "youtu.be",
-  "github.com",
-  "wikipedia.org",
-  "facebook.com",
-  "fb.com",
-  "m.me",
-  "wa.me",
-];
-
 /** Top-level domains that make a bare "example.xyz" count as a link when the text has no scheme. */
 export const LINK_TLDS: readonly string[] = [
   "com",

@@ -80,5 +80,6 @@ export async function decidePost(
       : { targetType: target.type, targetId: target.id, category: decision.category },
     { now, push: opts.push },
   );
+  if (approve) await type.afterApprove?.(db, target.id, { now, push: opts.push });
   return { ok: true };
 }

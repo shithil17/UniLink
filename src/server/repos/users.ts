@@ -28,7 +28,7 @@ export type IdHolderRow = ModUserRow & Pick<UserRow, "studentKey" | "studentSuff
 /** The columns a moderation action changes on a user, and so the shape of a reversal snapshot. */
 export type UserState = Pick<
   UserRow,
-  "role" | "bannedAt" | "studentKey" | "probingFlaggedAt" | "postingBlockedUntil"
+  "role" | "bannedAt" | "banReason" | "studentKey" | "probingFlaggedAt" | "postingBlockedUntil"
 >;
 
 /** A released student ID key is replaced by this prefix plus the user id, which no real 7-digit key can equal. */
@@ -163,6 +163,7 @@ export function usersRepo(db: Db) {
           .select({
             role: users.role,
             bannedAt: users.bannedAt,
+            banReason: users.banReason,
             studentKey: users.studentKey,
             probingFlaggedAt: users.probingFlaggedAt,
             postingBlockedUntil: users.postingBlockedUntil,
@@ -202,20 +203,23 @@ export function usersRepo(db: Db) {
       }
       return found;
     },
-    /** Bans a user who is not banned. False when they already are (or do not exist). */
-    async ban(id: number, now: number): Promise<boolean> {
+    /**
+     * Bans a user who is not banned and keeps the reason, which the user sees at login. False when
+     * they already are banned (or do not exist).
+     */
+    async ban(id: number, now: number, reason: string): Promise<boolean> {
       const rows = await db
         .update(users)
-        .set({ bannedAt: now })
+        .set({ bannedAt: now, banReason: reason })
         .where(and(eq(users.id, id), isNull(users.bannedAt)))
         .returning({ id: users.id });
       return rows.length > 0;
     },
-    /** Lifts a ban. False when the user is not banned (or does not exist). */
+    /** Lifts a ban and clears its reason. False when the user is not banned (or does not exist). */
     async unban(id: number): Promise<boolean> {
       const rows = await db
         .update(users)
-        .set({ bannedAt: null })
+        .set({ bannedAt: null, banReason: null })
         .where(and(eq(users.id, id), isNotNull(users.bannedAt)))
         .returning({ id: users.id });
       return rows.length > 0;

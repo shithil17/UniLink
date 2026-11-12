@@ -34,11 +34,14 @@ export function FacultyPicker({
   value,
   onChange,
   current,
+  title = "Who taught it?",
 }: {
   id: string;
   value: number | null;
   onChange: (value: number | null) => void;
   current?: { name: string; initials: string | null } | null;
+  /** The sheet's heading. */
+  title?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState<FacultyOption | null>(null);
@@ -69,7 +72,7 @@ export function FacultyPicker({
           className="data-[side=bottom]:h-[85dvh] data-[side=bottom]:gap-3 data-[side=bottom]:overflow-hidden data-[side=bottom]:pb-0"
         >
           <SheetHeader className="pb-0">
-            <SheetTitle>Who taught it?</SheetTitle>
+            <SheetTitle>{title}</SheetTitle>
             <SheetDescription className="sr-only">
               Search the faculty list, then pick one, or choose no faculty.
             </SheetDescription>

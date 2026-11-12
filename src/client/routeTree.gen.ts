@@ -26,6 +26,9 @@ import { Route as ModIdConflictRouteImport } from './routes/mod.id-conflict'
 import { Route as ModImportRouteImport } from './routes/mod.import'
 import { Route as ModQueueRouteImport } from './routes/mod.queue'
 import { Route as ModUsersRouteImport } from './routes/mod.users'
+import { Route as ResourcesIndexRouteImport } from './routes/resources.index'
+import { Route as ResourcesRequestIdRouteImport } from './routes/resources.$requestId'
+import { Route as ResourcesNewRouteImport } from './routes/resources.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -112,6 +115,21 @@ const ModUsersRoute = ModUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => ModRoute,
 } as any)
+const ResourcesIndexRoute = ResourcesIndexRouteImport.update({
+  id: '/resources/',
+  path: '/resources/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesRequestIdRoute = ResourcesRequestIdRouteImport.update({
+  id: '/resources/$requestId',
+  path: '/resources/$requestId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesNewRoute = ResourcesNewRouteImport.update({
+  id: '/resources/new',
+  path: '/resources/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -130,7 +148,10 @@ export interface FileRoutesByFullPath {
   '/mod/import': typeof ModImportRoute
   '/mod/queue': typeof ModQueueRoute
   '/mod/users': typeof ModUsersRoute
+  '/resources/$requestId': typeof ResourcesRequestIdRoute
+  '/resources/new': typeof ResourcesNewRoute
   '/mod/': typeof ModIndexRoute
+  '/resources/': typeof ResourcesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -148,7 +169,10 @@ export interface FileRoutesByTo {
   '/mod/import': typeof ModImportRoute
   '/mod/queue': typeof ModQueueRoute
   '/mod/users': typeof ModUsersRoute
+  '/resources/$requestId': typeof ResourcesRequestIdRoute
+  '/resources/new': typeof ResourcesNewRoute
   '/mod': typeof ModIndexRoute
+  '/resources': typeof ResourcesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -168,7 +192,10 @@ export interface FileRoutesById {
   '/mod/import': typeof ModImportRoute
   '/mod/queue': typeof ModQueueRoute
   '/mod/users': typeof ModUsersRoute
+  '/resources/$requestId': typeof ResourcesRequestIdRoute
+  '/resources/new': typeof ResourcesNewRoute
   '/mod/': typeof ModIndexRoute
+  '/resources/': typeof ResourcesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -189,7 +216,10 @@ export interface FileRouteTypes {
     | '/mod/import'
     | '/mod/queue'
     | '/mod/users'
+    | '/resources/$requestId'
+    | '/resources/new'
     | '/mod/'
+    | '/resources/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -207,7 +237,10 @@ export interface FileRouteTypes {
     | '/mod/import'
     | '/mod/queue'
     | '/mod/users'
+    | '/resources/$requestId'
+    | '/resources/new'
     | '/mod'
+    | '/resources'
   id:
     | '__root__'
     | '/'
@@ -226,7 +259,10 @@ export interface FileRouteTypes {
     | '/mod/import'
     | '/mod/queue'
     | '/mod/users'
+    | '/resources/$requestId'
+    | '/resources/new'
     | '/mod/'
+    | '/resources/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -239,6 +275,9 @@ export interface RootRouteChildren {
   RoutineRoute: typeof RoutineRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
+  ResourcesRequestIdRoute: typeof ResourcesRequestIdRoute
+  ResourcesNewRoute: typeof ResourcesNewRoute
+  ResourcesIndexRoute: typeof ResourcesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -362,6 +401,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModUsersRouteImport
       parentRoute: typeof ModRoute
     }
+    '/resources/': {
+      id: '/resources/'
+      path: '/resources'
+      fullPath: '/resources/'
+      preLoaderRoute: typeof ResourcesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources/$requestId': {
+      id: '/resources/$requestId'
+      path: '/resources/$requestId'
+      fullPath: '/resources/$requestId'
+      preLoaderRoute: typeof ResourcesRequestIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources/new': {
+      id: '/resources/new'
+      path: '/resources/new'
+      fullPath: '/resources/new'
+      preLoaderRoute: typeof ResourcesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -399,6 +459,9 @@ const rootRouteChildren: RootRouteChildren = {
   RoutineRoute: RoutineRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
+  ResourcesRequestIdRoute: ResourcesRequestIdRoute,
+  ResourcesNewRoute: ResourcesNewRoute,
+  ResourcesIndexRoute: ResourcesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
