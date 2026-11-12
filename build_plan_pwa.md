@@ -31,6 +31,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - (2026-11-12) A report on a request or link in the review queue has a Remove action: a reason, a confirmation, then `softDelete()` through `POST /api/mod/reports/:id/remove`, which also closes the open reports on it (Phases 7 and 10). An admin can reverse the removal from the audit log.
 - (2026-11-12) When a mod removes content, `softDelete()` tells its author through `notify()` (type `content_removed`, payload `{ kind, reason }`; inbox plus web push, the push generic). The inbox row names the kind and shows the mod's reason, and opens Materials. No notice when the author removed it themself, on a reversal or for the cron purges (Phases 5, 7 and 10).
 - (2026-11-12) A banned user who logs in with the right password is told why. `users` gets a nullable `ban_reason` (migration `0018_ban_reason`), set by `banUser()` from the mod's reason, cleared by `unbanUser()` and by an admin reversing a ban, and put back when an admin reverses an unban. The 403 `account_banned` body becomes `{ error, message, reason, contact }` (shared `accountBannedResponse`), still sent only after the password check. `contact` is the new Worker var `ADMIN_CONTACT_EMAIL` (empty in `wrangler.jsonc`, set per environment). The login screen shows a toast that stays until dismissed, with the reason and a mailto link, and the same text inline. The migration must be applied on staging and production (`vp run db:migrate:staging`, `vp run db:migrate:prod`) and `ADMIN_CONTACT_EMAIL` set in each env's `vars` before deploy (Phases 2 and 7).
+- (2026-11-12) New Phase 13b: a Help screen and a Contact admins flow. Signed-in students leave their own email and an issue, every admin gets it in the inbox, and admins reply in an in-app thread, optionally with their own email. No outbound email, and no public form (logged-out and banned users keep the `ADMIN_CONTACT_EMAIL` mailto). It runs after Phase 12 on Dev A's track.
 - (2026-11-12) Resource requests also reach students who did not get the publish-time notification. The Materials screen has a Help others tab listing open requests for any course the student has recorded (any faculty) and faculty-only requests for a faculty member they had, with same-faculty ones first and tagged. The requester sees whether each link's sender took the same faculty. Notifications and the purge rules are unchanged.
 
 ---
@@ -202,7 +203,7 @@ Tests sit next to the code: `*.test.ts` for unit tests and `*.api.test.ts` for A
 
 ## Phase numbering
 
-Phases are numbered 0 to 15 in **build order, not strict sequence**. Two developer tracks run in parallel (see Suggested Build Order). Within a track, do one phase at a time and pass its gate before moving on. A phase may start once its **Depends on** phases have passed their gates. Stretch work uses the `S` prefix (S1 to S3) and stays parked until the go/no-go at the start of Sprint 4. Phase 4b (design language) was inserted on 2026-10-20 and keeps the letter so later numbers stay stable. Phase 9b (grade planner) was inserted the same way on 2026-11-02. On 2026-11-12 the phases after 10 were renumbered so rides, lost and found and marketplace come first (old 12, 15, 16 are now 11, 12, 13; Clef stays 14; hardening and delivery are 15 and 16), and faculty profiles and the finder (old 11 and 13) became optional phases O1 and O2 at the bottom. Later the same day Clef auto-moderation (14) became optional phase O3, and hardening and delivery became 14 and 15.
+Phases are numbered 0 to 15 in **build order, not strict sequence**. Two developer tracks run in parallel (see Suggested Build Order). Within a track, do one phase at a time and pass its gate before moving on. A phase may start once its **Depends on** phases have passed their gates. Stretch work uses the `S` prefix (S1 to S3) and stays parked until the go/no-go at the start of Sprint 4. Phase 4b (design language) was inserted on 2026-10-20 and keeps the letter so later numbers stay stable. Phase 9b (grade planner) was inserted the same way on 2026-11-02. On 2026-11-12 the phases after 10 were renumbered so rides, lost and found and marketplace come first (old 12, 15, 16 are now 11, 12, 13; Clef stays 14; hardening and delivery are 15 and 16), and faculty profiles and the finder (old 11 and 13) became optional phases O1 and O2 at the bottom. Later the same day Clef auto-moderation (14) became optional phase O3, and hardening and delivery became 14 and 15. Phase 13b (help and contact admins) was inserted the same day, after marketplace.
 
 Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" checklists inside a phase are the non-developer work tied to that feature. They do not block the dev's gate unless the gate says so.
 
@@ -937,7 +938,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Test Gate 10
 
 - [x] **Resource tests pass.**
-- [ ] **On staging, request → notification → submit → accept works between two seeded students, and the link is hidden from the second one's view of other requests.**
+- [x] **On staging, request → notification → submit → accept works between two seeded students, and the link is hidden from the second one's view of other requests.**
 
 ---
 
@@ -1107,6 +1108,50 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ---
 
+## Phase 13b — Help & contact admins
+
+**Owner:** Dev A (Dev B reviews) · **When:** Week 7, after Phase 12 · **Depends on:** Phase 2, Phase 5, Phase 7
+
+**Goal:** Students get a proper Help screen that answers the common questions, and a Contact admins flow where they leave their own email and describe an issue. The issue reaches every admin's inbox, and an admin can reply (sharing their own email if they choose) and continue the conversation with the student inside the app.
+
+> **Design decisions (locked in):**
+>
+> - **Help screen** (`/help`, reached from Settings and the rail or tab-bar overflow): short, static sections on the course map and attempts, CGPA and the planner, the routine, Materials (requests, Help others, links), reports and moderation, bans and appeals, privacy, and installing the app. Content lives in one typed file in `src/client/`, not the database. Ends with a Contact admins entry.
+> - **Contact admins** is for signed-in users only. Logged-out and banned users keep the `ADMIN_CONTACT_EMAIL` mailto shown at login. `ceiling:` no public form, because without email verification it would be an open spam channel. Revisit if email verification ships.
+> - **Ticket form** (shadcn form + RHF + a shared Zod schema in `src/shared/schemas/support.ts`): the student's own contact email (required, validated, max length in `limits.ts`), a category (account or login, ban or removed content, wrong course or curriculum data, bug, other), a subject and a message. The email is what the student typed. It is not taken from the account or checked by sending mail.
+> - **Delivery:** creating a ticket calls `notify()` for every admin (type `support_ticket`). As with every notification, the payload holds only the ticket id: no email, no message text, no username. Admins open the ticket from the inbox or from a Support tab in the mod panel (`/mod/support`, admin only, not mods).
+> - **Thread:** a ticket is a conversation of messages between the student and admins, shown in the app on both sides (the student under Help → My tickets). An admin reply may include the admin's own contact email, entered per reply (an opt-in field, never pre-filled from the account), so the conversation can move to email if needed. Each new message notifies the other side through `notify()` (`support_reply` to the student, `support_ticket` to all admins for a student follow-up). The student sees "UniLink admin", not the admin's username, unless the admin added an email.
+> - **Status:** `open | answered | closed`. An admin reply sets `answered`, a student follow-up sets `open`, and an admin or the student can close it. A closed ticket is read-only, and the student opens a new one instead. Closing by an admin writes an audit row.
+> - **Privacy:** the student's email and messages are visible only to that student and to admins. The admin's email is visible only to that ticket's student. No contact detail ever appears in a notification payload, push text, feed, or audit snapshot (the snapshot keeps ids and status only). Ticket text is never sent to an AI service.
+> - **Abuse limits** (all in `limits.ts`, checked server-side through `rateLimit()`): at most N open tickets per student, a per-hour message cap per student, and maximum lengths for the subject and message. Messages go through the `screen()` rules step (links, spam), so a rule hit is refused with the usual reason and is not held for a mod.
+> - **Retention:** cron hard-deletes closed tickets and their messages a fixed number of days after closing (`supportClosedPurgeDays` in `limits.ts`). Open tickets are never purged. The Help screen says this.
+> - `ceiling:` no outbound email. The app never sends mail, and email addresses are shown in the thread for people to use by hand. Revisit if an email provider is added for verification.
+
+### Checklist — Build order
+
+- [ ] **Step 1:** `support_tickets` (author, contact email, category, subject, status, `created_at`, `updated_at`, `closed_at`) and `support_messages` (ticket, sender role student/admin, sender id, body, optional admin contact email, `created_at`), with indexes on (author, status), (status, `updated_at`) and (ticket, `created_at`). Repos in `src/server/repos/support.ts`.
+- [ ] **Step 2:** shared schemas and limits. Notification types `support_ticket` and `support_reply` with shared copy and inbox deep links (student → the ticket under Help, admin → `/mod/support/$id`).
+- [ ] **Step 3:** student API: create ticket, list my tickets, read one, follow up, close. Admin API: list by status (paginated), read, reply (with optional email), close (audited).
+- [ ] **Step 4:** cron job to purge closed tickets after `supportClosedPurgeDays`.
+- [ ] **Step 5:** screens: Help (sections plus Contact admins entry), contact form, My tickets list and thread, and the admin Support tab with list, thread and reply form. Mobile-first, Pocket Planner.
+
+### Checklist — Docs & QA (C, D)
+
+- [ ] C: SRS requirements and a sequence diagram for the contact flow.
+- [ ] D: Help copy, screens, test cases, and a privacy note line on where support emails are visible.
+
+### Checklist — Test Scripts & Smoke Tests
+
+- [ ] `src/server/features/support/support.api.test.ts`: a ticket notifies every admin and no mod, the notification payload has no email or text, a mod and another student cannot read the ticket, an admin reply notifies the student and shows the admin email only when given, a follow-up reopens the ticket, closed tickets refuse messages, the open-ticket and message caps, the purge timing.
+- [ ] Run: `vp test support`
+
+### Test Gate 13b
+
+- [ ] **Support tests pass.**
+- [ ] **(Manual) On staging, a student files a ticket, an admin replies with their email, the student follows up, and the admin closes it, each step showing in the other side's inbox on a phone.**
+
+---
+
 ## Phase 14 — Hardening & release
 
 **Owner:** Dev B (lead), Dev A (bug fixes) · **When:** Week 8 · **Depends on:** Phases 1 to 13 (or their cut fallbacks). Not the optional phases.
@@ -1120,7 +1165,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist
 
-- [ ] Every write route has a `rateLimit()` (signup, login, every post create, reports, contact reveal). List them in `limits.ts` comments.
+- [ ] Every write route has a `rateLimit()` (signup, login, every post create, reports, contact reveal, support tickets and messages). List them in `limits.ts` comments.
 - [ ] Reports, mod removal and admin reversal confirmed for resource submissions, rides, lost and found, and marketplace listings.
 - [ ] Hard-coded color search is clean. D has checked the key screens (Home, course map, feeds, forms, mod panel) in every palette at phone width.
 - [ ] Re-check the R2 prices and the Workers and D1 limits. Set the production caps. Confirm the R2 billing notification is on.
@@ -1308,7 +1353,7 @@ Faculty research profiles and the AI supervisor finder were moved here on 2026-1
 ```
             Week 0      Weeks 1-2       Weeks 3-4             Weeks 5-6        Week 7             Week 8
 Both/B:   P0 + P1 ──→ P2 → P3 → P4b → P7 → P8 → P9 ───────→ P11 ─────────→ P13 ─────────────→ P14 ─┐
-Dev A:    P0 ───────→ P4 ──────────→ P5 → P6 → P9b ───────→ P10 → P12 ───────────────────────→ bugs ├→ P15
+Dev A:    P0 ───────→ P4 ──────────→ P5 → P6 → P9b ───────→ P10 → P12 ───────→ P13b ──────────→ bugs ├→ P15
 C / D:    Docs & QA subsections inside each phase ─────────────────────────────────────────────────┘
 Optional: O1 → O2 and O3, only after P14, if ever (see Optional phases)
 ```
@@ -1320,6 +1365,7 @@ Optional: O1 → O2 and O3, only after P14, if ever (see Optional phases)
 - P10 (resources) needs P7 (reports) and P8 (`screen()`). P11 (rides) needs the same.
 - P9b (grade planner) needs P6's `grading.ts` and attempts. It lands before P10 starts.
 - P12 and P13 need P11's shared post kit. P13 also needs P12's post photos kit.
+- P13b (help and contact) needs only P5's `notify()` and P7's admin role and audit, so it can move earlier if Dev A has room.
 
 **Parallelism:** the two dev tracks run in parallel throughout. `cron.ts`, `limits.ts` and `src/server/db/schema.ts` are shared files: add your own job, limit or table in its own block, and never edit another phase's block in the same pull request. Rebase often in Weeks 5 to 7.
 
@@ -1328,9 +1374,10 @@ Optional: O1 → O2 and O3, only after P14, if ever (see Optional phases)
 1. Stretch phases S1 to S3
 2. Lost-and-found possible-match notification (P12 step 8)
 3. Recurring-ride renewal (rides keep their default end date)
-4. Post photos (P12 photo setup and photos kit, P13 photos). Posts stay text-only.
-5. Marketplace (P13)
-6. Lost and found (P12)
+4. Contact admins thread (P13b steps 1 to 4). The Help screen stays and points to the `ADMIN_CONTACT_EMAIL` mailto.
+5. Post photos (P12 photo setup and photos kit, P13 photos). Posts stay text-only.
+6. Marketplace (P13)
+7. Lost and found (P12)
 
 The optional phases (O1 faculty profiles, O2 supervisor finder, O3 Clef auto-moderation) are not in the cut order: they are outside the release.
 
@@ -1376,6 +1423,7 @@ Each row names the phase that needs the answer. When it is settled, move it into
 | Campus lost-property office or security desk to link                                                             | P12               | D     |
 | Marketplace prohibited-items list and ToS wording                                                                | P13               | All   |
 | Post photo caps (bytes, max side, per-user and global daily uploads), cache lifetime, author-delete purge window | P11, P12          | Dev B |
+| Support limits: open tickets per student, messages per hour, closed-ticket purge window                          | P13b              | Dev A |
 | Stretch go/no-go                                                                                                 | Start of Sprint 4 | All   |
 | "Unofficial student-run app" wording; whether NSU name approval can wait until after the demo                    | P15               | All   |
 
