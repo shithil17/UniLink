@@ -20,6 +20,10 @@ export class Map {
   calls: { method: string; args: unknown[] }[] = [];
   private handlers = new globalThis.Map<string, Handler[]>();
   private canvas = document.createElement("canvas");
+  private center: { lng: number; lat: number };
+  /** Sources and layers added at runtime, by id; a restyle (`setStyle`) drops them like MapLibre does. */
+  sources = new globalThis.Map<string, unknown>();
+  layers = new globalThis.Map<string, unknown>();
   touchZoomRotate = { disableRotation: () => this.record("touchZoomRotate.disableRotation") };
   keyboard = { disableRotation: () => this.record("keyboard.disableRotation") };
 
@@ -29,6 +33,8 @@ export class Map {
       throw new Error("WebGL is not available");
     }
     this.options = options;
+    const [lng, lat] = (options.center as [number, number] | undefined) ?? centreOfBounds(options);
+    this.center = { lng, lat };
     (options.container as HTMLElement).appendChild(this.canvas);
     Map.instances.push(this);
     const finish = () => {
@@ -58,6 +64,14 @@ export class Map {
     return this;
   }
 
+  off(type: string, handler: Handler) {
+    this.handlers.set(
+      type,
+      (this.handlers.get(type) ?? []).filter((h) => h !== handler),
+    );
+    return this;
+  }
+
   once(type: string, handler: Handler) {
     const wrapper: Handler = (event) => {
       this.handlers.set(
@@ -76,21 +90,66 @@ export class Map {
   getCanvas() {
     return this.canvas;
   }
+  getCanvasContainer() {
+    return this.options.container as HTMLElement;
+  }
   setStyle(style: unknown, options?: unknown) {
     this.record("setStyle", style, options);
+    this.sources.clear();
+    this.layers.clear();
     queueMicrotask(() => this.emit("style.load"));
+  }
+  addSource(id: string, source: unknown) {
+    this.sources.set(id, source);
+    return this;
+  }
+  getSource(id: string) {
+    return this.sources.get(id);
+  }
+  removeSource(id: string) {
+    this.sources.delete(id);
+    return this;
+  }
+  addLayer(layer: { id: string }) {
+    this.layers.set(layer.id, layer);
+    return this;
+  }
+  getLayer(id: string) {
+    return this.layers.get(id);
+  }
+  removeLayer(id: string) {
+    this.layers.delete(id);
+    return this;
+  }
+  /** The map's centre, which `jumpTo`, `easeTo`, `flyTo` and `moveTo` keep up to date. */
+  getCenter() {
+    return { ...this.center };
+  }
+  /** Plays a pan or a drag: moves the centre and emits the events a real move does. */
+  moveTo(point: { lat: number; lng: number }) {
+    this.emit("movestart");
+    this.center = { lng: point.lng, lat: point.lat };
+    this.emit("move");
+    this.emit("moveend");
+  }
+  private go(method: string, options: unknown) {
+    this.record(method, options);
+    const centre = (options as { center?: [number, number] }).center;
+    if (centre) this.moveTo({ lng: centre[0], lat: centre[1] });
   }
   fitBounds(bounds: unknown, options?: unknown) {
     this.record("fitBounds", bounds, options);
+    const [[west, south], [east, north]] = bounds as [[number, number], [number, number]];
+    this.moveTo({ lng: (west + east) / 2, lat: (south + north) / 2 });
   }
   easeTo(options: unknown) {
-    this.record("easeTo", options);
+    this.go("easeTo", options);
   }
   jumpTo(options: unknown) {
-    this.record("jumpTo", options);
+    this.go("jumpTo", options);
   }
   flyTo(options: unknown) {
-    this.record("flyTo", options);
+    this.go("flyTo", options);
   }
   zoomIn(options?: unknown) {
     this.record("zoomIn", options);
@@ -108,13 +167,49 @@ export class Map {
   }
 }
 
-export class Marker {}
+function centreOfBounds(options: Record<string, unknown>): [number, number] {
+  const bounds = options.bounds as [[number, number], [number, number]] | undefined;
+  if (!bounds) return [0, 0];
+  return [(bounds[0][0] + bounds[1][0]) / 2, (bounds[0][1] + bounds[1][1]) / 2];
+}
+
+/**
+ * A marker: its element goes into the map's container while it is on a map, so a test can find what
+ * a ride's pins say. `Marker.instances` lists every one made.
+ */
+export class Marker {
+  static instances: Marker[] = [];
+  element: HTMLElement;
+  options: Record<string, unknown>;
+  lngLat: [number, number] | undefined;
+  removed = false;
+
+  constructor(options: Record<string, unknown> = {}) {
+    this.options = options;
+    this.element = (options.element as HTMLElement | undefined) ?? document.createElement("div");
+    Marker.instances.push(this);
+  }
+  setLngLat(lngLat: [number, number]) {
+    this.lngLat = lngLat;
+    return this;
+  }
+  addTo(map: Map) {
+    map.getCanvasContainer().appendChild(this.element);
+    return this;
+  }
+  remove() {
+    this.removed = true;
+    this.element.remove();
+    return this;
+  }
+}
 
 /** The maps still alive, newest last. */
 export const liveMaps = () => Map.instances.filter((m) => !m.removed);
 
 export function resetFakeMaps() {
   Map.instances = [];
+  Marker.instances = [];
   Map.failNext = false;
   Map.sourceError = false;
   Map.hold = false;

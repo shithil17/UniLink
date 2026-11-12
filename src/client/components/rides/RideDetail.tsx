@@ -4,6 +4,7 @@ import { ReportButton } from "@/components/posts/ReportButton";
 import { StatusNote } from "@/components/posts/StatusNote";
 import { RideContact } from "@/components/rides/RideContact";
 import { RideDetailPanel } from "@/components/rides/RideDetailPanel";
+import { RideMap } from "@/components/rides/RideMap";
 import { RideOwnerActions } from "@/components/rides/RideOwnerActions";
 import { RideSafetyNotice } from "@/components/rides/RideSafetyNotice";
 import { Button } from "@/components/ui/button";
@@ -111,6 +112,7 @@ export function RideDetail({
               appeal={{ targetType: "ride", id: ride.id }}
             />
           ) : null}
+          <RideMap ride={ride} inSheet={inSheet} />
           <RideDetailPanel ride={ride} />
           {ride.mine ? (
             <RideOwnerActions ride={ride} onDeleted={onDeleted} />

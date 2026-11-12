@@ -1,18 +1,33 @@
 // @vitest-environment happy-dom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { toast } from "@/lib/toast";
+import { resetFakeMapParam } from "@/test/fakeMapParam";
+import { Map as FakeMap, liveMaps, resetFakeMaps } from "@/test/fakeMapLibre";
 import { CONTACT_REQUIRED_MESSAGE } from "../../../shared/contact";
 import { POST_RENEW_EXTEND_DAYS } from "../../../shared/posts";
-import type { RideSummary } from "../../../shared/schemas/rides";
+import type { AreaOption } from "../../../shared/schemas/areas";
+import type { RideDetail } from "../../../shared/schemas/rides";
 import { RideForm } from "./RideForm";
 
 vi.mock("@/lib/toast", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+vi.mock("@/lib/map/maplibre", () => import("@/test/fakeMapLibre"));
+// No router here: the open map lives in a variable instead of the URL.
+vi.mock("@/lib/map/useMapParam", () => import("@/test/fakeMapParam"));
 
 beforeEach(() => {
   vi.mocked(toast.error).mockClear();
   vi.mocked(toast.success).mockClear();
+  resetFakeMaps();
+  resetFakeMapParam();
+  // A phone: the trip map sits inside the form, under the destination.
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  })) as unknown as typeof window.matchMedia;
 });
 
 afterEach(() => {
@@ -20,7 +35,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const AREAS = [
+const AREAS: AreaOption[] = [
   { id: 1, slug: "bashundhara-r-a", name: "Bashundhara R/A", lat: null, lng: null, children: [] },
   {
     id: 2,
@@ -32,11 +47,17 @@ const AREAS = [
   },
 ];
 
+/** The same areas with points, for the tests where the map opens on an area or fills one in. */
+const POINTED_AREAS: AreaOption[] = [
+  { ...AREAS[0]!, lat: 23.8151, lng: 90.4253 },
+  { ...AREAS[1]!, lat: 23.8223, lng: 90.3654 },
+];
+
 // The list the server answers with; a test drops an area from it to play a hide that happened after the form loaded.
 let areaList = AREAS;
 
-function setup() {
-  areaList = AREAS;
+function setup({ areas = AREAS, ride }: { areas?: AreaOption[]; ride?: RideDetail } = {}) {
+  areaList = areas;
   // The area list answers for itself; `fetchMock` sees only the ride requests.
   const fetchMock = vi.fn();
   vi.stubGlobal("fetch", (path: string, init?: RequestInit) =>
@@ -47,7 +68,12 @@ function setup() {
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
     >
-      <RideForm onSaved={onSaved} onCancel={() => {}} />
+      <RideForm
+        ride={ride}
+        contacts={ride ? { phone: "+8801712345678" } : undefined}
+        onSaved={onSaved}
+        onCancel={() => {}}
+      />
     </QueryClientProvider>,
   );
   return { fetchMock, onSaved };
@@ -328,13 +354,15 @@ describe("RideForm", () => {
   });
 
   describe("editing a recurring ride", () => {
-    const recurring: RideSummary = {
+    const recurring: RideDetail = {
       id: 7,
       kind: "recurring",
       pickupArea: { id: 1, name: "Bashundhara R/A" },
       destinationArea: { id: 2, name: "Mirpur" },
       pickupLandmark: null,
       destinationLandmark: null,
+      pickupPoint: null,
+      destinationPoint: null,
       vehicle: "car",
       totalSeats: 4,
       seatsRemaining: 4,
@@ -387,5 +415,188 @@ describe("RideForm", () => {
       expect(screen.queryByText(/Runs until \(optional\)/)).toBeNull();
       expect(screen.queryByRole("button", { name: /^Runs until \(optional\), / })).toBeNull();
     });
+  });
+});
+
+describe("pins", () => {
+  /** The interactive map, once the full-screen picker has built it and its style is loaded. */
+  async function pickerMap() {
+    await waitFor(() => expect(liveMaps().some((m) => m.options.interactive === true)).toBe(true));
+    await waitFor(() => expect(screen.queryByText("Loading the map")).toBeNull());
+    return liveMaps().find((m) => m.options.interactive === true)!;
+  }
+  const openPicker = (end: "pickup" | "destination") =>
+    fireEvent.click(
+      screen.getByRole("button", { name: `Pin the exact spot (optional) for the ${end}` }),
+    );
+  /** Plays the student moving the map under the pin. */
+  const moveTo = (map: FakeMap, lat: number, lng: number) => act(() => map.moveTo({ lat, lng }));
+  const useThisSpot = () => fireEvent.click(screen.getByRole("button", { name: "Use this spot" }));
+  const sentBody = (call: unknown[] | undefined) =>
+    JSON.parse((call as [string, RequestInit])[1].body as string);
+
+  const recurring = (over: Partial<RideDetail> = {}): RideDetail => ({
+    id: 7,
+    kind: "recurring",
+    pickupArea: { id: 1, name: "Bashundhara R/A" },
+    destinationArea: { id: 2, name: "Mirpur" },
+    pickupLandmark: null,
+    destinationLandmark: null,
+    pickupPoint: { lat: 23.8151, lng: 90.4253 },
+    destinationPoint: { lat: 23.8223, lng: 90.3654 },
+    vehicle: "car",
+    totalSeats: 4,
+    seatsRemaining: 4,
+    pricePerSeatTaka: 100,
+    notes: null,
+    departsAt: null,
+    days: ["tue"],
+    departureTime: "07:30",
+    endsOn: "2026-12-15",
+    state: "open",
+    status: "published",
+    expiresAt: Date.UTC(2026, 11, 15),
+    createdAt: Date.UTC(2026, 10, 1),
+    mine: true,
+    ...over,
+  });
+
+  it("sends the spot the student placed, rounded, and no pin for the other end", async () => {
+    const { fetchMock } = setup();
+    fetchMock.mockResolvedValue(Response.json({ error: "x" }, { status: 500 }));
+    await fillCommon();
+    await pickDeparture();
+
+    openPicker("pickup");
+    expect(await screen.findByRole("dialog", { name: "Pin the pickup" })).toBeTruthy();
+    const map = await pickerMap();
+    moveTo(map, 23.8123456, 90.4012345);
+    useThisSpot();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getByText("Pinned")).toBeTruthy();
+
+    post();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    const body = sentBody(fetchMock.mock.calls[0]);
+    expect(body.pickupPoint).toEqual({ lat: 23.81235, lng: 90.40123 });
+    expect(body).not.toHaveProperty("destinationPoint");
+  });
+
+  it("does not save the area's centre when the map was never moved", async () => {
+    setup({ areas: POINTED_AREAS });
+    await pickArea("From", "Bashundhara R/A");
+    openPicker("pickup");
+    const map = await pickerMap();
+    // It opened on the area's point at street zoom, and the spot is not confirmable yet.
+    expect(map.options.bounds).toEqual([
+      [90.4253, 23.8151],
+      [90.4253, 23.8151],
+    ]);
+    expect(screen.getByRole("status", { name: "" }).textContent).toBe(
+      "Move the map to place the pin",
+    );
+    expect(
+      (screen.getByRole("button", { name: "Use this spot" }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(screen.queryByRole("button", { name: "Remove pin" })).toBeNull();
+
+    // Enter says why instead of storing the centre.
+    fireEvent.keyDown(document.body, { key: "Enter" });
+    expect(toast.error).toHaveBeenCalledWith("Move the map to place the pin first.");
+    expect(screen.getByRole("dialog", { name: "Pin the pickup" })).toBeTruthy();
+
+    // Moved: now it can be kept.
+    moveTo(map, 23.8165, 90.4262);
+    await waitFor(() =>
+      expect(
+        (screen.getByRole("button", { name: "Use this spot" }) as HTMLButtonElement).disabled,
+      ).toBe(false),
+    );
+  });
+
+  it("confirms with Enter", async () => {
+    const { fetchMock } = setup();
+    fetchMock.mockResolvedValue(Response.json({ error: "x" }, { status: 500 }));
+    await fillCommon();
+    await pickDeparture();
+    openPicker("destination");
+    const map = await pickerMap();
+    moveTo(map, 23.79, 90.41);
+    fireEvent.keyDown(document.body, { key: "Enter" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    post();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(sentBody(fetchMock.mock.calls[0]).destinationPoint).toEqual({ lat: 23.79, lng: 90.41 });
+  });
+
+  it("fills the nearest area into an empty area field, and never replaces a picked one", async () => {
+    setup({ areas: POINTED_AREAS });
+    // Both ends start empty: a pin near Mirpur names the pickup area.
+    openPicker("pickup");
+    moveTo(await pickerMap(), 23.8221, 90.366);
+    useThisSpot();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => expect(screen.getByLabelText("From").textContent).toBe("Mirpur"));
+
+    // The destination already has Bashundhara, so a pin next to Mirpur leaves it alone.
+    await pickArea("To", "Bashundhara R/A");
+    openPicker("destination");
+    moveTo(await pickerMap(), 23.8222, 90.3655);
+    useThisSpot();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getAllByText("Pinned")).toHaveLength(2);
+    expect(screen.getByLabelText("To").textContent).toBe("Bashundhara R/A");
+  });
+
+  it("removes a pin from the picker, and an edit sends null for it", async () => {
+    const { fetchMock } = setup({ areas: POINTED_AREAS, ride: recurring() });
+    fetchMock.mockResolvedValue(Response.json({ error: "x" }, { status: 500 }));
+    // Both ends are pinned: the rows say so and the picker opens on the pin with Remove.
+    expect(screen.getAllByText("Pinned")).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "Change the pickup pin" }));
+    await pickerMap();
+    fireEvent.click(screen.getByRole("button", { name: "Remove pin" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getAllByText("Pinned")).toHaveLength(1);
+    expect(
+      screen.getByRole("button", { name: "Pin the exact spot (optional) for the pickup" }),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(sentBody(fetchMock.mock.calls[0])).toEqual({ pickupPoint: null });
+  });
+
+  it("leaves pins out of an edit that did not touch them", async () => {
+    const { fetchMock } = setup({ areas: POINTED_AREAS, ride: recurring() });
+    fetchMock.mockResolvedValue(Response.json({ error: "x" }, { status: 500 }));
+    type("Taka per seat", "120");
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+    expect(sentBody(fetchMock.mock.calls[0])).toEqual({ pricePerSeatTaka: 120 });
+  });
+
+  it("keeps one trip preview, always rendered, and no second map while a picker is open", async () => {
+    setup();
+    // The city view before any area is picked.
+    expect(screen.getByRole("button", { name: "Open the map of your ride" })).toBeTruthy();
+    await waitFor(() => expect(liveMaps()).toHaveLength(1));
+    expect(liveMaps()[0]!.options.interactive).toBe(false);
+    openPicker("pickup");
+    await pickerMap();
+    expect(liveMaps()).toHaveLength(1);
+  });
+
+  it("opens the trip map from the preview with the two ends and no Open in Maps", async () => {
+    setup({ areas: POINTED_AREAS });
+    await pickArea("From", "Bashundhara R/A");
+    fireEvent.click(screen.getByRole("button", { name: "Open the map of your ride" }));
+    const dialog = await screen.findByRole("dialog", { name: "Map of your ride" });
+    expect(within(dialog).getByText("Bashundhara R/A")).toBeTruthy();
+    // The destination is not picked yet, and the card says so without a gap.
+    expect(within(dialog).getByText("Not picked yet")).toBeTruthy();
+    expect(within(dialog).queryByRole("link", { name: /Open in Maps/ })).toBeNull();
+    await waitFor(() => expect(screen.queryByText("Loading the map")).toBeNull());
+    expect(screen.getByText("Around Bashundhara R/A")).toBeTruthy();
   });
 });

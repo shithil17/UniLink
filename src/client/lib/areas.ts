@@ -53,6 +53,33 @@ export function areaNameOf(options: readonly AreaOption[] | undefined, id: numbe
   return undefined;
 }
 
+type AreaWithPoint = { id: number; name: string; lat: number | null; lng: number | null };
+
+/** Every visible area, sub-areas included, that has a point of its own. */
+export function areasWithPoints(options: readonly AreaOption[] | undefined): AreaWithPoint[] {
+  return (options ?? [])
+    .flatMap((top) => [top, ...top.children])
+    .filter((area) => area.lat !== null && area.lng !== null);
+}
+
+/**
+ * Where an area is on the map. A sub-area with no point of its own stands where its parent does, so
+ * a ride filed under it still gets a place. Null when neither has one ("Outside Dhaka") or the list
+ * is not loaded.
+ */
+export function areaPointOf(
+  options: readonly AreaOption[] | undefined,
+  id: number,
+): { lat: number; lng: number } | null {
+  for (const top of options ?? []) {
+    const own = top.id === id ? top : top.children.find((c) => c.id === id);
+    if (!own) continue;
+    const at = own.lat !== null && own.lng !== null ? own : top;
+    return at.lat !== null && at.lng !== null ? { lat: at.lat, lng: at.lng } : null;
+  }
+  return null;
+}
+
 /** "Mirpur", or "Mirpur (near the metro)" when the poster gave a landmark. */
 export const placeLine = (area: string, landmark: string | null): string =>
   landmark ? `${area} (${landmark})` : area;

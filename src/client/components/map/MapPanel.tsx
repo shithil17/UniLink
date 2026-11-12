@@ -3,13 +3,15 @@ import { useMapParam } from "@/lib/map/useMapParam";
 import { MapOverlay, type MapOverlayProps } from "./MapOverlay";
 import { MapPreview, type MapPreviewProps } from "./MapPreview";
 
-export type MapPanelProps = Pick<MapOverlayProps, "fitPoints" | "onMap" | "actions"> & {
+export type MapPanelProps = Pick<MapOverlayProps, "fitPoints" | "onMap" | "actions" | "footer"> & {
   /** Names this map in the URL (`?map=ride`); lowercase letters, digits and hyphens. */
   id: string;
   /** The map's accessible name once it is open. */
   label: string;
   /** What the preview button says it opens. */
   openLabel: string;
+  /** Keeps the preview from holding a map while another full-screen map of the same screen is open. */
+  pause?: boolean;
   /** Sizes the preview panel (its height must stay fixed). */
   previewClassName?: MapPreviewProps["className"];
   /** Laid over the full-screen map, for example the ride card. */
@@ -31,6 +33,8 @@ export function MapPanel({
   fitPoints,
   onMap,
   actions,
+  footer,
+  pause = false,
   previewClassName,
   children,
 }: MapPanelProps) {
@@ -42,7 +46,7 @@ export function MapPanel({
         onOpen={map.open}
         fitPoints={fitPoints}
         onMap={onMap}
-        active={!map.isOpen}
+        active={!map.isOpen && !pause}
         className={previewClassName}
       />
       <MapOverlay
@@ -52,6 +56,7 @@ export function MapPanel({
         fitPoints={fitPoints}
         onMap={onMap}
         actions={actions}
+        footer={footer}
       >
         {children}
       </MapOverlay>

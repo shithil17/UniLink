@@ -1,7 +1,8 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
 import { useState } from "react";
 import { AreaPicker } from "@/components/areas/AreaPicker";
+import { PinPicker } from "@/components/map/PinPicker";
 import { ContactInput } from "@/components/posts/ContactInput";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
@@ -12,8 +13,11 @@ import { RadioChip, RadioGroup } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { TimeField } from "@/components/ui/time-field";
 import { ApiError } from "@/lib/api";
-import { areaNameOf, areasQuery } from "@/lib/areas";
+import { areaNameOf, areaPointOf, areasQuery, areasWithPoints } from "@/lib/areas";
 import { toastFirstFieldError } from "@/lib/formErrors";
+import { tripOf } from "@/lib/map/trip";
+import { useMapParam } from "@/lib/map/useMapParam";
+import { useMediaQuery } from "@/lib/useMediaQuery";
 import { toastPostFailure } from "@/lib/resources";
 import {
   emptyRideFields,
@@ -34,15 +38,25 @@ import {
   type RideFormFields,
 } from "@/lib/rides";
 import { toast } from "@/lib/toast";
+import { nearestArea, type GeoPoint } from "../../../shared/geo";
 import { WEEKDAYS } from "../../../shared/rides";
 import {
   RIDE_NOTES_MAX_LENGTH,
   RIDE_LANDMARK_MAX_LENGTH,
   RIDE_PRICE_MAX_TAKA,
   RIDE_SEATS_MAX,
+  type RideDetail,
   type RideSummary,
 } from "../../../shared/schemas/rides";
+import { RidePinRow } from "./RidePinRow";
 import { RideSafetyNotice } from "./RideSafetyNotice";
+import { TripMap } from "./TripMap";
+
+/**
+ * From this width the form is two columns: the fields, and the trip map beside them. The same width
+ * as the rides screen's side panel (`lg`).
+ */
+const FORM_SPLIT_QUERY = "(min-width: 64rem)";
 
 type Contacts = { phone?: string; whatsapp?: string; messenger?: string };
 
@@ -75,7 +89,7 @@ export function RideForm({
   onSaved,
   onCancel,
 }: {
-  ride?: RideSummary;
+  ride?: RideDetail;
   /** The poster's current contacts, needed to edit a ride. */
   contacts?: Contacts;
   onSaved: (ride: RideSummary) => void;
@@ -96,6 +110,74 @@ export function RideForm({
   const { errors } = form.formState;
   const kind = useWatch({ control: form.control, name: "kind" });
   const notes = useWatch({ control: form.control, name: "notes" }) ?? "";
+
+  // The trip map and the pin pickers. At most one full-screen map is open, named in the URL.
+  const wide = useMediaQuery(FORM_SPLIT_QUERY);
+  const areas = useQuery(areasQuery);
+  const pickupMap = useMapParam("pin-pickup");
+  const destinationMap = useMapParam("pin-destination");
+  const [pickupAreaId, destinationAreaId, pickupPoint, destinationPoint] = useWatch({
+    control: form.control,
+    name: ["pickupAreaId", "destinationAreaId", "pickupPoint", "destinationPoint"],
+  });
+  const [pickupLandmark, destinationLandmark] = useWatch({
+    control: form.control,
+    name: ["pickupLandmark", "destinationLandmark"],
+  });
+  const areaName = (value: string): string | null => {
+    const id = Number(value);
+    if (!value || !Number.isInteger(id)) return null;
+    return (
+      areaNameOf(areas.data, id) ??
+      [ride?.pickupArea, ride?.destinationArea].find((a) => a?.id === id)?.name ??
+      null
+    );
+  };
+  const pickupAreaName = areaName(pickupAreaId);
+  const destinationAreaName = areaName(destinationAreaId);
+  const trip = tripOf(
+    {
+      pickup: {
+        point: pickupPoint,
+        areaId: pickupAreaId ? Number(pickupAreaId) : null,
+        areaName: pickupAreaName,
+      },
+      destination: {
+        point: destinationPoint,
+        areaId: destinationAreaId ? Number(destinationAreaId) : null,
+        areaName: destinationAreaName,
+      },
+    },
+    areas.data,
+  );
+
+  /** Stores a confirmed pin and, when that end has no area yet, fills in the nearest one. A picked area is never replaced. */
+  const setPin = async (end: "pickup" | "destination", point: GeoPoint | null) => {
+    form.setValue(`${end}Point`, point, { shouldDirty: true });
+    const field = `${end}AreaId` as const;
+    if (!point || form.getValues(field) !== "") return;
+    const list = await queryClient.ensureQueryData(areasQuery).catch(() => undefined);
+    const nearest = nearestArea(point, areasWithPoints(list));
+    if (nearest && form.getValues(field) === "") {
+      form.setValue(field, String(nearest.id), {
+        shouldDirty: true,
+        shouldValidate: form.formState.isSubmitted,
+      });
+    }
+  };
+
+  const preview = (className: string) => (
+    <TripMap
+      id="trip"
+      trip={trip}
+      label="Map of your ride"
+      openLabel="Open the map of your ride"
+      pickup={{ area: pickupAreaName, landmark: pickupLandmark.trim() || null }}
+      destination={{ area: destinationAreaName, landmark: destinationLandmark.trim() || null }}
+      pause={pickupMap.isOpen || destinationMap.isOpen}
+      previewClassName={className}
+    />
+  );
 
   // The server refuses an area that was hidden since the list was loaded without saying which one,
   // so check the changed areas against a fresh list and mark the ones that are gone.
@@ -148,308 +230,350 @@ export function RideForm({
 
   return (
     <FormProvider {...form}>
-      <form onSubmit={submit} noValidate>
-        <FieldGroup>
-          {ride ? null : (
-            <Field>
-              <FieldLabel id="ride-kind-label">How often</FieldLabel>
-              <Controller
-                control={form.control}
-                name="kind"
-                render={({ field }) => (
-                  <RadioGroup
-                    aria-labelledby="ride-kind-label"
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    className="grid-cols-2 gap-2"
-                  >
-                    <RadioChip value="one_off">One-off</RadioChip>
-                    <RadioChip value="recurring">Recurring</RadioChip>
-                  </RadioGroup>
-                )}
-              />
-            </Field>
-          )}
-
-          <Field data-invalid={Boolean(errors.pickupAreaId)}>
-            <FieldLabel htmlFor="ride-from">From</FieldLabel>
-            <Controller
-              control={form.control}
-              name="pickupAreaId"
-              render={({ field }) => (
-                <AreaPicker
-                  id="ride-from"
-                  title="Where does it start?"
-                  placeholder="Pick the pickup area"
-                  value={field.value ? Number(field.value) : null}
-                  current={ride?.pickupArea}
-                  invalid={Boolean(errors.pickupAreaId)}
-                  onChange={(next) => field.onChange(next === null ? "" : String(next))}
-                />
+      <div className="lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)] lg:items-start lg:gap-8">
+        <div className="min-w-0 rounded-panel bg-surface p-4 md:rounded-[24px] md:p-5">
+          <form onSubmit={submit} noValidate>
+            <FieldGroup>
+              {ride ? null : (
+                <Field>
+                  <FieldLabel id="ride-kind-label">How often</FieldLabel>
+                  <Controller
+                    control={form.control}
+                    name="kind"
+                    render={({ field }) => (
+                      <RadioGroup
+                        aria-labelledby="ride-kind-label"
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        className="grid-cols-2 gap-2"
+                      >
+                        <RadioChip value="one_off">One-off</RadioChip>
+                        <RadioChip value="recurring">Recurring</RadioChip>
+                      </RadioGroup>
+                    )}
+                  />
+                </Field>
               )}
-            />
-            <FieldError errors={[errors.pickupAreaId]} />
-          </Field>
-          <Field data-invalid={Boolean(errors.pickupLandmark)}>
-            <FieldLabel htmlFor="ride-pickup">Pickup landmark (optional)</FieldLabel>
-            <Input
-              id="ride-pickup"
-              placeholder="NSU gate"
-              maxLength={RIDE_LANDMARK_MAX_LENGTH}
-              autoComplete="off"
-              aria-invalid={Boolean(errors.pickupLandmark)}
-              {...form.register("pickupLandmark")}
-            />
-            <FieldDescription>Gate, road or landmark where riders meet you.</FieldDescription>
-            <FieldError errors={[errors.pickupLandmark]} />
-          </Field>
 
-          <Field data-invalid={Boolean(errors.destinationAreaId)}>
-            <FieldLabel htmlFor="ride-to">To</FieldLabel>
-            <Controller
-              control={form.control}
-              name="destinationAreaId"
-              render={({ field }) => (
-                <AreaPicker
-                  id="ride-to"
-                  title="Where does it go?"
-                  placeholder="Pick the destination area"
-                  value={field.value ? Number(field.value) : null}
-                  current={ride?.destinationArea}
-                  invalid={Boolean(errors.destinationAreaId)}
-                  onChange={(next) => field.onChange(next === null ? "" : String(next))}
-                />
-              )}
-            />
-            <FieldError errors={[errors.destinationAreaId]} />
-          </Field>
-          <Field data-invalid={Boolean(errors.destinationLandmark)}>
-            <FieldLabel htmlFor="ride-destination">Destination landmark (optional)</FieldLabel>
-            <Input
-              id="ride-destination"
-              placeholder="Mirpur 10"
-              maxLength={RIDE_LANDMARK_MAX_LENGTH}
-              autoComplete="off"
-              aria-invalid={Boolean(errors.destinationLandmark)}
-              {...form.register("destinationLandmark")}
-            />
-            <FieldDescription>Gate, road or landmark where it ends.</FieldDescription>
-            <FieldError errors={[errors.destinationLandmark]} />
-          </Field>
-
-          <Field>
-            <FieldLabel id="ride-vehicle-label">Vehicle</FieldLabel>
-            <Controller
-              control={form.control}
-              name="vehicle"
-              render={({ field }) => (
-                <RadioGroup
-                  aria-labelledby="ride-vehicle-label"
-                  value={field.value}
-                  onValueChange={field.onChange}
-                  className="grid-cols-4 gap-1.5"
-                >
-                  {VEHICLES.map((v) => (
-                    <RadioChip key={v} value={v} aria-label={VEHICLE_LABELS[v]}>
-                      <span aria-hidden className="text-[15px] leading-none font-semibold">
-                        {VEHICLE_LABELS[v]}
-                      </span>
-                    </RadioChip>
-                  ))}
-                </RadioGroup>
-              )}
-            />
-          </Field>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field data-invalid={Boolean(errors.totalSeats)}>
-              <FieldLabel htmlFor="ride-seats">Seats</FieldLabel>
-              <Input
-                id="ride-seats"
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={RIDE_SEATS_MAX}
-                step={1}
-                placeholder="3"
-                aria-invalid={Boolean(errors.totalSeats)}
-                {...form.register("totalSeats")}
-              />
-              <FieldError errors={[errors.totalSeats]} />
-            </Field>
-            <Field data-invalid={Boolean(errors.pricePerSeatTaka)}>
-              <FieldLabel htmlFor="ride-price">Taka per seat</FieldLabel>
-              <Input
-                id="ride-price"
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={RIDE_PRICE_MAX_TAKA}
-                step={1}
-                placeholder="100"
-                aria-invalid={Boolean(errors.pricePerSeatTaka)}
-                {...form.register("pricePerSeatTaka")}
-              />
-              <FieldError errors={[errors.pricePerSeatTaka]} />
-            </Field>
-          </div>
-          {ride ? (
-            <FieldDescription className="-mt-3">
-              Changing the seats keeps the seats already taken.
-            </FieldDescription>
-          ) : null}
-
-          {kind === "one_off" ? (
-            <Field data-invalid={Boolean(errors.departure)}>
-              <FieldLabel htmlFor="ride-departure">Departs</FieldLabel>
-              {/* One form value, "YYYY-MM-DDTHH:MM", shown as a day-first date and a time. */}
-              <Controller
-                control={form.control}
-                name="departure"
-                render={({ field }) => {
-                  const [date = "", time = ""] = field.value.split("T");
-                  const join = (d: string, t: string) => (d || t ? `${d}T${t}` : "");
-                  return (
-                    <div className="grid grid-cols-[minmax(0,1fr)_9rem] gap-3">
-                      <DateField
-                        id="ride-departure"
-                        name={field.name}
-                        ref={field.ref}
-                        onBlur={field.onBlur}
-                        label="Departs"
-                        value={date}
-                        min={earliest.slice(0, 10)}
-                        aria-invalid={Boolean(errors.departure)}
-                        onChange={(next) => field.onChange(join(next, time))}
-                      />
-                      <TimeField
-                        label="Departure time"
-                        aria-invalid={Boolean(errors.departure)}
-                        value={time}
-                        onChange={(next) => field.onChange(join(date, next))}
-                      />
-                    </div>
-                  );
-                }}
-              />
-              <FieldDescription>Dhaka time. {RIDE_EXPIRY_WORDS.one_off}</FieldDescription>
-              <FieldError errors={[errors.departure]} />
-            </Field>
-          ) : (
-            <>
-              <Field data-invalid={Boolean(errors.days)}>
-                <FieldLabel id="ride-days-label">Days</FieldLabel>
+              <Field data-invalid={Boolean(errors.pickupAreaId)}>
+                <FieldLabel htmlFor="ride-from">From</FieldLabel>
                 <Controller
                   control={form.control}
-                  name="days"
+                  name="pickupAreaId"
                   render={({ field }) => (
-                    <div
-                      role="group"
-                      aria-labelledby="ride-days-label"
-                      className="flex flex-wrap gap-2"
-                    >
-                      {WEEKDAYS.map((d) => (
-                        <Chip
-                          key={d}
-                          pressed={field.value.includes(d)}
-                          aria-label={WEEKDAY_LONG[d]}
-                          onPressedChange={(on) =>
-                            field.onChange(
-                              on ? [...field.value, d] : field.value.filter((x) => x !== d),
-                            )
-                          }
-                        >
-                          {WEEKDAY_SHORT[d]}
-                        </Chip>
-                      ))}
-                    </div>
+                    <AreaPicker
+                      id="ride-from"
+                      title="Where does it start?"
+                      placeholder="Pick the pickup area"
+                      value={field.value ? Number(field.value) : null}
+                      current={ride?.pickupArea}
+                      invalid={Boolean(errors.pickupAreaId)}
+                      onChange={(next) => field.onChange(next === null ? "" : String(next))}
+                    />
                   )}
                 />
-                <FieldError errors={[errors.days]} />
+                <FieldError errors={[errors.pickupAreaId]} />
               </Field>
+              <Field data-invalid={Boolean(errors.pickupLandmark)}>
+                <FieldLabel htmlFor="ride-pickup">Pickup landmark (optional)</FieldLabel>
+                <Input
+                  id="ride-pickup"
+                  placeholder="NSU gate"
+                  maxLength={RIDE_LANDMARK_MAX_LENGTH}
+                  autoComplete="off"
+                  aria-invalid={Boolean(errors.pickupLandmark)}
+                  {...form.register("pickupLandmark")}
+                />
+                <FieldDescription>Gate, road or landmark where riders meet you.</FieldDescription>
+                <FieldError errors={[errors.pickupLandmark]} />
+              </Field>
+              <RidePinRow
+                kind="pickup"
+                pinned={pickupPoint !== null}
+                onPin={pickupMap.open}
+                onRemove={() => void setPin("pickup", null)}
+              />
+
+              <Field data-invalid={Boolean(errors.destinationAreaId)}>
+                <FieldLabel htmlFor="ride-to">To</FieldLabel>
+                <Controller
+                  control={form.control}
+                  name="destinationAreaId"
+                  render={({ field }) => (
+                    <AreaPicker
+                      id="ride-to"
+                      title="Where does it go?"
+                      placeholder="Pick the destination area"
+                      value={field.value ? Number(field.value) : null}
+                      current={ride?.destinationArea}
+                      invalid={Boolean(errors.destinationAreaId)}
+                      onChange={(next) => field.onChange(next === null ? "" : String(next))}
+                    />
+                  )}
+                />
+                <FieldError errors={[errors.destinationAreaId]} />
+              </Field>
+              <Field data-invalid={Boolean(errors.destinationLandmark)}>
+                <FieldLabel htmlFor="ride-destination">Destination landmark (optional)</FieldLabel>
+                <Input
+                  id="ride-destination"
+                  placeholder="Mirpur 10"
+                  maxLength={RIDE_LANDMARK_MAX_LENGTH}
+                  autoComplete="off"
+                  aria-invalid={Boolean(errors.destinationLandmark)}
+                  {...form.register("destinationLandmark")}
+                />
+                <FieldDescription>Gate, road or landmark where it ends.</FieldDescription>
+                <FieldError errors={[errors.destinationLandmark]} />
+              </Field>
+              <RidePinRow
+                kind="destination"
+                pinned={destinationPoint !== null}
+                onPin={destinationMap.open}
+                onRemove={() => void setPin("destination", null)}
+              />
+              {wide ? null : preview("h-40")}
+
+              <Field>
+                <FieldLabel id="ride-vehicle-label">Vehicle</FieldLabel>
+                <Controller
+                  control={form.control}
+                  name="vehicle"
+                  render={({ field }) => (
+                    <RadioGroup
+                      aria-labelledby="ride-vehicle-label"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      className="grid-cols-4 gap-1.5"
+                    >
+                      {VEHICLES.map((v) => (
+                        <RadioChip key={v} value={v} aria-label={VEHICLE_LABELS[v]}>
+                          <span aria-hidden className="text-[15px] leading-none font-semibold">
+                            {VEHICLE_LABELS[v]}
+                          </span>
+                        </RadioChip>
+                      ))}
+                    </RadioGroup>
+                  )}
+                />
+              </Field>
+
               <div className="grid grid-cols-2 gap-3">
-                <Field data-invalid={Boolean(errors.departureTime)}>
-                  <FieldLabel htmlFor="ride-time">Leaves at</FieldLabel>
-                  <Controller
-                    control={form.control}
-                    name="departureTime"
-                    render={({ field }) => (
-                      <TimeField
-                        id="ride-time"
-                        name={field.name}
-                        ref={field.ref}
-                        onBlur={field.onBlur}
-                        label="Leaves at"
-                        value={field.value}
-                        aria-invalid={Boolean(errors.departureTime)}
-                        onChange={field.onChange}
-                      />
-                    )}
+                <Field data-invalid={Boolean(errors.totalSeats)}>
+                  <FieldLabel htmlFor="ride-seats">Seats</FieldLabel>
+                  <Input
+                    id="ride-seats"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={RIDE_SEATS_MAX}
+                    step={1}
+                    placeholder="3"
+                    aria-invalid={Boolean(errors.totalSeats)}
+                    {...form.register("totalSeats")}
                   />
-                  <FieldError errors={[errors.departureTime]} />
+                  <FieldError errors={[errors.totalSeats]} />
                 </Field>
-                <Field data-invalid={Boolean(errors.endsOn)}>
-                  <FieldLabel htmlFor="ride-ends">{endsOnLabel}</FieldLabel>
-                  <Controller
-                    control={form.control}
-                    name="endsOn"
-                    render={({ field }) => (
-                      <DateField
-                        id="ride-ends"
-                        name={field.name}
-                        ref={field.ref}
-                        onBlur={field.onBlur}
-                        label={endsOnLabel}
-                        clearable={!ride}
-                        value={field.value}
-                        aria-invalid={Boolean(errors.endsOn)}
-                        onChange={field.onChange}
-                      />
-                    )}
+                <Field data-invalid={Boolean(errors.pricePerSeatTaka)}>
+                  <FieldLabel htmlFor="ride-price">Taka per seat</FieldLabel>
+                  <Input
+                    id="ride-price"
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={RIDE_PRICE_MAX_TAKA}
+                    step={1}
+                    placeholder="100"
+                    aria-invalid={Boolean(errors.pricePerSeatTaka)}
+                    {...form.register("pricePerSeatTaka")}
                   />
-                  <FieldError errors={[errors.endsOn]} />
+                  <FieldError errors={[errors.pricePerSeatTaka]} />
                 </Field>
               </div>
-              <FieldDescription className="-mt-3">
-                {ride
-                  ? `Dhaka time. ${RIDE_EDIT_END_WORDS}`
-                  : `Dhaka time. ${RIDE_DEFAULT_END_WORDS} ${RIDE_EXPIRY_WORDS.recurring}`}
-              </FieldDescription>
-            </>
-          )}
+              {ride ? (
+                <FieldDescription className="-mt-3">
+                  Changing the seats keeps the seats already taken.
+                </FieldDescription>
+              ) : null}
 
-          <Field data-invalid={Boolean(errors.notes)}>
-            <FieldLabel htmlFor="ride-notes">Notes (optional)</FieldLabel>
-            <Textarea
-              id="ride-notes"
-              placeholder="Where exactly you wait, bags, anything riders should know"
-              maxLength={RIDE_NOTES_MAX_LENGTH}
-              aria-invalid={Boolean(errors.notes)}
-              {...form.register("notes")}
-            />
-            <FieldDescription className="tabular-nums">
-              {notes.length} / {RIDE_NOTES_MAX_LENGTH}
-            </FieldDescription>
-            <FieldError errors={[errors.notes]} />
-          </Field>
+              {kind === "one_off" ? (
+                <Field data-invalid={Boolean(errors.departure)}>
+                  <FieldLabel htmlFor="ride-departure">Departs</FieldLabel>
+                  {/* One form value, "YYYY-MM-DDTHH:MM", shown as a day-first date and a time. */}
+                  <Controller
+                    control={form.control}
+                    name="departure"
+                    render={({ field }) => {
+                      const [date = "", time = ""] = field.value.split("T");
+                      const join = (d: string, t: string) => (d || t ? `${d}T${t}` : "");
+                      return (
+                        <div className="grid grid-cols-[minmax(0,1fr)_9rem] gap-3">
+                          <DateField
+                            id="ride-departure"
+                            name={field.name}
+                            ref={field.ref}
+                            onBlur={field.onBlur}
+                            label="Departs"
+                            value={date}
+                            min={earliest.slice(0, 10)}
+                            aria-invalid={Boolean(errors.departure)}
+                            onChange={(next) => field.onChange(join(next, time))}
+                          />
+                          <TimeField
+                            label="Departure time"
+                            aria-invalid={Boolean(errors.departure)}
+                            value={time}
+                            onChange={(next) => field.onChange(join(date, next))}
+                          />
+                        </div>
+                      );
+                    }}
+                  />
+                  <FieldDescription>Dhaka time. {RIDE_EXPIRY_WORDS.one_off}</FieldDescription>
+                  <FieldError errors={[errors.departure]} />
+                </Field>
+              ) : (
+                <>
+                  <Field data-invalid={Boolean(errors.days)}>
+                    <FieldLabel id="ride-days-label">Days</FieldLabel>
+                    <Controller
+                      control={form.control}
+                      name="days"
+                      render={({ field }) => (
+                        <div
+                          role="group"
+                          aria-labelledby="ride-days-label"
+                          className="flex flex-wrap gap-2"
+                        >
+                          {WEEKDAYS.map((d) => (
+                            <Chip
+                              key={d}
+                              pressed={field.value.includes(d)}
+                              aria-label={WEEKDAY_LONG[d]}
+                              onPressedChange={(on) =>
+                                field.onChange(
+                                  on ? [...field.value, d] : field.value.filter((x) => x !== d),
+                                )
+                              }
+                            >
+                              {WEEKDAY_SHORT[d]}
+                            </Chip>
+                          ))}
+                        </div>
+                      )}
+                    />
+                    <FieldError errors={[errors.days]} />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field data-invalid={Boolean(errors.departureTime)}>
+                      <FieldLabel htmlFor="ride-time">Leaves at</FieldLabel>
+                      <Controller
+                        control={form.control}
+                        name="departureTime"
+                        render={({ field }) => (
+                          <TimeField
+                            id="ride-time"
+                            name={field.name}
+                            ref={field.ref}
+                            onBlur={field.onBlur}
+                            label="Leaves at"
+                            value={field.value}
+                            aria-invalid={Boolean(errors.departureTime)}
+                            onChange={field.onChange}
+                          />
+                        )}
+                      />
+                      <FieldError errors={[errors.departureTime]} />
+                    </Field>
+                    <Field data-invalid={Boolean(errors.endsOn)}>
+                      <FieldLabel htmlFor="ride-ends">{endsOnLabel}</FieldLabel>
+                      <Controller
+                        control={form.control}
+                        name="endsOn"
+                        render={({ field }) => (
+                          <DateField
+                            id="ride-ends"
+                            name={field.name}
+                            ref={field.ref}
+                            onBlur={field.onBlur}
+                            label={endsOnLabel}
+                            clearable={!ride}
+                            value={field.value}
+                            aria-invalid={Boolean(errors.endsOn)}
+                            onChange={field.onChange}
+                          />
+                        )}
+                      />
+                      <FieldError errors={[errors.endsOn]} />
+                    </Field>
+                  </div>
+                  <FieldDescription className="-mt-3">
+                    {ride
+                      ? `Dhaka time. ${RIDE_EDIT_END_WORDS}`
+                      : `Dhaka time. ${RIDE_DEFAULT_END_WORDS} ${RIDE_EXPIRY_WORDS.recurring}`}
+                  </FieldDescription>
+                </>
+              )}
 
-          <h2 className="-mb-2 text-lg leading-[1.3] font-semibold text-ink">
-            How riders reach you
-          </h2>
-          <ContactInput />
+              <Field data-invalid={Boolean(errors.notes)}>
+                <FieldLabel htmlFor="ride-notes">Notes (optional)</FieldLabel>
+                <Textarea
+                  id="ride-notes"
+                  placeholder="Where exactly you wait, bags, anything riders should know"
+                  maxLength={RIDE_NOTES_MAX_LENGTH}
+                  aria-invalid={Boolean(errors.notes)}
+                  {...form.register("notes")}
+                />
+                <FieldDescription className="tabular-nums">
+                  {notes.length} / {RIDE_NOTES_MAX_LENGTH}
+                </FieldDescription>
+                <FieldError errors={[errors.notes]} />
+              </Field>
 
-          <RideSafetyNotice />
+              <h2 className="-mb-2 text-lg leading-[1.3] font-semibold text-ink">
+                How riders reach you
+              </h2>
+              <ContactInput />
 
-          <div className="flex flex-col gap-2">
-            <Button type="submit" loading={create.isPending || update.isPending}>
-              {ride ? "Save changes" : "Post ride"}
-            </Button>
-            <Button type="button" variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-          </div>
-        </FieldGroup>
-      </form>
+              <RideSafetyNotice />
+
+              <div className="flex flex-col gap-2">
+                <Button type="submit" loading={create.isPending || update.isPending}>
+                  {ride ? "Save changes" : "Post ride"}
+                </Button>
+                <Button type="button" variant="outline" onClick={onCancel}>
+                  Cancel
+                </Button>
+              </div>
+            </FieldGroup>
+          </form>
+        </div>
+        {wide ? (
+          <aside aria-label="Trip map" className="sticky top-9 h-[calc(100dvh-4.5rem)] min-w-0">
+            {preview("h-full")}
+          </aside>
+        ) : null}
+        <PinPicker
+          open={pickupMap.isOpen}
+          onClose={pickupMap.close}
+          label="Pin the pickup"
+          pin="pickup"
+          point={pickupPoint}
+          fallback={pickupAreaId ? areaPointOf(areas.data, Number(pickupAreaId)) : null}
+          onConfirm={(point) => void setPin("pickup", point)}
+          onRemove={() => void setPin("pickup", null)}
+        />
+        <PinPicker
+          open={destinationMap.isOpen}
+          onClose={destinationMap.close}
+          label="Pin the destination"
+          pin="destination"
+          point={destinationPoint}
+          fallback={destinationAreaId ? areaPointOf(areas.data, Number(destinationAreaId)) : null}
+          onConfirm={(point) => void setPin("destination", point)}
+          onRemove={() => void setPin("destination", null)}
+        />
+      </div>
     </FormProvider>
   );
 }

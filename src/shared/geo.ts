@@ -29,6 +29,12 @@ export const MAP_MAX_ZOOM = 18;
 /** A point is stored to 5 decimals, about 1 m. */
 export const POINT_DECIMALS = 5;
 
+/**
+ * The pin picker counts the map as moved once its centre is this far (metres) from where it opened.
+ * Floating-point noise in a fitted view stays under it; a deliberate nudge goes past it.
+ */
+export const PIN_MOVED_MIN_M = 2;
+
 /** The line between two pins: how many straight pieces draw the curve. */
 export const ARC_SEGMENTS = 32;
 /** How far the line bows away from the straight one, as a share of the distance between the ends. */

@@ -17,13 +17,26 @@ export type MapOverlayProps = Pick<MapViewProps, "fitPoints" | "onMap"> & {
   label: string;
   /** Floating buttons stacked above the zoom buttons, bottom right: "Fit the ride", "Back to NSU". */
   actions?: ReactNode;
-  /** Anything else laid over the map (a card, a search field). The child positions itself. */
+  /**
+   * A floating card along the bottom (the ride card, the pin picker's bar). The attribution and the
+   * buttons above ride on top of it, so nothing overlaps however tall it is.
+   */
+  footer?: ReactNode;
+  /** Anything else laid over the map (a search field, a centre pin). The child positions itself. */
   children?: ReactNode;
 };
 
-/** The safe-area-aware inset of a floating control from a viewport edge, never under 12px. */
-const inset = (side: "top" | "right" | "bottom" | "left") =>
-  `${side}-[max(0.75rem,env(safe-area-inset-${side}))]`;
+/**
+ * The safe-area-aware inset of a floating control from a viewport edge, never under 12px. Written out
+ * in full: Tailwind only generates classes it can read as whole strings in the source.
+ */
+const INSET = {
+  top: "top-[max(0.75rem,env(safe-area-inset-top))]",
+  left: "left-[max(0.75rem,env(safe-area-inset-left))]",
+} as const;
+/** The same inset as padding, for the stack along the bottom. */
+const PAD =
+  "pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))]";
 
 /** Only where a real pointer exists; touch screens pinch. */
 const POINTER_ONLY = "[@media(hover:hover)_and_(pointer:fine)]:flex";
@@ -36,7 +49,7 @@ const POINTER_ONLY = "[@media(hover:hover)_and_(pointer:fine)]:flex";
  * history step and the screen underneath keeps its scroll and state.
  *
  * Controls are floating layers on `surface`: close top left, zoom bottom right (hidden on touch),
- * `actions` above the zoom, attribution bottom left.
+ * `actions` above the zoom, attribution bottom left. A `footer` card sits under them.
  */
 export function MapOverlay({
   open,
@@ -45,6 +58,7 @@ export function MapOverlay({
   fitPoints,
   onMap,
   actions,
+  footer,
   children,
 }: MapOverlayProps) {
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -79,43 +93,47 @@ export function MapOverlay({
             render={
               <MapControlButton
                 aria-label="Close the map"
-                className={cn("absolute z-10", inset("top"), inset("left"))}
+                className={cn("absolute z-10", INSET.top, INSET.left)}
               />
             }
           >
             <XIcon />
           </DialogPrimitive.Close>
-          <MapAttribution links className={cn("absolute z-10", inset("bottom"), inset("left"))} />
           <div
             className={cn(
-              "absolute z-10 flex flex-col items-end gap-2",
-              inset("bottom"),
-              inset("right"),
+              "pointer-events-none absolute inset-x-0 bottom-0 z-10 flex flex-col gap-2",
+              PAD,
             )}
           >
-            {actions}
-            <div
-              className={cn(
-                "hidden flex-col overflow-hidden rounded-full bg-surface shadow-float",
-                POINTER_ONLY,
-              )}
-            >
-              <MapControlButton
-                aria-label="Zoom in"
-                className="shadow-none"
-                onClick={() => zoom(1)}
-              >
-                <PlusIcon />
-              </MapControlButton>
-              <span aria-hidden className="mx-3 h-px bg-line" />
-              <MapControlButton
-                aria-label="Zoom out"
-                className="shadow-none"
-                onClick={() => zoom(-1)}
-              >
-                <MinusIcon />
-              </MapControlButton>
+            <div className="flex items-end justify-between gap-2">
+              <MapAttribution links className="pointer-events-auto" />
+              <div className="pointer-events-auto flex flex-col items-end gap-2">
+                {actions}
+                <div
+                  className={cn(
+                    "hidden flex-col overflow-hidden rounded-full bg-surface shadow-float",
+                    POINTER_ONLY,
+                  )}
+                >
+                  <MapControlButton
+                    aria-label="Zoom in"
+                    className="shadow-none"
+                    onClick={() => zoom(1)}
+                  >
+                    <PlusIcon />
+                  </MapControlButton>
+                  <span aria-hidden className="mx-3 h-px bg-line" />
+                  <MapControlButton
+                    aria-label="Zoom out"
+                    className="shadow-none"
+                    onClick={() => zoom(-1)}
+                  >
+                    <MinusIcon />
+                  </MapControlButton>
+                </div>
+              </div>
             </div>
+            {footer ? <div className="pointer-events-auto">{footer}</div> : null}
           </div>
         </DialogPrimitive.Popup>
       </DialogPortal>

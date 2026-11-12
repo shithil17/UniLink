@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { ridePatch, type RideSummary } from "../../shared/schemas/rides";
+import { rideInput, ridePatch, type RideDetail } from "../../shared/schemas/rides";
 import {
   activeFilterCount,
   clockLabel,
@@ -26,13 +26,15 @@ import {
 // 20 Nov 2026 is a Friday; 01:30 UTC is 07:30 in Dhaka.
 const FRI_0730 = Date.UTC(2026, 10, 20, 1, 30);
 
-const ride = (over: Partial<RideSummary> = {}): RideSummary => ({
+const ride = (over: Partial<RideDetail> = {}): RideDetail => ({
   id: 1,
   kind: "one_off",
   pickupArea: { id: 1, name: "Bashundhara R/A" },
   destinationArea: { id: 60, name: "Mirpur" },
   pickupLandmark: "NSU gate",
   destinationLandmark: "Mirpur 10",
+  pickupPoint: null,
+  destinationPoint: null,
   vehicle: "car",
   totalSeats: 4,
   seatsRemaining: 3,
@@ -50,7 +52,7 @@ const ride = (over: Partial<RideSummary> = {}): RideSummary => ({
   ...over,
 });
 
-const recurring = (over: Partial<RideSummary> = {}) =>
+const recurring = (over: Partial<RideDetail> = {}) =>
   ride({
     kind: "recurring",
     departsAt: null,
@@ -255,6 +257,16 @@ describe("the form's values and the shared schema", () => {
   });
 });
 
+describe("rideBodyFromFields", () => {
+  it("carries the pins the poster set and leaves out the rest", () => {
+    const pin = { lat: 23.815123, lng: 90.425311 };
+    const body = rideBodyFromFields(filled({ pickupPoint: pin }));
+    expect(body.pickupPoint).toEqual({ lat: 23.81512, lng: 90.42531 });
+    expect(body.destinationPoint).toBeUndefined();
+    expect(rideInput.safeParse(body).success).toBe(true);
+  });
+});
+
 describe("ridePatchFromFields", () => {
   const contacts = { phone };
 
@@ -290,6 +302,27 @@ describe("ridePatchFromFields", () => {
     );
     expect(patch).toEqual({ days: ["sun", "mon"], departureTime: "08:00" });
     expect(patch).not.toHaveProperty("departsAt");
+  });
+
+  it("sends a pin only when it changed, and null when it was removed", () => {
+    const pin = { lat: 23.81512, lng: 90.42531 };
+    const original = fieldsFromRide(ride({ pickupPoint: pin }), contacts);
+    // Untouched pins (and a ride with none) are left out of the patch.
+    expect(ridePatchFromFields({ ...original, notes: "Back seat" }, original)).toEqual({
+      notes: "Back seat",
+    });
+    expect(ridePatchFromFields({ ...original, pickupPoint: { ...pin } }, original)).toBeNull();
+    // Moved, set on the other end, and removed.
+    const moved = { lat: 23.8, lng: 90.4 };
+    expect(ridePatchFromFields({ ...original, pickupPoint: moved }, original)).toEqual({
+      pickupPoint: moved,
+    });
+    expect(ridePatchFromFields({ ...original, destinationPoint: moved }, original)).toEqual({
+      destinationPoint: moved,
+    });
+    const removed = ridePatchFromFields({ ...original, pickupPoint: null }, original);
+    expect(removed).toEqual({ pickupPoint: null });
+    expect(ridePatch.safeParse(removed).success).toBe(true);
   });
 
   it("does not resend a departure that is only the unchanged minute-truncated value", () => {

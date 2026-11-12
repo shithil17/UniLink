@@ -6,15 +6,17 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { get, set, type FieldErrors, type Resolver } from "react-hook-form";
+import type { GeoPoint } from "../../shared/geo";
 import { contactReveal } from "../../shared/schemas/common";
 import { POST_DEFAULT_EXPIRY_DAYS, POST_RENEW_EXTEND_DAYS } from "../../shared/posts";
 import { WEEKDAYS, type Weekday } from "../../shared/rides";
 import {
   rideFeedPage,
   rideFeedQuery,
+  rideDetail,
   rideInput,
   ridePatch,
-  rideSummary,
+  type RideDetail,
   type RideFeedQuery,
   type RideInput,
   type RidePatch,
@@ -29,6 +31,7 @@ import {
   parseDhakaDate,
 } from "../../shared/time";
 import { ApiError, apiGet, apiPatch, apiPost, queryString } from "./api";
+import { parseMapParam } from "./map/useMapParam";
 
 type Vehicle = RideSummary["vehicle"];
 type Kind = RideSummary["kind"];
@@ -189,6 +192,8 @@ export type RideSearch = {
   vehicle?: Vehicle;
   date?: string;
   day?: Weekday;
+  /** The full-screen map that is open (a ride's, or one on the form). Kept so the router does not strip it. */
+  map?: string;
 };
 
 /**
@@ -207,6 +212,7 @@ export function parseRideSearch(raw: Record<string, unknown>): RideSearch {
     vehicle: keep(rideFeedQuery.shape.vehicle.safeParse(raw.vehicle)),
     date: keep(rideFeedQuery.shape.date.safeParse(raw.date)),
     day: keep(rideFeedQuery.shape.day.safeParse(raw.day)),
+    map: parseMapParam(raw.map),
   };
 }
 
@@ -236,6 +242,9 @@ export type RideFormFields = {
   destinationAreaId: string;
   pickupLandmark: string;
   destinationLandmark: string;
+  /** The exact spots, or null when none is pinned. */
+  pickupPoint: GeoPoint | null;
+  destinationPoint: GeoPoint | null;
   vehicle: Vehicle;
   totalSeats: string;
   pricePerSeatTaka: string;
@@ -255,6 +264,8 @@ export const emptyRideFields = (kind: Kind = "one_off"): RideFormFields => ({
   destinationAreaId: "",
   pickupLandmark: "",
   destinationLandmark: "",
+  pickupPoint: null,
+  destinationPoint: null,
   vehicle: "car",
   totalSeats: "",
   pricePerSeatTaka: "",
@@ -285,7 +296,7 @@ export function departureToInstant(value: string): number | undefined {
 
 /** The form's values for an existing ride and its contacts, for the edit screen. */
 export function fieldsFromRide(
-  ride: RideSummary,
+  ride: RideDetail,
   contacts: { phone?: string; whatsapp?: string; messenger?: string },
 ): RideFormFields {
   return {
@@ -294,6 +305,8 @@ export function fieldsFromRide(
     destinationAreaId: String(ride.destinationArea.id),
     pickupLandmark: ride.pickupLandmark ?? "",
     destinationLandmark: ride.destinationLandmark ?? "",
+    pickupPoint: ride.pickupPoint ?? null,
+    destinationPoint: ride.destinationPoint ?? null,
     vehicle: ride.vehicle,
     totalSeats: String(ride.totalSeats),
     pricePerSeatTaka: String(ride.pricePerSeatTaka),
@@ -322,6 +335,9 @@ export function rideInputFromFields(f: RideFormFields): unknown {
     destinationAreaId: number(f.destinationAreaId),
     pickupLandmark: f.pickupLandmark,
     destinationLandmark: f.destinationLandmark,
+    // Blank stays absent: a ride with no pin sends none.
+    pickupPoint: f.pickupPoint ?? undefined,
+    destinationPoint: f.destinationPoint ?? undefined,
     vehicle: f.vehicle,
     totalSeats: number(f.totalSeats),
     pricePerSeatTaka: number(f.pricePerSeatTaka),
@@ -357,6 +373,8 @@ const FORM_ORDER = [
   "pickupLandmark",
   "destinationAreaId",
   "destinationLandmark",
+  "pickupPoint",
+  "destinationPoint",
   "vehicle",
   "totalSeats",
   "pricePerSeatTaka",
@@ -402,6 +420,9 @@ export const rideFormResolver: Resolver<RideFormFields> = (values) => {
   return { values: {}, errors };
 };
 
+const samePoint = (a: GeoPoint | null, b: GeoPoint | null) =>
+  a === b || (a !== null && b !== null && a.lat === b.lat && a.lng === b.lng);
+
 const trimmed = (f: RideFormFields) => ({
   ...f,
   pickupAreaId: f.pickupAreaId.trim(),
@@ -440,6 +461,11 @@ export function ridePatchFromFields(
   if (now.pickupLandmark !== was.pickupLandmark) patch.pickupLandmark = next.pickupLandmark ?? null;
   if (now.destinationLandmark !== was.destinationLandmark) {
     patch.destinationLandmark = next.destinationLandmark ?? null;
+  }
+  // A pin is sent only when it changed; `null` takes it off the ride.
+  if (!samePoint(now.pickupPoint, was.pickupPoint)) patch.pickupPoint = next.pickupPoint ?? null;
+  if (!samePoint(now.destinationPoint, was.destinationPoint)) {
+    patch.destinationPoint = next.destinationPoint ?? null;
   }
   if (now.vehicle !== was.vehicle) patch.vehicle = next.vehicle;
   if (now.totalSeats !== was.totalSeats) patch.totalSeats = next.totalSeats;
@@ -493,7 +519,7 @@ export const myRidesInfinite = infiniteQueryOptions({
 export const rideDetailQuery = (id: number) =>
   queryOptions({
     queryKey: ["rides", "detail", id],
-    queryFn: () => apiGet(`/api/rides/${id}`, rideSummary),
+    queryFn: () => apiGet(`/api/rides/${id}`, rideDetail),
     // A gone ride will not come back, so do not ask again.
     retry: (count, err) => !(err instanceof ApiError && err.status === 404) && count < 2,
   });
@@ -523,7 +549,7 @@ function useRefreshRides() {
 export function useCreateRide() {
   const refresh = useRefreshRides();
   return useMutation({
-    mutationFn: (input: RideInput) => apiPost("/api/rides", rideSummary, input),
+    mutationFn: (input: RideInput) => apiPost("/api/rides", rideDetail, input),
     onSuccess: refresh,
   });
 }
@@ -531,7 +557,7 @@ export function useCreateRide() {
 export function useUpdateRide(id: number) {
   const refresh = useRefreshRides();
   return useMutation({
-    mutationFn: (patch: RidePatch) => apiPatch(`/api/rides/${id}`, rideSummary, patch),
+    mutationFn: (patch: RidePatch) => apiPatch(`/api/rides/${id}`, rideDetail, patch),
     onSuccess: refresh,
   });
 }
@@ -540,7 +566,7 @@ export function useSetSeats(id: number) {
   const refresh = useRefreshRides();
   return useMutation({
     mutationFn: (seatsRemaining: number) =>
-      apiPost(`/api/rides/${id}/seats`, rideSummary, { seatsRemaining }),
+      apiPost(`/api/rides/${id}/seats`, rideDetail, { seatsRemaining }),
     onSuccess: refresh,
   });
 }
@@ -548,7 +574,7 @@ export function useSetSeats(id: number) {
 export function useMarkFull(id: number) {
   const refresh = useRefreshRides();
   return useMutation({
-    mutationFn: () => apiPost(`/api/rides/${id}/full`, rideSummary),
+    mutationFn: () => apiPost(`/api/rides/${id}/full`, rideDetail),
     onSuccess: refresh,
   });
 }
@@ -556,7 +582,7 @@ export function useMarkFull(id: number) {
 export function useRenewRide(id: number) {
   const refresh = useRefreshRides();
   return useMutation({
-    mutationFn: () => apiPost(`/api/rides/${id}/renew`, rideSummary),
+    mutationFn: () => apiPost(`/api/rides/${id}/renew`, rideDetail),
     onSuccess: refresh,
   });
 }

@@ -45,7 +45,7 @@ function EditRide() {
   const loadError = detail.isError && !missing ? detail : contacts.isError ? contacts : null;
 
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="max-w-2xl space-y-5 lg:max-w-6xl">
       <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.01em] text-ink md:text-[32px]">
         Edit ride
       </h1>
@@ -60,14 +60,12 @@ function EditRide() {
           retrying={loadError.isRefetching}
         />
       ) : detail.data && contacts.data ? (
-        <div className={panel}>
-          <RideForm
-            ride={detail.data}
-            contacts={contacts.data.contacts}
-            onSaved={leave}
-            onCancel={leave}
-          />
-        </div>
+        <RideForm
+          ride={detail.data}
+          contacts={contacts.data.contacts}
+          onSaved={leave}
+          onCancel={leave}
+        />
       ) : (
         <div role="status" aria-label="Loading the ride" className={`${panel} grid gap-3`}>
           <Skeleton className="h-5 w-2/5" />

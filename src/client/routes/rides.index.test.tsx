@@ -449,9 +449,12 @@ describe("Rides screen", () => {
       expect(screen.queryByRole("status", { name: "Loading the ride" })).toBeNull();
 
       resolve(
-        Response.json(
-          ride({ id: 6, pickupArea: { id: 60, name: "Mirpur" }, notes: "Second ride" }),
-        ),
+        Response.json({
+          ...ride({ id: 6, pickupArea: { id: 60, name: "Mirpur" }, notes: "Second ride" }),
+          // The detail response carries the pins; this ride has none.
+          pickupPoint: null,
+          destinationPoint: null,
+        }),
       );
       await waitFor(() => expect(panel.textContent).toContain("Second ride"));
       expect(panel.querySelector("[aria-busy='true']")).toBeNull();

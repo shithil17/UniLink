@@ -2,16 +2,18 @@
 import "@/index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import type { Me } from "../../shared/schemas/auth";
-import type { RideSummary } from "../../shared/schemas/rides";
+import type { RideDetail } from "../../shared/schemas/rides";
+import { Map as FakeMap, Marker, liveMaps, resetFakeMaps } from "@/test/fakeMapLibre";
 import { routeTree } from "../routeTree.gen";
 
 vi.mock("@/components/pwa/UpdatePrompt", () => ({ UpdatePrompt: () => null }));
 vi.mock("@/components/pwa/InstallHint", () => ({ InstallHint: () => null }));
 const toasts = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock("@/lib/toast", () => ({ toast: Object.assign(vi.fn(), toasts) }));
+vi.mock("@/lib/map/maplibre", () => import("@/test/fakeMapLibre"));
 
 const me: Me = {
   username: "dev_cse",
@@ -22,13 +24,15 @@ const me: Me = {
 
 const FRI_0730 = Date.UTC(2026, 10, 20, 1, 30);
 
-const ride = (over: Partial<RideSummary> = {}): RideSummary => ({
+const ride = (over: Partial<RideDetail> = {}): RideDetail => ({
   id: 5,
   kind: "one_off",
   pickupArea: { id: 1, name: "Bashundhara R/A" },
   destinationArea: { id: 60, name: "Mirpur" },
   pickupLandmark: "NSU gate",
   destinationLandmark: "Mirpur 10",
+  pickupPoint: null,
+  destinationPoint: null,
   vehicle: "car",
   totalSeats: 4,
   seatsRemaining: 3,
@@ -46,6 +50,8 @@ const ride = (over: Partial<RideSummary> = {}): RideSummary => ({
   ...over,
 });
 
+beforeEach(resetFakeMaps);
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -60,7 +66,7 @@ const contacts = {
 };
 
 function renderDetail(
-  detail: RideSummary,
+  detail: RideDetail,
   contactResponse: () => Response = () => Response.json({ contacts }),
   api: (path: string, init?: RequestInit) => Response | undefined = () => undefined,
 ) {
@@ -122,6 +128,107 @@ describe("Ride detail", () => {
     expect(fetchMock).not.toHaveBeenCalledWith("/api/rides/5/contact", expect.anything());
   });
 
+  describe("the map", () => {
+    const area = (id: number, name: string, lat: number | null, lng: number | null) => ({
+      id,
+      slug: name.toLowerCase(),
+      name,
+      lat,
+      lng,
+      children: [],
+    });
+    const POINTED = [
+      area(1, "Bashundhara R/A", 23.8151, 90.4253),
+      area(60, "Mirpur", 23.8223, 90.3654),
+    ];
+    const areasApi =
+      (list = POINTED) =>
+      (path: string) =>
+        path === "/api/areas" ? Response.json(list) : undefined;
+    const OPEN = { name: "Open the map of this ride" };
+    const NSU_PIN = { lat: 23.8151, lng: 90.4253 };
+    const MIRPUR_PIN = { lat: 23.8223, lng: 90.3654 };
+
+    it("has no map panel when neither end has a point, and the facts stay", async () => {
+      const fetchMock = renderDetail(
+        ride(),
+        undefined,
+        areasApi([area(1, "Bashundhara R/A", null, null), area(60, "Mirpur", null, null)]),
+      );
+      expect(await screen.findByText("Bashundhara R/A (NSU gate)")).toBeTruthy();
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/areas", expect.anything()));
+      // The panel was held as a skeleton while the areas loaded, and is gone once they say no point.
+      await waitFor(() => expect(document.querySelector("[data-slot=skeleton]")).toBeNull());
+      expect(screen.queryByRole("button", OPEN)).toBeNull();
+      expect(liveMaps()).toHaveLength(0);
+    });
+
+    it("sits above the facts and opens the full-screen map with both pins, the card and Open in Maps", async () => {
+      renderDetail(ride({ pickupPoint: NSU_PIN, destinationPoint: MIRPUR_PIN }));
+      const preview = await screen.findByRole("button", OPEN);
+      // First panel under the title, before the facts.
+      const facts = screen.getByRole("region", { name: "The ride" });
+      expect(
+        preview.compareDocumentPosition(facts) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      // The side panel is 240px tall.
+      expect(preview.className).toContain("h-60");
+
+      fireEvent.click(preview);
+      const dialog = await screen.findByRole("dialog", { name: "Map of this ride" });
+      const link = within(dialog).getByRole("link", { name: /Open in Maps/ });
+      expect(link.getAttribute("href")).toBe(
+        "https://www.google.com/maps/dir/?api=1&origin=23.8151,90.4253&destination=23.8223,90.3654",
+      );
+      expect(link.getAttribute("target")).toBe("_blank");
+      expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+      expect(within(dialog).getByText("Bashundhara R/A (NSU gate)")).toBeTruthy();
+      expect(within(dialog).getByText("Mirpur (Mirpur 10)")).toBeTruthy();
+      expect(within(dialog).getByRole("button", { name: "Fit the ride" })).toBeTruthy();
+      // Two exact pins and the dashed line between them, drawn on the one live map.
+      await waitFor(() => expect(liveMaps()).toHaveLength(1));
+      await waitFor(() => expect(liveMaps()[0]!.layers.has("trip-line")).toBe(true));
+      expect(
+        Marker.instances.filter((m) => !m.removed).map((m) => m.element.getAttribute("aria-label")),
+      ).toEqual(["Pickup, Bashundhara R/A", "Destination, Mirpur"]);
+      expect(screen.queryByText(/^Around /)).toBeNull();
+    });
+
+    it("closes with Back and leaves the ride as it was", async () => {
+      const view = renderDetail(ride({ pickupPoint: NSU_PIN, destinationPoint: MIRPUR_PIN }));
+      fireEvent.click(await screen.findByRole("button", OPEN));
+      await screen.findByRole("dialog", { name: "Map of this ride" });
+      expect(view.router.state.location.search).toMatchObject({ map: "ride" });
+
+      act(() => view.router.history.back());
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog", { name: "Map of this ride" })).toBeNull(),
+      );
+      expect(view.router.state.location.pathname).toBe("/rides/5");
+      expect(await screen.findByRole("button", OPEN)).toBeTruthy();
+      expect(screen.getByRole("heading", { name: "Bashundhara R/A to Mirpur" })).toBeTruthy();
+    });
+
+    it("draws the end with no pin as 'Around ...' at its area's point", async () => {
+      renderDetail(ride({ pickupPoint: NSU_PIN }), undefined, areasApi());
+      await screen.findByRole("button", OPEN);
+      expect(await screen.findByText("Around Mirpur")).toBeTruthy();
+      expect(screen.queryByText("Around Bashundhara R/A")).toBeNull();
+      const markers = Marker.instances.filter((m) => !m.removed);
+      expect(markers).toHaveLength(2);
+      expect(markers[1]!.lngLat).toEqual([90.3654, 23.8223]);
+      // The dashed line still joins the two ends.
+      await waitFor(() => expect(liveMaps()[0]!.layers.has("trip-line")).toBe(true));
+    });
+
+    it("shows the unavailable state when the map cannot load, and the facts stay", async () => {
+      FakeMap.failNext = true;
+      renderDetail(ride({ pickupPoint: NSU_PIN, destinationPoint: MIRPUR_PIN }));
+      expect(await screen.findByText(/can't load right now|unavailable offline/)).toBeTruthy();
+      expect(screen.getByText("Bashundhara R/A (NSU gate)")).toBeTruthy();
+    });
+  });
+
   it("reveals the contact as real tel:, wa.me and m.me links", async () => {
     const fetchMock = renderDetail(ride());
     fireEvent.click(await screen.findByRole("button", { name: "Show contact" }));
@@ -160,10 +267,10 @@ describe("Ride detail", () => {
   });
 
   describe("the poster's seat stepper", () => {
-    const mine = (over: Partial<RideSummary> = {}) => ride({ mine: true, ...over });
+    const mine = (over: Partial<RideDetail> = {}) => ride({ mine: true, ...over });
     const taken = () => screen.getByText(/^\d+ of 4$/).textContent;
     // A tiny server for one ride: it keeps the seats it was sent and answers the refetch after a save.
-    const seatsApi = (start: RideSummary = mine()) => {
+    const seatsApi = (start: RideDetail = mine()) => {
       let current = start;
       return (path: string, init?: RequestInit) => {
         if (path === "/api/rides/5/seats") {
