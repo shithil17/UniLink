@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AreaPicker } from "@/components/areas/AreaPicker";
 import { PinPicker } from "@/components/map/PinPicker";
+import { PlaceSearch } from "@/components/map/PlaceSearch";
 import { ContactInput } from "@/components/posts/ContactInput";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
@@ -166,6 +167,29 @@ export function RideForm({
     }
   };
 
+  // The last place picked in each end's open picker. It is offered as the landmark only when the
+  // student confirms the spot, and forgotten whenever the picker opens or closes.
+  const pickedPlace = useRef<Record<"pickup" | "destination", string | null>>({
+    pickup: null,
+    destination: null,
+  });
+  const forgetPlace = (end: "pickup" | "destination") => {
+    pickedPlace.current[end] = null;
+  };
+
+  /** Offers a searched place's name as the landmark, never over one the student typed. */
+  const offerLandmark = (end: "pickup" | "destination", name: string) => {
+    const field = `${end}Landmark` as const;
+    if (form.getValues(field).trim() !== "") return;
+    const landmark = name.trim().slice(0, RIDE_LANDMARK_MAX_LENGTH).trim();
+    if (!landmark) return;
+    form.setValue(field, landmark, {
+      shouldDirty: true,
+      shouldValidate: form.formState.isSubmitted,
+    });
+    toast.success(`Landmark set to ${landmark}`);
+  };
+
   const preview = (className: string) => (
     <TripMap
       id="trip"
@@ -290,7 +314,10 @@ export function RideForm({
               <RidePinRow
                 kind="pickup"
                 pinned={pickupPoint !== null}
-                onPin={pickupMap.open}
+                onPin={() => {
+                  forgetPlace("pickup");
+                  pickupMap.open();
+                }}
                 onRemove={() => void setPin("pickup", null)}
               />
 
@@ -329,7 +356,10 @@ export function RideForm({
               <RidePinRow
                 kind="destination"
                 pinned={destinationPoint !== null}
-                onPin={destinationMap.open}
+                onPin={() => {
+                  forgetPlace("destination");
+                  destinationMap.open();
+                }}
                 onRemove={() => void setPin("destination", null)}
               />
               {wide ? null : preview("h-40")}
@@ -555,23 +585,49 @@ export function RideForm({
         ) : null}
         <PinPicker
           open={pickupMap.isOpen}
-          onClose={pickupMap.close}
+          onClose={() => {
+            forgetPlace("pickup");
+            pickupMap.close();
+          }}
           label="Pin the pickup"
           pin="pickup"
           point={pickupPoint}
           fallback={pickupAreaId ? areaPointOf(areas.data, Number(pickupAreaId)) : null}
-          onConfirm={(point) => void setPin("pickup", point)}
+          onConfirm={(point) => {
+            void setPin("pickup", point);
+            const name = pickedPlace.current.pickup;
+            if (name) offerLandmark("pickup", name);
+          }}
           onRemove={() => void setPin("pickup", null)}
+          search={(controls) => (
+            <PlaceSearch
+              controls={controls}
+              onPlace={(name) => (pickedPlace.current.pickup = name)}
+            />
+          )}
         />
         <PinPicker
           open={destinationMap.isOpen}
-          onClose={destinationMap.close}
+          onClose={() => {
+            forgetPlace("destination");
+            destinationMap.close();
+          }}
           label="Pin the destination"
           pin="destination"
           point={destinationPoint}
           fallback={destinationAreaId ? areaPointOf(areas.data, Number(destinationAreaId)) : null}
-          onConfirm={(point) => void setPin("destination", point)}
+          onConfirm={(point) => {
+            void setPin("destination", point);
+            const name = pickedPlace.current.destination;
+            if (name) offerLandmark("destination", name);
+          }}
           onRemove={() => void setPin("destination", null)}
+          search={(controls) => (
+            <PlaceSearch
+              controls={controls}
+              onPlace={(name) => (pickedPlace.current.destination = name)}
+            />
+          )}
         />
       </div>
     </FormProvider>

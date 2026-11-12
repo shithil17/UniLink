@@ -461,6 +461,80 @@ describe("pins", () => {
     ...over,
   });
 
+  const STADIUM = { name: "Mirpur Stadium", detail: "Mirpur, Dhaka", lat: 23.8069, lng: 90.3687 };
+
+  /** Types into the picker's search field and picks the stadium result. */
+  async function searchStadium() {
+    const field = await screen.findByRole("combobox", { name: "Search for a place or area" });
+    fireEvent.change(field, { target: { value: "stadium" } });
+    fireEvent.click(await screen.findByRole("option", { name: /Mirpur Stadium/ }));
+  }
+
+  it("moves the map to a searched place and offers its name as an empty landmark only once the spot is confirmed", async () => {
+    const { fetchMock } = setup();
+    fetchMock.mockImplementation(async () => Response.json({ places: [STADIUM] }));
+    openPicker("pickup");
+    const map = await pickerMap();
+    await searchStadium();
+
+    expect(map.called("flyTo").at(-1)?.args[0]).toMatchObject({ center: [90.3687, 23.8069] });
+    // Picking is not confirming: nothing is filled or saved yet.
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.queryByText("Pinned")).toBeNull();
+    useThisSpot();
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Pin the pickup" })).toBeNull(),
+    );
+    expect(toast.success).toHaveBeenCalledWith("Landmark set to Mirpur Stadium");
+    expect(screen.getByLabelText("Pickup landmark (optional)")).toHaveProperty(
+      "value",
+      "Mirpur Stadium",
+    );
+    expect(screen.getByLabelText("Destination landmark (optional)")).toHaveProperty("value", "");
+  });
+
+  it("leaves the landmark empty when the picker is closed after picking a place", async () => {
+    const { fetchMock } = setup();
+    fetchMock.mockImplementation(async () => Response.json({ places: [STADIUM] }));
+    openPicker("pickup");
+    await pickerMap();
+    await searchStadium();
+    fireEvent.click(screen.getByRole("button", { name: "Close the map" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Pin the pickup" })).toBeNull(),
+    );
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Pickup landmark (optional)")).toHaveProperty("value", "");
+
+    // A reopened picker starts with no remembered place: confirming a moved map offers nothing.
+    openPicker("pickup");
+    const map = await pickerMap();
+    moveTo(map, 23.79, 90.41);
+    useThisSpot();
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Pin the pickup" })).toBeNull(),
+    );
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Pickup landmark (optional)")).toHaveProperty("value", "");
+  });
+
+  it("never overwrites a landmark the student typed", async () => {
+    const { fetchMock } = setup();
+    fetchMock.mockImplementation(async () => Response.json({ places: [STADIUM] }));
+    type("Pickup landmark (optional)", "NSU gate");
+    openPicker("pickup");
+    const map = await pickerMap();
+    await searchStadium();
+
+    expect(map.called("flyTo")).toHaveLength(1);
+    useThisSpot();
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Pin the pickup" })).toBeNull(),
+    );
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.getByLabelText("Pickup landmark (optional)")).toHaveProperty("value", "NSU gate");
+  });
+
   it("sends the spot the student placed, rounded, and no pin for the other end", async () => {
     const { fetchMock } = setup();
     fetchMock.mockResolvedValue(Response.json({ error: "x" }, { status: 500 }));

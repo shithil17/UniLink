@@ -50,6 +50,12 @@ import {
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
 import { RESOURCE_URL_MAX_LENGTH } from "../shared/resourceUrl.ts";
 import { MAP_BOUNDS } from "../shared/geo.ts";
+import {
+  PLACE_AREA_MATCHES_MAX,
+  PLACE_QUERY_MAX_LENGTH,
+  PLACE_QUERY_MIN_LENGTH,
+  PLACE_SEARCH_DEBOUNCE_MS,
+} from "../shared/schemas/places.ts";
 
 // Every limit, cap, cooldown, expiry and threshold lives here. Feature code imports these, never inlines numbers.
 
@@ -199,6 +205,21 @@ export const limits = {
   areaListMax: 500,
   // ceiling: a mod adds, renames, hides or shows a handful of areas in a sitting; this stops a loop. Revisit if mods report hitting it.
   areaModWrite: { limit: 60, windowMs: HOUR },
+  /** Place search in the pin picker (`GET /api/places/search`). */
+  placeSearch: {
+    // ceiling: query length and the typing pause are defined in shared code so the client box and the validator agree. Revisit if students cannot find short names, or if the geocoder throttles.
+    minQueryLength: PLACE_QUERY_MIN_LENGTH,
+    maxQueryLength: PLACE_QUERY_MAX_LENGTH,
+    debounceMs: PLACE_SEARCH_DEBOUNCE_MS,
+    /** How many of our own areas show above the places. Defined in shared code for the client list. */
+    areaMatchesMax: PLACE_AREA_MATCHES_MAX,
+    // ceiling: a phone list under the search box shows about this many rows beside the area matches. Revisit if students scroll for more.
+    maxResults: 6,
+    // ceiling: a student waits on this call while typing, so a slow geocoder must not hold the request open; a timeout is a 502 and the list falls back to areas. Revisit once the public Photon latency is measured.
+    timeoutMs: 4 * SECOND,
+    // ceiling: a student pins two spots per ride and types a few words for each, about 5 requests a minute while searching; this stops a loop from hammering the public Photon server (which asks for fair use). Revisit if students report hitting it or Photon throttles us.
+    rateLimit: { limit: 60, windowMs: 10 * MINUTE },
+  },
   /** The screening pipeline: what the rules accept and how long the model step may take. */
   screen: {
     // ceiling: the longest screened field (a description or note) is a few paragraphs; a wall of text is spam. Per-post-type schemas set tighter caps. Revisit if honest posts are rejected for length.

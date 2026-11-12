@@ -43,6 +43,50 @@ export function areaRows(options: readonly AreaOption[], search: string): AreaRo
   return rows;
 }
 
+/** One of our own areas that matches a search: where it is, and the area it sits in when it is a sub-area. */
+export type AreaMatch = {
+  id: number;
+  name: string;
+  parentName: string | null;
+  point: { lat: number; lng: number };
+};
+
+/**
+ * The areas whose name contains `search` (case-insensitive), names that start with it first, at most
+ * `max`. Each carries a point: a sub-area with none of its own stands where its parent does, and an
+ * area with no point at all (Outside Dhaka) is left out, since there is nowhere to fly to. Runs in
+ * the browser over the loaded list, so it costs no request.
+ */
+export function areaMatches(
+  options: readonly AreaOption[] | undefined,
+  search: string,
+  max: number,
+): AreaMatch[] {
+  const needle = search.trim().toLowerCase();
+  if (needle === "") return [];
+  const found: (AreaMatch & { starts: boolean })[] = [];
+  for (const top of options ?? []) {
+    for (const area of [top, ...top.children]) {
+      const lower = area.name.toLowerCase();
+      if (!lower.includes(needle)) continue;
+      const point = areaPointOf(options, area.id);
+      if (!point) continue;
+      found.push({
+        id: area.id,
+        name: area.name,
+        parentName: area === top ? null : top.name,
+        point,
+        starts: lower.startsWith(needle),
+      });
+    }
+  }
+  // A stable sort: ties keep the list's order (Bashundhara first, then alphabetical).
+  return found
+    .sort((a, b) => Number(b.starts) - Number(a.starts))
+    .slice(0, max)
+    .map(({ starts: _starts, ...match }) => match);
+}
+
 /** The name of an area in the loaded list, or undefined when it is not there (hidden since, or not loaded). */
 export function areaNameOf(options: readonly AreaOption[] | undefined, id: number) {
   for (const top of options ?? []) {
