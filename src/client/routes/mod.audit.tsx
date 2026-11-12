@@ -121,7 +121,7 @@ function EntryRow({
     <div className={`space-y-1 px-4 py-3 ${modRowMin}`}>
       <div className="flex items-baseline justify-between gap-3">
         <p className="min-w-0 text-[15px] font-semibold text-ink">
-          {auditActionLabel(entry.action)}
+          {auditActionLabel(entry.action, entry.targetType)}
         </p>
         <time
           dateTime={new Date(entry.createdAt).toISOString()}
@@ -163,7 +163,7 @@ function ReverseSheet({ entry, onClose }: { entry: AuditEntry | null; onClose: (
             <SheetHeader>
               <SheetTitle>Reverse this action</SheetTitle>
               <SheetDescription>
-                {auditActionLabel(entry.action)} on{" "}
+                {auditActionLabel(entry.action, entry.targetType)} on{" "}
                 {entry.targetLabel ?? `${entry.targetType} ${entry.targetId}`}. It puts back what
                 the action changed.
               </SheetDescription>

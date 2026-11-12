@@ -18,7 +18,7 @@ const COPY: Record<NotificationType, NotificationCopy> = {
   },
   post_rejected: {
     title: "Your post wasn't approved",
-    detail: "A moderator held it back. You can edit it and send it again.",
+    detail: "A moderator reviewed it and decided it can't go up.",
   },
   resource_requested: {
     title: "A student is looking for a resource",
@@ -47,6 +47,15 @@ const COPY: Record<NotificationType, NotificationCopy> = {
   },
 };
 
+// An approved request is public; an approved link is only ever visible to the student who asked.
+const APPROVED: Record<RemovedContentKind, NotificationCopy> = {
+  resource_request: COPY.post_approved,
+  resource_submission: {
+    title: "Your link was approved",
+    detail: "A moderator approved it, so the student who asked can see it now.",
+  },
+};
+
 const REMOVED_TITLE: Record<RemovedContentKind, string> = {
   resource_request: "A moderator removed your request for materials",
   resource_submission: "A moderator removed a link you sent to a request",
@@ -62,6 +71,12 @@ export function notificationCopy(
   type: NotificationType,
   payload?: Record<string, unknown>,
 ): NotificationCopy {
+  if (type === "post_approved") {
+    const kind = removedContentKind.safeParse(payload?.targetType);
+    if (kind.success) {
+      return APPROVED[kind.data];
+    }
+  }
   if (type === "post_rejected") {
     const category = reasonCategory.safeParse(payload?.category);
     if (category.success) {

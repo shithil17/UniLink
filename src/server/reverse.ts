@@ -27,7 +27,7 @@ import { softDeleteTargets, type SoftDeleteTargets } from "./softDelete";
  * | role_change  | { role }                    | puts `role` back                                      |
  * | release_key  | { studentKey, bannedAt }    | puts the key and `banned_at` back; refused if someone |
  * |              |                             | has taken the key since (`key_in_use`)                |
- * | soft_delete  | { deletedAt, deletedBy }    | puts both columns back (the post is live again)       |
+ * | soft_delete  | { deletedAt, deletedBy }    | puts both columns back (restored to how it was; a held item stays held) |
  * | clear_probing_flag | { postingBlockedUntil, probingFlaggedAt } | puts both back (flagged again, cooldown as it was) |
  *
  * | faculty_edit | the edited columns         | puts them back; refused if the old initials or name+department |

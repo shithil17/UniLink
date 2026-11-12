@@ -50,6 +50,25 @@ describe("notificationCopy for a removal", () => {
   });
 });
 
+describe("notificationCopy for a moderator's decision", () => {
+  it("tells the author of a link only the requester can see it, a request that others can", () => {
+    const link = notificationCopy("post_approved", { targetType: "resource_submission" });
+    expect(link.detail).toMatch(/student who asked can see/);
+    expect(link.title).toBe("Your link was approved");
+    expect(link.title).not.toMatch(/live/);
+    expect(notificationCopy("post_approved", { targetType: "resource_request" }).title).toBe(
+      "Your post is live",
+    );
+    expect(notificationCopy("post_approved", { targetType: "resource_request" }).detail).toMatch(
+      /other students can see/,
+    );
+  });
+
+  it("does not promise an edit-and-resend flow", () => {
+    expect(notificationCopy("post_rejected").detail).not.toMatch(/edit|send it again/i);
+  });
+});
+
 describe("notificationHue", () => {
   it("has no entry for a kind that does not exist", () => {
     expect(Object.keys(NOTIFICATION_HUE).sort()).toEqual([...notificationType.options].sort());
@@ -96,12 +115,27 @@ describe("notificationTarget", () => {
   it("opens the Materials screen for removed content, and nowhere for an unknown kind", () => {
     expect(notificationTarget("content_removed", { kind: "resource_submission" })).toEqual({
       to: "/resources",
+      search: { tab: "help" },
     });
     expect(notificationTarget("content_removed", { kind: "resource_request" })).toEqual({
       to: "/resources",
     });
     expect(notificationTarget("content_removed", { kind: "nope" })).toBeNull();
     expect(notificationTarget("content_removed", undefined)).toBeNull();
+  });
+
+  it("opens Materials for a moderator's decision, the Help tab for a link and never a request page", () => {
+    for (const type of ["post_approved", "post_rejected"] as const) {
+      expect(notificationTarget(type, { targetType: "resource_request", targetId: 9 })).toEqual({
+        to: "/resources",
+      });
+      expect(notificationTarget(type, { targetType: "resource_submission", targetId: 9 })).toEqual({
+        to: "/resources",
+        search: { tab: "help" },
+      });
+      expect(notificationTarget(type, { targetType: "nope", targetId: 9 })).toBeNull();
+      expect(notificationTarget(type, {})).toBeNull();
+    }
   });
 
   it("goes nowhere for an accepted link, where the request is closed to everyone else", () => {
@@ -116,7 +150,6 @@ describe("notificationTarget", () => {
   });
 
   it("has no screen for the kinds that are only read", () => {
-    expect(notificationTarget("post_approved", {})).toBeNull();
     expect(notificationTarget("push_test", {})).toBeNull();
   });
 });

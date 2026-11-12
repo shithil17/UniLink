@@ -107,6 +107,9 @@ describe("report and post summaries", () => {
 
   it("tells the author about an approval and shows the message a rejection sends", () => {
     expect(approvePostConfirm(post).effects.join(" ")).toMatch(/inbox message/);
+    const link = approvePostConfirm({ ...post, targetType: "resource_submission" });
+    expect(link.effects[0]).toBe("The student who asked can see it now.");
+    expect(link.effects[1]).toContain("student who asked can see");
     const reject = rejectPostConfirm(post, {
       category: "scam_or_spam",
       reason: "looks like a scam",
@@ -139,6 +142,32 @@ describe("reversal summary", () => {
     expect(reverse.lead).toContain("rafi_2");
     expect(reverse.facts).toContainEqual({ label: "Done by", value: "mod_1" });
     expect(reverse.effects[0]).toMatch(/unbanned/);
+  });
+});
+
+describe("reversing a removal", () => {
+  const removal: AuditEntry = {
+    id: 20,
+    actor: "mod_1",
+    action: "soft_delete",
+    targetType: "resource_submission",
+    targetId: "4",
+    targetLabel: null,
+    reason: "not course material",
+    createdAt: 1,
+    reverses: null,
+    reversedBy: null,
+    reversible: true,
+  };
+
+  it("names a link or a request and never claims it is live", () => {
+    const link = reverseConfirm(removal, "mistake");
+    expect(link.lead).toContain("Removed a link");
+    expect(link.effects[0]).toBe("The link is restored to how it was before it was removed.");
+    const request = reverseConfirm({ ...removal, targetType: "resource_request" }, "mistake");
+    expect(request.lead).toContain("Removed a request");
+    expect(request.effects[0]).toMatch(/^The request is restored/);
+    expect(request.effects[0]).not.toMatch(/live/);
   });
 });
 

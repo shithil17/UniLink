@@ -9,6 +9,8 @@ describe("reject reason messages", () => {
       const message = rejectReasonMessage(category);
       expect(message.length, category).toBeGreaterThan(10);
       expect(message.length, category).toBeLessThan(200);
+      // No edit or resend flow exists, so no message may promise one.
+      expect(message, category).not.toMatch(/\bedit|\bchange it|send it again|resend/i);
       expect(message, category).not.toMatch(/\d|score|confidence|rule|regex|luhn|banned word/i);
     }
     expect(Object.keys(rejectReasonMessages).sort()).toEqual([...reasonCategory.options].sort());
