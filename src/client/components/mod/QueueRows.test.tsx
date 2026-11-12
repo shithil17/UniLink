@@ -119,6 +119,7 @@ const report: ModReport = {
   targetType: "user",
   targetId: "5",
   targetLabel: "sam_1",
+  targetAuthor: "sam_1",
   reporter: "rafi_2",
   reason: "keeps spamming the board",
   status: "open",
@@ -148,8 +149,19 @@ describe("ReportRow", () => {
     targetType: "resource_submission",
     targetId: "4",
     targetLabel: "https://example-site.com/notes",
+    targetAuthor: "uma_9",
     reason: "not what I asked for",
   };
+
+  it("sends Review user to the owner of the target, not to its label", async () => {
+    await renderReport(linkReport);
+    const link = screen.getByRole("link", { name: "Review user" });
+    expect(link.getAttribute("href")).toContain("q=uma_9");
+    expect(link.getAttribute("href")).not.toContain("example-site");
+    cleanup();
+    await renderReport({ ...linkReport, targetAuthor: null });
+    expect(screen.queryByRole("link", { name: "Review user" })).toBeNull();
+  });
 
   it("resolves a report only after the summary is confirmed", async () => {
     const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>

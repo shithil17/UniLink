@@ -125,6 +125,8 @@ export const modReport = z.object({
   targetId: z.string(),
   /** A public label for the target (a username for a user), or null when it no longer exists. */
   targetLabel: z.string().nullable(),
+  /** The username of whoever owns the target (the user themself for a user report), or null when they no longer exist. */
+  targetAuthor: z.string().nullable(),
   reporter: z.string().nullable(),
   reason: z.string(),
   status: reportStatus,

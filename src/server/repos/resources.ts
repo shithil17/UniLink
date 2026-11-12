@@ -262,6 +262,20 @@ export function resourceRequestsRepo(db: Db) {
       }
       return labels;
     },
+    /** The requester's user id, by request id, for the report queue. Missing ids are absent. */
+    async authorIdsByIds(ids: number[]): Promise<Map<number, number>> {
+      const authors = new Map<number, number>();
+      const unique = [...new Set(ids)];
+      for (let i = 0; i < unique.length; i += limits.d1MaxBoundParams) {
+        const rows = await db
+          .select({ id: resourceRequests.id, authorId: resourceRequests.authorId })
+          .from(resourceRequests)
+          .where(inArray(resourceRequests.id, unique.slice(i, i + limits.d1MaxBoundParams)))
+          .all();
+        for (const r of rows) authors.set(r.id, r.authorId);
+      }
+      return authors;
+    },
     /** Hard-deletes requests that lapsed without being fulfilled. Their links go with them (cascade). */
     async purgeExpiredOpen(now: number): Promise<number> {
       const rows = await db
@@ -312,6 +326,20 @@ export function resourceSubmissionsRepo(db: Db) {
         for (const r of rows) urls.set(r.id, r.url);
       }
       return urls;
+    },
+    /** The uploader's user id, by submission id, for the report queue. Missing ids are absent. */
+    async authorIdsByIds(ids: number[]): Promise<Map<number, number>> {
+      const authors = new Map<number, number>();
+      const unique = [...new Set(ids)];
+      for (let i = 0; i < unique.length; i += limits.d1MaxBoundParams) {
+        const rows = await db
+          .select({ id: resourceSubmissions.id, authorId: resourceSubmissions.authorId })
+          .from(resourceSubmissions)
+          .where(inArray(resourceSubmissions.id, unique.slice(i, i + limits.d1MaxBoundParams)))
+          .all();
+        for (const r of rows) authors.set(r.id, r.authorId);
+      }
+      return authors;
     },
     /**
      * How many links a user has sent to each of these requests (not removed), by request id. One read

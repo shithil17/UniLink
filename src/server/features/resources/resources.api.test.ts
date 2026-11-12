@@ -721,9 +721,41 @@ describe("reports and moderation", () => {
         targetType: "resource_submission",
         targetId: String(link.id),
         targetLabel: driveLink,
+        targetAuthor: helper.username,
         reporter: requester.username,
       }),
     ]);
+  });
+
+  it("labels a request report with the course and names the requester as its author", async () => {
+    const requester = await person();
+    const reporter = await person();
+    const mod = await person({ role: "mod" });
+    const request = await makeRequest(requester);
+
+    const res = await call("POST", "/api/reports", reporter.token, {
+      targetType: "resource_request",
+      targetId: request.id,
+      reason: "Looks like spam to me, please check",
+    });
+    expect(res.status).toBe(201);
+    const userReport = await call("POST", "/api/reports", reporter.token, {
+      targetType: "user",
+      targetId: requester.id,
+      reason: "Keeps posting spam requests",
+    });
+    expect(userReport.status).toBe(201);
+
+    const { items } = await (
+      await call("GET", "/api/mod/reports", mod.token)
+    ).json<{
+      items: { targetType: string; targetLabel: string | null; targetAuthor: string | null }[];
+    }>();
+    const byType = Object.fromEntries(items.map((i) => [i.targetType, i]));
+    expect(byType.resource_request.targetLabel).toBe(request.courseCode);
+    expect(byType.resource_request.targetAuthor).toBe(requester.username);
+    expect(byType.user.targetLabel).toBe(requester.username);
+    expect(byType.user.targetAuthor).toBe(requester.username);
   });
 
   it("reports a request and refuses a report from a student who cannot see the link", async () => {

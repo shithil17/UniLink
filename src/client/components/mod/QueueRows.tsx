@@ -122,10 +122,10 @@ export function ReportRow({ report, now }: { report: ModReport; now: number }) {
       ) : null}
       {report.status === "open" ? (
         <div className="flex flex-wrap gap-2">
-          {report.targetLabel ? (
+          {report.targetAuthor ? (
             <Link
               to="/mod/users"
-              search={{ q: report.targetLabel }}
+              search={{ q: report.targetAuthor }}
               className={buttonVariants({ variant: "outline", size: "sm" })}
             >
               Review user
