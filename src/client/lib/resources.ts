@@ -8,6 +8,7 @@ import { z } from "zod";
 import { facultyTitle } from "../../shared/facultySearch";
 import { reportCreated } from "../../shared/schemas/moderation";
 import {
+  helpableResourceRequestList,
   myResourceRequestPage,
   RESOURCE_EXPIRY_MAX_MS,
   RESOURCE_EXPIRY_MIN_MS,
@@ -105,6 +106,10 @@ export function timeLeft(expiresAt: number, now: number): string {
   return `${n} ${unit}${n === 1 ? "" : "s"} left`;
 }
 
+/** "You sent a link" / "You sent 2 links". Empty when none. */
+export const sentLinksLine = (n: number) =>
+  n === 0 ? "" : `You sent ${n === 1 ? "a link" : `${n} links`}`;
+
 /**
  * The line under a request that says when it goes away. An open request names its expiry; a
  * fulfilled one names the day it is deleted (the keep period after the accept); an expired one says
@@ -172,6 +177,15 @@ export const myRequestsQuery = infiniteQueryOptions({
     ),
   initialPageParam: "",
   getNextPageParam: (last) => last.nextCursor ?? undefined,
+});
+
+/**
+ * Open requests the student can help with: any for a course they recorded, plus faculty-only ones for a
+ * faculty member they had. Same-faculty ones come first. Under the `resources` prefix, so every write refreshes it.
+ */
+export const helpableRequestsQuery = queryOptions({
+  queryKey: ["resources", "helpable"],
+  queryFn: () => apiGet("/api/resources/requests/helpable", helpableResourceRequestList),
 });
 
 /** One request for someone who may help: the request and their own links to it. A 404 means it is closed or gone. */

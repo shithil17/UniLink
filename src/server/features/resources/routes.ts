@@ -4,6 +4,7 @@ import { pageQuery } from "../../../shared/schemas/common";
 import {
   resourceRequestInput,
   resourceSubmissionInput,
+  type helpableResourceRequestList,
   type myResourceRequestPage,
   type resourceRequestDetail,
   type resourceSubmissionOwn,
@@ -166,6 +167,29 @@ export const resourceRoutes = new Hono<AppEnv>()
       })),
       nextCursor: page.nextCursor,
     } satisfies z.infer<typeof myResourceRequestPage>);
+  })
+  // Also before "/requests/:id". Open requests for a course the student recorded (any faculty) or a
+  // faculty member they had. Carries no requester identity and no link.
+  .get("/requests/helpable", async (c) => {
+    const me = user(c);
+    const db = getDb(c.env.DB);
+    const now = Date.now();
+    const rows = await resourceRequestsRepo(db).listHelpable(
+      me.id,
+      now,
+      limits.resourceHelpableMax,
+    );
+    const sent = await resourceSubmissionsRepo(db).countOwnByRequest(
+      me.id,
+      rows.map((r) => r.id),
+    );
+    return c.json({
+      items: rows.map((r) => ({
+        ...toRequestView(r, now),
+        sameFaculty: r.sameFaculty,
+        myLinks: sent.get(r.id) ?? 0,
+      })),
+    } satisfies z.infer<typeof helpableResourceRequestList>);
   })
   .get("/requests/:id", async (c) => {
     const id = paramId(c);

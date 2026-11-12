@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 import type {
+  HelpableResourceRequestList,
   MyResourceRequest,
   ResourceRequest,
   ResourceRequestDetail,
@@ -789,5 +790,244 @@ describe("my requests", () => {
     ).json<{ items: MyResourceRequest[]; nextCursor: string | null }>();
     expect(page2.items.map((r) => r.id)).toEqual([first.id]);
     expect(page2.nextCursor).toBeNull();
+  });
+});
+
+/** A request written straight to the table, for states the API will not produce (held, lapsed, removed). */
+async function insertRequest(
+  authorId: number,
+  row: {
+    courseCode?: string | null;
+    facultyId?: number | null;
+    status?: string;
+    expiresAt?: number;
+    fulfilledAt?: number | null;
+    deletedAt?: number | null;
+  },
+) {
+  const created = await env.DB.prepare(
+    "INSERT INTO resource_requests (author_id, course_code, faculty_id, status, expires_at, fulfilled_at, deleted_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+  )
+    .bind(
+      authorId,
+      row.courseCode ?? null,
+      row.facultyId ?? null,
+      row.status ?? "published",
+      row.expiresAt ?? Date.now() + 7 * DAY,
+      row.fulfilledAt ?? null,
+      row.deletedAt ?? null,
+      Date.now(),
+    )
+    .first<{ id: number }>();
+  return created!.id;
+}
+
+const helpable = async (who: Person) => {
+  const res = await call("GET", "/api/resources/requests/helpable", who.token);
+  expect(res.status).toBe(200);
+  return (await res.json<HelpableResourceRequestList>()).items;
+};
+
+describe("requests I can help with", () => {
+  it("lists a request for a course the student recorded after it was published", async () => {
+    const requester = await person();
+    const helper = await person();
+    const request = await makeRequest(requester, { facultyId: faculty1 });
+    expect(await helpable(helper)).toEqual([]);
+
+    await addAttempt(helper.id, "CSE115", faculty1);
+
+    const items = await helpable(helper);
+    expect(items.map((r) => r.id)).toEqual([request.id]);
+    // Recording the course later does not send the notification that was skipped at publish.
+    expect(await typesFor(helper.id)).toEqual([]);
+  });
+
+  it("lists a same-course request for a different faculty member, not tagged as the same faculty", async () => {
+    const requester = await person();
+    const helper = await person();
+    const request = await makeRequest(requester, { facultyId: faculty1 });
+    await addAttempt(helper.id, "CSE115", faculty2);
+
+    const items = await helpable(helper);
+    expect(items.map((r) => [r.id, r.sameFaculty])).toEqual([[request.id, false]]);
+  });
+
+  it("lists a course-only request, and a helper with no faculty on the attempt is not the same faculty", async () => {
+    const requester = await person();
+    const helper = await person();
+    const request = await makeRequest(requester);
+    await addAttempt(helper.id, "CSE115");
+
+    const items = await helpable(helper);
+    expect(items.map((r) => [r.id, r.sameFaculty])).toEqual([[request.id, false]]);
+  });
+
+  it("tags the same course and faculty and sorts it ahead of one that lapses sooner", async () => {
+    const requester = await person();
+    const helper = await person();
+    await addAttempt(helper.id, "CSE115", faculty1);
+    await addAttempt(helper.id, "CSE225", faculty2);
+    const sooner = await makeRequest(requester, {
+      courseCode: "CSE225",
+      facultyId: faculty1,
+      expiresAt: Date.now() + 2 * DAY,
+    });
+    const same = await makeRequest(requester, {
+      courseCode: "CSE115",
+      facultyId: faculty1,
+      expiresAt: Date.now() + 20 * DAY,
+    });
+    const later = await makeRequest(requester, {
+      courseCode: "CSE225",
+      facultyId: faculty1,
+      expiresAt: Date.now() + 10 * DAY,
+    });
+
+    const items = await helpable(helper);
+    expect(items.map((r) => [r.id, r.sameFaculty])).toEqual([
+      [same.id, true],
+      [sooner.id, false],
+      [later.id, false],
+    ]);
+  });
+
+  it("lists a faculty-only request for a student who had that faculty member, and not for one who did not", async () => {
+    const requester = await person();
+    const had = await person();
+    const other = await person();
+    await addAttempt(had.id, "CSE115", faculty1);
+    await addAttempt(other.id, "CSE115", faculty2);
+    const request = await makeRequest(requester, { courseCode: undefined, facultyId: faculty1 });
+
+    expect((await helpable(had)).map((r) => [r.id, r.sameFaculty])).toEqual([[request.id, true]]);
+    expect(await helpable(other)).toEqual([]);
+  });
+
+  it("leaves out the student's own, fulfilled, lapsed, held and removed requests", async () => {
+    const requester = await person();
+    const helper = await person();
+    await addAttempt(helper.id, "CSE115");
+    await addAttempt(requester.id, "CSE115");
+    await insertRequest(helper.id, { courseCode: "CSE115" });
+    await insertRequest(requester.id, { courseCode: "CSE115", fulfilledAt: Date.now() });
+    await insertRequest(requester.id, { courseCode: "CSE115", expiresAt: Date.now() - HOUR });
+    await insertRequest(requester.id, { courseCode: "CSE115", status: "pending_review" });
+    await insertRequest(requester.id, { courseCode: "CSE115", status: "rejected" });
+    await insertRequest(requester.id, { courseCode: "CSE115", deletedAt: Date.now() });
+    const open = await insertRequest(requester.id, { courseCode: "CSE115" });
+
+    expect((await helpable(helper)).map((r) => r.id)).toEqual([open]);
+  });
+
+  it("counts the links the student already sent, and ignores other helpers' and removed ones", async () => {
+    const requester = await person();
+    const helper = await person();
+    const other = await person();
+    await addAttempt(helper.id, "CSE115");
+    await addAttempt(other.id, "CSE115");
+    const sent = await makeRequest(requester);
+    const untouched = await makeRequest(requester, { courseCode: "CSE115" });
+    expect((await sendLink(helper, sent.id)).status).toBe(201);
+    expect((await sendLink(helper, sent.id, "https://github.com/a/b")).status).toBe(201);
+    expect((await sendLink(other, untouched.id)).status).toBe(201);
+    const removed = await sendLink(helper, untouched.id);
+    const { id: removedId } = await removed.json<{ id: number }>();
+    await env.DB.prepare("UPDATE resource_submissions SET deleted_at = ? WHERE id = ?")
+      .bind(Date.now(), removedId)
+      .run();
+
+    const items = await helpable(helper);
+    expect(Object.fromEntries(items.map((r) => [r.id, r.myLinks]))).toEqual({
+      [sent.id]: 2,
+      [untouched.id]: 0,
+    });
+  });
+
+  it("carries no requester identity and no link", async () => {
+    const requester = await person();
+    const helper = await person();
+    const other = await person();
+    await addAttempt(other.id, "CSE115");
+    await addAttempt(helper.id, "CSE115");
+    const request = await makeRequest(requester, { note: "Midterm notes" });
+    expect((await sendLink(other, request.id)).status).toBe(201);
+
+    const res = await call("GET", "/api/resources/requests/helpable", helper.token);
+    const text = await res.text();
+    expect(text).not.toContain(requester.username);
+    expect(text).not.toContain(other.username);
+    expect(text).not.toContain("drive.google.com");
+    for (const item of JSON.parse(text).items) {
+      expect(Object.keys(item)).not.toEqual(
+        expect.arrayContaining(["authorId", "username", "url", "submissions"]),
+      );
+      expect(item).not.toHaveProperty("authorId");
+      expect(item).not.toHaveProperty("submissions");
+    }
+  });
+
+  it("is not shadowed by the request id route, and needs a signed-in user", async () => {
+    expect((await call("GET", "/api/resources/requests/helpable", null)).status).toBe(401);
+  });
+
+  it("does not stop a student from sending a link to a request found here", async () => {
+    const requester = await person();
+    const helper = await person();
+    await makeRequest(requester);
+    await addAttempt(helper.id, "CSE115");
+    const [item] = await helpable(helper);
+
+    expect((await sendLink(helper, item.id)).status).toBe(201);
+    expect((await helpable(helper))[0].myLinks).toBe(1);
+  });
+});
+
+describe("same faculty on a link", () => {
+  it("tells the requester whether each sender took the same faculty member", async () => {
+    const requester = await person();
+    const same = await person();
+    const different = await person();
+    const wrongCourse = await person();
+    const noAttempt = await person();
+    await addAttempt(same.id, "CSE115", faculty1);
+    await addAttempt(different.id, "CSE115", faculty2);
+    // Same faculty member, but not for the course the request names.
+    await addAttempt(wrongCourse.id, "CSE225", faculty1);
+    const withFaculty = await makeRequest(requester, { facultyId: faculty1 });
+    for (const who of [same, different, wrongCourse, noAttempt]) {
+      expect((await sendLink(who, withFaculty.id)).status).toBe(201);
+    }
+
+    const res = await call("GET", "/api/resources/requests/mine", requester.token);
+    const { items } = await res.json<{ items: MyResourceRequest[] }>();
+    const bySender = Object.fromEntries(
+      items[0].submissions.map((l) => [l.uploader, l.sameFaculty]),
+    );
+    expect(bySender).toEqual({
+      [same.username]: true,
+      [different.username]: false,
+      [wrongCourse.username]: false,
+      [noAttempt.username]: false,
+    });
+  });
+
+  it("is null when the request names no faculty member, and course-free requests match on faculty alone", async () => {
+    const requester = await person();
+    const helper = await person();
+    await addAttempt(helper.id, "CSE115", faculty1);
+    const noFaculty = await makeRequest(requester);
+    const facultyOnly = await makeRequest(requester, {
+      courseCode: undefined,
+      facultyId: faculty1,
+    });
+    expect((await sendLink(helper, noFaculty.id)).status).toBe(201);
+    expect((await sendLink(helper, facultyOnly.id)).status).toBe(201);
+
+    const res = await call("GET", "/api/resources/requests/mine", requester.token);
+    const { items } = await res.json<{ items: MyResourceRequest[] }>();
+    const flag = (id: number) => items.find((r) => r.id === id)!.submissions[0].sameFaculty;
+    expect(flag(noFaculty.id)).toBeNull();
+    expect(flag(facultyOnly.id)).toBe(true);
   });
 });

@@ -77,6 +77,8 @@ export const resourceSubmissionForRequester = z.object({
   /** The uploader's public handle. */
   uploader: z.string(),
   decision: resourceDecision,
+  /** Whether the sender took the request's faculty member (and its course, if it names one). Null when the request names no faculty. */
+  sameFaculty: z.boolean().nullable(),
   createdAt: instant,
 });
 
@@ -101,12 +103,26 @@ export const resourceRequestDetail = resourceRequest.extend({
   mySubmissions: z.array(resourceSubmissionOwn),
 });
 
+/**
+ * An open request the student can help with. `sameFaculty` is true when they had the request's faculty
+ * member (for that course, if it names one); `myLinks` is how many links they already sent. Never
+ * carries the requester's identity or any link.
+ */
+export const helpableResourceRequest = resourceRequest.extend({
+  sameFaculty: z.boolean(),
+  myLinks: z.number().int(),
+});
+
+export const helpableResourceRequestList = z.object({ items: z.array(helpableResourceRequest) });
+
 export const myResourceRequestPage = page(myResourceRequest);
 
 export type ResourceRequestInput = z.output<typeof resourceRequestInput>;
 export type ResourceRequestFormValues = z.input<typeof resourceRequestInput>;
 export type ResourceSubmissionInput = z.output<typeof resourceSubmissionInput>;
 export type ResourceRequest = z.infer<typeof resourceRequest>;
+export type HelpableResourceRequest = z.infer<typeof helpableResourceRequest>;
+export type HelpableResourceRequestList = z.infer<typeof helpableResourceRequestList>;
 export type MyResourceRequest = z.infer<typeof myResourceRequest>;
 export type ResourceRequestDetail = z.infer<typeof resourceRequestDetail>;
 export type ResourceSubmissionForRequester = z.infer<typeof resourceSubmissionForRequester>;

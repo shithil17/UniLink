@@ -156,6 +156,8 @@ export const limits = {
   resourceFanoutMax: 1000,
   // ceiling: a phone screen shows about this many rows; more arrive through the cursor. Revisit if the list feels short.
   resourcePage: { defaultSize: 20, maxSize: 50 },
+  // ceiling: a phone list of requests the student can help with; past this the soonest-expiring same-faculty ones show and the rest are not listed. Revisit if students report missing requests.
+  resourceHelpableMax: 50,
   // ceiling: three months: long enough to find the link again after the exam, short enough to keep shared links from piling up. The UI states it. Defined in shared code so the screens can state it. Revisit if students ask for longer.
   resourceFulfilledKeepMs: RESOURCE_FULFILLED_KEEP_MS,
   /** The screening pipeline: what the rules accept and how long the model step may take. */

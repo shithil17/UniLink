@@ -25,6 +25,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - (2026-10-21) Elective trails and open electives: a curriculum can list its specialized elective trails (CSE: six trails, at least two courses from one trail). Students fill trail elective slots by picking from the trail list, see their trail progress on the map, and get title and credits filled in from a course code for open electives. CSE498 Internship/Co-op is on the CSE map as a non-credit course (Phase 4).
 - (2026-11-12) Rides, lost and found and marketplace now come straight after resources (renumbered 11, 12, 13), then Clef auto-moderation (14), hardening (15) and delivery (16). Faculty research profiles and the AI supervisor finder are optional phases O1 and O2 at the bottom and may never ship; the finder gate moved from Clef to O2. The faculty directory is unchanged. Marketplace moves to Dev A, after Clef.
 - (2026-11-02) New Phase 9b: a Planner view in Courses. Students set a target CGPA (saved to the account), try mock grades on past and future courses (kept in the browser only), and get advice that prefers doing better in remaining courses and suggests the fewest retakes only when the target needs them. It runs before Phase 10.
+- (2026-11-12) Resource requests also reach students who did not get the publish-time notification. The Materials screen has a Help others tab listing open requests for any course the student has recorded (any faculty) and faculty-only requests for a faculty member they had, with same-faculty ones first and tagged. The requester sees whether each link's sender took the same faculty. Notifications and the purge rules are unchanged.
 
 ---
 
@@ -905,6 +906,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - Several students can submit to one request, and the requester accepts one. The requester sees the uploader's username. Only the requester sees the link.
 > - The requester sets the expiry. Cron hard-deletes expired open requests, and hard-deletes fulfilled requests 3 months after fulfilment. The UI says this clearly.
 > - The new-account cooldown applies to submitting links. Request notes and submission notes go through `screen()`. Reports use `target_type` `resource_request` and `resource_submission`.
+> - **Help others (added 2026-11-12):** the Materials screen has a Help others tab listing open requests for any course the student has recorded (any faculty), and faculty-only requests for a faculty they had. Same-faculty requests sort first and are tagged. Notifications are unchanged (exact match, at publish). The requester sees whether each link's sender took the same faculty. Links stay visible to the requester only, and the purge rules are unchanged.
 > - This phase creates `src/server/cron.ts`: one `scheduled()` handler that runs a list of cleanup jobs, one function per table. Later phases add a job to the list and never edit another phase's job.
 
 ### Checklist
@@ -913,6 +915,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] Create request (screened, fan-out notify), list my requests, submit link (allowlist, cooldown, screened), accept, reject, report.
 - [x] `cron.ts` with the two resource jobs. A cron trigger added in `wrangler.jsonc` for both environments.
 - [x] Screens: new request, my requests with their submissions, submit to a request (reached from the notification), clear expiry and purge wording.
+- [x] Help others (2026-11-12): `GET /api/resources/requests/helpable` (any faculty for a recorded course, faculty-only for a faculty the student had, same-faculty first, capped by `resourceHelpableMax`), a Help others tab on the Materials screen, and a same-faculty line on each link the requester sees. Indexes `resource_requests_course_idx` and `resource_requests_faculty_idx`.
 
 ### Checklist — Docs & QA (C, D)
 

@@ -1,5 +1,6 @@
 import {
   and,
+  asc,
   count,
   desc,
   eq,
@@ -10,6 +11,7 @@ import {
   isNull,
   lt,
   ne,
+  or,
   sql,
 } from "drizzle-orm";
 import type { Db } from "../db/client";
@@ -26,6 +28,9 @@ export type ResourceRequestWithFaculty = ResourceRequestRow & {
   facultyInitials: string | null;
 };
 
+/** An open request someone else can help with, tagged when it is the viewer's own faculty member. */
+export type HelpableRequest = ResourceRequestWithFaculty & { sameFaculty: boolean };
+
 export type NewResourceRequest = Omit<
   typeof resourceRequests.$inferInsert,
   "id" | "fulfilledAt" | "acceptedSubmissionId" | "deletedAt" | "deletedBy"
@@ -36,7 +41,11 @@ export type NewResourceSubmission = Omit<
 >;
 
 /** A published link with its uploader's public handle. */
-export type SubmissionWithUploader = ResourceSubmissionRow & { uploader: string | null };
+export type SubmissionWithUploader = ResourceSubmissionRow & {
+  uploader: string | null;
+  /** Whether the uploader took the request's faculty member (and course, if it names one). Null when the request names no faculty. */
+  sameFaculty: boolean | null;
+};
 
 const requestWithFaculty = {
   ...getTableColumns(resourceRequests),
@@ -162,6 +171,43 @@ export function resourceRequestsRepo(db: Db) {
       return rows.map((r) => r.userId);
     },
     /**
+     * Open requests the student can help with, not their own: any request for a course they have an
+     * attempt in (whichever faculty member taught it), and faculty-only requests for a faculty member
+     * they had. Same-faculty ones come first, then the soonest to lapse. Subqueries keep the cohort out
+     * of the bound-parameter cap. Walks `resource_requests_course_idx` and `resource_requests_faculty_idx`
+     * (one branch each, combined by the OR), and `attempts_user_idx` for the student's own attempts.
+     */
+    async listHelpable(userId: number, now: number, limit: number): Promise<HelpableRequest[]> {
+      const sameFaculty = sql<boolean>`(${resourceRequests.facultyId} is not null and exists (
+        select 1 from ${attempts}
+        where ${attempts.userId} = ${userId}
+          and ${attempts.facultyId} = ${resourceRequests.facultyId}
+          and (${resourceRequests.courseCode} is null or ${attempts.courseCode} = ${resourceRequests.courseCode})
+      ))`.mapWith(Boolean);
+      const myAttempts = (column: typeof attempts.courseCode | typeof attempts.facultyId) =>
+        db.select({ v: column }).from(attempts).where(eq(attempts.userId, userId));
+      return db
+        .select({ ...requestWithFaculty, sameFaculty })
+        .from(resourceRequests)
+        .leftJoin(faculty, eq(faculty.id, resourceRequests.facultyId))
+        .where(
+          and(
+            openAt(now),
+            ne(resourceRequests.authorId, userId),
+            or(
+              inArray(resourceRequests.courseCode, myAttempts(attempts.courseCode)),
+              and(
+                isNull(resourceRequests.courseCode),
+                inArray(resourceRequests.facultyId, myAttempts(attempts.facultyId)),
+              ),
+            ),
+          ),
+        )
+        .orderBy(desc(sameFaculty), asc(resourceRequests.expiresAt))
+        .limit(limit)
+        .all();
+    },
+    /**
      * The requester accepts one link. A single guarded UPDATE: it only fulfils a request that is still
      * open, theirs and not lapsed, and only when the link is one of its published, live links. Two
      * accepts racing fulfil it once. False when any guard fails.
@@ -267,12 +313,47 @@ export function resourceSubmissionsRepo(db: Db) {
       }
       return urls;
     },
-    /** Published, live links for these requests, oldest first, with the uploader's handle. For the requester only. */
+    /**
+     * How many links a user has sent to each of these requests (not removed), by request id. One read
+     * of `resource_submissions_author_idx`; requests with none are absent from the map.
+     */
+    async countOwnByRequest(authorId: number, requestIds: number[]): Promise<Map<number, number>> {
+      const counts = new Map<number, number>();
+      if (requestIds.length === 0) return counts;
+      const rows = await db
+        .select({ requestId: resourceSubmissions.requestId, n: count() })
+        .from(resourceSubmissions)
+        .where(
+          and(
+            eq(resourceSubmissions.authorId, authorId),
+            inArray(resourceSubmissions.requestId, requestIds),
+            isNull(resourceSubmissions.deletedAt),
+          ),
+        )
+        .groupBy(resourceSubmissions.requestId)
+        .all();
+      for (const r of rows) counts.set(r.requestId, r.n);
+      return counts;
+    },
+    /**
+     * Published, live links for these requests, oldest first, with the uploader's handle and whether
+     * they took the request's faculty member. For the requester only. The faculty check is a correlated
+     * `exists` on `attempts_user_idx`, so there is no per-row query.
+     */
     async listPublishedFor(requestIds: number[]): Promise<SubmissionWithUploader[]> {
       if (requestIds.length === 0) return [];
+      const sameFaculty = sql<number | null>`case
+        when ${resourceRequests.facultyId} is null then null
+        when exists (
+          select 1 from ${attempts}
+          where ${attempts.userId} = ${resourceSubmissions.authorId}
+            and ${attempts.facultyId} = ${resourceRequests.facultyId}
+            and (${resourceRequests.courseCode} is null or ${attempts.courseCode} = ${resourceRequests.courseCode})
+        ) then 1 else 0 end`;
       const rows = await db
-        .select({ submission: resourceSubmissions, uploader: users.username })
+        .select({ submission: resourceSubmissions, uploader: users.username, sameFaculty })
         .from(resourceSubmissions)
+        .innerJoin(resourceRequests, eq(resourceRequests.id, resourceSubmissions.requestId))
         .leftJoin(users, eq(users.id, resourceSubmissions.authorId))
         .where(
           and(
@@ -283,7 +364,11 @@ export function resourceSubmissionsRepo(db: Db) {
         )
         .orderBy(resourceSubmissions.id)
         .all();
-      return rows.map((r) => ({ ...r.submission, uploader: r.uploader }));
+      return rows.map((r) => ({
+        ...r.submission,
+        uploader: r.uploader,
+        sameFaculty: r.sameFaculty === null ? null : r.sameFaculty === 1,
+      }));
     },
     /** A user's own links to one request, oldest first. */
     async listOwn(requestId: number, authorId: number): Promise<ResourceSubmissionRow[]> {

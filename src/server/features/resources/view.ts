@@ -65,6 +65,7 @@ export function toRequesterSubmission(
     note: s.note,
     uploader: s.uploader ?? "",
     decision: submissionDecision(s, acceptedSubmissionId),
+    sameFaculty: s.sameFaculty,
     createdAt: s.createdAt,
   };
 }

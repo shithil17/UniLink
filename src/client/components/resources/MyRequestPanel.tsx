@@ -70,8 +70,17 @@ export function MyRequestPanel({
             return (
               <li key={link.id} className="grid gap-2 border-t border-line px-4 py-3">
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className="min-w-0 truncate text-[15px] font-medium text-ink">
-                    {link.uploader}
+                  <span className="grid min-w-0 gap-0.5">
+                    <span className="truncate text-[15px] font-medium text-ink">
+                      {link.uploader}
+                    </span>
+                    {link.sameFaculty === null ? null : (
+                      <span className="text-[13px] leading-[1.3] text-soft">
+                        {link.sameFaculty
+                          ? "Took it with the same faculty"
+                          : "Different faculty, or not recorded"}
+                      </span>
+                    )}
                   </span>
                   <time
                     dateTime={new Date(link.createdAt).toISOString()}

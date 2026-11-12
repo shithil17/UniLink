@@ -1,0 +1,2 @@
+CREATE INDEX `resource_requests_course_idx` ON `resource_requests` (`course_code`,`expires_at`);--> statement-breakpoint
+CREATE INDEX `resource_requests_faculty_idx` ON `resource_requests` (`faculty_id`,`expires_at`);

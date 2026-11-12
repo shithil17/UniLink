@@ -414,6 +414,10 @@ export const resourceRequests = sqliteTable(
     // The cron purges: open ones past their expiry, fulfilled ones past their keep period.
     index("resource_requests_expires_idx").on(t.expiresAt),
     index("resource_requests_fulfilled_idx").on(t.fulfilledAt),
+    // "Help others": open requests for a course the student took, any faculty.
+    index("resource_requests_course_idx").on(t.courseCode, t.expiresAt),
+    // "Help others": open faculty-only requests for a faculty member the student had.
+    index("resource_requests_faculty_idx").on(t.facultyId, t.expiresAt),
   ],
 );
 
