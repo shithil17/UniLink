@@ -150,6 +150,29 @@ export const rideFeedQuery = z.object({
   limit: z.coerce.number().int().positive().optional(),
 });
 
+/** Which end of a ride the Map view counts: where rides leave from or where they go. */
+export const rideAreaEnd = z.enum(["pickup", "destination"]);
+
+/**
+ * The Map view's counts query: the feed's filters minus the text search, the area filters (the view
+ * groups by area, so filtering to one would leave one count) and the paging, plus the end to count.
+ */
+export const rideAreasQuery = rideFeedQuery
+  .pick({ vehicle: true, date: true, day: true })
+  .extend({ by: rideAreaEnd.default("pickup") });
+
+/** One area with the number of live rides filed under it (sub-areas without a point of their own rolled into their parent). */
+export const rideAreaCount = z.object({
+  areaId: z.number().int(),
+  count: z.number().int().positive(),
+});
+
+/** Counts only: never a ride, a point, a contact or an author. */
+export const rideAreaCounts = z.object({
+  by: rideAreaEnd,
+  areas: z.array(rideAreaCount),
+});
+
 /**
  * A ride as the feed, the detail screen and "my rides" show it. Never carries a contact (those come from
  * `GET /api/rides/:id/contact`) or the poster's identity. `status` is the moderation status; a ride other
@@ -203,6 +226,8 @@ export type RideFormValues = z.input<typeof rideInput>;
 export type RidePatch = z.output<typeof ridePatch>;
 export type RideSeatsInput = z.output<typeof rideSeatsInput>;
 export type RideFeedQuery = z.output<typeof rideFeedQuery>;
+export type RideAreaEnd = z.infer<typeof rideAreaEnd>;
+export type RideAreaCounts = z.infer<typeof rideAreaCounts>;
 export type RideSummary = z.infer<typeof rideSummary>;
 export type RideDetail = z.infer<typeof rideDetail>;
 export type RideFeedPage = z.infer<typeof rideFeedPage>;

@@ -162,6 +162,13 @@
       "when": 1794501856190,
       "tag": "0022_ride_points",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1794504158001,
+      "tag": "0023_ride_status_expires_index",
+      "breakpoints": true
     }
   ]
 }

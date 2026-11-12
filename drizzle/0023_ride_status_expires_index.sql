@@ -1,0 +1,1 @@
+CREATE INDEX `rides_status_expires_idx` ON `rides` (`status`,`expires_at`);

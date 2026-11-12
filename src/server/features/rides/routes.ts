@@ -3,10 +3,12 @@ import type { z } from "zod";
 import { daysToMask, timeToMinutes, WEEKDAYS } from "../../../shared/rides";
 import { pageQuery } from "../../../shared/schemas/common";
 import {
+  rideAreasQuery,
   rideFeedQuery,
   rideInput,
   ridePatch,
   rideSeatsInput,
+  type rideAreaCounts,
   type rideDetail,
   type rideFeedPage,
 } from "../../../shared/schemas/rides";
@@ -258,6 +260,22 @@ export const rideRoutes = new Hono<AppEnv>()
       items: items.map((r) => toRideView(r, me.id, now)),
       nextCursor: rows.length > params.size && last ? encodeRideCursor(last) : null,
     } satisfies z.infer<typeof rideFeedPage>);
+  })
+  // The Map view's counts: how many live rides the feed's filters leave in each area. Counts only.
+  .get("/areas", validateQuery(rideAreasQuery), async (c) => {
+    const me = user(c);
+    const { by, vehicle, date, day } = c.req.valid("query");
+    const { limit, windowMs } = limits.rideAreaCounts;
+    const now = Date.now();
+    const hit = await rateLimit(getDb(c.env.DB), `ride:areas:${me.id}`, limit, windowMs, now);
+    if (!hit.allowed) return rateLimitedResponse(c, hit);
+    const areas = await ridesRepo(getDb(c.env.DB)).areaCounts(
+      { id: me.id, role: me.role },
+      now,
+      by,
+      { vehicle, date, day: day === undefined ? undefined : WEEKDAYS.indexOf(day) },
+    );
+    return c.json({ by, areas } satisfies z.infer<typeof rideAreaCounts>);
   })
   .get("/mine", validateQuery(pageQuery), async (c) => {
     const me = user(c);

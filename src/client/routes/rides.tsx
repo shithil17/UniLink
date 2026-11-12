@@ -8,8 +8,9 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CarIcon, PlusIcon } from "lucide-react";
+import { RideAreaColumn, RideAreaOverlay } from "@/components/rides/RideAreaMap";
 import { RideDetailHost, RIDE_SPLIT_QUERY } from "@/components/rides/RideDetailHost";
 import { RideFiltersBar } from "@/components/rides/RideFilters";
 import { RideList } from "@/components/rides/RideList";
@@ -20,7 +21,9 @@ import { ErrorBlock } from "@/components/ui/error-block";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorMessage } from "@/lib/api";
+import { useMapParam } from "@/lib/map/useMapParam";
 import { meQuery } from "@/lib/queries";
+import { useRideAreaMap } from "@/lib/rideAreaMap";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import {
   activeFilterCount,
@@ -30,6 +33,7 @@ import {
   RIDE_EXPIRY_WORDS,
   rideFeedInfinite,
   type RideFilters,
+  type RideView,
 } from "@/lib/rides";
 
 export const Route = createFileRoute("/rides")({
@@ -67,6 +71,17 @@ function Rides() {
   const openerRef = useRef<HTMLElement | null>(null);
   const tab = search.tab ?? "find";
   const filters = filtersOf(search);
+  // The Map view belongs to the Find a ride tab.
+  const view: RideView = tab === "find" && search.view === "map" ? "map" : "list";
+  const areaMap = useRideAreaMap(filters, view === "map");
+  // Whether the Map view's entry on top of the history was pushed by this screen (below `lg`, where
+  // the map is full screen), so closing goes back to the list entry instead of stacking another.
+  const viewPushed = useRef(false);
+  useEffect(() => {
+    if (view !== "map") viewPushed.current = false;
+  }, [view]);
+  // From `lg` the map sits in the right column, and this is the same map opened full screen.
+  const fullScreen = useMapParam("areas");
 
   const setTab = (next: "find" | "mine") =>
     void navigate({
@@ -76,6 +91,62 @@ function Rides() {
     });
   const setFilters = (patch: Partial<RideFilters>) =>
     void navigate({ to: ".", search: (previous) => ({ ...previous, ...patch }), replace: true });
+  const setView = (next: RideView) => {
+    if (next === view) return;
+    const push = next === "map" && !wide;
+    viewPushed.current = push;
+    void navigate({
+      to: ".",
+      search: (previous) => ({ ...previous, view: next === "map" ? "map" : undefined }),
+      replace: !push,
+      resetScroll: false,
+    });
+  };
+  const closeView = () => {
+    if (viewPushed.current) {
+      router.history.back();
+    } else {
+      void navigate({
+        to: ".",
+        search: (previous) => ({ ...previous, view: undefined }),
+        replace: true,
+        resetScroll: false,
+      });
+    }
+  };
+  const mapOpen = view === "map" && (wide ? fullScreen.isOpen : true);
+  const closeMap = wide ? fullScreen.close : closeView;
+  // The count card's button: filter the list to the area and close the map. Below `lg` that also
+  // leaves the Map view; from `lg` the column map stays and shows the area selected.
+  const showRides = (areaId: number) => {
+    const area = areaMap.by === "pickup" ? { from: areaId } : { to: areaId };
+    void navigate({
+      to: ".",
+      search: (previous) => ({
+        ...previous,
+        ...area,
+        view: wide ? previous.view : undefined,
+        map: undefined,
+      }),
+      replace: true,
+      resetScroll: false,
+    });
+  };
+  // A pill in the column map filters the list beside it; the same pill again clears the filter.
+  const selectedArea = (areaMap.by === "pickup" ? filters.from : filters.to) ?? null;
+  const pickArea = (areaId: number) => {
+    const next = selectedArea === areaId ? undefined : areaId;
+    setFilters(areaMap.by === "pickup" ? { from: next } : { to: next });
+  };
+  // "Not on the map": the list is the place for those rides. Below `lg` that means leaving the map.
+  const openList = () => {
+    if (!wide) {
+      closeView();
+      return;
+    }
+    if (fullScreen.isOpen) fullScreen.close();
+    document.getElementById("ride-results")?.focus();
+  };
   const closeRide = () => {
     if (openedFromList) {
       router.history.back();
@@ -142,6 +213,8 @@ function Rides() {
             onChange={setFilters}
             onClear={clear}
             onOpen={onOpen}
+            view={view}
+            onViewChange={setView}
           />
         )}
       </div>
@@ -151,7 +224,30 @@ function Rides() {
         returnFocusTo={openerRef}
         onClose={closeRide}
         onDeleted={rideDeleted}
+        wideEmpty={
+          view === "map" ? (
+            <RideAreaColumn
+              model={areaMap}
+              selectedId={selectedArea}
+              onSelect={pickArea}
+              onExpand={fullScreen.open}
+              onOpenList={openList}
+              paused={fullScreen.isOpen}
+            />
+          ) : undefined
+        }
       />
+      {tab === "find" ? (
+        <RideAreaOverlay
+          open={mapOpen}
+          onClose={closeMap}
+          model={areaMap}
+          filters={filters}
+          onFilters={setFilters}
+          onShowRides={showRides}
+          onOpenList={openList}
+        />
+      ) : null}
     </div>
   );
 }
@@ -162,20 +258,31 @@ function Feed({
   onChange,
   onClear,
   onOpen,
+  view,
+  onViewChange,
 }: {
   barKey: number;
   filters: RideFilters;
   onChange: (patch: Partial<RideFilters>) => void;
   onClear: () => void;
   onOpen: (row: HTMLElement) => void;
+  view: RideView;
+  onViewChange: (view: RideView) => void;
 }) {
   const list = useInfiniteQuery(rideFeedInfinite(filters));
   const rides = list.data?.pages.flatMap((p) => p.items) ?? [];
   const filtered = activeFilterCount(filters) > 0;
 
   return (
-    <div className="space-y-5">
-      <RideFiltersBar key={barKey} filters={filters} onChange={onChange} />
+    // The id is where "Not on the map" lands the keyboard from the column map.
+    <div id="ride-results" tabIndex={-1} className="space-y-5 outline-none">
+      <RideFiltersBar
+        key={barKey}
+        filters={filters}
+        onChange={onChange}
+        view={view}
+        onViewChange={onViewChange}
+      />
       {list.isPending || (list.isPlaceholderData && rides.length === 0) ? (
         <SkeletonRows rows={3} label="Loading rides" />
       ) : list.isError ? (

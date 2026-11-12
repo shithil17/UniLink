@@ -171,6 +171,17 @@ function filterConditions(filter: RideFeedFilter): (SQL | undefined)[] {
   return conditions;
 }
 
+/**
+ * What the public feed and the Map view's counts both show: published, not removed, not lapsed and
+ * visible to the viewer. A viewer's own held ride is in "my rides", not here, so it is not counted either.
+ */
+const liveFeedConditions = (viewer: Viewer, now: number): (SQL | undefined)[] => [
+  eq(rides.status, "published"),
+  isNull(rides.deletedAt),
+  visibleTo(rides, viewer),
+  notExpired(rides, now),
+];
+
 export function ridesRepo(db: Db) {
   return {
     async insert(row: NewRide): Promise<number> {
@@ -242,11 +253,7 @@ export function ridesRepo(db: Db) {
       return selectRideSummaries(db)
         .where(
           and(
-            // The feed is the public list: a viewer's own held ride is in "my rides", not here.
-            eq(rides.status, "published"),
-            isNull(rides.deletedAt),
-            visibleTo(rides, viewer),
-            notExpired(rides, now),
+            ...liveFeedConditions(viewer, now),
             cursor
               ? or(
                   gt(rides.expiresAt, cursor.expiresAt),
@@ -258,6 +265,35 @@ export function ridesRepo(db: Db) {
         )
         .orderBy(rides.expiresAt, rides.id)
         .limit(limit)
+        .all();
+    },
+    /**
+     * How many live rides the feed would show for these filters, per area, for the Map view: one grouped
+     * query over published rides that have not lapsed, with a primary-key join to the ride's area for the
+     * roll-up. It reads `rides_status_expires_idx (status, expires_at)`, which exists for this query: the
+     * counts have no ORDER BY to steer the planner to `rides_expires_idx` (as the feed has), so without
+     * it SQLite walks `rides_status_id_idx` over every published ride, lapsed ones included. A vehicle
+     * filter uses `rides_vehicle_expires_idx`. `q`, `from` and `to` are ignored. A sub-area with no point
+     * of its own is counted under its parent, because the map has nowhere to put it; one with its own
+     * point, and an area with no point at all, count as themselves. Counts only: no ride, point,
+     * contact or author leaves the query.
+     */
+    async areaCounts(
+      viewer: Viewer,
+      now: number,
+      by: "pickup" | "destination",
+      filter: Pick<RideFeedFilter, "vehicle" | "date" | "day">,
+    ): Promise<{ areaId: number; count: number }[]> {
+      const area = alias(areas, "counted_area");
+      const column = by === "pickup" ? rides.pickupAreaId : rides.destinationAreaId;
+      const rolledUp = sql<number>`case when ${area.lat} is null and ${area.parentId} is not null then ${area.parentId} else ${area.id} end`;
+      return db
+        .select({ areaId: rolledUp.as("area_id"), count: count() })
+        .from(rides)
+        .innerJoin(area, eq(area.id, column))
+        .where(and(...liveFeedConditions(viewer, now), ...filterConditions(filter)))
+        .groupBy(rolledUp)
+        .orderBy(rolledUp)
         .all();
     },
     /**

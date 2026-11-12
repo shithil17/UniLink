@@ -585,6 +585,8 @@ export const rides = sqliteTable(
     // The feed filtered by vehicle, and by kind with a departure day.
     index("rides_vehicle_expires_idx").on(t.vehicle, t.expiresAt),
     index("rides_kind_departs_idx").on(t.kind, t.departsAt),
+    // The Map view's counts: published rides still live, with no ordering to steer the planner to `rides_expires_idx`, so without this it would walk every published ride, lapsed ones too.
+    index("rides_status_expires_idx").on(t.status, t.expiresAt),
     // The feed filtered by area.
     index("rides_pickup_area_expires_idx").on(t.pickupAreaId, t.expiresAt),
     index("rides_destination_area_expires_idx").on(t.destinationAreaId, t.expiresAt),

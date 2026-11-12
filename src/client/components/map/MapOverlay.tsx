@@ -1,5 +1,5 @@
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { MinusIcon, PlusIcon, XIcon } from "lucide-react";
+import { XIcon } from "lucide-react";
 import { useRef, type ReactNode } from "react";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { cn } from "cn";
@@ -8,6 +8,7 @@ import { zoomBy } from "@/lib/map/camera";
 import { MapAttribution } from "./MapAttribution";
 import { MapControlButton } from "./MapControlButton";
 import { MapView, type MapViewProps } from "./MapView";
+import { MapZoom } from "./MapZoom";
 
 export type MapOverlayProps = Pick<MapViewProps, "fitPoints" | "onMap"> & {
   open: boolean;
@@ -37,9 +38,6 @@ const INSET = {
 /** The same inset as padding, for the stack along the bottom. */
 const PAD =
   "pr-[max(0.75rem,env(safe-area-inset-right))] pb-[max(0.75rem,env(safe-area-inset-bottom))] pl-[max(0.75rem,env(safe-area-inset-left))]";
-
-/** Only where a real pointer exists; touch screens pinch. */
-const POINTER_ONLY = "[@media(hover:hover)_and_(pointer:fine)]:flex";
 
 /**
  * The full-screen map. On phones it covers the whole viewport, the floating tab bar included, and
@@ -109,28 +107,7 @@ export function MapOverlay({
               <MapAttribution links className="pointer-events-auto" />
               <div className="pointer-events-auto flex flex-col items-end gap-2">
                 {actions}
-                <div
-                  className={cn(
-                    "hidden flex-col overflow-hidden rounded-full bg-surface shadow-float",
-                    POINTER_ONLY,
-                  )}
-                >
-                  <MapControlButton
-                    aria-label="Zoom in"
-                    className="shadow-none"
-                    onClick={() => zoom(1)}
-                  >
-                    <PlusIcon />
-                  </MapControlButton>
-                  <span aria-hidden className="mx-3 h-px bg-line" />
-                  <MapControlButton
-                    aria-label="Zoom out"
-                    className="shadow-none"
-                    onClick={() => zoom(-1)}
-                  >
-                    <MinusIcon />
-                  </MapControlButton>
-                </div>
+                <MapZoom onZoom={zoom} />
               </div>
             </div>
             {footer ? <div className="pointer-events-auto">{footer}</div> : null}

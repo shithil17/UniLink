@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { SearchIcon, SlidersHorizontalIcon, XIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ListIcon, MapIcon, SearchIcon, SlidersHorizontalIcon, XIcon } from "lucide-react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { AreaPicker } from "@/components/areas/AreaPicker";
 import { Button } from "@/components/ui/button";
 import { Chip, chipClass } from "@/components/ui/chip";
@@ -15,6 +15,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { areaNameOf, areasQuery } from "@/lib/areas";
 import { SEARCH_DEBOUNCE_MS } from "@/lib/useDebouncedValue";
 import {
@@ -24,6 +25,7 @@ import {
   WEEKDAY_LONG,
   WEEKDAY_SHORT,
   type RideFilters,
+  type RideView,
 } from "@/lib/rides";
 import { WEEKDAYS } from "../../../shared/rides";
 import { RIDE_SEARCH_MAX_LENGTH } from "../../../shared/schemas/rides";
@@ -60,10 +62,15 @@ const SHEET_ID = "ride-filter-sheet";
 export function RideFiltersBar({
   filters,
   onChange,
+  view,
+  onViewChange,
 }: {
   filters: RideFilters;
   /** Merges these into the filters in the URL. */
   onChange: (patch: Partial<RideFilters>) => void;
+  /** The List / Map control under the search row; the filters apply to both views. */
+  view: RideView;
+  onViewChange: (view: RideView) => void;
 }) {
   // The button counts what its sheet holds; the search box is always in view and is not counted.
   const count = sheetCount(sheetFiltersOf(filters));
@@ -141,6 +148,20 @@ export function RideFiltersBar({
         </Button>
       </div>
 
+      <Tabs value={view} onValueChange={(next) => onViewChange(next as RideView)}>
+        {/* Two fixed halves, so switching never resizes it. */}
+        <TabsList aria-label="Show rides as" className="w-full sm:w-56">
+          <TabsTrigger value="list">
+            <ListIcon aria-hidden strokeWidth={1.75} />
+            List
+          </TabsTrigger>
+          <TabsTrigger value="map">
+            <MapIcon aria-hidden strokeWidth={1.75} />
+            Map
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {chips.length > 0 ? (
         <ul aria-label="Active filters" className="flex flex-wrap gap-2">
           {chips.map((c) => (
@@ -159,23 +180,55 @@ export function RideFiltersBar({
         </ul>
       ) : null}
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="bottom"
-          id={SHEET_ID}
-          finalFocus={button}
-          className="data-[side=bottom]:gap-3 data-[side=bottom]:overflow-hidden data-[side=bottom]:pb-0"
-        >
-          <FilterSheetBody
-            filters={filters}
-            onApply={(next) => {
-              onChange(next);
-              setOpen(false);
-            }}
-          />
-        </SheetContent>
-      </Sheet>
+      <RideFilterSheet
+        open={open}
+        onOpenChange={setOpen}
+        filters={filters}
+        finalFocus={button}
+        onApply={onChange}
+      />
     </div>
+  );
+}
+
+/**
+ * The Filters bottom sheet: a draft of the From and To areas, vehicle, weekday and date that "Show
+ * rides" applies. The Map view opens the same sheet from its floating Filters button, `raised` above
+ * the full-screen map.
+ */
+export function RideFilterSheet({
+  open,
+  onOpenChange,
+  filters,
+  onApply,
+  finalFocus,
+  raised,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  filters: RideFilters;
+  onApply: (next: Partial<RideFilters>) => void;
+  finalFocus?: RefObject<HTMLElement | null>;
+  raised?: boolean;
+}) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="bottom"
+        id={SHEET_ID}
+        finalFocus={finalFocus}
+        raised={raised}
+        className="data-[side=bottom]:gap-3 data-[side=bottom]:overflow-hidden data-[side=bottom]:pb-0"
+      >
+        <FilterSheetBody
+          filters={filters}
+          onApply={(next) => {
+            onApply(next);
+            onOpenChange(false);
+          }}
+        />
+      </SheetContent>
+    </Sheet>
   );
 }
 

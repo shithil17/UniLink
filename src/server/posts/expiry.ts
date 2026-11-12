@@ -1,5 +1,5 @@
-import { endOfDhakaDay } from "../../shared/time";
-import { limits } from "../limits";
+import { endOfDhakaDay } from "../../shared/time.ts";
+import { limits } from "../limits.ts";
 
 /**
  * Expiry for every post type, in one place. A type says when its post should lapse with an

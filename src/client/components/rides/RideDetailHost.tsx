@@ -1,4 +1,4 @@
-import { useState, type RefObject } from "react";
+import { useState, type ReactNode, type RefObject } from "react";
 import { CarIcon } from "lucide-react";
 import { RideDetail } from "@/components/rides/RideDetail";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -12,8 +12,8 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 export const RIDE_SPLIT_QUERY = "(min-width: 64rem)";
 
 /**
- * Where the open ride shows, chosen by the URL: no ride, an empty prompt on wide screens and nothing
- * on phones; a ride, the side panel on wide screens and a bottom sheet over the list on phones. The
+ * Where the open ride shows, chosen by the URL: no ride, an empty prompt (or the Map view's map) on wide
+ * screens and nothing on phones; a ride, the side panel on wide screens and a bottom sheet over the list on phones. The
  * list underneath stays mounted either way, so its scroll, filters and loaded pages are kept.
  *
  * The sheet is controlled by the route and remembers the last ride, so its content stays put while
@@ -25,6 +25,7 @@ export function RideDetailHost({
   returnFocusTo,
   onClose,
   onDeleted,
+  wideEmpty,
 }: {
   rideId: string | undefined;
   wide: boolean;
@@ -32,6 +33,8 @@ export function RideDetailHost({
   returnFocusTo: RefObject<HTMLElement | null>;
   onClose: () => void;
   onDeleted: () => void;
+  /** What the side panel shows while no ride is open, instead of the prompt: the Map view's map. */
+  wideEmpty?: ReactNode;
 }) {
   const [lastRideId, setLastRideId] = useState(rideId);
   if (rideId && rideId !== lastRideId) setLastRideId(rideId);
@@ -45,14 +48,16 @@ export function RideDetailHost({
         {rideId ? (
           <RideDetail rideId={rideId} onClose={onClose} onDeleted={onDeleted} />
         ) : (
-          <div className="overflow-hidden rounded-[24px] bg-surface">
-            <EmptyState
-              icon={CarIcon}
-              title="Pick a ride to see the details"
-              description="Its facts and the poster's contact open here."
-              className="py-16"
-            />
-          </div>
+          (wideEmpty ?? (
+            <div className="overflow-hidden rounded-[24px] bg-surface">
+              <EmptyState
+                icon={CarIcon}
+                title="Pick a ride to see the details"
+                description="Its facts and the poster's contact open here."
+                className="py-16"
+              />
+            </div>
+          ))
         )}
       </aside>
     );

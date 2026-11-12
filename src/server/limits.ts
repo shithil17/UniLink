@@ -195,6 +195,8 @@ export const limits = {
   rideCreate: { limit: 10, windowMs: DAY },
   // ceiling: edits, seat changes and renewals are a few taps per ride; generous, but it stops a loop. Revisit if posters report hitting it.
   rideUpdate: { limit: 60, windowMs: HOUR },
+  // ceiling: the Map view fetches one small grouped count per filter change or Leaving from / Going to switch, a few a minute while browsing; this stops a loop from re-running the query. Revisit if students report hitting it.
+  rideAreaCounts: { limit: 120, windowMs: 10 * MINUTE },
   // ceiling: a student runs a handful of rides at once (a commute each way, a weekend trip). Past this, a new ride is a 409 until one lapses or is deleted. Revisit if students report hitting it.
   rideOpenMax: 10,
   // ceiling: a phone screen shows about this many rows; more arrive through the cursor. Revisit if the feed feels short.

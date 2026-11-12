@@ -11,11 +11,13 @@ import { contactReveal } from "../../shared/schemas/common";
 import { POST_DEFAULT_EXPIRY_DAYS, POST_RENEW_EXTEND_DAYS } from "../../shared/posts";
 import { WEEKDAYS, type Weekday } from "../../shared/rides";
 import {
+  rideAreaCounts,
   rideFeedPage,
   rideFeedQuery,
   rideDetail,
   rideInput,
   ridePatch,
+  type RideAreaEnd,
   type RideDetail,
   type RideFeedQuery,
   type RideInput,
@@ -192,9 +194,14 @@ export type RideSearch = {
   vehicle?: Vehicle;
   date?: string;
   day?: Weekday;
+  /** "map" shows the Map view: ride counts per area. The list is the default and has no param. */
+  view?: "map";
   /** The full-screen map that is open (a ride's, or one on the form). Kept so the router does not strip it. */
   map?: string;
 };
+
+/** The two ways to look at the feed. */
+export type RideView = "list" | "map";
 
 /**
  * The route's `validateSearch`: each param is checked with the feed's own shared schema, and one that
@@ -212,6 +219,7 @@ export function parseRideSearch(raw: Record<string, unknown>): RideSearch {
     vehicle: keep(rideFeedQuery.shape.vehicle.safeParse(raw.vehicle)),
     date: keep(rideFeedQuery.shape.date.safeParse(raw.date)),
     day: keep(rideFeedQuery.shape.day.safeParse(raw.day)),
+    view: raw.view === "map" ? "map" : undefined,
     map: parseMapParam(raw.map),
   };
 }
@@ -503,6 +511,29 @@ export const rideFeedInfinite = (filters: RideFilters) =>
     initialPageParam: "",
     getNextPageParam: (last) => last.nextCursor ?? undefined,
     // A changed filter keeps the last list on screen until the new one arrives, so the page doesn't jump.
+    placeholderData: keepPreviousData,
+  });
+
+/**
+ * How many live rides each area has under the feed's current vehicle, date and weekday filters, for
+ * the Map view. The text search and the area filters are left out on purpose: the view groups by
+ * area, so a count must not change when one is picked. Fetched only while the Map view is shown.
+ */
+export const rideAreaCountsQuery = (filters: RideFilters, by: RideAreaEnd, enabled: boolean) =>
+  queryOptions({
+    queryKey: [
+      "rides",
+      "areas",
+      { vehicle: filters.vehicle, date: filters.date, day: filters.day },
+      by,
+    ],
+    queryFn: () =>
+      apiGet(
+        `/api/rides/areas${queryString({ by, vehicle: filters.vehicle, date: filters.date, day: filters.day })}`,
+        rideAreaCounts,
+      ),
+    enabled,
+    // A switch or a filter change keeps the last pills up until the new counts arrive.
     placeholderData: keepPreviousData,
   });
 
