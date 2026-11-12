@@ -45,7 +45,7 @@ describe("MonthGrid", () => {
         entry(i + 1, code, `${8 + i}:00`.padStart(5, "0"), ["T"]),
       ),
     );
-    const today = screen.getByRole("button", { name: /Tuesday, October 20, 2026, today/ });
+    const today = screen.getByRole("button", { name: /Tuesday, 20 October 2026, today/ });
     expect(today.getAttribute("aria-current")).toBe("date");
     expect(today.getAttribute("aria-label")).toContain("5 classes, 2 more than the dots show");
     expect(today.querySelectorAll('[data-slot="month-dot"]')).toHaveLength(3);
@@ -54,7 +54,7 @@ describe("MonthGrid", () => {
 
   it("draws one hue dot per class on a lighter day, in each course's hue", () => {
     month([entry(1, "CSE215", "09:00", ["T"]), entry(2, "CSE215L", "11:00", ["T"])]);
-    const today = screen.getByRole("button", { name: /October 20, 2026, today/ });
+    const today = screen.getByRole("button", { name: /20 October 2026, today/ });
     const dots = [...today.querySelectorAll<HTMLElement>('[data-slot="month-dot"]')];
     expect(dots.map((d) => d.dataset.hue)).toEqual([courseHue("CSE215"), courseHue("CSE215L")]);
     expect(dots[0].dataset.hue).toBe(dots[1].dataset.hue);
@@ -64,7 +64,7 @@ describe("MonthGrid", () => {
 
   it("draws no dots on a date without classes", () => {
     month([entry(1, "CSE215", "09:00", ["T"])]);
-    const wednesday = screen.getByRole("button", { name: /Wednesday, October 21, 2026/ });
+    const wednesday = screen.getByRole("button", { name: /Wednesday, 21 October 2026/ });
     expect(wednesday.querySelectorAll('[data-slot="month-dot"]')).toHaveLength(0);
     expect(wednesday.getAttribute("aria-label")).toContain("no classes");
   });
