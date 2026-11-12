@@ -222,7 +222,7 @@ describe("request fan-out", () => {
 
     const res = await call("POST", "/api/resources/requests", requester.token, {
       ...requestBody(),
-      note: "send it to my whatsapp, call 01712345678 or visit https://evil.example.com/buy",
+      note: "send it to my whatsapp, call 01712345678 or visit https://bit.ly/buy",
     });
     expect(res.status).toBe(201);
     expect((await res.json<ResourceRequest>()).status).toBe("rejected");

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vite-plus/test";
 import { makeWebp } from "../../shared/webp.fixture";
 import { limits } from "../limits";
-import { isAllowedHost, passesLuhn, redactText, runRules } from "./rules";
+import { passesLuhn, redactText, runRules } from "./rules";
 
 const rulesOf = (
   texts: string[],
@@ -69,28 +69,49 @@ describe("card numbers", () => {
 });
 
 describe("URLs", () => {
-  it("lets allowlisted hosts and their subdomains through", () => {
-    expect(
-      rulesOf(["notes at https://docs.google.com/document/d/1 and www.northsouth.edu/cse"]),
-    ).toEqual([]);
-    expect(isAllowedHost("sites.google.com")).toBe(true);
+  it("lets any safe https link through, with or without a scheme", () => {
+    for (const text of [
+      "notes at https://docs.google.com/document/d/1 and www.northsouth.edu/cse",
+      "watch https://www.youtube.com/watch?v=abc123 before class",
+      "files at https://transfer.it/t/abc.",
+      "visit example-site.com today",
+      "a link in brackets (https://drive.google.com/file/d/1/view).",
+    ]) {
+      expect(rulesOf([text]), text).toEqual([]);
+    }
   });
 
-  it("flags a link that is not on the allowlist, with or without a scheme", () => {
+  it("flags a link shortener, with or without a scheme", () => {
     for (const text of [
-      "win big at https://free-money.example.com/now",
-      "visit cheap-phones.xyz today",
-      "see www.evil.io",
+      "https://bit.ly/3abc",
+      "see bit.ly/3abc",
+      "go to www.tinyurl.com/x",
+      "https://sub.t.co/x",
     ]) {
       expect(rulesOf([text]), text).toEqual(["url"]);
     }
   });
 
-  it("flags look-alike hosts", () => {
-    expect(isAllowedHost("google.com.evil.io")).toBe(false);
-    expect(isAllowedHost("notgoogle.com")).toBe(false);
-    expect(rulesOf(["https://drive.google.com.evil.io/x"])).toEqual(["url"]);
-    expect(rulesOf(["https://google.com@evil.io/x"])).toEqual(["url"]);
+  it("flags http, IP addresses, private names, logins and ports", () => {
+    for (const text of [
+      "http://example-site.com/page",
+      "https://192.168.1.10/x",
+      "https://2130706433/x",
+      "https://localhost/x",
+      "https://printer.local/x",
+      "https://google.com@evil.io/x",
+      "https://example-site.com:8443/x",
+    ]) {
+      expect(rulesOf([text]), text).toEqual(["url"]);
+    }
+  });
+
+  it("flags a link that is too long", () => {
+    expect(rulesOf([`https://example-site.com/${"a".repeat(500)}`])).toEqual(["url"]);
+  });
+
+  it("holds back one bad link among good ones", () => {
+    expect(rulesOf(["https://github.com/x and https://bit.ly/y"])).toEqual(["url"]);
   });
 
   it("does not mistake an email address or a file name for a link", () => {
