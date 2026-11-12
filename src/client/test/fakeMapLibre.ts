@@ -21,6 +21,7 @@ export class Map {
   private handlers = new globalThis.Map<string, Handler[]>();
   private canvas = document.createElement("canvas");
   private center: { lng: number; lat: number };
+  private zoomLevel: number;
   /** Sources and layers added at runtime, by id; a restyle (`setStyle`) drops them like MapLibre does. */
   sources = new globalThis.Map<string, unknown>();
   layers = new globalThis.Map<string, unknown>();
@@ -35,6 +36,7 @@ export class Map {
     this.options = options;
     const [lng, lat] = (options.center as [number, number] | undefined) ?? centreOfBounds(options);
     this.center = { lng, lat };
+    this.zoomLevel = (options.zoom as number | undefined) ?? 0;
     (options.container as HTMLElement).appendChild(this.canvas);
     Map.instances.push(this);
     const finish = () => {
@@ -125,6 +127,9 @@ export class Map {
   getCenter() {
     return { ...this.center };
   }
+  getZoom() {
+    return this.zoomLevel;
+  }
   /** Plays a pan or a drag: moves the centre and emits the events a real move does. */
   moveTo(point: { lat: number; lng: number }) {
     this.emit("movestart");
@@ -134,7 +139,8 @@ export class Map {
   }
   private go(method: string, options: unknown) {
     this.record(method, options);
-    const centre = (options as { center?: [number, number] }).center;
+    const { center: centre, zoom } = options as { center?: [number, number]; zoom?: number };
+    if (zoom !== undefined) this.zoomLevel = zoom;
     if (centre) this.moveTo({ lng: centre[0], lat: centre[1] });
   }
   fitBounds(bounds: unknown, options?: unknown) {

@@ -10,7 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { CarIcon, PlusIcon } from "lucide-react";
-import { RideAreaColumn, RideAreaOverlay } from "@/components/rides/RideAreaMap";
+import { RideAreaMap } from "@/components/rides/RideAreaMap";
 import { RideDetailHost, RIDE_SPLIT_QUERY } from "@/components/rides/RideDetailHost";
 import { RideFiltersBar } from "@/components/rides/RideFilters";
 import { RideList } from "@/components/rides/RideList";
@@ -21,14 +21,16 @@ import { ErrorBlock } from "@/components/ui/error-block";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorMessage } from "@/lib/api";
-import { useMapParam } from "@/lib/map/useMapParam";
+import { useSearchLayer } from "@/lib/map/useSearchLayer";
 import { meQuery } from "@/lib/queries";
 import { useRideAreaMap } from "@/lib/rideAreaMap";
 import { useMediaQuery } from "@/lib/useMediaQuery";
 import {
   activeFilterCount,
+  areaLayerValue,
   filtersOf,
   myRidesInfinite,
+  parseAreaLayer,
   parseRideSearch,
   RIDE_EXPIRY_WORDS,
   rideFeedInfinite,
@@ -73,15 +75,19 @@ function Rides() {
   const filters = filtersOf(search);
   // The Map view belongs to the Find a ride tab.
   const view: RideView = tab === "find" && search.view === "map" ? "map" : "list";
-  const areaMap = useRideAreaMap(filters, view === "map");
+  // The layers over the map: an area's rides, and a ride's detail over them. Each is one history step.
+  const areaLayer = parseAreaLayer(search.area);
+  const areaCtl = useSearchLayer("area");
+  const detailCtl = useSearchLayer("ride");
+  const areaMap = useRideAreaMap(filters, view === "map", areaLayer?.by);
   // Whether the Map view's entry on top of the history was pushed by this screen (below `lg`, where
   // the map is full screen), so closing goes back to the list entry instead of stacking another.
   const viewPushed = useRef(false);
   useEffect(() => {
     if (view !== "map") viewPushed.current = false;
   }, [view]);
-  // From `lg` the map sits in the right column, and this is the same map opened full screen.
-  const fullScreen = useMapParam("areas");
+  // From `lg` the map fills the content area under the filter bar and the list is not shown.
+  const inlineMap = view === "map" && wide;
 
   const setTab = (next: "find" | "mine") =>
     void navigate({
@@ -96,7 +102,8 @@ function Rides() {
     const push = next === "map" && !wide;
     viewPushed.current = push;
     void navigate({
-      to: ".",
+      // The map has no open ride beside it, so it starts from the list route.
+      to: next === "map" ? "/rides" : ".",
       search: (previous) => ({ ...previous, view: next === "map" ? "map" : undefined }),
       replace: !push,
       resetScroll: false,
@@ -114,39 +121,10 @@ function Rides() {
       });
     }
   };
-  const mapOpen = view === "map" && (wide ? fullScreen.isOpen : true);
-  const closeMap = wide ? fullScreen.close : closeView;
-  // The count card's button: filter the list to the area and close the map. Below `lg` that also
-  // leaves the Map view; from `lg` the column map stays and shows the area selected.
-  const showRides = (areaId: number) => {
-    const area = areaMap.by === "pickup" ? { from: areaId } : { to: areaId };
-    void navigate({
-      to: ".",
-      search: (previous) => ({
-        ...previous,
-        ...area,
-        view: wide ? previous.view : undefined,
-        map: undefined,
-      }),
-      replace: true,
-      resetScroll: false,
-    });
-  };
-  // A pill in the column map filters the list beside it; the same pill again clears the filter.
-  const selectedArea = (areaMap.by === "pickup" ? filters.from : filters.to) ?? null;
-  const pickArea = (areaId: number) => {
-    const next = selectedArea === areaId ? undefined : areaId;
-    setFilters(areaMap.by === "pickup" ? { from: next } : { to: next });
-  };
-  // "Not on the map": the list is the place for those rides. Below `lg` that means leaving the map.
-  const openList = () => {
-    if (!wide) {
-      closeView();
-      return;
-    }
-    if (fullScreen.isOpen) fullScreen.close();
-    document.getElementById("ride-results")?.focus();
-  };
+  // The count card's button: open that area's rides over the map, in the direction being counted.
+  const showRides = (areaId: number) => areaCtl.open(areaLayerValue(areaMap.by, areaId));
+  // "Not on the map": the list is the place for those rides, so leave the Map view for it.
+  const openList = closeView;
   const closeRide = () => {
     if (openedFromList) {
       router.history.back();
@@ -176,7 +154,13 @@ function Rides() {
   };
 
   return (
-    <div className="max-w-2xl lg:grid lg:max-w-none lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start lg:gap-8">
+    <div
+      className={
+        inlineMap
+          ? "flex h-[calc(100dvh-4.5rem)] min-h-[36rem] flex-col gap-5"
+          : "max-w-2xl lg:grid lg:max-w-none lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:items-start lg:gap-8"
+      }
+    >
       <div className="min-w-0 space-y-5">
         <header className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -215,37 +199,35 @@ function Rides() {
             onOpen={onOpen}
             view={view}
             onViewChange={setView}
+            listHidden={inlineMap}
           />
         )}
       </div>
-      <RideDetailHost
-        rideId={rideId}
-        wide={wide}
-        returnFocusTo={openerRef}
-        onClose={closeRide}
-        onDeleted={rideDeleted}
-        wideEmpty={
-          view === "map" ? (
-            <RideAreaColumn
-              model={areaMap}
-              selectedId={selectedArea}
-              onSelect={pickArea}
-              onExpand={fullScreen.open}
-              onOpenList={openList}
-              paused={fullScreen.isOpen}
-            />
-          ) : undefined
-        }
-      />
-      {tab === "find" ? (
-        <RideAreaOverlay
-          open={mapOpen}
-          onClose={closeMap}
+      {inlineMap ? null : (
+        <RideDetailHost
+          rideId={rideId}
+          wide={wide}
+          returnFocusTo={openerRef}
+          onClose={closeRide}
+          onDeleted={rideDeleted}
+        />
+      )}
+      {tab === "find" && (inlineMap || !wide) ? (
+        <RideAreaMap
+          mode={inlineMap ? "inline" : "overlay"}
+          open={view === "map"}
+          onClose={closeView}
           model={areaMap}
           filters={filters}
           onFilters={setFilters}
-          onShowRides={showRides}
           onOpenList={openList}
+          area={areaLayer}
+          detailId={search.ride ?? null}
+          onShowRides={showRides}
+          onOpenRide={detailCtl.open}
+          onCloseArea={areaCtl.close}
+          onCloseDetail={detailCtl.close}
+          onDeleted={rideDeleted}
         />
       ) : null}
     </div>
@@ -260,6 +242,7 @@ function Feed({
   onOpen,
   view,
   onViewChange,
+  listHidden,
 }: {
   barKey: number;
   filters: RideFilters;
@@ -268,14 +251,15 @@ function Feed({
   onOpen: (row: HTMLElement) => void;
   view: RideView;
   onViewChange: (view: RideView) => void;
+  /** The Map view from `lg` fills the area under the bar: only the bar shows, and the list is not fetched. */
+  listHidden: boolean;
 }) {
-  const list = useInfiniteQuery(rideFeedInfinite(filters));
+  const list = useInfiniteQuery({ ...rideFeedInfinite(filters), enabled: !listHidden });
   const rides = list.data?.pages.flatMap((p) => p.items) ?? [];
   const filtered = activeFilterCount(filters) > 0;
 
   return (
-    // The id is where "Not on the map" lands the keyboard from the column map.
-    <div id="ride-results" tabIndex={-1} className="space-y-5 outline-none">
+    <div className="space-y-5">
       <RideFiltersBar
         key={barKey}
         filters={filters}
@@ -283,7 +267,7 @@ function Feed({
         view={view}
         onViewChange={onViewChange}
       />
-      {list.isPending || (list.isPlaceholderData && rides.length === 0) ? (
+      {listHidden ? null : list.isPending || (list.isPlaceholderData && rides.length === 0) ? (
         <SkeletonRows rows={3} label="Loading rides" />
       ) : list.isError ? (
         <ErrorBlock

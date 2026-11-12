@@ -42,12 +42,18 @@ export function boundsOf(points: readonly GeoPoint[]): [[number, number], [numbe
   ];
 }
 
-function fitOptions(animate = false) {
-  return { padding: FIT_PADDING, maxZoom: MAP_STREET_ZOOM, animate };
+/** Padding for a fit: one number for every side, or each side, for a map with a panel over one edge of it. */
+export type FitPadding = number | { top: number; right: number; bottom: number; left: number };
+
+function fitOptions(animate = false, padding: FitPadding = FIT_PADDING) {
+  return { padding, maxZoom: MAP_STREET_ZOOM, animate };
 }
 
-/** Moves the map to show `points`, flying there unless the user asked for reduced motion (then it jumps). */
-export function fitToPoints(map: MapLibreMap, points: readonly GeoPoint[]) {
+/**
+ * Moves the map to show `points`, flying there unless the user asked for reduced motion (then it
+ * jumps). `padding` keeps them clear of whatever covers part of the map.
+ */
+export function fitToPoints(map: MapLibreMap, points: readonly GeoPoint[], padding?: FitPadding) {
   if (points.length === 0) {
     map.easeTo({
       center: toLngLat(NSU_CENTRE),
@@ -56,7 +62,7 @@ export function fitToPoints(map: MapLibreMap, points: readonly GeoPoint[]) {
     });
     return;
   }
-  map.fitBounds(boundsOf(points), fitOptions(!prefersReducedMotion()));
+  map.fitBounds(boundsOf(points), fitOptions(!prefersReducedMotion(), padding));
 }
 
 /** Centres on one spot at street zoom (a picked search result), flying unless reduced motion. */

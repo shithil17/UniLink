@@ -2,11 +2,11 @@
 import "@/index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import type { Me } from "../../shared/schemas/auth";
-import type { RideAreaCounts, RideSummary } from "../../shared/schemas/rides";
-import { resetFakeMaps } from "@/test/fakeMapLibre";
+import type { RideAreaCounts, RideDetail, RideSummary } from "../../shared/schemas/rides";
+import { liveMaps, Marker, resetFakeMaps } from "@/test/fakeMapLibre";
 import { routeTree } from "../routeTree.gen";
 
 vi.mock("@/components/pwa/UpdatePrompt", () => ({ UpdatePrompt: () => null }));
@@ -45,6 +45,9 @@ const ride = (over: Partial<RideSummary> = {}): RideSummary => ({
   mine: false,
   ...over,
 });
+
+/** The one ride in Jatrabari's list, told apart from the others by its landmark. */
+const JATRABARI_RIDE = ride({ id: 7, pickupLandmark: "Jatrabari bridge" });
 
 const AREAS = [
   {
@@ -130,13 +133,27 @@ function renderAt(path: string, { phone = false }: { phone?: boolean } = {}) {
   queryClient.setQueryData(["me"], me);
   queryClient.setQueryData(["inbox", "unread-count"], { count: 0 });
   queryClient.setQueryData(["areas"], AREAS);
-  // The feed with no filter, with a vehicle filter, and filtered to Jatrabari or to Bashundhara.
-  for (const filters of [{}, { vehicle: "bike" }, { from: 70 }, { to: 70 }, { from: 1 }]) {
+  // The feed with no filter and with a vehicle filter, and one list per area an area's rides ask for.
+  const feeds: [Record<string, unknown>, RideSummary][] = [
+    [{}, ride()],
+    [{ vehicle: "bike" }, ride()],
+    [{ from: 70 }, JATRABARI_RIDE],
+    [{ to: 70 }, ride()],
+    [{ from: 1 }, ride()],
+    [{ to: 1 }, ride({ id: 8, destinationLandmark: "North gate" })],
+  ];
+  for (const [filters, item] of feeds) {
     queryClient.setQueryData(["rides", "feed", filters], {
-      pages: [{ items: [ride()], nextCursor: null }],
+      pages: [{ items: [item], nextCursor: null }],
       pageParams: [""],
     });
   }
+  // The open ride: an exact pickup pin, and the destination at its area's point.
+  queryClient.setQueryData(["rides", "detail", JATRABARI_RIDE.id], {
+    ...JATRABARI_RIDE,
+    pickupPoint: { lat: 23.7121, lng: 90.4352 },
+    destinationPoint: null,
+  } satisfies RideDetail);
   queryClient.setQueryData(["rides", "mine"], {
     pages: [{ items: [], nextCursor: null }],
     pageParams: [""],
@@ -153,6 +170,31 @@ function renderAt(path: string, { phone = false }: { phone?: boolean } = {}) {
   );
   return router;
 }
+
+/** What the one map has on it right now: the count pills' labels and the ride's pins and circles. */
+function shown() {
+  const live = Marker.instances.filter((m) => !m.removed);
+  const pills = live
+    .map((m) => m.element.querySelector("button")?.getAttribute("aria-label"))
+    .filter((label): label is string => Boolean(label));
+  const trip = live
+    .filter((m) => m.element.getAttribute("role") === "img")
+    .map((m) => m.element.getAttribute("aria-label") ?? "");
+  return { pills, trip };
+}
+
+/** The padding of the map's latest fit. */
+function fit(map: ReturnType<typeof liveMaps>[number]) {
+  const options = map.called("fitBounds").at(-1)?.args[1] as {
+    padding: { top: number; right: number; bottom: number; left: number };
+  };
+  return options.padding;
+}
+
+const back = (router: ReturnType<typeof renderAt>) =>
+  act(async () => {
+    router.history.back();
+  });
 
 const pill = (name: string) => screen.findByRole("button", { name });
 
@@ -196,7 +238,7 @@ describe("Rides Map view", () => {
     expect(screen.queryByRole("button", { name: /Outside Dhaka/ })).toBeNull();
   });
 
-  it("opens a card when a count is tapped and its button shows the list filtered to that area (below lg)", async () => {
+  it("opens a card when a count is tapped, and its button opens that area's rides over the map, which stays", async () => {
     const router = renderAt("/rides?view=map", { phone: true });
     fireEvent.click(await pill("Jatrabari, 6 rides"));
     expect(await screen.findByText("Jatrabari: 6 rides leaving")).toBeTruthy();
@@ -205,10 +247,17 @@ describe("Rides Map view", () => {
     ).toBe("true");
 
     fireEvent.click(screen.getByRole("button", { name: "Show these rides" }));
-    await waitFor(() => expect(router.state.location.search).toEqual({ from: 70 }));
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(screen.getByRole("button", { name: "Remove filter: From Jatrabari" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Jatrabari/ })).toBeTruthy();
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ view: "map", area: "pickup-70" }),
+    );
+    // A sheet over the map: titled with the area and the count, listing that area's rides (the
+    // `from` feed, whose ride has its own landmark), and the one map is still there behind it.
+    expect(await screen.findByRole("dialog", { name: "Leaving Jatrabari · 6 rides" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /Jatrabari \(Jatrabari bridge\) to Bashundhara/ }),
+    ).toBeTruthy();
+    expect(liveMaps()).toHaveLength(1);
+    expect(router.state.location.pathname).toBe("/rides");
   });
 
   it("tells the card's reader when the list filter also covers sub-areas that have a pill of their own", async () => {
@@ -238,7 +287,13 @@ describe("Rides Map view", () => {
     fireEvent.click(screen.getByRole("button", { name: "Bashundhara R/A, 9 rides" }));
     expect(await screen.findByText("Bashundhara R/A: 9 rides arriving")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Show these rides" }));
-    await waitFor(() => expect(router.state.location.search).toEqual({ to: 1 }));
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ view: "map", area: "destination-1" }),
+    );
+    expect(
+      await screen.findByRole("dialog", { name: "Going to Bashundhara R/A · 9 rides" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: /North gate/ })).toBeTruthy();
   });
 
   it("shows how many rides are not on the map, and the chip leaves the map for the list (below lg)", async () => {
@@ -249,42 +304,95 @@ describe("Rides Map view", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
-  it("from lg puts the map in the right column, a count filters the list beside it and the same count clears it", async () => {
-    const router = renderAt("/rides?view=map");
-    expect(await screen.findByRole("link", { name: /Jatrabari/ })).toBeTruthy();
-    // In the column, not a dialog; the list is still beside it.
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.queryByText("Pick a ride to see the details")).toBeNull();
-
-    const count = await pill("Jatrabari, 6 rides");
-    expect(count.getAttribute("aria-pressed")).toBe("false");
-    fireEvent.click(count);
-    await waitFor(() => expect(router.state.location.search).toEqual({ view: "map", from: 70 }));
-    await waitFor(() =>
-      expect(
-        screen.getByRole("button", { name: "Jatrabari, 6 rides" }).getAttribute("aria-pressed"),
-      ).toBe("true"),
-    );
-    // Counts ignore the area filter, so picking one does not change them.
-    expect(countCalls).toEqual(["/api/rides/areas?by=pickup"]);
-
-    fireEvent.click(screen.getByRole("button", { name: "Jatrabari, 6 rides" }));
-    await waitFor(() => expect(router.state.location.search).toEqual({ view: "map" }));
-    expect(
-      screen.getByRole("button", { name: "Jatrabari, 6 rides" }).getAttribute("aria-pressed"),
-    ).toBe("false");
-  });
-
-  it("from lg the expand button opens the same map full screen and Back closes it", async () => {
+  it("from lg the map fills the content area with no list beside it, not as a dialog", async () => {
     const router = renderAt("/rides?view=map");
     await pill("Jatrabari, 6 rides");
-    fireEvent.click(screen.getByRole("button", { name: "Open the map full screen" }));
-    expect(await screen.findByRole("dialog", { name: "Map of rides by area" })).toBeTruthy();
-    expect(router.state.location.search).toEqual({ view: "map", map: "areas" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // No list, no "pick a ride" prompt, no expand button; the filter bar and its List / Map control stay.
+    expect(screen.queryByRole("link", { name: /Jatrabari/ })).toBeNull();
+    expect(screen.queryByText("Pick a ride to see the details")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Open the map full screen" })).toBeNull();
+    expect(screen.getByRole("tab", { name: "Map" }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("button", { name: "Zoom in" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Leaving from" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Not on the map: 2 rides" })).toBeTruthy();
+    expect(liveMaps()).toHaveLength(1);
+    expect(countCalls).toEqual(["/api/rides/areas?by=pickup"]);
 
-    fireEvent.click(screen.getByRole("button", { name: "Close the map" }));
+    // Back to the list through the control, with the list returning beside the prompt.
+    fireEvent.click(screen.getByRole("tab", { name: "List" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    expect(await screen.findByRole("link", { name: /Jatrabari/ })).toBeTruthy();
+    expect(liveMaps()).toHaveLength(0);
+  });
+
+  it("from lg the 'Not on the map' chip leaves the map for the list", async () => {
+    const router = renderAt("/rides?view=map");
+    fireEvent.click(await screen.findByRole("button", { name: "Not on the map: 2 rides" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    expect(await screen.findByRole("link", { name: /Jatrabari/ })).toBeTruthy();
+  });
+
+  it("from lg a count opens a card, its button docks the rides panel and a ride docks its detail over it, on one map", async () => {
+    const router = renderAt("/rides");
+    fireEvent.click(await screen.findByRole("tab", { name: "Map" }));
+    fireEvent.click(await pill("Jatrabari, 6 rides"));
+    expect(await screen.findByText("Jatrabari: 6 rides leaving")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show these rides" }));
+    const rides = await screen.findByRole("region", { name: "Rides in this area" });
+    expect(rides.textContent).toContain("Leaving Jatrabari · 6 rides");
+    expect(router.state.location.search).toEqual({ view: "map", area: "pickup-70" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // The map and its pills are still in reach beside the panel.
+    expect(liveMaps()).toHaveLength(1);
+    expect(shown().pills).toContain("Jatrabari, 6 rides");
+
+    fireEvent.click(within(rides).getByRole("button", { name: /Jatrabari bridge/ }));
+    const detail = await screen.findByRole("region", { name: "Ride details" });
+    expect(router.state.location.search).toEqual({
+      view: "map",
+      area: "pickup-70",
+      ride: JATRABARI_RIDE.id,
+    });
+    expect(within(detail).getByRole("link", { name: "Open in Maps" })).toBeTruthy();
+    // The rides panel stays mounted underneath, held out of reach; the same one map draws the ride.
+    expect(rides.isConnected).toBe(true);
+    expect(rides.hasAttribute("inert")).toBe(true);
+    expect(liveMaps()).toHaveLength(1);
+    expect(shown().pills).toEqual([]);
+    expect(shown().trip).toEqual(["Pickup, Jatrabari", "Destination, around bashundhara r/a"]);
+    // Fitted with room kept on the right for the docked panel.
+    const padding = fit(liveMaps()[0]);
+    expect(padding.right).toBeGreaterThan(padding.left);
+
+    // Back, one layer at a time: detail, then the rides, then the map's entry, then the list.
+    await back(router);
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ view: "map", area: "pickup-70" }),
+    );
+    expect(screen.queryByRole("region", { name: "Ride details" })).toBeNull();
+    expect(rides.hasAttribute("inert")).toBe(false);
+    await waitFor(() => expect(shown().pills).toContain("Jatrabari, 6 rides"));
+    expect(shown().trip).toEqual([]);
+    await back(router);
     await waitFor(() => expect(router.state.location.search).toEqual({ view: "map" }));
-    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.queryByRole("region", { name: "Rides in this area" })).toBeNull();
+    expect(liveMaps()).toHaveLength(1);
+  });
+
+  it("from lg Escape closes only the top docked panel", async () => {
+    const router = renderAt("/rides?view=map");
+    fireEvent.click(await pill("Jatrabari, 6 rides"));
+    fireEvent.click(await screen.findByRole("button", { name: "Show these rides" }));
+    const rides = await screen.findByRole("region", { name: "Rides in this area" });
+    fireEvent.click(within(rides).getByRole("button", { name: /Jatrabari bridge/ }));
+    const detail = await screen.findByRole("region", { name: "Ride details" });
+
+    fireEvent.keyDown(detail, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Ride details" })).toBeNull());
+    expect(screen.getByRole("region", { name: "Rides in this area" })).toBeTruthy();
+    expect(router.state.location.search).toEqual({ view: "map", area: "pickup-70" });
   });
 
   it("the floating Filters button opens the filter sheet over the full-screen map", async () => {
@@ -295,5 +403,105 @@ describe("Rides Map view", () => {
     });
     expect(await screen.findByRole("dialog", { name: "Filters" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Show rides" })).toBeTruthy();
+  });
+});
+
+describe("Rides Map view layers below lg", () => {
+  it("a ride opens its detail over the rides sheet on the one map, and Back unwinds the layers in order", async () => {
+    const router = renderAt("/rides", { phone: true });
+    fireEvent.click(await screen.findByRole("tab", { name: "Map" }));
+    fireEvent.click(await pill("Jatrabari, 6 rides"));
+    fireEvent.click(await screen.findByRole("button", { name: "Show these rides" }));
+    const row = await screen.findByRole("button", { name: /Jatrabari bridge/ });
+    expect(shown().pills).toContain("Jatrabari, 6 rides");
+
+    fireEvent.click(row);
+    // The detail sheet is stacked over the rides sheet, and the map behind draws the ride: the same
+    // single map, no second one from the detail, the count pills gone meanwhile.
+    expect(
+      await screen.findByRole("dialog", { name: "Jatrabari to Bashundhara R/A" }),
+    ).toBeTruthy();
+    expect(router.state.location.search).toEqual({
+      view: "map",
+      area: "pickup-70",
+      ride: JATRABARI_RIDE.id,
+    });
+    expect(screen.getByRole("link", { name: "Open in Maps" }).getAttribute("href")).toContain(
+      "google.com/maps/dir/?api=1&origin=23.7121,90.4352&destination=23.8151,90.4253",
+    );
+    expect(liveMaps()).toHaveLength(1);
+    await waitFor(() =>
+      expect(shown().trip).toEqual(["Pickup, Jatrabari", "Destination, around bashundhara r/a"]),
+    );
+    expect(shown().pills).toEqual([]);
+    // Fitted with the bottom kept clear for the sheet.
+    const padding = fit(liveMaps()[0]);
+    expect(padding.bottom).toBeGreaterThan(padding.top);
+
+    // Back closes the detail only: the rides sheet is still there, the same row (so its scroll is
+    // kept), and the pills are back on the map.
+    await back(router);
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ view: "map", area: "pickup-70" }),
+    );
+    await waitFor(() => expect(shown().pills).toContain("Jatrabari, 6 rides"));
+    expect(shown().trip).toEqual([]);
+    expect(row.isConnected).toBe(true);
+    expect(liveMaps()).toHaveLength(1);
+
+    // Then the rides sheet, leaving the map with its card, then the map.
+    await back(router);
+    await waitFor(() => expect(router.state.location.search).toEqual({ view: "map" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Leaving Jatrabari · 6 rides" })).toBeNull(),
+    );
+    expect(await screen.findByText("Jatrabari: 6 rides leaving")).toBeTruthy();
+    expect(liveMaps()).toHaveLength(1);
+    await back(router);
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    await waitFor(() => expect(liveMaps()).toHaveLength(0));
+  });
+
+  it("Escape closes only the top sheet", async () => {
+    const router = renderAt("/rides?view=map", { phone: true });
+    fireEvent.click(await pill("Jatrabari, 6 rides"));
+    fireEvent.click(await screen.findByRole("button", { name: "Show these rides" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Jatrabari bridge/ }));
+    await screen.findByRole("dialog", { name: "Jatrabari to Bashundhara R/A" });
+
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ view: "map", area: "pickup-70" }),
+    );
+    expect(await screen.findByRole("dialog", { name: "Leaving Jatrabari · 6 rides" })).toBeTruthy();
+  });
+
+  it("a reload on a ride opens its detail over the map, and closing it returns to the map", async () => {
+    const router = renderAt(`/rides?view=map&ride=${JATRABARI_RIDE.id}`, { phone: true });
+    expect(
+      await screen.findByRole("dialog", { name: "Jatrabari to Bashundhara R/A" }),
+    ).toBeTruthy();
+    await waitFor(() => expect(shown().trip).toHaveLength(2));
+    expect(liveMaps()).toHaveLength(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    // Nothing to go back to inside the app, so the entry is replaced without the ride.
+    await waitFor(() => expect(router.state.location.search).toEqual({ view: "map" }));
+    await waitFor(() => expect(shown().pills).toContain("Jatrabari, 6 rides"));
+  });
+
+  it("a reload on an area's rides opens them in that direction, with the area's pill selected", async () => {
+    renderAt("/rides?view=map&area=destination-1", { phone: true });
+    expect(
+      await screen.findByRole("dialog", { name: "Going to Bashundhara R/A · 9 rides" }),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: /North gate/ })).toBeTruthy();
+    await waitFor(() => expect(shown().pills).toContain("Bashundhara R/A, 9 rides"));
+  });
+
+  it("drops the layers from a URL that is not in the Map view", async () => {
+    const router = renderAt("/rides?area=pickup-70&ride=7", { phone: true });
+    await screen.findByRole("link", { name: /Jatrabari/ });
+    expect(router.state.location.search).toEqual({});
   });
 });

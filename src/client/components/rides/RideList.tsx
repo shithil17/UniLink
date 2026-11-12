@@ -32,11 +32,17 @@ export function RideList({
   items,
   withBadge = false,
   onOpen,
+  onSelect,
 }: {
   items: RideSummary[];
   withBadge?: boolean;
   /** Runs with the row's link when it is tapped to open its ride. */
   onOpen?: (row: HTMLElement) => void;
+  /**
+   * Opens a ride some other way than the ride route (the Map view's rides layer sets a search param).
+   * Rows are then buttons, not links, and `onOpen` is not used.
+   */
+  onSelect?: (ride: RideSummary) => void;
 }) {
   // With a ride already open (the side panel), another row swaps it in place instead of stacking history.
   const open = useMatch({ from: "/rides/$rideId/", shouldThrow: false }) !== undefined;
@@ -49,45 +55,61 @@ export function RideList({
         // "Full" is already in the seats line, so the badge is for the other states.
         const badge = withBadge ? rideBadge(ride) : null;
         const runs = runsUntilLine(ride);
+        const rowClass = `flex min-h-15 items-center gap-3 px-4 py-3 outline-none hover:bg-tint active:bg-tint aria-[current=page]:bg-brand-soft ${focusRing} focus-visible:-outline-offset-2 ${press}`;
+        const row = (
+          <>
+            <span className="grid min-w-0 flex-1 gap-1">
+              <span className="flex flex-wrap items-center gap-x-1.5 text-[15px] leading-[1.3] font-semibold break-words text-ink">
+                <Place area={ride.pickupArea.name} landmark={ride.pickupLandmark} />
+                <span className="sr-only">to</span>
+                <ArrowRightIcon
+                  aria-hidden
+                  strokeWidth={1.75}
+                  className="size-4 shrink-0 text-faint"
+                />
+                <Place area={ride.destinationArea.name} landmark={ride.destinationLandmark} />
+              </span>
+              <span className="text-[13px] leading-[1.4] text-soft">
+                {scheduleLine(ride)}
+                {runs ? ` · ${runs}` : ""}
+              </span>
+              <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] leading-[1.4] text-soft">
+                <span>{VEHICLE_LABELS[ride.vehicle]}</span>
+                <span aria-hidden>·</span>
+                <span>{priceLine(ride.pricePerSeatTaka)}</span>
+                <span aria-hidden>·</span>
+                <span>{seatsLine(ride)}</span>
+                {badge && badge !== "Full" ? <Badge>{badge}</Badge> : null}
+              </span>
+            </span>
+            <ChevronRightIcon aria-hidden className="size-5 shrink-0 text-faint" />
+          </>
+        );
         return (
           <li key={ride.id} className="border-t border-line first:border-t-0">
-            <Link
-              to="/rides/$rideId"
-              params={{ rideId: String(ride.id) }}
-              // Keep the filters and tab in the URL, and the list where it is scrolled.
-              search
-              resetScroll={false}
-              replace={open}
-              state={{ rideFromList: open ? fromList : true }}
-              onClick={(event) => onOpen?.(event.currentTarget)}
-              className={`flex min-h-15 items-center gap-3 px-4 py-3 outline-none hover:bg-tint active:bg-tint aria-[current=page]:bg-brand-soft ${focusRing} focus-visible:-outline-offset-2 ${press}`}
-            >
-              <span className="grid min-w-0 flex-1 gap-1">
-                <span className="flex flex-wrap items-center gap-x-1.5 text-[15px] leading-[1.3] font-semibold break-words text-ink">
-                  <Place area={ride.pickupArea.name} landmark={ride.pickupLandmark} />
-                  <span className="sr-only">to</span>
-                  <ArrowRightIcon
-                    aria-hidden
-                    strokeWidth={1.75}
-                    className="size-4 shrink-0 text-faint"
-                  />
-                  <Place area={ride.destinationArea.name} landmark={ride.destinationLandmark} />
-                </span>
-                <span className="text-[13px] leading-[1.4] text-soft">
-                  {scheduleLine(ride)}
-                  {runs ? ` · ${runs}` : ""}
-                </span>
-                <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] leading-[1.4] text-soft">
-                  <span>{VEHICLE_LABELS[ride.vehicle]}</span>
-                  <span aria-hidden>·</span>
-                  <span>{priceLine(ride.pricePerSeatTaka)}</span>
-                  <span aria-hidden>·</span>
-                  <span>{seatsLine(ride)}</span>
-                  {badge && badge !== "Full" ? <Badge>{badge}</Badge> : null}
-                </span>
-              </span>
-              <ChevronRightIcon aria-hidden className="size-5 shrink-0 text-faint" />
-            </Link>
+            {onSelect ? (
+              <button
+                type="button"
+                onClick={() => onSelect(ride)}
+                className={`w-full text-left ${rowClass}`}
+              >
+                {row}
+              </button>
+            ) : (
+              <Link
+                to="/rides/$rideId"
+                params={{ rideId: String(ride.id) }}
+                // Keep the filters and tab in the URL, and the list where it is scrolled.
+                search
+                resetScroll={false}
+                replace={open}
+                state={{ rideFromList: open ? fromList : true }}
+                onClick={(event) => onOpen?.(event.currentTarget)}
+                className={rowClass}
+              >
+                {row}
+              </Link>
+            )}
           </li>
         );
       })}

@@ -1,5 +1,5 @@
-import { useNavigate, useRouter, useSearch } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
+import { useSearchLayer } from "./useSearchLayer";
 
 /** The search param that says which full-screen map is open. */
 export const MAP_PARAM = "map";
@@ -16,54 +16,11 @@ export function parseMapParam(raw: unknown): string | undefined {
 
 /**
  * Whether the full-screen map called `name` is open, and how to open and close it. The state lives
- * in the URL (`?map=name`), so opening pushes a history entry: the Back button, Android Back, Escape
- * and the close button all end up in `close`, and the screen underneath keeps its scroll and state.
- *
- * `close` goes back in history when this hook pushed the entry. When the page was opened straight on
- * `?map=name` (a reload, a shared link) there is nothing to go back to inside the app, so it
- * replaces the entry instead of leaving the app.
+ * in the URL (`?map=name`); see `useSearchLayer` for how opening and closing walk the history.
  */
 export function useMapParam(name: string) {
-  const navigate = useNavigate();
-  const router = useRouter();
-  const current = useSearch({
-    strict: false,
-    select: (search) => (search as Record<string, unknown>)[MAP_PARAM],
-  });
-  const isOpen = current === name;
-  const pushed = useRef(false);
-
-  useEffect(() => {
-    if (!isOpen) pushed.current = false;
-  }, [isOpen]);
-
-  const open = useCallback(() => {
-    pushed.current = true;
-    void navigate({
-      to: ".",
-      search: ((previous: Record<string, unknown>) => ({
-        ...previous,
-        [MAP_PARAM]: name,
-      })) as never,
-      resetScroll: false,
-    });
-  }, [navigate, name]);
-
-  const close = useCallback(() => {
-    if (pushed.current) {
-      router.history.back();
-      return;
-    }
-    void navigate({
-      to: ".",
-      search: ((previous: Record<string, unknown>) => ({
-        ...previous,
-        [MAP_PARAM]: undefined,
-      })) as never,
-      replace: true,
-      resetScroll: false,
-    });
-  }, [navigate, router]);
-
-  return { isOpen, open, close };
+  const layer = useSearchLayer(MAP_PARAM);
+  const { open: openLayer, close } = layer;
+  const open = useCallback(() => openLayer(name), [openLayer, name]);
+  return { isOpen: layer.value === name, open, close };
 }

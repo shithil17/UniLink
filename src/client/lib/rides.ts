@@ -198,7 +198,25 @@ export type RideSearch = {
   view?: "map";
   /** The full-screen map that is open (a ride's, or one on the form). Kept so the router does not strip it. */
   map?: string;
+  /**
+   * Map view only: the rides of one area are open over the map, as "pickup-70" (leaving) or
+   * "destination-70" (going to). Read it with `parseAreaLayer`.
+   */
+  area?: string;
+  /** Map view only: this ride's detail is open over the map (over the area's rides, when those are open too). */
+  ride?: number;
 };
+
+const AREA_LAYER = /^(pickup|destination)-([1-9]\d{0,8})$/;
+
+/** The value of the `area` param for an area and a direction. */
+export const areaLayerValue = (by: RideAreaEnd, areaId: number): string => `${by}-${areaId}`;
+
+/** What the `area` param says, or null when it is missing or not one. */
+export function parseAreaLayer(value: string | undefined): { by: RideAreaEnd; id: number } | null {
+  const match = value === undefined ? null : AREA_LAYER.exec(value);
+  return match ? { by: match[1] as RideAreaEnd, id: Number(match[2]) } : null;
+}
 
 /** The two ways to look at the feed. */
 export type RideView = "list" | "map";
@@ -211,6 +229,9 @@ export function parseRideSearch(raw: Record<string, unknown>): RideSearch {
   const keep = <T>(r: { success: true; data: T } | { success: false }) =>
     r.success ? r.data : undefined;
   const q = keep(rideFeedQuery.shape.q.safeParse(raw.q));
+  // The layers over the map only mean something in the Map view.
+  const mapView = raw.view === "map" && raw.tab !== "mine";
+  const area = typeof raw.area === "string" && parseAreaLayer(raw.area) ? raw.area : undefined;
   return {
     tab: raw.tab === "mine" ? "mine" : undefined,
     q: q ? q : undefined,
@@ -221,6 +242,8 @@ export function parseRideSearch(raw: Record<string, unknown>): RideSearch {
     day: keep(rideFeedQuery.shape.day.safeParse(raw.day)),
     view: raw.view === "map" ? "map" : undefined,
     map: parseMapParam(raw.map),
+    area: mapView ? area : undefined,
+    ride: mapView ? keep(rideFeedQuery.shape.from.safeParse(raw.ride)) : undefined,
   };
 }
 

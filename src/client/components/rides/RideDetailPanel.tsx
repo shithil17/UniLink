@@ -1,4 +1,6 @@
+import { ExternalLinkIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
 import {
   priceLine,
   rideBadge,
@@ -22,9 +24,16 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
 
 /**
  * The ride's facts on one flat panel: route, schedule in Asia/Dhaka, vehicle, seats left (or Full),
- * price and notes. Never a contact: those come from "Show contact".
+ * price and notes. Never a contact: those come from "Show contact". `directionsUrl` adds an "Open in
+ * Maps" row (Google Maps directions in a new tab) for a detail shown without its own map preview.
  */
-export function RideDetailPanel({ ride }: { ride: RideSummary }) {
+export function RideDetailPanel({
+  ride,
+  directionsUrl,
+}: {
+  ride: RideSummary;
+  directionsUrl?: string | null;
+}) {
   const runs = runsUntilLine(ride);
   // A held or turned-down ride says so in its status note above, and "Full" is in the seats line.
   const ended = rideBadge(ride) === "Ended";
@@ -50,6 +59,19 @@ export function RideDetailPanel({ ride }: { ride: RideSummary }) {
         <Fact label="Price">{priceLine(ride.pricePerSeatTaka)}</Fact>
         {ride.notes ? <Fact label="Notes">{ride.notes}</Fact> : null}
       </dl>
+      {directionsUrl ? (
+        <div className="border-t border-line p-4">
+          <a
+            href={directionsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={buttonVariants({ variant: "outline", className: "w-full" })}
+          >
+            Open in Maps
+            <ExternalLinkIcon aria-hidden />
+          </a>
+        </div>
+      ) : null}
     </section>
   );
 }

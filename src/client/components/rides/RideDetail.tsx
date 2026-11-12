@@ -13,6 +13,8 @@ import { ErrorBlock } from "@/components/ui/error-block";
 import { SheetTitle } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, errorMessage } from "@/lib/api";
+import { directionsUrl } from "@/lib/map/trip";
+import { useRideTrip } from "@/lib/rideTrip";
 import { RIDE_REPORT_DESCRIPTION, rideDetailQuery } from "@/lib/rides";
 
 const panel = "overflow-hidden rounded-panel bg-surface md:rounded-[24px]";
@@ -48,15 +50,21 @@ function RideSkeleton() {
  * arrives (`keepPreviousData`), so the panel never flashes to a skeleton. The body is keyed on the
  * ride, so a revealed contact or a half-written report never carries over to the next one.
  * `onClose` leaves a ride that is gone; `onDeleted` runs after the poster deletes theirs.
+ *
+ * `noMap` leaves out the map preview, for a screen that already has a live map behind the detail (one
+ * screen never holds two); "Open in Maps" then sits with the facts, where the preview's full-screen
+ * card would have had it.
  */
 export function RideDetail({
   rideId,
   inSheet = false,
+  noMap = false,
   onClose,
   onDeleted,
 }: {
   rideId: string;
   inSheet?: boolean;
+  noMap?: boolean;
   onClose: () => void;
   onDeleted: () => void;
 }) {
@@ -69,6 +77,8 @@ export function RideDetail({
   const gone = id === 0 || (detail.error instanceof ApiError && detail.error.status === 404);
   const ride = detail.data;
   const stale = detail.isPlaceholderData;
+  const trip = useRideTrip(ride, noMap);
+  const directions = noMap && trip ? directionsUrl(trip) : null;
   const heading = ride ? `${ride.pickupArea.name} to ${ride.destinationArea.name}` : "Ride";
   const Title = inSheet ? SheetTitle : "h2";
 
@@ -112,8 +122,8 @@ export function RideDetail({
               appeal={{ targetType: "ride", id: ride.id }}
             />
           ) : null}
-          <RideMap ride={ride} inSheet={inSheet} />
-          <RideDetailPanel ride={ride} />
+          {noMap ? null : <RideMap ride={ride} inSheet={inSheet} />}
+          <RideDetailPanel ride={ride} directionsUrl={directions} />
           {ride.mine ? (
             <RideOwnerActions ride={ride} onDeleted={onDeleted} />
           ) : (

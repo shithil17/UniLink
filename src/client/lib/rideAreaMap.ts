@@ -4,6 +4,7 @@ import type { AreaOption } from "../../shared/schemas/areas";
 import type { RideAreaCounts, RideAreaEnd } from "../../shared/schemas/rides";
 import { areaNameOf, areaPointOf, areasQuery } from "./areas";
 import { errorMessage } from "./api";
+import { FIT_PADDING, type FitPadding } from "./map/camera";
 import { rideCount, type CountPill } from "./map/counts";
 import { rideAreaCountsQuery, type RideFilters } from "./rides";
 import { toast } from "./toast";
@@ -17,6 +18,10 @@ export const AREA_END_LABELS: Record<RideAreaEnd, string> = {
 /** "Jatrabari: 6 rides leaving", the line on the card a tapped pill opens. */
 export const areaCardLine = (name: string, count: number, by: RideAreaEnd): string =>
   `${name}: ${rideCount(count)} ${by === "pickup" ? "leaving" : "arriving"}`;
+
+/** "Leaving Jatrabari · 6 rides", the title of the rides layer. The count is left off until it is known. */
+export const areaRidesTitle = (by: RideAreaEnd, name: string, count?: number): string =>
+  `${by === "pickup" ? "Leaving" : "Going to"} ${name}${count === undefined ? "" : ` · ${rideCount(count)}`}`;
 
 /** "Not on the map: 3 rides", the chip for rides in areas that have no point. */
 export const offMapLabel = (count: number): string => `Not on the map: ${rideCount(count)}`;
@@ -78,11 +83,15 @@ export type RideAreaMapModel = {
 
 /**
  * The Map view's data: the counts for the current vehicle, date and weekday filters and the
- * Leaving from / Going to choice, as pills. It only fetches while `shown`, keeps the last pills up while
+ * Leaving from / Going to choice (`initialBy` when the screen opens on an area's rides), as pills. It only fetches while `shown`, keeps the last pills up while
  * a new set loads, and toasts when the counts cannot be had.
  */
-export function useRideAreaMap(filters: RideFilters, shown: boolean): RideAreaMapModel {
-  const [by, setBy] = useState<RideAreaEnd>("pickup");
+export function useRideAreaMap(
+  filters: RideFilters,
+  shown: boolean,
+  initialBy: RideAreaEnd = "pickup",
+): RideAreaMapModel {
+  const [by, setBy] = useState<RideAreaEnd>(initialBy);
   const areas = useQuery({ ...areasQuery, enabled: shown });
   const counts = useQuery(rideAreaCountsQuery(filters, by, shown));
 
@@ -99,4 +108,24 @@ export function useRideAreaMap(filters: RideFilters, shown: boolean): RideAreaMa
     [areas.data, counts.data],
   );
   return { by, setBy, pills, offMap, loading: shown && (areas.isPending || counts.isPending) };
+}
+
+/**
+ * How much of the map the layers cover, so the map behind can be fitted to what is left. A phone
+ * sheet is at most 60% of the screen tall (`max-h-[60dvh]` below), a docked panel from `lg` is 24rem
+ * wide and 12px in from the right edge (`w-[24rem]`, `right-3` below). Keep these and the classes in step.
+ */
+const SHEET_MAX_HEIGHT = 0.6;
+const DOCK_WIDTH_PX = 384 + 12;
+
+/** Padding for fitting the map to a ride, keeping it clear of the sheet or panel that covers part of the map. */
+export function layerPadding(wide: boolean): FitPadding {
+  return wide
+    ? { top: FIT_PADDING, left: FIT_PADDING, bottom: FIT_PADDING, right: DOCK_WIDTH_PX + 24 }
+    : {
+        top: FIT_PADDING,
+        left: FIT_PADDING,
+        right: FIT_PADDING,
+        bottom: FIT_PADDING + Math.round(window.innerHeight * SHEET_MAX_HEIGHT),
+      };
 }
