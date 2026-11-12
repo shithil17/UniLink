@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AreaPicker } from "@/components/areas/AreaPicker";
 import { Button } from "@/components/ui/button";
 import { Chip, chipClass } from "@/components/ui/chip";
+import { DateField } from "@/components/ui/date-field";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -250,11 +251,12 @@ function FilterSheetBody({
         </Field>
         <Field>
           <FieldLabel htmlFor="ride-filter-date">Or a date</FieldLabel>
-          <Input
+          <DateField
             id="ride-filter-date"
-            type="date"
+            label="Or a date"
+            clearable
             value={draft.date ?? ""}
-            onChange={(e) => change({ date: e.target.value || undefined, day: undefined })}
+            onChange={(date) => change({ date: date || undefined, day: undefined })}
           />
         </Field>
       </div>

@@ -155,6 +155,10 @@ export const weekdayShort = (date: DateKey) => weekdayShortFmt.format(at(date));
 export const dateLong = (date: DateKey) =>
   `${weekdayLongFmt.format(at(date))}, ${dayOfMonth(date)} ${monthLongFmt.format(at(date))} ${date.slice(0, 4)}`;
 
+/** "Wed, 21 Oct 2026": a date with its weekday and year, as a date field shows it. */
+export const dateShort = (date: DateKey) =>
+  `${weekdayShortFmt.format(at(date))}, ${monthDay(date)} ${date.slice(0, 4)}`;
+
 /** "8 AM", "12 PM": an hour label on the grid's left edge. */
 export const hourLabel = (hour: number) =>
   `${hour % 12 === 0 ? 12 : hour % 12} ${hour < 12 || hour === 24 ? "AM" : "PM"}`;

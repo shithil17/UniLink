@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 import type { RoutineEntry } from "../../../shared/schemas/routine";
 import { RoutineSheet } from "./RoutineSheet";
@@ -32,15 +32,29 @@ function open(target: "new" | RoutineEntry) {
   );
 }
 
-const type = (label: string, value: string) =>
-  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+/** Picks a time in a TimeField's sheet: opens it by the field's name, sets the three lists and presses Done. */
+async function pickTime(field: RegExp, hour: string, minute: string, period: "AM" | "PM") {
+  fireEvent.click(screen.getByRole("button", { name: field }));
+  const pick = async (list: string, name: string) =>
+    fireEvent.click(
+      within(await screen.findByRole("listbox", { name: list })).getByRole("option", { name }),
+    );
+  await pick("Hour", hour);
+  await pick("Minute", minute);
+  await pick("AM or PM", period);
+  fireEvent.click(screen.getByRole("button", { name: "Done" }));
+  await waitFor(() => expect(screen.queryByRole("listbox", { name: "Hour" })).toBeNull());
+}
+
+const pick = (label: string, hour: string, minute: string, period: "AM" | "PM") =>
+  pickTime(new RegExp(`^${label}, `), hour, minute, period);
 
 describe("RoutineSheet overlap warning", () => {
   it("names the clashing class and the day while still letting the form be saved", async () => {
     open("new");
     fireEvent.click(screen.getByRole("button", { name: "Wednesday" }));
-    type("Starts", "10:00");
-    type("Ends", "11:00");
+    await pick("Starts", "10", "00", "AM");
+    await pick("Ends", "11", "00", "AM");
     const warning = await screen.findByRole("status");
     expect(warning.textContent).toContain("overlaps another class");
     expect(warning.textContent).toContain("CSE115 section 2, Wed");
@@ -53,8 +67,8 @@ describe("RoutineSheet overlap warning", () => {
   it("shows no warning for a class that starts when the other ends", async () => {
     open("new");
     fireEvent.click(screen.getByRole("button", { name: "Monday" }));
-    type("Starts", "10:30");
-    type("Ends", "12:00");
+    await pick("Starts", "10", "30", "AM");
+    await pick("Ends", "12", "00", "PM");
     await waitFor(() => expect(screen.getByLabelText("Ends")).toBeTruthy());
     expect(screen.queryByRole("status")).toBeNull();
   });

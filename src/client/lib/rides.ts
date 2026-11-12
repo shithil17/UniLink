@@ -218,7 +218,7 @@ export type RideFormFields = {
   pricePerSeatTaka: string;
   notes: string;
   contacts: { phone: string; whatsapp: string; messenger: string };
-  /** One-off: "YYYY-MM-DDTHH:MM" in Asia/Dhaka, as a datetime-local input gives it. */
+  /** One-off: "YYYY-MM-DDTHH:MM" in Asia/Dhaka. The form shows it as a day-first date field and a time input. */
   departure: string;
   days: Weekday[];
   departureTime: string;

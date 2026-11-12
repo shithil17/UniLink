@@ -16,6 +16,7 @@ import {
   FieldSet,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { TimeField } from "@/components/ui/time-field";
 import {
   Sheet,
   SheetContent,
@@ -235,21 +236,41 @@ function RoutineEditor({
             <div className="grid grid-cols-2 gap-3">
               <Field data-invalid={Boolean(errors.start)}>
                 <FieldLabel htmlFor="routine-start">Starts</FieldLabel>
-                <Input
-                  id="routine-start"
-                  type="time"
-                  aria-invalid={Boolean(errors.start)}
-                  {...form.register("start")}
+                <Controller
+                  control={form.control}
+                  name="start"
+                  render={({ field }) => (
+                    <TimeField
+                      id="routine-start"
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      label="Starts"
+                      value={field.value ?? ""}
+                      aria-invalid={Boolean(errors.start)}
+                      onChange={field.onChange}
+                    />
+                  )}
                 />
                 <FieldError errors={[timeError(errors.start, "Pick a start time")]} />
               </Field>
               <Field data-invalid={Boolean(errors.end)}>
                 <FieldLabel htmlFor="routine-end">Ends</FieldLabel>
-                <Input
-                  id="routine-end"
-                  type="time"
-                  aria-invalid={Boolean(errors.end)}
-                  {...form.register("end")}
+                <Controller
+                  control={form.control}
+                  name="end"
+                  render={({ field }) => (
+                    <TimeField
+                      id="routine-end"
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      label="Ends"
+                      value={field.value ?? ""}
+                      aria-invalid={Boolean(errors.end)}
+                      onChange={field.onChange}
+                    />
+                  )}
                 />
                 <FieldError errors={[timeError(errors.end, "Pick an end time")]} />
               </Field>

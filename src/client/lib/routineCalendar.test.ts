@@ -3,6 +3,7 @@ import type { RoutineEntry } from "../../shared/schemas/routine";
 import {
   classesOn,
   dateLong,
+  dateShort,
   gridHours,
   hourLabel,
   monthGridWeeks,
@@ -160,6 +161,8 @@ describe("navigation and labels", () => {
     expect(dateLong("2026-10-21")).toBe("Wednesday, 21 October 2026");
     expect(dateLong("2026-09-01")).toBe("Tuesday, 1 September 2026");
     expect(periodLabel("day", "2026-09-01")).toBe("Tue, 1 Sep");
+    expect(dateShort("2026-10-21")).toBe("Wed, 21 Oct 2026");
+    expect(dateShort("2026-09-01")).toBe("Tue, 1 Sep 2026");
   });
 
   it("labels hours the way the routine prints times", () => {

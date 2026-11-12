@@ -280,6 +280,33 @@ describe("Rides screen", () => {
     await waitFor(() => expect(router.state.location.search).toEqual({ vehicle: "bike", to: 60 }));
   });
 
+  it("picks a date in the filter sheet day first, drops the weekday, and applies it with Show rides", async () => {
+    const now = vi.spyOn(Date, "now").mockReturnValue(FRI_0730);
+    const router = renderAt("/rides?day=mon", [
+      { filters: { day: "mon" }, page: { items: [], nextCursor: null } },
+      { filters: { date: "2026-11-25" }, page: { items: [], nextCursor: null } },
+    ]);
+    fireEvent.click(await screen.findByRole("button", { name: /Filters/ }));
+    const field = await screen.findByRole("button", { name: /^Or a date, / });
+    expect(field.textContent).toBe("Pick a date");
+    fireEvent.click(field);
+    // The calendar opens on today's month, which the clock above pins to November 2026.
+    await screen.findByRole("grid");
+    fireEvent.click(screen.getByRole("button", { name: "Wednesday, 25 November 2026" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /^Or a date, / }).textContent).toBe(
+        "Wed, 25 Nov 2026",
+      ),
+    );
+    // Picking a date drops the weekday, as before.
+    expect(screen.getByRole("button", { name: "Monday" }).getAttribute("aria-pressed")).toBe(
+      "false",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Show rides" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({ date: "2026-11-25" }));
+    now.mockRestore();
+  });
+
   it("shows My rides with the expiry words and says what a held or ended ride is", async () => {
     const router = renderAt("/rides", [{ filters: {}, page: { items: [], nextCursor: null } }], {
       items: [

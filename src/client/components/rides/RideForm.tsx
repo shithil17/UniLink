@@ -5,10 +5,12 @@ import { AreaPicker } from "@/components/areas/AreaPicker";
 import { ContactInput } from "@/components/posts/ContactInput";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { DateField } from "@/components/ui/date-field";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { RadioChip, RadioGroup } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { TimeField } from "@/components/ui/time-field";
 import { ApiError } from "@/lib/api";
 import { areaNameOf, areasQuery } from "@/lib/areas";
 import { toastFirstFieldError } from "@/lib/formErrors";
@@ -85,7 +87,7 @@ export function RideForm({
   const [original] = useState<RideFormFields>(() =>
     ride ? fieldsFromRide(ride, contacts ?? {}) : emptyRideFields(),
   );
-  // A one-off cannot leave before now; the picker greys out earlier minutes.
+  // A one-off cannot leave before today in Dhaka; the calendar greys out earlier days.
   const [earliest] = useState(() => instantToDeparture(Date.now()));
   const form = useForm<RideFormFields>({ resolver: rideFormResolver, defaultValues: original });
   const { errors } = form.formState;
@@ -297,12 +299,35 @@ export function RideForm({
           {kind === "one_off" ? (
             <Field data-invalid={Boolean(errors.departure)}>
               <FieldLabel htmlFor="ride-departure">Departs</FieldLabel>
-              <Input
-                id="ride-departure"
-                type="datetime-local"
-                min={earliest}
-                aria-invalid={Boolean(errors.departure)}
-                {...form.register("departure")}
+              {/* One form value, "YYYY-MM-DDTHH:MM", shown as a day-first date and a time. */}
+              <Controller
+                control={form.control}
+                name="departure"
+                render={({ field }) => {
+                  const [date = "", time = ""] = field.value.split("T");
+                  const join = (d: string, t: string) => (d || t ? `${d}T${t}` : "");
+                  return (
+                    <div className="grid grid-cols-[minmax(0,1fr)_9rem] gap-3">
+                      <DateField
+                        id="ride-departure"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        label="Departs"
+                        value={date}
+                        min={earliest.slice(0, 10)}
+                        aria-invalid={Boolean(errors.departure)}
+                        onChange={(next) => field.onChange(join(next, time))}
+                      />
+                      <TimeField
+                        label="Departure time"
+                        aria-invalid={Boolean(errors.departure)}
+                        value={time}
+                        onChange={(next) => field.onChange(join(date, next))}
+                      />
+                    </div>
+                  );
+                }}
               />
               <FieldDescription>Dhaka time. {RIDE_EXPIRY_WORDS.one_off}</FieldDescription>
               <FieldError errors={[errors.departure]} />
@@ -342,21 +367,42 @@ export function RideForm({
               <div className="grid grid-cols-2 gap-3">
                 <Field data-invalid={Boolean(errors.departureTime)}>
                   <FieldLabel htmlFor="ride-time">Leaves at</FieldLabel>
-                  <Input
-                    id="ride-time"
-                    type="time"
-                    aria-invalid={Boolean(errors.departureTime)}
-                    {...form.register("departureTime")}
+                  <Controller
+                    control={form.control}
+                    name="departureTime"
+                    render={({ field }) => (
+                      <TimeField
+                        id="ride-time"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        label="Leaves at"
+                        value={field.value}
+                        aria-invalid={Boolean(errors.departureTime)}
+                        onChange={field.onChange}
+                      />
+                    )}
                   />
                   <FieldError errors={[errors.departureTime]} />
                 </Field>
                 <Field data-invalid={Boolean(errors.endsOn)}>
                   <FieldLabel htmlFor="ride-ends">Runs until (optional)</FieldLabel>
-                  <Input
-                    id="ride-ends"
-                    type="date"
-                    aria-invalid={Boolean(errors.endsOn)}
-                    {...form.register("endsOn")}
+                  <Controller
+                    control={form.control}
+                    name="endsOn"
+                    render={({ field }) => (
+                      <DateField
+                        id="ride-ends"
+                        name={field.name}
+                        ref={field.ref}
+                        onBlur={field.onBlur}
+                        label="Runs until (optional)"
+                        clearable
+                        value={field.value}
+                        aria-invalid={Boolean(errors.endsOn)}
+                        onChange={field.onChange}
+                      />
+                    )}
                   />
                   <FieldError errors={[errors.endsOn]} />
                 </Field>
