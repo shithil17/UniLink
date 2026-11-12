@@ -215,7 +215,7 @@ describe("the form's values and the shared schema", () => {
 
     const weekly = await run(filled({ kind: "recurring", days: [], departureTime: "" }));
     expect(weekly.days?.message).toBe("Pick at least one day");
-    expect(weekly.departureTime?.message).toBe("Use a 24-hour time like 07:30");
+    expect(weekly.departureTime?.message).toBe("Pick a time");
 
     const noContact = await run(filled({ contacts: { phone: "", whatsapp: "", messenger: "" } }));
     expect(

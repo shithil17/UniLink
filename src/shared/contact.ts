@@ -20,8 +20,9 @@ const PATTERNS: Record<ContactKind, RegExp> = {
 
 /** What a badly formed value says, per kind. Shown under its own field. */
 export const CONTACT_MESSAGES: Record<ContactKind, string> = {
-  phone: "Use a Bangladeshi mobile number like +8801712345678",
-  whatsapp: "Use a WhatsApp link like https://wa.me/8801712345678",
+  // Phone and WhatsApp are typed as one number, so they say the same thing.
+  phone: "Use a Bangladeshi mobile number like 01712345678",
+  whatsapp: "Use a Bangladeshi mobile number like 01712345678",
   messenger: "Use a Messenger or Facebook link like https://m.me/yourname",
 };
 

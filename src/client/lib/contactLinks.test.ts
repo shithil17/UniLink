@@ -10,11 +10,11 @@ describe("contactActions", () => {
         whatsapp: "https://wa.me/8801712345678",
       }),
     ).toEqual([
-      { kind: "phone", label: "Call", display: "+8801712345678", href: "tel:+8801712345678" },
+      { kind: "phone", label: "Call", display: "+880 1712-345678", href: "tel:+8801712345678" },
       {
         kind: "whatsapp",
         label: "WhatsApp",
-        display: "wa.me/8801712345678",
+        display: "+880 1712-345678",
         href: "https://wa.me/8801712345678",
       },
       {
@@ -23,6 +23,15 @@ describe("contactActions", () => {
         display: "m.me/some.one",
         href: "https://m.me/some.one",
       },
+    ]);
+  });
+
+  it("shows a wa.me link with a plus the same way, and a foreign number as stored", () => {
+    expect(contactActions({ whatsapp: "https://wa.me/+8801712345678" })).toMatchObject([
+      { display: "+880 1712-345678", href: "https://wa.me/+8801712345678" },
+    ]);
+    expect(contactActions({ whatsapp: "https://wa.me/14155550123" })).toMatchObject([
+      { display: "wa.me/14155550123" },
     ]);
   });
 

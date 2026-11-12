@@ -53,7 +53,7 @@ export const dhakaDateString = z
 
 const departureTime = z
   .string()
-  .refine(isDepartureTime, "Use a 24-hour time like 07:30")
+  .refine(isDepartureTime, "Pick a time")
   .describe("HH:MM, Asia/Dhaka");
 
 const days = z.array(weekday).min(1, "Pick at least one day").max(WEEKDAYS.length);

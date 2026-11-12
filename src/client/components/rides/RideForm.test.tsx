@@ -95,7 +95,7 @@ async function fillCommon(contact = true) {
   type("Destination landmark (optional)", "Mirpur 10");
   type("Seats", "3");
   type("Taka per seat", "100");
-  if (contact) type("Phone", "+8801712345678");
+  if (contact) type("Phone number", "01712345678");
 }
 
 describe("RideForm", () => {
@@ -139,7 +139,7 @@ describe("RideForm", () => {
     post();
     await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2));
     expect(toast.error).toHaveBeenLastCalledWith(CONTACT_REQUIRED_MESSAGE);
-    expect(screen.getByLabelText("Phone").getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByLabelText("Phone number").getAttribute("aria-invalid")).toBe("true");
   });
 
   it("states the safety notice and what happens to a one-off ride", () => {
@@ -160,7 +160,7 @@ describe("RideForm", () => {
     const { fetchMock } = setup();
     type("Seats", "3");
     type("Taka per seat", "100");
-    type("Phone", "+8801712345678");
+    type("Phone number", "01712345678");
     await pickDeparture();
     post();
     expect(await screen.findByText("Pick a pickup area")).toBeTruthy();
@@ -212,7 +212,8 @@ describe("RideForm", () => {
     await fillCommon();
     post();
     expect(await screen.findByText("Pick at least one day")).toBeTruthy();
-    expect(screen.getByText("Use a 24-hour time like 07:30")).toBeTruthy();
+    // The time button's own placeholder says "Pick a time" too, so look for the error's alert.
+    expect(screen.getAllByRole("alert").some((a) => a.textContent === "Pick a time")).toBe(true);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -244,6 +245,25 @@ describe("RideForm", () => {
     });
     expect(body).not.toHaveProperty("endsOn");
     expect(onSaved).not.toHaveBeenCalled();
+  });
+
+  it("sends the number as a phone and a WhatsApp link, or WhatsApp alone", async () => {
+    for (const calls of [true, false]) {
+      cleanup();
+      const { fetchMock } = setup();
+      fetchMock.mockResolvedValue(Response.json({ error: "x" }, { status: 500 }));
+      await fillCommon();
+      await pickDeparture();
+      if (!calls) fireEvent.click(screen.getByRole("button", { name: "Calls" }));
+      post();
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+      const body = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string);
+      expect(body.contacts).toEqual(
+        calls
+          ? { phone: "+8801712345678", whatsapp: "https://wa.me/8801712345678" }
+          : { whatsapp: "https://wa.me/8801712345678" },
+      );
+    }
   });
 
   it("shows the picked departure day first and sends it as a Dhaka instant", async () => {
