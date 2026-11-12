@@ -65,14 +65,14 @@ App-wide states: "You're offline" full screen with Retry when there is no connec
 
 ### Log in (`/login`)
 
-| Element      | Notes                                                              |
-| ------------ | ------------------------------------------------------------------ |
-| Title        | "Log in"                                                           |
-| Fields       | Username, Password                                                 |
-| Primary      | Log in                                                             |
-| Secondary    | Link to "Create an account"                                        |
-| Errors       | Wrong username or password, rate limited, banned: one toast each   |
-| After log in | Home, or Change password when `must_change_password` is set (FR-6) |
+| Element      | Notes                                                                                                                                                                                                                                                                |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Title        | "Log in"                                                                                                                                                                                                                                                             |
+| Fields       | Username, Password                                                                                                                                                                                                                                                   |
+| Primary      | Log in                                                                                                                                                                                                                                                               |
+| Secondary    | Link to "Create an account"                                                                                                                                                                                                                                          |
+| Errors       | Wrong username or password, rate limited: one toast each. Banned (right password only): a toast that stays until dismissed, with the reason (if any) and "Contact the admins at" a mailto link (no link when no address is set), plus the same text under the fields |
+| After log in | Home, or Change password when `must_change_password` is set (FR-6)                                                                                                                                                                                                   |
 
 ### Create an account (`/signup`)
 

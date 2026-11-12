@@ -2,12 +2,15 @@ import { env } from "cloudflare:workers";
 import { Hono } from "hono";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 import { app } from "../../app";
+import { getDb } from "../../db/client";
 import { limits } from "../../limits";
 import { requireRole, requireUser } from "../../middleware/auth";
 import { canPost } from "../../middleware/canPost";
 import { hashPassword } from "../../password";
 import { SESSION_COOKIE, sessionLoader } from "../../middleware/session";
+import { usersRepo } from "../../repos/users";
 import type { AppEnv } from "../../middleware/types";
+import { accountBannedResponse } from "../../../shared/schemas/auth";
 import { dhakaYear } from "../../../shared/time";
 import { authRoutes } from "./routes";
 
@@ -249,11 +252,67 @@ describe("POST /api/auth/login", () => {
     expect(await count("sessions")).toBe(before);
   });
 
-  it("does not reveal a ban to someone who has the wrong password", async () => {
+  it("tells a banned user with the right password the reason and how to reach the admins", async () => {
+    const { body } = await signup();
+    await env.DB.prepare("UPDATE users SET banned_at = ?, ban_reason = ?")
+      .bind(Date.now(), "Selling answers in the feed")
+      .run();
+    const res = await app.request(
+      "/api/auth/login",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json", "CF-Connecting-IP": "10.9.9.1" },
+        body: JSON.stringify({ username: body.username, password: PASSWORD }),
+      },
+      { ...env, ADMIN_CONTACT_EMAIL: " admins@unilink.example " },
+    );
+    expect(res.status).toBe(403);
+    const json = await res.json();
+    expect(json).toEqual({
+      error: "account_banned",
+      message: "This account is suspended.",
+      reason: "Selling answers in the feed",
+      contact: "admins@unilink.example",
+    });
+    expect(accountBannedResponse.safeParse(json).success).toBe(true);
+  });
+
+  it("sends null for a missing reason and for an unset or empty contact", async () => {
     const { body } = await signup();
     await env.DB.prepare("UPDATE users SET banned_at = ?").bind(Date.now()).run();
+    const res = await post("/api/auth/login", { username: body.username, password: PASSWORD });
+    expect(res.status).toBe(403);
+    // The test environment's ADMIN_CONTACT_EMAIL is the empty string from wrangler.jsonc.
+    expect(await res.json()).toMatchObject({ reason: null, contact: null });
+  });
+
+  it("stops showing the reason once the ban is lifted", async () => {
+    const { body } = await signup();
+    await env.DB.prepare("UPDATE users SET banned_at = ?, ban_reason = ?")
+      .bind(Date.now(), "spam")
+      .run();
+    const banned = await post("/api/auth/login", { username: body.username, password: PASSWORD });
+    expect(await banned.json()).toMatchObject({ reason: "spam" });
+
+    await usersRepo(getDb(env.DB)).unban(
+      (await env.DB.prepare("SELECT id FROM users").first<{ id: number }>())!.id,
+    );
+    const row = await env.DB.prepare("SELECT ban_reason FROM users").first<{
+      ban_reason: string | null;
+    }>();
+    expect(row?.ban_reason).toBeNull();
+    const ok = await post("/api/auth/login", { username: body.username, password: PASSWORD });
+    expect(ok.status).toBe(200);
+  });
+
+  it("does not reveal a ban to someone who has the wrong password", async () => {
+    const { body } = await signup();
+    await env.DB.prepare("UPDATE users SET banned_at = ?, ban_reason = ?")
+      .bind(Date.now(), "a private note")
+      .run();
     const res = await post("/api/auth/login", { username: body.username, password: "nope-nope" });
     expect(res.status).toBe(401);
+    expect(JSON.stringify(await res.clone().json())).not.toMatch(/private note|reason|contact/);
     const unknown = await post("/api/auth/login", {
       username: "ghost_user",
       password: "nope-nope",

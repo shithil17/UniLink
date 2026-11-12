@@ -110,3 +110,16 @@ export type ChangePasswordRequest = z.infer<typeof changePasswordRequest>;
 export type SignupForm = z.infer<typeof signupForm>;
 export type ChangePasswordForm = z.infer<typeof changePasswordForm>;
 export type Me = z.infer<typeof me>;
+
+/**
+ * The 403 a correct password gets from a banned account. `reason` is the mod's note, `contact` the
+ * admins' email (null when none is configured). Sent only after the password check, so the reason is
+ * never shown to someone without the password.
+ */
+export const accountBannedResponse = z.object({
+  error: z.literal("account_banned"),
+  message: z.string(),
+  reason: z.string().nullable(),
+  contact: z.string().nullable(),
+});
+export type AccountBannedResponse = z.infer<typeof accountBannedResponse>;

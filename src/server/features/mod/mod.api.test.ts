@@ -57,6 +57,13 @@ const userRow = (id: number) =>
       password_hash: string;
     }>();
 
+const banReasonOf = async (id: number) =>
+  (
+    await env.DB.prepare("SELECT ban_reason FROM users WHERE id = ?")
+      .bind(id)
+      .first<{ ban_reason: string | null }>()
+  )?.ban_reason;
+
 beforeEach(async () => {
   for (const table of ["reports", "audit_log", "rate_limits", "sessions", "users"]) {
     await env.DB.prepare(`DELETE FROM ${table}`).run();
@@ -156,6 +163,7 @@ describe("ban and unban", () => {
     expect(res.status).toBe(200);
 
     expect((await userRow(target.user.id))?.banned_at).not.toBeNull();
+    expect(await banReasonOf(target.user.id)).toBe("spamming");
     const left = await env.DB.prepare("SELECT COUNT(*) AS n FROM sessions WHERE user_id = ?")
       .bind(target.user.id)
       .first<{ n: number }>();
@@ -187,17 +195,18 @@ describe("ban and unban", () => {
     expect((await auditRows()).results).toHaveLength(1);
   });
 
-  it("unbans and logs the previous ban time", async () => {
+  it("unbans, clears the ban reason and logs the previous ban time and reason", async () => {
     const mod = await signedIn("mod");
-    const target = await createTestUser(db(), { bannedAt: 1234 });
+    const target = await createTestUser(db(), { bannedAt: 1234, banReason: "spamming" });
     const res = await call("POST", `/api/mod/users/${target.id}/unban`, mod.token, {
       reason: "appeal",
     });
     expect(res.status).toBe(200);
     expect((await userRow(target.id))?.banned_at).toBeNull();
+    expect(await banReasonOf(target.id)).toBeNull();
     expect((await auditRows()).results[0]).toMatchObject({
       action: "unban",
-      before: '{"bannedAt":1234}',
+      before: '{"bannedAt":1234,"banReason":"spamming"}',
     });
   });
 
@@ -401,6 +410,7 @@ describe("audit log and reverse", () => {
     });
     expect(res.status).toBe(201);
     expect((await userRow(target.user.id))?.banned_at).toBeNull();
+    expect(await banReasonOf(target.user.id)).toBeNull();
 
     const rows = (await auditRows()).results;
     expect(rows).toHaveLength(2);
@@ -462,6 +472,40 @@ describe("audit log and reverse", () => {
     const restored = await userRow(holder.user.id);
     expect(restored?.student_key).toBe(key);
     expect(restored?.banned_at).toBeNull();
+  });
+
+  it("reverses an unban by putting the ban and its reason back, and a ban by clearing the reason", async () => {
+    const mod = await signedIn("mod");
+    const admin = await signedIn("admin");
+    const target = await createTestUser(db(), { bannedAt: 1234, banReason: "spamming" });
+    await call("POST", `/api/mod/users/${target.id}/unban`, mod.token, { reason: "appeal" });
+    const [unban] = (await auditRows()).results;
+    expect(await banReasonOf(target.id)).toBeNull();
+
+    const undone = await call("POST", `/api/admin/audit/${unban.id}/reverse`, admin.token, {
+      reason: "appeal was wrong",
+    });
+    expect(undone.status).toBe(201);
+    expect((await userRow(target.id))?.banned_at).toBe(1234);
+    expect(await banReasonOf(target.id)).toBe("spamming");
+
+    // An unban logged before reasons were kept has no banReason in its snapshot: it still restores.
+    const legacy = await createTestUser(db(), { bannedAt: null });
+    await env.DB.prepare(
+      "INSERT INTO audit_log (actor, action, target_type, target_id, before, reason, created_at) VALUES (?, 'unban', 'user', ?, ?, 'old', ?)",
+    )
+      .bind(String(mod.user.id), String(legacy.id), '{"bannedAt":99}', Date.now())
+      .run();
+    const legacyRow = (await auditRows()).results.at(-1);
+    const legacyUndone = await call(
+      "POST",
+      `/api/admin/audit/${legacyRow?.id}/reverse`,
+      admin.token,
+      { reason: "undo it" },
+    );
+    expect(legacyUndone.status).toBe(201);
+    expect((await userRow(legacy.id))?.banned_at).toBe(99);
+    expect(await banReasonOf(legacy.id)).toBeNull();
   });
 
   it("cannot reverse a password reset or touch a user who is an admin now", async () => {

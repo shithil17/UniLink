@@ -19,13 +19,15 @@ Rules that apply to every endpoint:
 
 ## Auth
 
-| Method | Path                        | Auth   | Schema                              |
-| ------ | --------------------------- | ------ | ----------------------------------- |
-| POST   | `/api/auth/signup`          | public | `auth.ts` → `signupRequest` → `me`  |
-| POST   | `/api/auth/login`           | public | `auth.ts` → `loginRequest` → `me`   |
-| POST   | `/api/auth/logout`          | user   | –                                   |
-| POST   | `/api/auth/change-password` | user   | `auth.ts` → `changePasswordRequest` |
-| GET    | `/api/auth/me`              | user   | `auth.ts` → `me`                    |
+| Method | Path                        | Auth   | Schema                                                                                          |
+| ------ | --------------------------- | ------ | ----------------------------------------------------------------------------------------------- |
+| POST   | `/api/auth/signup`          | public | `auth.ts` → `signupRequest` → `me`                                                              |
+| POST   | `/api/auth/login`           | public | `auth.ts` → `loginRequest` → `me` (a banned account answers 403 `accountBannedResponse`, below) |
+| POST   | `/api/auth/logout`          | user   | –                                                                                               |
+| POST   | `/api/auth/change-password` | user   | `auth.ts` → `changePasswordRequest`                                                             |
+| GET    | `/api/auth/me`              | user   | `auth.ts` → `me`                                                                                |
+
+A banned account that gives the right password gets 403 `{ error: "account_banned", message: "This account is suspended.", reason: string \| null, contact: string \| null }` (`auth.ts` → `accountBannedResponse`, used by the server and the login screen). `reason` is the mod's ban reason (stored in `users.ban_reason`, cleared on unban) and `contact` is the Worker var `ADMIN_CONTACT_EMAIL` (null when empty or unset). The check runs after the password check, so a wrong password gets the usual 401 `invalid_credentials` and never the reason.
 
 ## Courses, attempts and student courses
 
@@ -106,8 +108,8 @@ Schemas are in `moderation.ts`. Mod routes need the mod role (admins pass too); 
 | ------ | ----------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | POST   | `/api/reports`                      | user  | `reportRequest` → `reportCreated`. Rate-limited (`limits.reportCreate`); 404 unknown target, 400 own target, 409 `already_reported` (one open report per reporter per target)                                                                                                             |
 | GET    | `/api/mod/users`                    | mod   | `modUsersQuery` (`q` = username prefix, cursor) → `modUserPage`. Handle and state only: no student ID, email or name                                                                                                                                                                      |
-| POST   | `/api/mod/users/:id/ban`            | mod   | `reasonBody`. Deletes the user's sessions. 409 if already banned                                                                                                                                                                                                                          |
-| POST   | `/api/mod/users/:id/unban`          | mod   | `reasonBody`. 409 if not banned                                                                                                                                                                                                                                                           |
+| POST   | `/api/mod/users/:id/ban`            | mod   | `reasonBody`. Deletes the user's sessions and stores the reason as `ban_reason`, which the user sees at login. 409 if already banned                                                                                                                                                      |
+| POST   | `/api/mod/users/:id/unban`          | mod   | `reasonBody`. Clears `ban_reason`. 409 if not banned                                                                                                                                                                                                                                      |
 | POST   | `/api/mod/users/:id/reset-password` | mod   | `reasonBody` → `temporaryPassword` (shown once, `no-store`). Sets `must_change_password`, deletes sessions                                                                                                                                                                                |
 | GET    | `/api/mod/id-conflict?key=`         | mod   | `idConflictQuery` → `idConflictResult`. The only response with a student ID; a hit is logged (`id_lookup`)                                                                                                                                                                                |
 | POST   | `/api/mod/id-conflict/release`      | mod   | `releaseKeyRequest`. Bans the holder and replaces the key with `released:<id>` so its owner can sign up                                                                                                                                                                                   |

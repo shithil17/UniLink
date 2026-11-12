@@ -19,8 +19,11 @@ import { softDeleteTargets, type SoftDeleteTargets } from "./softDelete";
  *
  * | action       | snapshot                    | reversal                                              |
  * | ------------ | --------------------------- | ----------------------------------------------------- |
- * | ban          | { bannedAt }                | puts `banned_at` back (the user can log in again)     |
- * | unban        | { bannedAt }                | puts `banned_at` back (the user is banned again)      |
+ * | ban          | { bannedAt }                | puts `banned_at` back and clears `ban_reason` (the    |
+ * |              |                             | user can log in again)                                |
+ * | unban        | { bannedAt, banReason }     | puts both back (the user is banned again, with the    |
+ * |              |                             | old reason; rows from before `banReason` was kept     |
+ * |              |                             | restore no reason)                                    |
  * | role_change  | { role }                    | puts `role` back                                      |
  * | release_key  | { studentKey, bannedAt }    | puts the key and `banned_at` back; refused if someone |
  * |              |                             | has taken the key since (`key_in_use`)                |
@@ -43,7 +46,10 @@ import { softDeleteTargets, type SoftDeleteTargets } from "./softDelete";
 
 const userSnapshot = {
   [auditActions.ban]: z.strictObject({ bannedAt: instant.nullable() }),
-  [auditActions.unban]: z.strictObject({ bannedAt: instant.nullable() }),
+  [auditActions.unban]: z.strictObject({
+    bannedAt: instant.nullable(),
+    banReason: z.string().nullable().optional(),
+  }),
   [auditActions.roleChange]: z.strictObject({ role }),
   [auditActions.releaseKey]: z.strictObject({
     studentKey: z.string().min(1),
@@ -140,6 +146,8 @@ async function planUserReversal(
   if (state.role === "admin") return "target_protected";
 
   const restore: Partial<UserState> = parsed.data;
+  // A ban reason belongs to a ban: putting `banned_at` back to null always clears it.
+  if (restore.bannedAt === null && restore.banReason === undefined) restore.banReason = null;
   if (restore.studentKey !== undefined && restore.studentKey !== state.studentKey) {
     const holder = await users.findByStudentKey(restore.studentKey);
     if (holder && holder.id !== userId) return "key_in_use";

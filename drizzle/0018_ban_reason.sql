@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `ban_reason` text;

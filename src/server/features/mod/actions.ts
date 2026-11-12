@@ -54,7 +54,8 @@ export async function banUser(
 ): Promise<ActionResult> {
   const loaded = await loadTarget(db, actor, targetId);
   if (!loaded.ok) return loaded;
-  if (!(await usersRepo(db).ban(targetId, now))) return { ok: false, reason: "already_banned" };
+  if (!(await usersRepo(db).ban(targetId, now, reason)))
+    return { ok: false, reason: "already_banned" };
   // A banned user's cookie is already refused by the session loader; the rows go too.
   await sessionsRepo(db).deleteAllForUser(targetId);
   await audit(
@@ -81,6 +82,8 @@ export async function unbanUser(
 ): Promise<ActionResult> {
   const loaded = await loadTarget(db, actor, targetId);
   if (!loaded.ok) return loaded;
+  // Read before the unban clears it, so a reversal can put the reason back.
+  const before = await usersRepo(db).findState(targetId);
   if (!(await usersRepo(db).unban(targetId))) return { ok: false, reason: "not_banned" };
   await audit(
     db,
@@ -89,7 +92,7 @@ export async function unbanUser(
       action: auditActions.unban,
       targetType: "user",
       targetId,
-      before: { bannedAt: loaded.target.bannedAt },
+      before: { bannedAt: loaded.target.bannedAt, banReason: before?.banReason ?? null },
       reason,
     },
     now,

@@ -2,7 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import {
+  accountBannedResponse,
   me,
+  type AccountBannedResponse,
   type ChangePasswordRequest,
   type LoginRequest,
   type SignupRequest,
@@ -27,6 +29,13 @@ export function useSignup() {
     mutationFn: (body: SignupRequest) => apiPost("/api/auth/signup", me, body),
     onSuccess: afterSignIn,
   });
+}
+
+/** The ban details if a login failed because the account is suspended, else null. */
+export function bannedAccount(err: unknown): AccountBannedResponse | null {
+  if (!(err instanceof ApiError) || err.status !== 403) return null;
+  const parsed = accountBannedResponse.safeParse(err.body);
+  return parsed.success ? parsed.data : null;
 }
 
 export function useLogin() {

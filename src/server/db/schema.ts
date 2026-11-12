@@ -41,6 +41,8 @@ export const users = sqliteTable(
       .notNull()
       .default("student"),
     bannedAt: integer("banned_at"),
+    // The mod's reason for the ban, shown to the user when they try to log in. Null when not banned.
+    banReason: text("ban_reason"),
     mustChangePassword: integer("must_change_password", { mode: "boolean" })
       .notNull()
       .default(false),

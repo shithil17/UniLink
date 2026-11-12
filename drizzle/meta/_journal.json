@@ -127,6 +127,13 @@
       "when": 1794467403919,
       "tag": "0017_resource_help_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1794470518174,
+      "tag": "0018_ban_reason",
+      "breakpoints": true
     }
   ]
 }
