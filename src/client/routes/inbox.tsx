@@ -74,11 +74,18 @@ function Inbox() {
           <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.01em] text-ink md:text-[32px]">
             Inbox
           </h1>
-          {unread.data ? (
-            <p className="mt-1 text-soft tabular-nums">
-              {count > 0 ? `${count} new` : "You're all caught up"}
-            </p>
-          ) : null}
+          {/* The line's height is reserved until the unread count loads. */}
+          <p className="mt-1 flex min-h-[1.5em] items-center text-soft tabular-nums">
+            {unread.data ? (
+              count > 0 ? (
+                `${count} new`
+              ) : (
+                "You're all caught up"
+              )
+            ) : (
+              <Skeleton className="h-4 w-24" />
+            )}
+          </p>
         </div>
         <Button
           variant="ghost"

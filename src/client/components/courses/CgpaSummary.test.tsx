@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { CgpaSummary } from "../../../shared/schemas/attempts";
-import { CgpaSummaryView, CgpaTile, CreditsTile } from "./CgpaSummary";
+import { CgpaSummary as CgpaPanel, CgpaSummaryView, CgpaTile, CreditsTile } from "./CgpaSummary";
 
 afterEach(cleanup);
 
@@ -37,6 +38,21 @@ describe("CgpaSummaryView", () => {
     expect(screen.queryByText("0.00")).toBeNull();
     expect(screen.getByText(/Record a graded course/)).toBeTruthy();
     expect(screen.getByText("Every category has its credits.")).toBeTruthy();
+  });
+});
+
+describe("CgpaSummary", () => {
+  it("holds the panel's layout in a skeleton while loading, not a one-line message", () => {
+    vi.stubGlobal("fetch", () => new Promise(() => {}));
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <CgpaPanel />
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole("status").textContent).toBe("Loading your CGPA");
+    expect(screen.queryByText("Loading...")).toBeNull();
+    expect(document.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThan(5);
+    vi.unstubAllGlobals();
   });
 });
 

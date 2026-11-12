@@ -4,8 +4,7 @@ import { BannedDetails } from "./BannedNotice";
 
 /**
  * The suspended-account toast. It stays until dismissed, because the reason and the address are
- * worth copying, and carries its own Dismiss button since a swipe is not discoverable. The form
- * also keeps the same text inline, so this is never the only place the message lives.
+ * worth copying, and carries its own Dismiss button since a swipe is not discoverable.
  */
 export function showBannedToast(ban: AccountBannedResponse) {
   const id = toast.error(ban.message, {

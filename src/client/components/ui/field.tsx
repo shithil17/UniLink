@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { CircleAlertIcon } from "lucide-react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "cn";
 
@@ -124,7 +123,7 @@ function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
       data-slot="field-description"
       className={cn(
         "text-left text-[13px] leading-[1.35] font-normal text-faint group-has-data-horizontal/field:text-balance [[data-variant=legend]+&]:-mt-1.5",
-        "last:mt-0 nth-last-2:-mt-1",
+        "last:mt-0",
         "[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-brand-ink",
         className,
       )}
@@ -163,6 +162,12 @@ function FieldSeparator({
   );
 }
 
+/**
+ * Per-field validation text for assistive tech only. It is `sr-only`, so it never inserts a block
+ * into the layout (a message under a far-off field is easily missed); sighted users see the field's
+ * red edge from `aria-invalid` and a toast from `toastFirstFieldError`. Keep `role="alert"` and the
+ * content so screen readers still announce it.
+ */
 function FieldError({
   className,
   children,
@@ -198,17 +203,8 @@ function FieldError({
   }
 
   return (
-    <div
-      role="alert"
-      data-slot="field-error"
-      className={cn(
-        "flex items-start gap-1.5 text-[13px] leading-[1.35] font-medium text-danger",
-        className,
-      )}
-      {...props}
-    >
-      <CircleAlertIcon aria-hidden className="mt-px size-4 shrink-0" />
-      <div className="min-w-0">{content}</div>
+    <div role="alert" data-slot="field-error" className={cn("sr-only", className)} {...props}>
+      {content}
     </div>
   );
 }

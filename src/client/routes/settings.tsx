@@ -36,8 +36,10 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 
 function Settings() {
   const { data: user } = useQuery(meQuery);
-  // No key means the server has push switched off, so the row would only be a dead end.
-  const { data: push } = useQuery(pushPublicKeyQuery);
+  // No key means the server has push switched off, so the row would only be a dead end. While the
+  // key is still loading the group keeps its space (the row shows a skeleton) so Moderation below
+  // does not jump; it is dropped only once the key is known to be missing.
+  const { data: push, isPending: pushPending } = useQuery(pushPublicKeyQuery);
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -66,7 +68,7 @@ function Settings() {
           <ThemeRow className={linkRow} />
         </div>
       </Group>
-      {push ? (
+      {push || pushPending ? (
         <Group title="Notifications">
           <div className={panel}>
             <PushSwitch />

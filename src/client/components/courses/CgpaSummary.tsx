@@ -72,6 +72,47 @@ export function CgpaSummaryView({ summary }: { summary: Summary }) {
   );
 }
 
+/**
+ * The summary's rows in placeholder bars, under the real "CGPA" heading: the figure line, the two
+ * totals rows and the "Credits left by category" heading with a few category rows, at the heights
+ * the loaded view prints them.
+ */
+function CgpaSkeleton() {
+  return (
+    <div role="status" aria-busy="true">
+      <span className="sr-only">Loading your CGPA</span>
+      <div className="mt-2 flex h-10 items-center gap-2">
+        <Skeleton className="h-9 w-16" />
+        <Skeleton className="h-4 w-36" />
+      </div>
+      <div className="mt-4 border-t border-line">
+        <div className="flex h-9 items-center justify-between gap-3 border-b border-line">
+          <Skeleton className="h-4 w-14" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <div className="flex h-9 items-center justify-between gap-3">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+      </div>
+      <div className="border-t border-line pt-3">
+        <Skeleton className="h-5 w-44" />
+      </div>
+      <div className="mt-1">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="flex h-9 items-center justify-between gap-3 border-b border-line last:border-b-0"
+          >
+            <Skeleton className="h-4 w-2/5" />
+            <Skeleton className="h-4 w-6" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** The CGPA panel on the courses screen. A failed load never blocks the map beside it. */
 export function CgpaSummary() {
   const { data, isPending, isError, refetch } = useQuery(cgpaSummaryQuery);
@@ -82,7 +123,7 @@ export function CgpaSummary() {
         CGPA
       </h2>
       {isPending ? (
-        <p className="mt-2 text-sm text-soft">Loading...</p>
+        <CgpaSkeleton />
       ) : isError ? (
         <div className="mt-2 space-y-2">
           <p role="alert" className="text-sm text-soft">

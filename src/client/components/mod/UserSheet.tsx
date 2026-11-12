@@ -13,6 +13,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useChangeRole, useUserAction, type UserAction } from "@/lib/mod";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { roleChangeConfirm, userActionConfirm } from "@/lib/modConfirm";
 import { canActOn, type Role } from "../../../shared/modPolicy";
 import { reasonBody, type ModUser } from "../../../shared/schemas/moderation";
@@ -80,7 +81,7 @@ function UserActions({
           onClose();
         },
       });
-    });
+    }, toastFirstFieldError);
 
   const setRole = (role: "mod" | "student", done: string) =>
     form.handleSubmit(({ reason }) => {
@@ -92,7 +93,7 @@ function UserActions({
           onClose();
         },
       });
-    });
+    }, toastFirstFieldError);
 
   const flagged = user.probingFlaggedAt !== null;
   const state = [

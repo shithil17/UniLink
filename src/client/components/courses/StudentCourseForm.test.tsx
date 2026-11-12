@@ -4,7 +4,11 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { StudentCourseForm } from "./StudentCourseForm";
 
+const toastError = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/toast", () => ({ toast: { error: toastError, success: vi.fn() } }));
+
 afterEach(() => {
+  toastError.mockClear();
   cleanup();
   vi.unstubAllGlobals();
   vi.useRealTimers();
@@ -69,6 +73,8 @@ describe("StudentCourseForm lookup", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
     expect(title().value).toBe("");
     expect(screen.queryByText(/Found:/)).toBeNull();
+    // The line under the code field is always there, so the form does not grow or shrink.
+    expect(screen.getByText(/Type a code and we'll fill in/)).toBeTruthy();
   });
 
   it("does not look anything up for a malformed code", async () => {
@@ -86,5 +92,48 @@ describe("StudentCourseForm category hint", () => {
     cleanup();
     setup("Electives");
     expect(screen.queryByText(/Any course from any discipline/)).toBeNull();
+    // The trail category gets its own line instead, so the hint row never disappears.
+    expect(screen.getByText(/count toward your elective trails/)).toBeTruthy();
+  });
+});
+
+describe("StudentCourseForm errors reach the user as toasts", () => {
+  it("toasts a taken code from the server and still marks the field for screen readers", async () => {
+    const message = "You already have a course with that code.";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        init?.method === "POST"
+          ? Response.json({ error: "code_taken", message }, { status: 409 })
+          : Response.json({ error: "not_found" }, { status: 404 }),
+      ),
+    );
+    render(
+      <QueryClientProvider
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+      >
+        <StudentCourseForm
+          categories={["Open Elective"]}
+          initial={{ category: "Open Elective" }}
+          onSaved={() => {}}
+          onCancel={() => {}}
+        />
+      </QueryClientProvider>,
+    );
+    typeCode("ECO101");
+    fireEvent.change(title(), { target: { value: "Economics" } });
+    fireEvent.change(credits(), { target: { value: "3" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add course" }));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith(message));
+    const alert = await screen.findByRole("alert");
+    expect(alert.className).toContain("sr-only");
+    expect(alert.textContent).toBe(message);
+  });
+
+  it("toasts the first invalid field on a failed submit", async () => {
+    setup();
+    fireEvent.click(screen.getByRole("button", { name: "Add course" }));
+    await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
   });
 });

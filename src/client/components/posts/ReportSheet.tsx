@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { errorMessage } from "@/lib/api";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { useReport, type PostTargetType } from "@/lib/posts";
 import { toast } from "@/lib/toast";
 import { reasonBody } from "../../../shared/schemas/moderation";
@@ -56,7 +57,7 @@ export function ReportSheet({
         onError: (err) => toast.error(errorMessage(err)),
       },
     );
-  });
+  }, toastFirstFieldError);
 
   return (
     <Sheet open={target !== null} onOpenChange={(open) => !open && close()}>

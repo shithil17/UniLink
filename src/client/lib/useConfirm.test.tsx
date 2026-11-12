@@ -5,7 +5,13 @@ import { ApiError } from "./api";
 import type { ConfirmContent } from "./modConfirm";
 import { useConfirm } from "./useConfirm";
 
-afterEach(cleanup);
+const toastError = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/toast", () => ({ toast: Object.assign(vi.fn(), { error: toastError }) }));
+
+afterEach(() => {
+  cleanup();
+  toastError.mockClear();
+});
 
 const content: ConfirmContent = {
   title: "Ban user",
@@ -80,7 +86,7 @@ describe("confirm sheet", () => {
     await waitFor(() => expect(screen.queryByRole("heading", { name: "Ban user" })).toBeNull());
   });
 
-  it("stays open with the error inline when the request fails, and can be retried", async () => {
+  it("toasts the error and stays open when the request fails, and can be retried", async () => {
     const run = vi
       .fn<() => Promise<unknown>>()
       .mockRejectedValueOnce(
@@ -90,11 +96,34 @@ describe("confirm sheet", () => {
     render(<Harness run={run} />);
     const sheet = await open();
     fireEvent.click(within(sheet).getByRole("button", { name: "Ban user" }));
-    expect((await within(sheet).findByRole("alert")).textContent).toContain("already banned");
-    expect(within(sheet).getByRole("button", { name: "Ban user" })).toBeTruthy();
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith("That user is already banned."));
+    // No block inside the sheet; the sheet stays and the button is usable again.
+    expect(within(sheet).queryByRole("alert")).toBeNull();
+    const retry = within(sheet).getByRole("button", { name: "Ban user" }) as HTMLButtonElement;
+    await waitFor(() => expect(retry.getAttribute("aria-busy")).toBeNull());
+    expect(retry.disabled).toBe(false);
 
-    fireEvent.click(within(sheet).getByRole("button", { name: "Ban user" }));
+    fireEvent.click(retry);
     await waitFor(() => expect(run).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(screen.queryByRole("heading", { name: "Ban user" })).toBeNull());
+  });
+
+  it("toasts again when the retry fails with the same error", async () => {
+    const fail = () =>
+      new ApiError(409, { error: "already_banned", message: "That user is already banned." });
+    const run = vi
+      .fn<() => Promise<unknown>>()
+      .mockRejectedValueOnce(fail())
+      .mockRejectedValueOnce(fail());
+    render(<Harness run={run} />);
+    const sheet = await open();
+    fireEvent.click(within(sheet).getByRole("button", { name: "Ban user" }));
+    await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
+    const retry = within(sheet).getByRole("button", { name: "Ban user" });
+    await waitFor(() => expect(retry.getAttribute("aria-busy")).toBeNull());
+
+    fireEvent.click(retry);
+    await waitFor(() => expect(run).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(toastError).toHaveBeenCalledTimes(2));
   });
 });

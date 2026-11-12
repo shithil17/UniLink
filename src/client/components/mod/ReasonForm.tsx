@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { reasonBody, type removalBody } from "../../../shared/schemas/moderation";
 import { ReasonField } from "./ReasonField";
 
@@ -34,7 +35,7 @@ export function ReasonForm({
     resolver: zodResolver(schema),
     defaultValues: { reason: "" },
   });
-  const submit = form.handleSubmit((values) => onSubmit(values.reason));
+  const submit = form.handleSubmit((values) => onSubmit(values.reason), toastFirstFieldError);
 
   return (
     <form onSubmit={submit} noValidate>

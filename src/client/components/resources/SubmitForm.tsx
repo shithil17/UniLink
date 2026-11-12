@@ -5,6 +5,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toastPostFailure, useSubmitLink } from "@/lib/resources";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { toast } from "@/lib/toast";
 import {
   resourceSubmissionInput,
@@ -37,7 +38,7 @@ export function SubmitForm({ requestId }: { requestId: number }) {
       },
       onError: toastPostFailure,
     });
-  });
+  }, toastFirstFieldError);
 
   return (
     <form onSubmit={submit} noValidate>
