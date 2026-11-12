@@ -291,6 +291,20 @@
   --hue-ink: var(--color-rose-ink);
 }
 
+/*
+ * People tones for the 404 illustration: two warm brown skin tones (each with a deeper shade for the
+ * far leg) and hair. Hand-picked to sit on every palette ground, Night included, so they are one
+ * set for all palettes and are not palette roles. A second `@theme static` block keeps them out of
+ * the role list that `themes.test.ts` checks.
+ */
+@theme static {
+  --color-skin-1: #c58b5e;
+  --color-skin-1-deep: #a8704a;
+  --color-skin-2: #8f5a3c;
+  --color-skin-2-deep: #744630;
+  --color-skin-hair: #4f3a30;
+}
+
 @theme inline {
   --color-hue: var(--hue-bg);
   --color-hue-ink: var(--hue-ink);
