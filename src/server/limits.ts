@@ -49,6 +49,7 @@ import {
 } from "../shared/posts.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
 import { RESOURCE_URL_MAX_LENGTH } from "../shared/resourceUrl.ts";
+import { MAP_BOUNDS } from "../shared/geo.ts";
 
 // Every limit, cap, cooldown, expiry and threshold lives here. Feature code imports these, never inlines numbers.
 
@@ -57,6 +58,9 @@ const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 const D1_MAX_BOUND_PARAMS = 100;
+
+// ceiling: the greater-Dhaka box (about Savar to Gazipur to Narayanganj). Every map is held to it and every saved point must fall inside it. Defined in shared code so the client maps use the same box. Revisit if students post rides from beyond it.
+export { MAP_BOUNDS };
 
 export const limits = {
   /** Oldest admission year accepted at signup, in years before the current one. Defined in shared code for the client form. */

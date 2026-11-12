@@ -258,6 +258,9 @@
   --color-peach-ink: #f4b596;
   --color-rose: #432032;
   --color-rose-ink: #f2a5bf;
+  /* Map tints (see the `--map-water` note below). */
+  --map-water: #1b2c3f;
+  --map-park: #1b2e27;
 }
 
 /*
@@ -289,6 +292,16 @@
 [data-hue="rose"] {
   --hue-bg: var(--color-rose);
   --hue-ink: var(--color-rose-ink);
+}
+
+/*
+ * Map tints: the soft water and park colors of the ride map (`buildMapStyle` reads them with the
+ * palette roles). They are map-only, not palette roles: the four day palettes share this pair and
+ * Night sets its own inside its palette block above. Land, roads, labels and buildings come from the roles themselves.
+ */
+:root {
+  --map-water: #d3e4f0;
+  --map-park: #dbead9;
 }
 
 /*
