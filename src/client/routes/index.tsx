@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router";
-import { ChevronRightIcon, CircleCheckIcon, HandHelpingIcon, PlusIcon } from "lucide-react";
+import { CircleCheckIcon, PlusIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { CgpaTile, CreditsTile } from "@/components/courses/CgpaSummary";
 import { CourseCode } from "@/components/courses/CourseCode";
@@ -69,7 +69,6 @@ function Home() {
           <>
             <NoCurriculum />
             <TodaySection routine={routine} titles={new Map()} now={now} />
-            <ResourcesLink />
           </>
         }
       />
@@ -96,7 +95,6 @@ function Home() {
             Record a grade
           </Link>
           <UnlockedNext map={map.data} animate={animate} />
-          <ResourcesLink />
         </>
       }
     />
@@ -239,34 +237,6 @@ function UnlockedNext({ map, animate }: { map: CourseMap; animate: boolean }) {
             description="Record the grades you already have and the courses you can take next will show up here."
           />
         )}
-      </div>
-    </section>
-  );
-}
-
-/**
- * The way into resource sharing: ask other students for notes and see the links sent to you. Not a
- * tab (the bar holds five), so it lives where the daily screen already points at the course map.
- */
-function ResourcesLink() {
-  return (
-    <section aria-label="Resources">
-      <div className={panel}>
-        <Link
-          to="/resources"
-          className={`flex min-h-15 items-center gap-3 px-4 py-2.5 hover:bg-tint active:bg-tint ${focusRing}`}
-        >
-          <HandHelpingIcon aria-hidden strokeWidth={1.75} className="size-5 shrink-0 text-soft" />
-          <span className="min-w-0 flex-1">
-            <span className="block text-[15px] leading-[1.3] font-semibold text-ink">
-              Ask for materials
-            </span>
-            <span className="block text-[13px] leading-[1.4] text-soft">
-              Request notes and see the links sent to you
-            </span>
-          </span>
-          <ChevronRightIcon aria-hidden className="size-5 shrink-0 text-faint" />
-        </Link>
       </div>
     </section>
   );

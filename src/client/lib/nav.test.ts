@@ -1,26 +1,40 @@
 import { describe, expect, it } from "vite-plus/test";
-import { activeModSection, activeTabIndex, isSplitAuthPath, mainTabs, modSectionsFor } from "./nav";
+import {
+  activeModSection,
+  activeTab,
+  barPillIndex,
+  isSplitAuthPath,
+  mainTabs,
+  modSectionsFor,
+} from "./nav";
 
 const student = { role: "student", mustChangePassword: false } as const;
 
+const modUser = { role: "mod", mustChangePassword: false } as const;
+const labels = (tabs: { label: string }[]) => tabs.map((t) => t.label);
+
 describe("mainTabs", () => {
-  it("gives a student five tabs, with Routine and no Mod tab", () => {
-    expect(mainTabs(student).map((t) => t.label)).toEqual([
-      "Home",
-      "Courses",
-      "Routine",
-      "Inbox",
-      "Settings",
-    ]);
+  it("puts Materials in the phone bar and Routine and Settings in More for a student", () => {
+    const tabs = mainTabs(student);
+    expect(labels(tabs.filter((t) => t.inBar))).toEqual(["Home", "Courses", "Materials", "Inbox"]);
+    expect(labels(tabs.filter((t) => !t.inBar))).toEqual(["Routine", "Settings"]);
   });
 
-  it("swaps Routine for the Mod tab for mods and admins, and stays within five", () => {
+  it("gives mods and admins a Mod tab in More, and keeps their Routine", () => {
     for (const role of ["mod", "admin"] as const) {
-      const labels = mainTabs({ role, mustChangePassword: false }).map((t) => t.label);
-      expect(labels).toContain("Mod");
-      expect(labels).not.toContain("Routine");
-      expect(labels.length).toBeLessThanOrEqual(5);
+      const tabs = mainTabs({ role, mustChangePassword: false });
+      expect(labels(tabs.filter((t) => t.inBar))).toEqual([
+        "Home",
+        "Courses",
+        "Materials",
+        "Inbox",
+      ]);
+      expect(labels(tabs.filter((t) => !t.inBar))).toEqual(["Routine", "Mod", "Settings"]);
     }
+  });
+
+  it("gives every More tab a hint for the sheet", () => {
+    for (const tab of mainTabs(modUser).filter((t) => !t.inBar)) expect(tab.hint).toBeTruthy();
   });
 
   it("shows no tabs when signed out or while a temporary password is set", () => {
@@ -51,25 +65,31 @@ describe("activeModSection", () => {
   });
 });
 
-describe("activeTabIndex", () => {
-  const modUser = { role: "mod", mustChangePassword: false } as const;
+describe("activeTab", () => {
+  it("keeps a tab active below its path, and never lets Home match everything", () => {
+    expect(activeTab(mainTabs(student), "/courses/CSE115")?.label).toBe("Courses");
+    expect(activeTab(mainTabs(student), "/resources/12")?.label).toBe("Materials");
+    expect(activeTab(mainTabs(student), "/coursesx")).toBeUndefined();
+    expect(activeTab(mainTabs(student), "/change-password")).toBeUndefined();
+  });
+});
 
-  it("is the tab's position in the bar, so the pill follows the role's tab list", () => {
-    expect(activeTabIndex(mainTabs(student), "/")).toBe(0);
-    expect(activeTabIndex(mainTabs(student), "/routine")).toBe(2);
-    expect(activeTabIndex(mainTabs(student), "/settings")).toBe(4);
-    expect(activeTabIndex(mainTabs(modUser), "/inbox")).toBe(2);
-    expect(activeTabIndex(mainTabs(modUser), "/mod/queue")).toBe(3);
+describe("barPillIndex", () => {
+  it("is a bar tab's position in the phone bar", () => {
+    expect(barPillIndex(mainTabs(student), "/")).toBe(0);
+    expect(barPillIndex(mainTabs(student), "/resources/new")).toBe(2);
+    expect(barPillIndex(mainTabs(modUser), "/inbox")).toBe(3);
   });
 
-  it("keeps a tab active below its path, and never lets Home match everything", () => {
-    expect(activeTabIndex(mainTabs(student), "/courses/CSE115")).toBe(1);
-    expect(activeTabIndex(mainTabs(student), "/coursesx")).toBe(-1);
+  it("sits on the More slot, after the bar tabs, for a tab in More", () => {
+    expect(barPillIndex(mainTabs(student), "/routine")).toBe(4);
+    expect(barPillIndex(mainTabs(student), "/settings")).toBe(4);
+    expect(barPillIndex(mainTabs(modUser), "/mod/queue")).toBe(4);
   });
 
   it("is -1 on a screen with no tab, or with no tabs at all", () => {
-    expect(activeTabIndex(mainTabs(modUser), "/routine")).toBe(-1);
-    expect(activeTabIndex(mainTabs(null), "/")).toBe(-1);
+    expect(barPillIndex(mainTabs(student), "/change-password")).toBe(-1);
+    expect(barPillIndex(mainTabs(null), "/")).toBe(-1);
   });
 });
 

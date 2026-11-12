@@ -37,9 +37,16 @@ async function renderShell(me: Me | null, path = "/", unread?: number) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   client.setQueryData(["me"], me);
   const root = createRootRoute({ component: () => <AppLayout>content</AppLayout> });
-  const routes = ["/", "/courses", "/routine", "/inbox", "/mod/queue", "/settings"].map((p) =>
-    createRoute({ getParentRoute: () => root, path: p }),
-  );
+  const routes = [
+    "/",
+    "/courses",
+    "/resources",
+    "/routine",
+    "/inbox",
+    "/mod/queue",
+    "/settings",
+    "/change-password",
+  ].map((p) => createRoute({ getParentRoute: () => root, path: p }));
   const router = createRouter({
     routeTree: root.addChildren(routes),
     history: createMemoryHistory({ initialEntries: [path] }),
@@ -77,18 +84,53 @@ describe("AppLayout navigation", () => {
     expect(screen.queryByText("Courses")).toBeNull();
   });
 
-  it("gives a student five tabs and marks the current one", async () => {
+  it("links every student tab, including Materials, and marks the current one", async () => {
     await renderShell(user("student"), "/courses");
     const nav = screen.getByRole("navigation", { name: "Main" });
-    expect(nav.querySelectorAll("a")).toHaveLength(5);
+    expect(nav.querySelectorAll("a")).toHaveLength(6);
+    expect(within(nav).getByRole("link", { name: "Materials" })).toBeTruthy();
     expect(nav.querySelector("[aria-current=page]")?.textContent).toContain("Courses");
   });
 
   it("gives a mod a Mod tab that stays current inside the panel", async () => {
     await renderShell(user("mod"), "/mod/queue");
     const nav = screen.getByRole("navigation", { name: "Main" });
-    expect(nav.querySelectorAll("a")).toHaveLength(5);
+    expect(nav.querySelectorAll("a")).toHaveLength(7);
     expect(nav.querySelector("[aria-current=page]")?.textContent).toContain("Mod");
+  });
+
+  it("hides the More tabs from the phone bar, where the More button stands in for them", async () => {
+    await renderShell(user("student"));
+    const nav = screen.getByRole("navigation", { name: "Main" });
+    for (const label of ["Routine", "Settings"]) {
+      expect(within(nav).getByRole("link", { name: label }).classList).toContain("max-md:hidden");
+    }
+    expect(within(nav).getByRole("link", { name: "Materials" }).classList).not.toContain(
+      "max-md:hidden",
+    );
+    expect(within(nav).getByRole("button", { name: "More" }).classList).toContain("md:hidden");
+  });
+
+  it("opens a sheet listing the More tabs with their hints", async () => {
+    await renderShell(user("mod"));
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    const sheet = await screen.findByRole("navigation", { name: "More" });
+    expect(
+      within(sheet)
+        .getAllByRole("link")
+        .map((a) => a.textContent),
+    ).toEqual([
+      "RoutineYour classes for the week",
+      "ModHeld posts, users and curriculum",
+      "SettingsTheme, password and account",
+    ]);
+  });
+
+  it("marks More as where you are while a More screen is open", async () => {
+    await renderShell(user("student"), "/settings");
+    const more = screen.getByRole("button", { name: /More/ });
+    expect(more.hasAttribute("data-current")).toBe(true);
+    expect(more.textContent).toContain("Settings open");
   });
 });
 
@@ -98,18 +140,18 @@ describe("AppLayout tab pill", () => {
     screen.getByRole("navigation", { name: "Main" }).style.getPropertyValue("--i");
 
   it.each([
-    // Home, Courses, Routine, Inbox, Settings
-    ["a student", "student", "/routine", "2"],
-    // a mod's bar swaps Routine for Mod: Home, Courses, Inbox, Mod, Settings
-    ["a mod", "mod", "/mod/queue", "3"],
+    // the phone bar: Home, Courses, Materials, Inbox, More
+    ["a student on Materials", "student", "/resources", "2"],
+    ["a student on Routine, in More", "student", "/routine", "4"],
+    ["a mod on the panel, in More", "mod", "/mod/queue", "4"],
   ] as const)("sits at the active tab's position for %s", async (_who, role, path, at) => {
     await renderShell(user(role), path);
     expect(index()).toBe(at);
     expect(pill().hasAttribute("data-hidden")).toBe(false);
   });
 
-  it("hides when no tab is active, for example a mod's own routine", async () => {
-    await renderShell(user("mod"), "/routine");
+  it("hides when no tab is active, for example while changing the password", async () => {
+    await renderShell(user("mod"), "/change-password");
     expect(pill().hasAttribute("data-hidden")).toBe(true);
   });
 });
@@ -180,7 +222,7 @@ describe("AppLayout rail", () => {
     await renderShell(user("student"));
     fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
 
-    for (const label of ["Home", "Courses", "Routine", "Inbox", "Settings"]) {
+    for (const label of ["Home", "Courses", "Materials", "Routine", "Inbox", "Settings"]) {
       expect(screen.getByRole("link", { name: label })).toBeTruthy();
     }
   });
