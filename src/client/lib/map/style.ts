@@ -36,12 +36,21 @@ export const MAP_SOURCE_ID = "openmaptiles";
 export const BUILDING_MIN_ZOOM = 15;
 /** Landmark dots and labels (schools, hospitals, stations ...) appear from here. */
 export const LANDMARK_MIN_ZOOM = 15.5;
-const MINOR_ROAD_MIN_ZOOM = 13;
+const MINOR_ROAD_MIN_ZOOM = 12;
 const ROAD_LABEL_MIN_ZOOM = 12.5;
-const TERTIARY_LABEL_MIN_ZOOM = 14.5;
+const TERTIARY_LABEL_MIN_ZOOM = 14;
+/** Lane and service-road names appear from street zoom; below it they would crowd the larger names. */
+const MINOR_LABEL_MIN_ZOOM = 15;
+/**
+ * The two looks and where one becomes the other. At or below `POSTER_ZOOM` the map is a flat poster: roads
+ * are bold accent-tinted lines on muted land, with no casings. From `STREET_ZOOM` it is a calm street map:
+ * the accent eases off and casings return so streets read clearly. Between them everything is interpolated.
+ */
+export const POSTER_ZOOM = 12.5;
+export const STREET_ZOOM = 15.5;
 const SUBURB_LABEL_MIN_ZOOM = 10.5;
 const NEIGHBOURHOOD_LABEL_MIN_ZOOM = 13.5;
-const RAIL_MIN_ZOOM = 12;
+const RAIL_MIN_ZOOM = 13;
 
 /** The classes of point of interest worth a label at street zoom: places a student can name a meeting spot by. */
 export const LANDMARK_CLASSES = [
@@ -68,21 +77,28 @@ export const LABEL_NAME = [
 
 const MAJOR_ROADS = ["motorway", "trunk", "primary", "secondary", "tertiary"];
 const MINOR_ROADS = ["minor", "service", "track", "path"];
-/** Hairline widths in px at zoom 10, 14 and 18, thickening by class. */
-const ROAD_WIDTHS: Record<string, readonly [number, number, number]> = {
-  motorway: [1.4, 3.5, 14],
-  trunk: [1.2, 3.2, 13],
-  primary: [1, 3, 12],
-  secondary: [0.8, 2.4, 10],
-  tertiary: [0.6, 1.8, 8],
-  minor: [0.4, 1.2, 6],
-  service: [0.3, 0.8, 4],
-  track: [0.3, 0.6, 3],
-  path: [0.3, 0.5, 2],
+/** The zooms `ROAD_WIDTHS` gives a width at. */
+export const ROAD_WIDTH_ZOOMS = [9, 12, 14, 16, 18] as const;
+/**
+ * Road widths in px at `ROAD_WIDTH_ZOOMS`, by class. The big classes are bold at city zoom and the minor
+ * ones hairlines, so the hierarchy reads at a glance; every step down a class is thinner at every zoom.
+ */
+const ROAD_WIDTHS: Record<string, readonly number[]> = {
+  motorway: [2.2, 3.6, 4.6, 8, 14],
+  trunk: [2, 3.3, 4.3, 7.5, 13],
+  primary: [1.6, 2.9, 3.9, 7, 12],
+  secondary: [0.8, 1.5, 2.5, 5.5, 10],
+  tertiary: [0.5, 1, 1.8, 4.5, 8],
+  minor: [0.3, 0.4, 0.9, 3, 6],
+  service: [0.2, 0.3, 0.6, 2, 4],
+  track: [0.2, 0.3, 0.5, 1.5, 3],
+  path: [0.2, 0.3, 0.4, 1, 2],
 };
 const CASING_EXTRA_PX = 1;
-/** The classes whose fill carries a trace of the accent. */
+/** The classes whose fill carries the accent: strongly at city zoom, a trace at street zoom. */
 const ACCENT_ROADS = ["motorway", "trunk", "primary"];
+/** The middle classes at city zoom: clearly thinner and quieter than the accent roads. */
+const MID_ROADS = ["secondary", "tertiary"];
 
 type Rgba = [number, number, number, number];
 
@@ -170,14 +186,18 @@ const byClass = (values: Record<string, number>, fallback: number) => [
 ];
 
 /** Width in px of a road class that thickens with zoom (`extra` widens it for the casing). */
-const roadWidth = (classes: string[], extra: number) => {
-  const at = (stop: 0 | 1 | 2) =>
+const roadWidth = (classes: string[], extra: number) => [
+  "interpolate",
+  ["linear"],
+  ["zoom"],
+  ...ROAD_WIDTH_ZOOMS.flatMap((zoom, stop) => [
+    zoom,
     byClass(
-      Object.fromEntries(classes.map((c) => [c, ROAD_WIDTHS[c]![stop] + extra])),
-      ROAD_WIDTHS[classes.at(-1)!]![stop] + extra,
-    );
-  return ["interpolate", ["linear"], ["zoom"], 10, at(0), 14, at(1), 18, at(2)];
-};
+      Object.fromEntries(classes.map((c) => [c, ROAD_WIDTHS[c]![stop]! + extra])),
+      ROAD_WIDTHS[classes.at(-1)!]![stop]! + extra,
+    ),
+  ]),
+];
 
 const isClass = (classes: readonly string[]) => ["match", ["get", "class"], classes, true, false];
 const isLine = ["==", ["geometry-type"], "LineString"];
@@ -186,15 +206,41 @@ export function buildMapStyle(tokens: MapTokens): StyleSpecification {
   const { app, surface, ink, soft, faint, edge, brand, dark } = tokens;
   const mix = mixColors;
 
-  const building = mix(app, ink, dark ? 0.12 : 0.07);
-  const buildingEdge = mix(app, ink, dark ? 0.2 : 0.14);
-  const casing = mix(app, edge, dark ? 0.55 : 0.4);
+  // City zoom is a tonal poster: one ground in the palette's own hue, roads and water as deeper or paler
+  // tones of it, and almost no other color. A light palette tints `app` towards its accent; Night tints it
+  // towards the blue water tint, like a midnight-blue chart. The tint is small so the accent pins, the
+  // dashed line and the count pills stay clear of the ground (a test holds that to 3:1).
+  const land = dark ? mix(app, tokens.water, 0.3) : mix(app, brand, 0.07);
+  const building = mix(land, ink, dark ? 0.12 : 0.07);
+  const buildingEdge = mix(land, ink, dark ? 0.2 : 0.14);
+  const casing = mix(land, edge, dark ? 0.55 : 0.4);
+  // Street zoom: white-ish streets with a trace of the accent on the big ones.
   const road = surface;
   const bigRoad = mix(surface, brand, dark ? 0.22 : 0.14);
-  const rail = mix(app, edge, 0.5);
-  const halo = app;
+  // City zoom: big roads are the heaviest, most accent-tinted tone, mid roads a lighter tone, minor streets
+  // low-contrast hairlines. Light palettes go deeper towards the accent, Night goes paler towards ink; every
+  // one mixes the ground with a palette role, so it keeps its contrast on every palette.
+  const accentRoadLow = dark ? mix(mix(land, ink, 0.55), brand, 0.1) : mix(land, brand, 0.45);
+  const midRoadLow = dark ? mix(land, ink, 0.3) : mix(land, brand, 0.22);
+  const minorRoadLow = dark ? mix(land, ink, 0.15) : mix(land, brand, 0.12);
+  const rail = mix(land, edge, 0.5);
+  const halo = land;
   const haloWidth = dark ? 1.6 : 1.4;
-
+  /** Parks are a quiet tint on the poster and full strength at street zoom. */
+  const parkOpacity = ["interpolate", ["linear"], ["zoom"], 10, 0.6, STREET_ZOOM, 1];
+  // Water is the dominant shape on the poster, a deeper tone of the ground; it settles to the soft blue
+  // water tint at street zoom.
+  const waterStreet = mix(tokens.water, ink, dark ? 0.06 : 0.08);
+  const waterLow = dark ? mix(app, tokens.water, 0.85) : mix(land, brand, 0.2);
+  const water = [
+    "interpolate",
+    ["linear"],
+    ["zoom"],
+    POSTER_ZOOM,
+    waterLow,
+    STREET_ZOOM,
+    waterStreet,
+  ];
   const text = (size: number | unknown[], color: string, font: readonly string[], extra = {}) => ({
     layout: {
       "text-field": LABEL_NAME,
@@ -206,15 +252,18 @@ export function buildMapStyle(tokens: MapTokens): StyleSpecification {
     paint: { "text-color": color, "text-halo-color": halo, "text-halo-width": haloWidth },
   });
 
+  /** Place names never drop out at a high zoom; when two meet, the larger place (lower `rank`) is drawn and the other waits. */
+  const placeLayout = { "symbol-sort-key": ["get", "rank"], "text-padding": 4 };
+
   const layers = [
-    { id: "background", type: "background", paint: { "background-color": app } },
+    { id: "background", type: "background", paint: { "background-color": land } },
     {
       id: "landcover-green",
       type: "fill",
       source: MAP_SOURCE_ID,
       "source-layer": "landcover",
       filter: isClass(["wood", "grass"]),
-      paint: { "fill-color": tokens.park },
+      paint: { "fill-color": tokens.park, "fill-opacity": parkOpacity },
     },
     {
       id: "landuse-green",
@@ -222,21 +271,21 @@ export function buildMapStyle(tokens: MapTokens): StyleSpecification {
       source: MAP_SOURCE_ID,
       "source-layer": "landuse",
       filter: isClass(["cemetery", "playground", "pitch", "stadium", "track"]),
-      paint: { "fill-color": tokens.park },
+      paint: { "fill-color": tokens.park, "fill-opacity": parkOpacity },
     },
     {
       id: "park",
       type: "fill",
       source: MAP_SOURCE_ID,
       "source-layer": "park",
-      paint: { "fill-color": tokens.park },
+      paint: { "fill-color": tokens.park, "fill-opacity": parkOpacity },
     },
     {
       id: "water",
       type: "fill",
       source: MAP_SOURCE_ID,
       "source-layer": "water",
-      paint: { "fill-color": tokens.water },
+      paint: { "fill-color": water },
     },
     {
       id: "waterway",
@@ -245,8 +294,8 @@ export function buildMapStyle(tokens: MapTokens): StyleSpecification {
       "source-layer": "waterway",
       filter: isClass(["river", "canal", "stream"]),
       paint: {
-        "line-color": tokens.water,
-        "line-width": ["interpolate", ["linear"], ["zoom"], 9, 0.8, 14, 2.5, 18, 8],
+        "line-color": water,
+        "line-width": ["interpolate", ["linear"], ["zoom"], 9, 1.2, 14, 3.5, 18, 9],
       },
     },
     {
@@ -282,7 +331,12 @@ export function buildMapStyle(tokens: MapTokens): StyleSpecification {
         minzoom,
         filter: ["all", isLine, isClass(classes)],
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": casing, "line-width": roadWidth(classes, CASING_EXTRA_PX) },
+        paint: {
+          "line-color": casing,
+          "line-width": roadWidth(classes, CASING_EXTRA_PX),
+          // Absent on the poster, fading in as the map becomes a street map.
+          "line-opacity": ["interpolate", ["linear"], ["zoom"], POSTER_ZOOM + 1, 0, STREET_ZOOM, 1],
+        },
       },
       {
         id: `road-${name}`,
@@ -293,11 +347,77 @@ export function buildMapStyle(tokens: MapTokens): StyleSpecification {
         filter: ["all", isLine, isClass(classes)],
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": ["match", ["get", "class"], ACCENT_ROADS, bigRoad, road],
+          "line-color": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            POSTER_ZOOM,
+            [
+              "match",
+              ["get", "class"],
+              ACCENT_ROADS,
+              accentRoadLow,
+              MID_ROADS,
+              midRoadLow,
+              minorRoadLow,
+            ],
+            STREET_ZOOM,
+            ["match", ["get", "class"], ACCENT_ROADS, bigRoad, road],
+          ],
           "line-width": roadWidth(classes, 0),
         },
       },
     ]),
+    {
+      id: "label-city",
+      type: "symbol",
+      source: MAP_SOURCE_ID,
+      "source-layer": "place",
+      filter: isClass(["city"]),
+      ...text(
+        ["interpolate", ["linear"], ["zoom"], 9, 15, 12, 18, 15, 14],
+        ink,
+        MAP_FONTS.bold,
+        placeLayout,
+      ),
+    },
+    {
+      id: "label-town",
+      type: "symbol",
+      source: MAP_SOURCE_ID,
+      "source-layer": "place",
+      minzoom: 9,
+      filter: isClass(["town", "village"]),
+      ...text(
+        ["interpolate", ["linear"], ["zoom"], 9, 13, 16, 11],
+        soft,
+        MAP_FONTS.regular,
+        placeLayout,
+      ),
+    },
+    {
+      id: "label-suburb",
+      type: "symbol",
+      source: MAP_SOURCE_ID,
+      "source-layer": "place",
+      minzoom: SUBURB_LABEL_MIN_ZOOM,
+      filter: isClass(["suburb", "quarter"]),
+      ...text(
+        ["interpolate", ["linear"], ["zoom"], 10, 11.5, 15, 14, 18, 12],
+        soft,
+        MAP_FONTS.bold,
+        placeLayout,
+      ),
+    },
+    {
+      id: "label-neighbourhood",
+      type: "symbol",
+      source: MAP_SOURCE_ID,
+      "source-layer": "place",
+      minzoom: NEIGHBOURHOOD_LABEL_MIN_ZOOM,
+      filter: isClass(["neighbourhood"]),
+      ...text(12, faint, MAP_FONTS.regular, placeLayout),
+    },
     {
       id: "label-road",
       type: "symbol",
@@ -320,42 +440,16 @@ export function buildMapStyle(tokens: MapTokens): StyleSpecification {
       ...text(11, soft, MAP_FONTS.regular, { "symbol-placement": "line", "text-max-width": 10 }),
     },
     {
-      id: "label-city",
+      id: "label-road-minor",
       type: "symbol",
       source: MAP_SOURCE_ID,
-      "source-layer": "place",
-      maxzoom: 12,
-      filter: isClass(["city"]),
-      ...text(["interpolate", ["linear"], ["zoom"], 9, 15, 12, 18], ink, MAP_FONTS.bold),
-    },
-    {
-      id: "label-town",
-      type: "symbol",
-      source: MAP_SOURCE_ID,
-      "source-layer": "place",
-      minzoom: 9,
-      maxzoom: 15,
-      filter: isClass(["town", "village"]),
-      ...text(13, soft, MAP_FONTS.regular),
-    },
-    {
-      id: "label-suburb",
-      type: "symbol",
-      source: MAP_SOURCE_ID,
-      "source-layer": "place",
-      minzoom: SUBURB_LABEL_MIN_ZOOM,
-      maxzoom: 16.5,
-      filter: isClass(["suburb", "quarter"]),
-      ...text(["interpolate", ["linear"], ["zoom"], 10, 11.5, 15, 14], soft, MAP_FONTS.bold),
-    },
-    {
-      id: "label-neighbourhood",
-      type: "symbol",
-      source: MAP_SOURCE_ID,
-      "source-layer": "place",
-      minzoom: NEIGHBOURHOOD_LABEL_MIN_ZOOM,
-      filter: isClass(["neighbourhood"]),
-      ...text(12, faint, MAP_FONTS.regular),
+      "source-layer": "transportation_name",
+      minzoom: MINOR_LABEL_MIN_ZOOM,
+      filter: isClass(["minor", "service"]),
+      ...text(10.5, soft, MAP_FONTS.regular, {
+        "symbol-placement": "line",
+        "text-max-width": 10,
+      }),
     },
     {
       id: "landmark-dot",
