@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import type { RoutineEntry } from "../../shared/schemas/routine";
 import {
   classesOn,
+  dateLong,
   gridHours,
   hourLabel,
   monthGridWeeks,
@@ -147,12 +148,18 @@ describe("navigation and labels", () => {
 
   it("names the period on screen", () => {
     expect(periodLabel("month", "2026-10-21")).toBe("October 2026");
-    expect(periodLabel("week", "2026-10-21")).toBe("Oct 18 - 24");
-    expect(periodLabel("week", "2026-10-28")).toBe("Oct 25 - 31");
-    expect(periodLabel("week", "2026-09-29")).toBe("Sep 27 - Oct 3");
-    expect(periodLabel("week", "2026-11-01")).toBe("Nov 1 - 7");
-    expect(periodLabel("week", "2026-12-30")).toBe("Dec 27 - Jan 2");
-    expect(periodLabel("day", "2026-10-21")).toBe("Wed, Oct 21");
+    expect(periodLabel("week", "2026-10-21")).toBe("18 - 24 Oct");
+    expect(periodLabel("week", "2026-10-28")).toBe("25 - 31 Oct");
+    expect(periodLabel("week", "2026-09-29")).toBe("27 Sep - 3 Oct");
+    expect(periodLabel("week", "2026-11-01")).toBe("1 - 7 Nov");
+    expect(periodLabel("week", "2026-12-30")).toBe("27 Dec - 2 Jan");
+    expect(periodLabel("day", "2026-10-21")).toBe("Wed, 21 Oct");
+  });
+
+  it("writes dates day first, never month first", () => {
+    expect(dateLong("2026-10-21")).toBe("Wednesday, 21 October 2026");
+    expect(dateLong("2026-09-01")).toBe("Tuesday, 1 September 2026");
+    expect(periodLabel("day", "2026-09-01")).toBe("Tue, 1 Sep");
   });
 
   it("labels hours the way the routine prints times", () => {

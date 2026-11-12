@@ -123,33 +123,37 @@ export function stepDate(view: CalendarView, date: DateKey, direction: 1 | -1): 
 }
 
 // Dates are formatted at UTC midnight with the UTC zone, so the label is the calendar date itself.
+// Labels are always day, month, year (the Bangladesh standard). The pieces come from Intl and are
+// assembled by hand: en-GB drops the comma after the weekday and spells September "Sept".
 const at = (date: DateKey) => new Date(`${date}T00:00:00Z`);
 const format = (options: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat("en-US", { ...options, timeZone: "UTC" });
-const monthYear = format({ month: "long", year: "numeric" });
-const monthDay = format({ month: "short", day: "numeric" });
-const fullDay = format({ weekday: "short", month: "short", day: "numeric" });
-const shortWeekday = format({ weekday: "short" });
-const longDate = format({ weekday: "long", month: "long", day: "numeric", year: "numeric" });
+const weekdayShortFmt = format({ weekday: "short" });
+const weekdayLongFmt = format({ weekday: "long" });
+const monthShortFmt = format({ month: "short" });
+const monthLongFmt = format({ month: "long" });
 
-/** "October 2026", "Oct 18 - 24", "Oct 25 - Nov 1" or "Tue, Oct 21": what the view is showing. */
+const dayOfMonth = (date: DateKey) => Number(date.slice(8));
+/** "21 Oct": a date without its year. */
+const monthDay = (date: DateKey) => `${dayOfMonth(date)} ${monthShortFmt.format(at(date))}`;
+
+/** "October 2026", "18 - 24 Oct", "27 Sep - 3 Oct" or "Wed, 21 Oct": what the view is showing. */
 export function periodLabel(view: CalendarView, date: DateKey): string {
-  if (view === "month") return monthYear.format(at(date));
-  if (view === "day") return fullDay.format(at(date));
+  if (view === "month") return `${monthLongFmt.format(at(date))} ${date.slice(0, 4)}`;
+  if (view === "day") return `${weekdayShortFmt.format(at(date))}, ${monthDay(date)}`;
   const first = startOfWeek(date);
   const last = addDays(first, 6);
-  const lastLabel =
-    first.slice(0, 7) === last.slice(0, 7)
-      ? String(Number(last.slice(8)))
-      : monthDay.format(at(last));
-  return `${monthDay.format(at(first))} - ${lastLabel}`;
+  const firstLabel =
+    first.slice(0, 7) === last.slice(0, 7) ? String(dayOfMonth(first)) : monthDay(first);
+  return `${firstLabel} - ${monthDay(last)}`;
 }
 
 /** "Sun", "Mon", ... for a column header. */
-export const weekdayShort = (date: DateKey) => shortWeekday.format(at(date));
+export const weekdayShort = (date: DateKey) => weekdayShortFmt.format(at(date));
 
-/** "Tuesday, October 21, 2026", for screen readers. */
-export const dateLong = (date: DateKey) => longDate.format(at(date));
+/** "Wednesday, 21 October 2026", for screen readers. */
+export const dateLong = (date: DateKey) =>
+  `${weekdayLongFmt.format(at(date))}, ${dayOfMonth(date)} ${monthLongFmt.format(at(date))} ${date.slice(0, 4)}`;
 
 /** "8 AM", "12 PM": an hour label on the grid's left edge. */
 export const hourLabel = (hour: number) =>

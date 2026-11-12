@@ -77,7 +77,7 @@ describe("TimeGrid", () => {
 
   it("marks today's header as the current date", () => {
     grid([]);
-    const header = screen.getByRole("button", { name: /Tuesday, October 20, 2026, today/ });
+    const header = screen.getByRole("button", { name: /Tuesday, 20 October 2026, today/ });
     expect(header.getAttribute("aria-current")).toBe("date");
   });
 });

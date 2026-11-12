@@ -77,6 +77,8 @@ Figtree variable (400–700) is the Latin face; Noto Sans Bengali Variable handl
 
 The fixed type scale is 12px small (1.2/600), 13px label (1.3/500), 15px body and button (body 1.5/400; button 1/600), 18px section (1.3/600), 22px sheet title (1.2/700), 28px title (1.15/700), 32px desktop title, and 40px figure (1/700, tracking -0.02em). Titles use -0.01em tracking. Keep sentence case and tabular figures.
 
+Dates are always day, month, year, the Bangladesh standard: "21 Oct", "Wed, 21 Oct", "19 - 25 Oct", "Wednesday, 21 October 2026", dd/mm/yyyy. Never month first, and never format dates with the `en-US` locale.
+
 ## Elevation
 
 Surfaces are flat. Only floating layers cast shadows: toast and floating tab bar use `0 10px 30px -10px var(--float-color)`; sheets use `0 -10px 30px -10px var(--float-color)`. Tiles, rows and course blocks have no shadow. The phone tab bar slides away on scroll down and back on scroll up. An element does not combine a border and shadow.
