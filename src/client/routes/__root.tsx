@@ -6,6 +6,7 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { NotFoundScreen } from "@/components/layout/NotFoundScreen";
 import { Button } from "@/components/ui/button";
 import { OfflineScreen } from "@/components/pwa/OfflineScreen";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -26,6 +27,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   },
   component: RootLayout,
   errorComponent: RootError,
+  // Renders inside the shell (the root component's Outlet), so the tab bar still works.
+  notFoundComponent: NotFoundScreen,
 });
 
 function RootLayout() {
