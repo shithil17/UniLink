@@ -8,6 +8,7 @@ import {
   facultyChanges,
   facultyEditConfirm,
   facultyHiddenConfirm,
+  missingTargetLabel,
   rejectPostConfirm,
   removableName,
   removeReportedConfirm,
@@ -86,11 +87,22 @@ describe("user action summaries", () => {
 describe("report and post summaries", () => {
   it("says a dismissed report leaves the reported account alone", () => {
     const dismiss = resolveReportConfirm(
-      { targetLabel: "sam_1", reporter: "rafi_2", reason: "rude" },
+      { targetType: "user", targetLabel: "sam_1", reporter: "rafi_2", reason: "rude" },
       "dismissed",
     );
     expect(dismiss.facts.map((f) => f.value)).toEqual(["sam_1", "rafi_2", "rude"]);
     expect(dismiss.effects[0]).toMatch(/Nothing happens/);
+  });
+
+  it("names a missing target by what kind it was, not always as an account", () => {
+    expect(missingTargetLabel("user")).toBe("Removed account");
+    expect(missingTargetLabel("resource_request")).toBe("A removed request");
+    expect(missingTargetLabel("resource_submission")).toBe("A removed link");
+    const handled = resolveReportConfirm(
+      { targetType: "resource_submission", targetLabel: null, reporter: null, reason: "x" },
+      "resolved",
+    );
+    expect(handled.facts[0]).toEqual({ label: "Reported", value: "A removed link" });
   });
 
   it("tells the author about an approval and shows the message a rejection sends", () => {

@@ -85,6 +85,9 @@ export const modUsersQuery = pageQuery.extend({ q: usernameSearch.optional() });
 /** The search box: empty means no search (the newest users). */
 export const userSearchForm = z.object({ q: z.union([usernameSearch, z.literal("")]) });
 
+/** The users page's `?q=`: the same rule the API applies, and anything else reads as no search. */
+export const userSearchParams = z.object({ q: usernameSearch.optional().catch(undefined) });
+
 export const modUserPage = page(modUser);
 
 export const temporaryPassword = z.object({ temporaryPassword: z.string() });

@@ -19,12 +19,11 @@ import { errorMessage } from "@/lib/api";
 import { timeAgo } from "@/lib/inbox";
 import { modUsersList } from "@/lib/mod";
 import { meQuery } from "@/lib/queries";
-import { userSearchForm, type ModUser } from "../../shared/schemas/moderation";
+import { userSearchForm, userSearchParams, type ModUser } from "../../shared/schemas/moderation";
 
 export const Route = createFileRoute("/mod/users")({
-  validateSearch: (search: Record<string, unknown>): { q?: string } => ({
-    q: typeof search.q === "string" && search.q !== "" ? search.q : undefined,
-  }),
+  // A bad `q` shows the full list instead of the API's 400.
+  validateSearch: (search: Record<string, unknown>) => userSearchParams.parse(search),
   component: UsersPage,
 });
 

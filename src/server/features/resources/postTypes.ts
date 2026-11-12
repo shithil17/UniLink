@@ -2,9 +2,18 @@ import { resourceRequests, resourceSubmissions } from "../../db/schema";
 import type { ModeratedPostType } from "../../moderation/postTypes";
 import { announceRequest, announceSubmission } from "./announce";
 
-/** The text the screen read, for the mod queue. A link is checked by the shared URL rule, not screened as text. */
+/** The note, for the mod queue. A request has no link of its own. */
 const noteOnly = (row: Record<string, unknown>): string[] =>
   typeof row.note === "string" && row.note !== "" ? [row.note] : [];
+
+/**
+ * The link first, then the note. The link is checked by the shared URL rule rather than screened as
+ * text, but a mod approving a held link has to see where it points, even when it has no note.
+ */
+const urlThenNote = (row: Record<string, unknown>): string[] => [
+  ...(typeof row.url === "string" && row.url !== "" ? [row.url] : []),
+  ...noteOnly(row),
+];
 
 export const resourceRequestPostType: ModeratedPostType = {
   table: resourceRequests,
@@ -15,6 +24,6 @@ export const resourceRequestPostType: ModeratedPostType = {
 
 export const resourceSubmissionPostType: ModeratedPostType = {
   table: resourceSubmissions,
-  screenedText: noteOnly,
+  screenedText: urlThenNote,
   afterApprove: (db, id, opts) => announceSubmission(db, id, opts),
 };

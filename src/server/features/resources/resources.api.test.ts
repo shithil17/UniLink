@@ -698,6 +698,27 @@ describe("cron purge", () => {
 });
 
 describe("reports and moderation", () => {
+  it("shows a mod the link of a held submission, then its note", async () => {
+    const requester = await person();
+    const helper = await person();
+    const mod = await person({ role: "mod" });
+    const request = await makeRequest(requester);
+    const insert = (note: string | null) =>
+      env.DB.prepare(
+        "INSERT INTO resource_submissions (request_id, author_id, url, note, created_at) VALUES (?, ?, ?, ?, ?)",
+      )
+        .bind(request.id, helper.id, driveLink, note, Date.now())
+        .run();
+    await insert(null);
+    await insert("Weeks 1 to 8");
+
+    const { items } = await (
+      await call("GET", "/api/mod/queue", mod.token)
+    ).json<{ items: { kind: string; targetType: string; text: string[] }[] }>();
+    const held = items.filter((i) => i.kind === "post" && i.targetType === "resource_submission");
+    expect(held.map((i) => i.text)).toEqual([[driveLink], [driveLink, "Weeks 1 to 8"]]);
+  });
+
   it("sends a report on a link to the mod queue, labelled with the link", async () => {
     const requester = await person();
     const helper = await person();
@@ -882,6 +903,32 @@ describe("reports and moderation", () => {
       // It left the open queue.
       const queue = await call("GET", "/api/mod/queue", mod.token);
       expect((await queue.json<{ items: unknown[] }>()).items).toEqual([]);
+    });
+
+    it("labels the removed link and its request in the audit log", async () => {
+      const { mod, request, reportId } = await reportedLink();
+      const admin = await person({ role: "admin" });
+      await call("POST", `/api/mod/reports/${reportId}/remove`, mod.token, { reason: reasonText });
+      const stranger = await person();
+      await call("POST", "/api/reports", stranger.token, {
+        targetType: "resource_request",
+        targetId: request.id,
+        reason: "Looks like spam to me",
+      });
+      const second = (await env.DB.prepare(
+        "SELECT id FROM reports WHERE target_type = 'resource_request'",
+      ).first<{ id: number }>())!;
+      await call("POST", `/api/mod/reports/${second.id}/remove`, mod.token, {
+        reason: reasonText,
+      });
+
+      const { items } = await (
+        await call("GET", "/api/admin/audit", admin.token)
+      ).json<{ items: { action: string; targetType: string; targetLabel: string | null }[] }>();
+      const labelOf = (type: string) =>
+        items.find((i) => i.action === "soft_delete" && i.targetType === type)?.targetLabel;
+      expect(labelOf("resource_submission")).toBe(driveLink);
+      expect(labelOf("resource_request")).toBe(request.courseCode);
     });
 
     it("closes every open report on the same target", async () => {

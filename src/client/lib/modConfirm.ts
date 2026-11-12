@@ -169,8 +169,18 @@ export function releaseKeyConfirm(holder: UserTarget, reason: string): ConfirmCo
 
 // ---- Reports and held posts -------------------------------------------------------------------
 
+const MISSING_TARGET: Record<ModReport["targetType"], string> = {
+  user: "Removed account",
+  resource_request: "A removed request",
+  resource_submission: "A removed link",
+};
+
+/** What a report row calls its target when the label is gone, by what kind of target it was. */
+export const missingTargetLabel = (targetType: ModReport["targetType"]): string =>
+  MISSING_TARGET[targetType];
+
 export function resolveReportConfirm(
-  report: Pick<ModReport, "targetLabel" | "reporter" | "reason">,
+  report: Pick<ModReport, "targetType" | "targetLabel" | "reporter" | "reason">,
   outcome: "resolved" | "dismissed",
 ): ConfirmContent {
   const handled = outcome === "resolved";
@@ -181,7 +191,7 @@ export function resolveReportConfirm(
       ? "This report will be marked as handled."
       : "This report will be dismissed without action.",
     facts: [
-      { label: "Reported", value: report.targetLabel ?? "Removed account" },
+      { label: "Reported", value: report.targetLabel ?? missingTargetLabel(report.targetType) },
       { label: "Reported by", value: report.reporter ?? "A removed account" },
       { label: "Their reason", value: excerpt(report.reason) },
     ],

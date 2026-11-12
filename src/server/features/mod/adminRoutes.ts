@@ -20,6 +20,7 @@ import { validateJson, validateQuery } from "../../validate";
 import { changeRole } from "./actions";
 import { pageParams, toPage } from "../../paging";
 import { actionFailure, actorOf, badCursor, paramId } from "./respond";
+import { reportTargets } from "./reportTargets";
 
 const REVERSE_FAILURES: Record<ReverseFailure, { status: 403 | 404 | 409; message: string }> = {
   not_found: { status: 404, message: "That log entry does not exist." },
@@ -84,6 +85,18 @@ export const adminRoutes = new Hono<AppEnv>()
         r.targetType === "course" && /^\d+$/.test(r.targetId) ? [Number(r.targetId)] : [],
       ),
     );
+    const resourceIds = (type: string) =>
+      page.items.flatMap((r) =>
+        r.targetType === type && /^\d+$/.test(r.targetId) ? [Number(r.targetId)] : [],
+      );
+    const requestLabels = await reportTargets.resource_request.labels(
+      db,
+      resourceIds("resource_request"),
+    );
+    const linkLabels = await reportTargets.resource_submission.labels(
+      db,
+      resourceIds("resource_submission"),
+    );
     const reversals = await log.reversalsOf(page.items.map((r) => r.id));
     const nameOf = (id: string) => names.get(Number(id)) ?? `user #${id}`;
 
@@ -103,7 +116,11 @@ export const adminRoutes = new Hono<AppEnv>()
                 ? (facultyNames.get(Number(r.targetId))?.name ?? null)
                 : r.targetType === "course"
                   ? (courseLabels.get(Number(r.targetId))?.code ?? null)
-                  : null,
+                  : r.targetType === "resource_request"
+                    ? (requestLabels.get(Number(r.targetId)) ?? null)
+                    : r.targetType === "resource_submission"
+                      ? (linkLabels.get(Number(r.targetId)) ?? null)
+                      : null,
           reason: r.reason,
           createdAt: r.createdAt,
           reverses: r.reversesId,

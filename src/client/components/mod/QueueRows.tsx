@@ -5,7 +5,12 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { timeAgo } from "@/lib/inbox";
 import { confidenceLabel, categoryLabel, postTypeLabel, ruleLabel } from "@/lib/modQueue";
 import { useDecidePost, useResolveReport } from "@/lib/mod";
-import { approvePostConfirm, removableName, resolveReportConfirm } from "@/lib/modConfirm";
+import {
+  approvePostConfirm,
+  missingTargetLabel,
+  removableName,
+  resolveReportConfirm,
+} from "@/lib/modConfirm";
 import { toast } from "@/lib/toast";
 import { useConfirm } from "@/lib/useConfirm";
 import { modRowMin } from "./modStyles";
@@ -92,7 +97,8 @@ export function ReportRow({ report, now }: { report: ModReport; now: number }) {
   const resolve = useResolveReport();
   const confirm = useConfirm();
   const [removing, setRemoving] = useState(false);
-  const removable = removableName(report.targetType);
+  // With no label the target is gone, so there is nothing left to remove.
+  const removable = report.targetLabel === null ? null : removableName(report.targetType);
   const act = (outcome: "resolved" | "dismissed", done: string) =>
     confirm.ask({
       ...resolveReportConfirm(report, outcome),
@@ -106,7 +112,7 @@ export function ReportRow({ report, now }: { report: ModReport; now: number }) {
     <div className={`space-y-3 px-4 py-3.5 ${modRowMin}`}>
       <div className="flex items-baseline justify-between gap-3">
         <p className="min-w-0 truncate text-[15px] font-semibold text-ink">
-          {report.targetLabel ?? "Removed account"}
+          {report.targetLabel ?? missingTargetLabel(report.targetType)}
         </p>
         <time
           dateTime={new Date(report.createdAt).toISOString()}
