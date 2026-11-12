@@ -1,9 +1,17 @@
 // @vitest-environment happy-dom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { toast } from "@/lib/toast";
 import { CONTACT_REQUIRED_MESSAGE } from "../../../shared/contact";
 import { RideForm } from "./RideForm";
+
+vi.mock("@/lib/toast", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+
+beforeEach(() => {
+  vi.mocked(toast.error).mockClear();
+  vi.mocked(toast.success).mockClear();
+});
 
 afterEach(() => {
   cleanup();
@@ -63,6 +71,49 @@ async function fillCommon(contact = true) {
 }
 
 describe("RideForm", () => {
+  it("toasts the first message when the form is invalid, marks that field and sends nothing", async () => {
+    const { fetchMock } = setup();
+    post();
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    expect(toast.error).toHaveBeenCalledWith("Pick a pickup area");
+    expect(screen.getByLabelText("From").getAttribute("aria-invalid")).toBe("true");
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    // Fix everything above the seats: the seats are next, and the toast moves down with the form.
+    await pickArea("From", "Bashundhara R/A");
+    await pickArea("To", "Mirpur 10, in Mirpur");
+    post();
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2));
+    expect(toast.error).toHaveBeenLastCalledWith("Enter how many seats you can offer");
+    expect(screen.getByLabelText("Seats").getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("toasts the field that is highest in the form, not the one the schema checks first", async () => {
+    setup();
+    await fillCommon(false);
+    // No departure and no contact: the schema reports the contact first, the form shows the departure first.
+    post();
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    expect(toast.error).toHaveBeenCalledWith("Pick the departure date and time");
+    expect(screen.getByLabelText("Departs").getAttribute("aria-invalid")).toBe("true");
+  });
+
+  it("toasts a friendly line for the days of a recurring ride and for nested contacts", async () => {
+    setup();
+    fireEvent.click(screen.getByRole("radio", { name: "Recurring" }));
+    await fillCommon(false);
+    type("Leaves at", "07:30");
+    post();
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    expect(toast.error).toHaveBeenCalledWith("Pick at least one day");
+
+    fireEvent.click(screen.getByRole("button", { name: "Tuesday" }));
+    post();
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(2));
+    expect(toast.error).toHaveBeenLastCalledWith(CONTACT_REQUIRED_MESSAGE);
+    expect(screen.getByLabelText("Phone").getAttribute("aria-invalid")).toBe("true");
+  });
+
   it("states the safety notice and what happens to a one-off ride", () => {
     setup();
     expect(screen.getByText(/doesn't arrange or guarantee rides/)).toBeTruthy();
@@ -108,6 +159,11 @@ describe("RideForm", () => {
     });
     post();
     expect(await screen.findByText("That area isn't available. Pick another.")).toBeTruthy();
+    // The server's refusal is a toast too, not only the marks under the fields.
+    expect(toast.error).toHaveBeenCalledWith(
+      "Pick a pickup and a destination area from the list.",
+      undefined,
+    );
     expect(screen.getAllByText("That area isn't available. Pick another.")).toHaveLength(1);
   });
 

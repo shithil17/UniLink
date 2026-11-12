@@ -20,6 +20,7 @@ import {
   areaRenameConfirm,
   NOTHING_TO_SAVE,
 } from "@/lib/modConfirm";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { toast } from "@/lib/toast";
 import { useConfirm } from "@/lib/useConfirm";
 import {
@@ -106,6 +107,7 @@ function AddArea({
       ...areaAddConfirm(values.name, parent?.name ?? null),
       run: async () => {
         await add.mutateAsync(values).catch((err: unknown) => {
+          // The confirm sheet toasts the error thrown on below.
           if (err instanceof ApiError && err.code === "name_taken") {
             form.setError("name", { message: errorMessage(err) });
           }
@@ -115,7 +117,7 @@ function AddArea({
         onClose();
       },
     });
-  });
+  }, toastFirstFieldError);
 
   return (
     <>
@@ -196,6 +198,7 @@ function EditArea({
       ...areaRenameConfirm(area.name, values.name),
       run: async () => {
         await rename.mutateAsync(values.name).catch((err: unknown) => {
+          // The confirm sheet toasts the error thrown on below.
           if (err instanceof ApiError && err.code === "name_taken") {
             form.setError("name", { message: errorMessage(err) });
           }
@@ -205,7 +208,7 @@ function EditArea({
         onClose();
       },
     });
-  });
+  }, toastFirstFieldError);
 
   return (
     <>

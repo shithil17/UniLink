@@ -324,6 +324,27 @@ export const rideBodyFromFields = (f: RideFormFields): RideInput =>
 /** Where a schema error shows in the form: the departure instant is the `departure` input. */
 const FIELD_OF_PATH: Record<string, string> = { departsAt: "departure" };
 
+/**
+ * The fields top to bottom as the form lays them out. The resolver reports errors in this order, so
+ * the first one (the one the toast says) is the field that gets focus, whichever order the schema checks in.
+ */
+const FORM_ORDER = [
+  "kind",
+  "pickupAreaId",
+  "pickupLandmark",
+  "destinationAreaId",
+  "destinationLandmark",
+  "vehicle",
+  "totalSeats",
+  "pricePerSeatTaka",
+  "departure",
+  "days",
+  "departureTime",
+  "endsOn",
+  "notes",
+  "contacts",
+];
+
 /** The schema's catch-all message for a blank number or date, said the way the field would. */
 const BLANK_MESSAGES: Record<string, string> = {
   pickupAreaId: "Pick a pickup area",
@@ -342,9 +363,14 @@ export const rideFormResolver: Resolver<RideFormFields> = (values) => {
   const parsed = rideInput.safeParse(rideInputFromFields(values));
   if (parsed.success) return { values, errors: {} };
   const errors: FieldErrors<RideFormFields> = {};
-  for (const issue of parsed.error.issues) {
+  const located = parsed.error.issues.map((issue) => {
     const path = issue.path.map(String);
     path[0] = FIELD_OF_PATH[path[0] ?? ""] ?? path[0] ?? "";
+    const rank = FORM_ORDER.indexOf(path[0]);
+    return { issue, path, rank: rank === -1 ? FORM_ORDER.length : rank };
+  });
+  // Array.prototype.sort is stable, so issues of one field keep the schema's order.
+  for (const { issue, path } of located.sort((a, b) => a.rank - b.rank)) {
     const key = path.join(".");
     if (get(errors, key)) continue;
     const blank = issue.code === "invalid_type" && BLANK_MESSAGES[key];

@@ -223,6 +223,20 @@ describe("the form's values and the shared schema", () => {
     ).toBe("Add at least one way to reach you");
   });
 
+  it("lists the errors top to bottom as the form lays them out, so the first is the field that is focused", async () => {
+    const result = await rideFormResolver(
+      filled({
+        departure: "",
+        contacts: { phone: "", whatsapp: "", messenger: "" },
+        pricePerSeatTaka: "",
+      }),
+      undefined,
+      { fields: {}, shouldUseNativeValidation: false },
+    );
+    // The schema checks the contacts before the departure; the form shows the departure first.
+    expect(Object.keys(result.errors)).toEqual(["pricePerSeatTaka", "departure", "contacts"]);
+  });
+
   it("accepts a complete form", async () => {
     const result = await rideFormResolver(filled(), undefined, {
       fields: {},

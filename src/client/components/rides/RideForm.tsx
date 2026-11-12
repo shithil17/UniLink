@@ -11,6 +11,7 @@ import { RadioChip, RadioGroup } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError } from "@/lib/api";
 import { areaNameOf, areasQuery } from "@/lib/areas";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { toastPostFailure } from "@/lib/resources";
 import {
   emptyRideFields,
@@ -61,7 +62,8 @@ function savedToast(ride: RideSummary, edited: boolean) {
 
 /**
  * Posts a ride, or edits one when `ride` and its `contacts` are given. The values go through the shared
- * `rideInput` schema (the resolver), so the server's own messages show under the fields. A new ride
+ * `rideInput` schema (the resolver), so the server's own messages show under the fields. A failed check
+ * toasts the first message in form order and focuses its field. A new ride
  * picks one-off or recurring; an existing ride keeps its kind. The edit sends only what changed.
  */
 export function RideForm({
@@ -137,7 +139,7 @@ export function RideForm({
       },
       onError: failed,
     });
-  });
+  }, toastFirstFieldError);
 
   return (
     <FormProvider {...form}>

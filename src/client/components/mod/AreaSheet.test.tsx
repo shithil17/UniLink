@@ -35,6 +35,7 @@ const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) => Response.js
 beforeEach(() => {
   fetchMock.mockClear();
   vi.mocked(toast).mockClear();
+  vi.mocked(toast.error).mockClear();
   vi.stubGlobal("fetch", fetchMock);
 });
 
@@ -137,6 +138,29 @@ describe("AreaSheet", () => {
     renderSheet({ mode: "add", parent: null });
     fireEvent.click(screen.getByRole("button", { name: "Add area" }));
     expect(await screen.findByText("Enter a name")).toBeTruthy();
+    expect(toast.error).toHaveBeenCalledWith("Enter a name");
+    expect(screen.getByLabelText("Name").getAttribute("aria-invalid")).toBe("true");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("toasts a blank rename and marks the field", async () => {
+    renderSheet({ mode: "edit", area: mirpur, parent: null });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: " " } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText("Name").getAttribute("aria-invalid")).toBe("true");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("toasts a taken name from the server and keeps the confirm sheet open", async () => {
+    fetchMock.mockResolvedValueOnce(
+      Response.json({ error: "name_taken", message: "That area name is taken." }, { status: 409 }),
+    );
+    renderSheet({ mode: "edit", area: mirpur, parent: null });
+    fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Pallabi" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    const sheet = await sheetTitled("Rename area");
+    fireEvent.click(within(sheet).getByRole("button", { name: "Rename" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("That area name is taken."));
   });
 });
