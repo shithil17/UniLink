@@ -2,29 +2,34 @@ import type { StyleSpecification } from "maplibre-gl";
 import { MAP_FONTS, MAP_SOURCE } from "./source";
 
 /**
- * The map's own style, drawn from the active palette. Nothing here is a fixed color: every fill,
- * line and label is the theme's `app`, `surface`, `line`, `edge`, `ink`, `soft`, `faint` or `brand`
- * (plus the two map tints for water and parks), or a mix of two of them. The result follows all five
- * palettes, Night included, with no color values in code.
+ * The map's own style, drawn from the active palette. Nothing here is a fixed color: the text colors
+ * and the accent are the theme's `ink`, `soft`, `faint` and `brand`, and the ground, water, parks, roads
+ * and buildings are the palette's map-only colors (`--map-*` in `index.css`), so each of the five palettes,
+ * Night included, has its own tonal theme. The few in-between colors are mixes of two tokens.
  *
  * The layer set is our own, written against the public OpenMapTiles schema (the same schema
  * OpenFreeMap serves), not copied from any other style.
  */
 
 export type MapTokens = {
-  app: string;
-  surface: string;
-  line: string;
-  edge: string;
   ink: string;
   soft: string;
   faint: string;
-  /** The accent, also used for the big roads. */
+  /** The accent: pins, the dashed line and the count pills are drawn in it over the map. */
   brand: string;
-  /** Soft water tint (`--map-water`). */
+  /** The land, and the halo behind labels (`--map-ground`). */
+  ground: string;
+  /** A cool, calm tone that is never the road or the accent (`--map-water`). */
   water: string;
-  /** Soft park tint (`--map-park`). */
   park: string;
+  /** City zoom road tones, boldest to faintest (`--map-road-major`, `-mid`, `-minor`). */
+  roadMajor: string;
+  roadMid: string;
+  roadMinor: string;
+  /** Street zoom road fill and its outline. */
+  roadStreet: string;
+  casing: string;
+  building: string;
   /** Night palette: the dark variant of the style. */
   dark: boolean;
 };
@@ -155,16 +160,19 @@ export function isDarkColor(value: string): boolean {
 }
 
 const TOKEN_VARIABLES = {
-  app: "--color-app",
-  surface: "--color-surface",
-  line: "--color-line",
-  edge: "--color-edge",
   ink: "--color-ink",
   soft: "--color-soft",
   faint: "--color-faint",
   brand: "--color-brand",
+  ground: "--map-ground",
   water: "--map-water",
   park: "--map-park",
+  roadMajor: "--map-road-major",
+  roadMid: "--map-road-mid",
+  roadMinor: "--map-road-minor",
+  roadStreet: "--map-road-street",
+  casing: "--map-casing",
+  building: "--map-building",
 } as const;
 
 /** The active palette's colors, read from the element's computed style. */
@@ -174,7 +182,7 @@ export function readMapTokens(element: Element = document.documentElement): MapT
   const tokens = Object.fromEntries(
     Object.entries(TOKEN_VARIABLES).map(([key, variable]) => [key, read(variable)]),
   ) as Omit<MapTokens, "dark">;
-  return { ...tokens, dark: isDarkColor(tokens.app) };
+  return { ...tokens, dark: isDarkColor(tokens.ground) };
 }
 
 /** `["match", ["get","class"], c1, v1, c2, v2, ..., fallback]` */
@@ -203,44 +211,37 @@ const isClass = (classes: readonly string[]) => ["match", ["get", "class"], clas
 const isLine = ["==", ["geometry-type"], "LineString"];
 
 export function buildMapStyle(tokens: MapTokens): StyleSpecification {
-  const { app, surface, ink, soft, faint, edge, brand, dark } = tokens;
+  const {
+    ink,
+    soft,
+    faint,
+    brand,
+    ground,
+    water,
+    roadMajor,
+    roadMid,
+    roadMinor,
+    roadStreet,
+    dark,
+  } = tokens;
   const mix = mixColors;
 
-  // City zoom is a tonal poster: one ground in the palette's own hue, roads and water as deeper or paler
-  // tones of it, and almost no other color. A light palette tints `app` towards its accent; Night tints it
-  // towards the blue water tint, like a midnight-blue chart. The tint is small so the accent pins, the
-  // dashed line and the count pills stay clear of the ground (a test holds that to 3:1).
-  const land = dark ? mix(app, tokens.water, 0.3) : mix(app, brand, 0.07);
-  const building = mix(land, ink, dark ? 0.12 : 0.07);
-  const buildingEdge = mix(land, ink, dark ? 0.2 : 0.14);
-  const casing = mix(land, edge, dark ? 0.55 : 0.4);
-  // Street zoom: white-ish streets with a trace of the accent on the big ones.
-  const road = surface;
-  const bigRoad = mix(surface, brand, dark ? 0.22 : 0.14);
-  // City zoom: big roads are the heaviest, most accent-tinted tone, mid roads a lighter tone, minor streets
-  // low-contrast hairlines. Light palettes go deeper towards the accent, Night goes paler towards ink; every
-  // one mixes the ground with a palette role, so it keeps its contrast on every palette.
-  const accentRoadLow = dark ? mix(mix(land, ink, 0.55), brand, 0.1) : mix(land, brand, 0.45);
-  const midRoadLow = dark ? mix(land, ink, 0.3) : mix(land, brand, 0.22);
-  const minorRoadLow = dark ? mix(land, ink, 0.15) : mix(land, brand, 0.12);
-  const rail = mix(land, edge, 0.5);
-  const halo = land;
+  // City zoom is a tonal poster: the palette's ground, roads in three tones of one family with a strong
+  // weight hierarchy, water as the dominant cool shape, and almost no other color. Street zoom eases to a
+  // calmer map: pale road fills with outlines and the building footprints. Each is the palette's own
+  // `--map-*` color, so the accent pins, the dashed line and the count pills (a test holds them to 3:1
+  // against the ground) stay clear of the map.
+  const building = tokens.building;
+  const buildingEdge = tokens.casing;
+  const casing = tokens.casing;
+  // Street zoom: the big roads keep a trace of the accent.
+  const road = roadStreet;
+  const bigRoad = mix(roadStreet, brand, dark ? 0.08 : 0.12);
+  const rail = roadMid;
+  const halo = ground;
   const haloWidth = dark ? 1.6 : 1.4;
   /** Parks are a quiet tint on the poster and full strength at street zoom. */
   const parkOpacity = ["interpolate", ["linear"], ["zoom"], 10, 0.6, STREET_ZOOM, 1];
-  // Water is the dominant shape on the poster, a deeper tone of the ground; it settles to the soft blue
-  // water tint at street zoom.
-  const waterStreet = mix(tokens.water, ink, dark ? 0.06 : 0.08);
-  const waterLow = dark ? mix(app, tokens.water, 0.85) : mix(land, brand, 0.2);
-  const water = [
-    "interpolate",
-    ["linear"],
-    ["zoom"],
-    POSTER_ZOOM,
-    waterLow,
-    STREET_ZOOM,
-    waterStreet,
-  ];
   const text = (size: number | unknown[], color: string, font: readonly string[], extra = {}) => ({
     layout: {
       "text-field": LABEL_NAME,
@@ -252,11 +253,25 @@ export function buildMapStyle(tokens: MapTokens): StyleSpecification {
     paint: { "text-color": color, "text-halo-color": halo, "text-halo-width": haloWidth },
   });
 
+  /**
+   * A road name follows its line. On a dark map the road fills are pale, so the name is drawn dark with a
+   * pale halo, like print on the road: it reads on the road and where a long name runs past it.
+   */
+  const roadText = (size: number | unknown[]) => {
+    const label = text(size, soft, MAP_FONTS.regular, {
+      "symbol-placement": "line",
+      "text-max-width": 10,
+    });
+    return dark
+      ? { ...label, paint: { ...label.paint, "text-color": ground, "text-halo-color": roadStreet } }
+      : label;
+  };
+
   /** Place names never drop out at a high zoom; when two meet, the larger place (lower `rank`) is drawn and the other waits. */
   const placeLayout = { "symbol-sort-key": ["get", "rank"], "text-padding": 4 };
 
   const layers = [
-    { id: "background", type: "background", paint: { "background-color": land } },
+    { id: "background", type: "background", paint: { "background-color": ground } },
     {
       id: "landcover-green",
       type: "fill",
@@ -352,15 +367,7 @@ export function buildMapStyle(tokens: MapTokens): StyleSpecification {
             ["linear"],
             ["zoom"],
             POSTER_ZOOM,
-            [
-              "match",
-              ["get", "class"],
-              ACCENT_ROADS,
-              accentRoadLow,
-              MID_ROADS,
-              midRoadLow,
-              minorRoadLow,
-            ],
+            ["match", ["get", "class"], ACCENT_ROADS, roadMajor, MID_ROADS, roadMid, roadMinor],
             STREET_ZOOM,
             ["match", ["get", "class"], ACCENT_ROADS, bigRoad, road],
           ],
@@ -425,10 +432,7 @@ export function buildMapStyle(tokens: MapTokens): StyleSpecification {
       "source-layer": "transportation_name",
       minzoom: ROAD_LABEL_MIN_ZOOM,
       filter: isClass(["motorway", "trunk", "primary", "secondary"]),
-      ...text(["interpolate", ["linear"], ["zoom"], 12, 10, 18, 13], soft, MAP_FONTS.regular, {
-        "symbol-placement": "line",
-        "text-max-width": 10,
-      }),
+      ...roadText(["interpolate", ["linear"], ["zoom"], 12, 10, 18, 13]),
     },
     {
       id: "label-road-tertiary",
@@ -437,7 +441,7 @@ export function buildMapStyle(tokens: MapTokens): StyleSpecification {
       "source-layer": "transportation_name",
       minzoom: TERTIARY_LABEL_MIN_ZOOM,
       filter: isClass(["tertiary"]),
-      ...text(11, soft, MAP_FONTS.regular, { "symbol-placement": "line", "text-max-width": 10 }),
+      ...roadText(11),
     },
     {
       id: "label-road-minor",
@@ -446,10 +450,7 @@ export function buildMapStyle(tokens: MapTokens): StyleSpecification {
       "source-layer": "transportation_name",
       minzoom: MINOR_LABEL_MIN_ZOOM,
       filter: isClass(["minor", "service"]),
-      ...text(10.5, soft, MAP_FONTS.regular, {
-        "symbol-placement": "line",
-        "text-max-width": 10,
-      }),
+      ...roadText(10.5),
     },
     {
       id: "landmark-dot",

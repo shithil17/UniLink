@@ -23,29 +23,36 @@ import {
 const css = readFileSync(path.resolve(import.meta.dirname, "../../index.css"), "utf8");
 const block = (open: RegExp) => open.exec(css)![1]!;
 const day = block(/@theme static\s*\{([^}]*)\}/);
-const night = block(/:root\[data-theme="night"\]\s*\{([^}]*)\}/);
-const mapDay = block(/:root\s*\{\s*(--map-water[^}]*)\}/);
+const mapDay = block(/:root\s*\{\s*(--map-ground[^}]*)\}/);
 
-function tokensFrom(palette: string, mapTints: string, dark: boolean): MapTokens {
+/** The tokens of one palette: roles from its block, map colors from its own block (Night, the other day palettes) or the shared default one. */
+function paletteTokens(id: string): MapTokens {
+  const isDefault = id === DEFAULT_THEME_ID;
+  const own = isDefault ? day : block(new RegExp(`:root\\[data-theme="${id}"\\]\\s*\\{([^}]*)\\}`));
+  const maps = isDefault ? mapDay : own;
   const read = (name: string, from: string) =>
-    new RegExp(`${name}:\\s*([^;]+);`).exec(from)![1]!.trim();
+    new RegExp(`${name}:\\s*([^;]+);`).exec(from)?.[1]?.trim() ?? "";
   return {
-    app: read("--color-app", palette),
-    surface: read("--color-surface", palette),
-    line: read("--color-line", palette),
-    edge: read("--color-edge", palette),
-    ink: read("--color-ink", palette),
-    soft: read("--color-soft", palette),
-    faint: read("--color-faint", palette),
-    brand: read("--color-brand", palette),
-    water: read("--map-water", mapTints),
-    park: read("--map-park", mapTints),
-    dark,
+    ink: read("--color-ink", own),
+    soft: read("--color-soft", own),
+    faint: read("--color-faint", own),
+    brand: read("--color-brand", own),
+    ground: read("--map-ground", maps),
+    water: read("--map-water", maps),
+    park: read("--map-park", maps),
+    roadMajor: read("--map-road-major", maps),
+    roadMid: read("--map-road-mid", maps),
+    roadMinor: read("--map-road-minor", maps),
+    roadStreet: read("--map-road-street", maps),
+    casing: read("--map-casing", maps),
+    building: read("--map-building", maps),
+    dark: id === "night",
   };
 }
 
-const LIGHT = tokensFrom(day, mapDay, false);
-const NIGHT = tokensFrom(night, night, true);
+const LIGHT = paletteTokens(DEFAULT_THEME_ID);
+const palettes = themes.map((t) => paletteTokens(t.id));
+const NIGHT = paletteTokens("night");
 
 type Layer = {
   id: string;
@@ -86,46 +93,35 @@ function matchColor(match: unknown, cls: string): string {
 }
 
 describe("buildMapStyle", () => {
-  it("draws land, water and parks from the given tokens", () => {
-    // The ground is the palette's `app`, tinted a little towards its own hue.
-    const ground = layer(LIGHT, "background").paint!["background-color"] as string;
-    expect(ground).not.toBe(LIGHT.app);
-    expect(distance(ground, LIGHT.app)).toBeLessThan(25);
-    // Water settles to the soft water tint at street zoom.
-    expect(stopAt("water", "fill-color", STREET_ZOOM)).toBe(
-      mixColors(LIGHT.water, LIGHT.ink, 0.08),
-    );
+  it("draws land, water, parks and streets from the given tokens", () => {
+    expect(layer(LIGHT, "background").paint!["background-color"]).toBe(LIGHT.ground);
+    expect(layer(LIGHT, "water").paint!["fill-color"]).toBe(LIGHT.water);
+    expect(layer(LIGHT, "waterway").paint!["line-color"]).toBe(LIGHT.water);
     expect(layer(LIGHT, "park").paint!["fill-color"]).toBe(LIGHT.park);
-    // Street zoom: streets are the surface color.
+    expect(layer(LIGHT, "building").paint!["fill-color"]).toBe(LIGHT.building);
+    // Street zoom: streets are the palette's street fill.
     expect(stopAt("road-minor", "line-color", STREET_ZOOM)).toEqual([
       "match",
       ["get", "class"],
       expect.any(Array),
       expect.any(String),
-      LIGHT.surface,
+      LIGHT.roadStreet,
     ]);
+    expect(layer(LIGHT, "road-minor-casing").paint!["line-color"]).toBe(LIGHT.casing);
   });
 
   it("follows other tokens, not a fixed palette", () => {
-    const other = { ...LIGHT, app: "rgb(10, 20, 30)", water: "rgb(1, 2, 3)" };
-    const ground = layer(other, "background").paint!["background-color"] as string;
-    expect(distance(ground, "rgb(10, 20, 30)")).toBeLessThan(25);
-    expect(
-      distance(ground, layer(LIGHT, "background").paint!["background-color"] as string),
-    ).toBeGreaterThan(100);
-    expect(stopAt("water", "fill-color", STREET_ZOOM, other)).toBe(
-      mixColors("rgb(1, 2, 3)", other.ink, 0.08),
-    );
+    const other = { ...LIGHT, ground: "rgb(10, 20, 30)", water: "rgb(1, 2, 3)" };
+    expect(layer(other, "background").paint!["background-color"]).toBe("rgb(10, 20, 30)");
+    expect(layer(other, "water").paint!["fill-color"]).toBe("rgb(1, 2, 3)");
   });
 
   it("gives the Night tokens the dark variant and keeps the day ones light", () => {
     expect(buildMapStyle(LIGHT).metadata).toEqual({ "unilink:variant": "light" });
     expect(buildMapStyle(NIGHT).metadata).toEqual({ "unilink:variant": "dark" });
-    expect(
-      distance(layer(NIGHT, "background").paint!["background-color"] as string, NIGHT.app),
-    ).toBeLessThan(40);
-    expect(isDarkColor(NIGHT.app)).toBe(true);
-    expect(isDarkColor(LIGHT.app)).toBe(false);
+    expect(layer(NIGHT, "background").paint!["background-color"]).toBe(NIGHT.ground);
+    expect(isDarkColor(NIGHT.ground)).toBe(true);
+    expect(isDarkColor(LIGHT.ground)).toBe(false);
     // The two variants are different pictures, not one with a flag.
     expect(layer(NIGHT, "building").paint!["fill-color"]).not.toBe(
       layer(LIGHT, "building").paint!["fill-color"],
@@ -212,22 +208,18 @@ describe("buildMapStyle", () => {
     expect(width("road-major", "primary", 18)).toBeGreaterThan(width("road-major", "primary", 9));
   });
 
-  it("draws a poster at city zoom: accent-tinted big roads, quiet minor hairlines, no casings", () => {
-    const major = stopAt("road-major", "line-color", POSTER_ZOOM);
-    const motorway = matchColor(major, "motorway");
-    const tertiary = matchColor(major, "tertiary");
-    const minor = matchColor(stopAt("road-minor", "line-color", POSTER_ZOOM), "minor");
-    for (const tokens of [LIGHT, NIGHT]) {
-      const low = matchColor(stopAt("road-major", "line-color", POSTER_ZOOM, tokens), "motorway");
-      // The accent shows: closer to the accent than the land is.
-      expect(distance(low, tokens.brand)).toBeLessThan(distance(tokens.app, tokens.brand));
-      // Held back: not the raw accent.
-      expect(distance(low, tokens.brand)).toBeGreaterThan(0);
+  it("draws a poster at city zoom: three road tones, quiet minor hairlines, no casings or buildings", () => {
+    for (const tokens of palettes) {
+      const at = (id: string, cls: string) =>
+        matchColor(stopAt(id, "line-color", POSTER_ZOOM, tokens), cls);
+      expect(at("road-major", "motorway")).toBe(tokens.roadMajor);
+      expect(at("road-major", "tertiary")).toBe(tokens.roadMid);
+      expect(at("road-minor", "minor")).toBe(tokens.roadMinor);
+      // A clear hierarchy against the ground: boldest to faintest.
+      const c = (color: string) => contrast(color, tokens.ground);
+      expect(c(tokens.roadMajor), tokens.ground).toBeGreaterThan(c(tokens.roadMid));
+      expect(c(tokens.roadMid), tokens.ground).toBeGreaterThan(c(tokens.roadMinor));
     }
-    expect(motorway).not.toBe(tertiary);
-    expect(tertiary).not.toBe(minor);
-    // Minor streets sit closer to the land than the big roads do.
-    expect(distance(minor, LIGHT.app)).toBeLessThan(distance(motorway, LIGHT.app));
     // Casings are invisible on the poster and full at street zoom.
     for (const id of ["road-major-casing", "road-minor-casing"]) {
       const opacity = layer(LIGHT, id).paint!["line-opacity"] as unknown[];
@@ -236,23 +228,19 @@ describe("buildMapStyle", () => {
       expect(opacity.at(-2), id).toBe(STREET_ZOOM);
       expect(opacity.at(-1), id).toBe(1);
     }
-    // No buildings at city zoom.
     expect(layer(LIGHT, "building").minzoom).toBeGreaterThan(POSTER_ZOOM);
   });
 
-  it("eases the accent off by street zoom, where the roads are the surface color", () => {
-    for (const tokens of [LIGHT, NIGHT]) {
-      const at = (zoom: number) =>
-        matchColor(stopAt("road-major", "line-color", zoom, tokens), "motorway");
-      expect(distance(at(STREET_ZOOM), tokens.brand)).toBeGreaterThan(
-        distance(at(POSTER_ZOOM), tokens.brand),
-      );
-      expect(distance(at(STREET_ZOOM), tokens.surface)).toBeLessThan(
-        distance(at(POSTER_ZOOM), tokens.surface),
-      );
-      expect(matchColor(stopAt("road-minor", "line-color", STREET_ZOOM, tokens), "minor")).toBe(
-        tokens.surface,
-      );
+  it("eases to street roads: the street fill, outlined, with only a trace of the accent", () => {
+    for (const tokens of palettes) {
+      const major = matchColor(stopAt("road-major", "line-color", STREET_ZOOM, tokens), "motorway");
+      expect(distance(major, tokens.roadStreet), tokens.ground).toBeLessThan(40);
+      for (const cls of ["secondary", "minor"]) {
+        const id = cls === "minor" ? "road-minor" : "road-major";
+        expect(matchColor(stopAt(id, "line-color", STREET_ZOOM, tokens), cls)).toBe(
+          tokens.roadStreet,
+        );
+      }
     }
   });
 
@@ -262,7 +250,7 @@ describe("buildMapStyle", () => {
       Object.fromEntries(
         Object.entries(t).map(([k, v]) => [k, typeof v === "string" ? mixColors(v, v, 0) : v]),
       ) as MapTokens;
-    for (const t of [asRgb(LIGHT), asRgb(NIGHT)]) {
+    for (const t of palettes.map(asRgb)) {
       const text = JSON.stringify(buildMapStyle(t));
       expect(text).not.toMatch(/#[0-9a-f]{3,8}\b/i);
     }
@@ -297,27 +285,60 @@ function contrast(a: string, b: string) {
 }
 
 describe("every palette's map", () => {
+  const lum = (c: string) => {
+    const [r, g, bl] = rgb(c).map((v) => {
+      const x = v / 255;
+      return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r! + 0.7152 * g! + 0.0722 * bl!;
+  };
+
   for (const theme of themes) {
-    it(`${theme.id}: the accent marker and the labels stay readable on the tinted ground`, () => {
-      const isDefault = theme.id === DEFAULT_THEME_ID;
-      const own = isDefault
-        ? day
-        : block(new RegExp(`:root\\[data-theme="${theme.id}"\\]\\s*\\{([^}]*)\\}`));
-      const tokens = tokensFrom(
-        own,
-        isDefault ? mapDay : theme.id === "night" ? own : mapDay,
-        theme.id === "night",
+    const tokens = paletteTokens(theme.id);
+    const c = (a: string, b: string) => contrast(a, b);
+
+    it(`${theme.id}: reads every map color from the stylesheet`, () => {
+      for (const [key, value] of Object.entries(tokens)) {
+        expect(value, `${theme.id} ${key}`).not.toBe("");
+      }
+    });
+
+    it(`${theme.id}: the accent markers and the labels stay readable on the map`, () => {
+      // Pins, the dashed line and the count pills are drawn in the accent over the ground and its roads.
+      expect(c(tokens.brand, tokens.ground), "accent on ground").toBeGreaterThanOrEqual(3);
+      expect(c(tokens.brand, tokens.roadMajor), "accent on major roads").toBeGreaterThanOrEqual(
+        1.4,
       );
-      const ground = layer(tokens, "background").paint!["background-color"] as string;
-      // Pins, the dashed line and the count pills are drawn in the accent over this ground.
-      expect(contrast(tokens.brand, ground), `${theme.id} accent on ground`).toBeGreaterThanOrEqual(
-        3,
+      expect(c(tokens.brand, tokens.water), "accent on water").toBeGreaterThanOrEqual(1.4);
+      expect(c(tokens.ink, tokens.ground), "ink").toBeGreaterThanOrEqual(7);
+      expect(c(tokens.soft, tokens.ground), "soft").toBeGreaterThanOrEqual(4.5);
+    });
+
+    it(`${theme.id}: water is a distinct cool shape, never the road or the accent`, () => {
+      const [r, , b] = rgb(tokens.water);
+      expect(b, "water leans blue").toBeGreaterThan(r!);
+      expect(c(tokens.water, tokens.ground), "water on ground").toBeGreaterThanOrEqual(1.15);
+      expect(distance(tokens.water, tokens.roadMajor)).toBeGreaterThan(40);
+      expect(distance(tokens.water, tokens.roadMid)).toBeGreaterThan(30);
+      expect(distance(tokens.water, tokens.brand)).toBeGreaterThan(80);
+      expect(c(tokens.roadMajor, tokens.ground), "big roads").toBeGreaterThan(1.3);
+    });
+
+    it(`${theme.id}: street roads stand apart from the ground and the buildings`, () => {
+      expect(c(tokens.roadStreet, tokens.ground), "road fill on ground").toBeGreaterThanOrEqual(
+        1.08,
       );
-      expect(contrast(tokens.ink, ground), `${theme.id} ink`).toBeGreaterThanOrEqual(7);
-      expect(contrast(tokens.soft, ground), `${theme.id} soft`).toBeGreaterThanOrEqual(4.5);
-      // The big roads read against the ground at city zoom.
-      const major = matchColor(stopAt("road-major", "line-color", POSTER_ZOOM, tokens), "motorway");
-      expect(contrast(major, ground), `${theme.id} major road`).toBeGreaterThan(1.15);
+      expect(c(tokens.casing, tokens.ground), "casing on ground").toBeGreaterThanOrEqual(1.1);
+      expect(
+        c(tokens.roadStreet, tokens.building),
+        "road fill on buildings",
+      ).toBeGreaterThanOrEqual(1.1);
+      if (tokens.dark) {
+        // Pale roads on a dark ground, buildings a touch lighter than the ground but darker than the roads.
+        expect(c(tokens.roadStreet, tokens.ground), "dark road fill").toBeGreaterThanOrEqual(5);
+        expect(lum(tokens.building)).toBeGreaterThan(lum(tokens.ground));
+        expect(lum(tokens.building)).toBeLessThan(lum(tokens.roadStreet));
+      }
     });
   }
 });

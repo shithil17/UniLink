@@ -146,6 +146,15 @@
   --color-peach-ink: #93401a;
   --color-rose: #fbe0e8;
   --color-rose-ink: #8e2a4e;
+  --map-ground: #f2ebdd;
+  --map-water: #b5cad3;
+  --map-park: #dce3c8;
+  --map-road-major: #a98b6c;
+  --map-road-mid: #c6ae92;
+  --map-road-minor: #dccdb8;
+  --map-road-street: #fffdf8;
+  --map-casing: #d6c7ae;
+  --map-building: #e7dcc9;
 }
 
 /* Cherry Blossom (id: cherry-blossom) */
@@ -183,6 +192,15 @@
   --color-peach-ink: #93401a;
   --color-rose: #fbe0e8;
   --color-rose-ink: #8e2a4e;
+  --map-ground: #e6ebe3;
+  --map-water: #b3cad5;
+  --map-park: #d2e4c6;
+  --map-road-major: #8da08d;
+  --map-road-mid: #aebdae;
+  --map-road-minor: #c9d4c8;
+  --map-road-street: #fbfdfa;
+  --map-casing: #c3cfc2;
+  --map-building: #d9e1d6;
 }
 
 /* Cherry Red (id: cherry-red) */
@@ -220,6 +238,15 @@
   --color-peach-ink: #93401a;
   --color-rose: #fbe0e8;
   --color-rose-ink: #8e2a4e;
+  --map-ground: #f6e9ea;
+  --map-water: #b7c8dc;
+  --map-park: #dbe5d0;
+  --map-road-major: #c4707c;
+  --map-road-mid: #dba6ae;
+  --map-road-minor: #ecd0d4;
+  --map-road-street: #fffafa;
+  --map-casing: #e0c4c7;
+  --map-building: #ecd9db;
 }
 
 /* Night (id: night): the dark palette. Charcoal ground, warm coral accent, dark text on primary. */
@@ -258,9 +285,16 @@
   --color-peach-ink: #f4b596;
   --color-rose: #432032;
   --color-rose-ink: #f2a5bf;
-  /* Map tints (see the `--map-water` note below). */
-  --map-water: #1b2c3f;
-  --map-park: #1b2e27;
+  /* Map colors (see the note on the map colors below). */
+  --map-ground: #1a2a4a;
+  --map-water: #0b1b36;
+  --map-park: #1e3a3a;
+  --map-road-major: #bccdeb;
+  --map-road-mid: #6f87ad;
+  --map-road-minor: #45597f;
+  --map-road-street: #b4c4de;
+  --map-casing: #35486b;
+  --map-building: #22365c;
 }
 
 /*
@@ -295,13 +329,25 @@
 }
 
 /*
- * Map tints: the soft water and park colors of the ride map (`buildMapStyle` reads them with the
- * palette roles). They are map-only, not palette roles: the four day palettes share this pair and
- * Night sets its own inside its palette block above. Land, roads, labels and buildings come from the roles themselves.
+ * Map colors: the ride map (`buildMapStyle`) reads these with the palette roles. They are map-only, not
+ * palette roles, and each palette sets its own so it gets its own tonal theme: Coral is a Carrara marble
+ * (warm white ground, soft grey roads, cool grey-blue water), Bordeaux a Rustic cream with brown roads,
+ * Cherry Blossom a Sage grey-green, Cherry Red a Ruby rose with deep rose roads, and Night a Midnight Blue
+ * chart (navy ground, pale fine roads, darker navy water). `ground` is the land and the label halo,
+ * `road-major/mid/minor` the three road tones at city zoom, `road-street` the road fill at street zoom with
+ * its `casing`, and `building` the footprints. Water is a cool tone in every palette, never the road or the
+ * accent. Coral's values are the default here; the other palettes override them in their own blocks.
  */
 :root {
-  --map-water: #d3e4f0;
-  --map-park: #dbead9;
+  --map-ground: #f5f3ef;
+  --map-water: #bdd0dd;
+  --map-park: #dfe7d5;
+  --map-road-major: #b4b1ab;
+  --map-road-mid: #cdcac4;
+  --map-road-minor: #e0ddd7;
+  --map-road-street: #ffffff;
+  --map-casing: #d9d5cd;
+  --map-building: #e9e6e0;
 }
 
 /*
