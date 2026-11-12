@@ -29,6 +29,7 @@ import {
   type ExpiryFailure,
 } from "../../posts/expiry";
 import { rides } from "../../db/schema";
+import { areasRepo } from "../../repos/areas";
 import { ridesRepo, type RidePatch, type RideRow } from "../../repos/rides";
 import { validateJson, validateQuery } from "../../validate";
 import { decodeRideCursor, encodeRideCursor, rideState, toRideView } from "./view";
@@ -86,6 +87,20 @@ const storedContacts = (r: RideRow) => ({
 const sameContacts = (a: ReturnType<typeof storedContacts>, b: ReturnType<typeof storedContacts>) =>
   a.phone === b.phone && a.whatsapp === b.whatsapp && a.messenger === b.messenger;
 
+/**
+ * The 400 for a ride whose pickup or destination area does not exist or is hidden, or null when every
+ * id in `ids` can be used. Only the areas being set are checked, so a ride keeps an area hidden later.
+ */
+async function invalidArea(c: Context<AppEnv>, ids: number[]) {
+  const usable = await areasRepo(getDb(c.env.DB)).usableIds(ids);
+  return ids.every((id) => usable.has(id))
+    ? null
+    : c.json(
+        { error: "invalid_area", message: "Pick a pickup and a destination area from the list." },
+        400,
+      );
+}
+
 const updateLimit = (c: Context<AppEnv>, me: SessionUser, now: number) =>
   rateLimit(
     getDb(c.env.DB),
@@ -97,7 +112,7 @@ const updateLimit = (c: Context<AppEnv>, me: SessionUser, now: number) =>
 
 /**
  * Rides. A ride is a user-written post: screened on create and again on any edit that changes its
- * places, notes or contacts. Contacts are only returned by `GET /:id/contact` (login, rate limited),
+ * landmarks, notes or contacts. Contacts are only returned by `GET /:id/contact` (login, rate limited),
  * never by the feed, the detail or "my rides". Reports go through `POST /api/reports` with the `ride`
  * target type. The platform does not arrange or guarantee rides.
  */
@@ -146,6 +161,9 @@ export const rideRoutes = new Hono<AppEnv>()
       };
     }
 
+    const badArea = await invalidArea(c, [body.pickupAreaId, body.destinationAreaId]);
+    if (badArea) return badArea;
+
     const repo = ridesRepo(db);
     if ((await repo.countOpenMine(me.id, now)) >= limits.rideOpenMax) {
       return c.json(
@@ -164,14 +182,18 @@ export const rideRoutes = new Hono<AppEnv>()
         user: me,
         targetType: "ride",
         input: {
-          texts: [body.pickup, body.destination, ...(body.notes ? [body.notes] : [])],
+          texts: [body.pickupLandmark, body.destinationLandmark, body.notes].filter(
+            (t): t is string => t !== undefined,
+          ),
           contacts: body.contacts,
         },
         save: (moderation) =>
           repo.insert({
             authorId: me.id,
-            pickup: body.pickup,
-            destination: body.destination,
+            pickupAreaId: body.pickupAreaId,
+            pickupLandmark: body.pickupLandmark ?? null,
+            destinationAreaId: body.destinationAreaId,
+            destinationLandmark: body.destinationLandmark ?? null,
             vehicle: body.vehicle,
             totalSeats: body.totalSeats,
             seatsRemaining: body.totalSeats,
@@ -198,7 +220,7 @@ export const rideRoutes = new Hono<AppEnv>()
   // The public feed. Registered before "/:id" along with "/mine".
   .get("/", validateQuery(rideFeedQuery), async (c) => {
     const me = user(c);
-    const { cursor, limit, q, vehicle, date, day } = c.req.valid("query");
+    const { cursor, limit, q, from, to, vehicle, date, day } = c.req.valid("query");
     const params = pageParams({ limit }, ridePageSizes);
     const start = cursor === undefined ? null : decodeRideCursor(cursor);
     if (!params || (cursor !== undefined && !start)) {
@@ -210,6 +232,8 @@ export const rideRoutes = new Hono<AppEnv>()
       now,
       {
         q: q === "" ? undefined : q,
+        from,
+        to,
         vehicle,
         date,
         day: day === undefined ? undefined : WEEKDAYS.indexOf(day),
@@ -287,8 +311,24 @@ export const rideRoutes = new Hono<AppEnv>()
     }
 
     const patch: RidePatch = {};
-    if (body.pickup !== undefined) patch.pickup = body.pickup;
-    if (body.destination !== undefined) patch.destination = body.destination;
+    // Only an area that is changing has to be visible: a ride keeps one hidden since it was posted.
+    const newAreas = [
+      body.pickupAreaId !== undefined && body.pickupAreaId !== ride.pickupAreaId
+        ? body.pickupAreaId
+        : null,
+      body.destinationAreaId !== undefined && body.destinationAreaId !== ride.destinationAreaId
+        ? body.destinationAreaId
+        : null,
+    ].filter((v): v is number => v !== null);
+    const badArea = await invalidArea(c, newAreas);
+    if (badArea) return badArea;
+    if (body.pickupAreaId !== undefined) patch.pickupAreaId = body.pickupAreaId;
+    if (body.destinationAreaId !== undefined) patch.destinationAreaId = body.destinationAreaId;
+    // Blank or null clears a landmark.
+    if (body.pickupLandmark !== undefined) patch.pickupLandmark = body.pickupLandmark || null;
+    if (body.destinationLandmark !== undefined) {
+      patch.destinationLandmark = body.destinationLandmark || null;
+    }
     if (body.vehicle !== undefined) patch.vehicle = body.vehicle;
     if (body.totalSeats !== undefined) patch.totalSeats = body.totalSeats;
     if (body.pricePerSeatTaka !== undefined) patch.pricePerSeatTaka = body.pricePerSeatTaka;
@@ -323,13 +363,17 @@ export const rideRoutes = new Hono<AppEnv>()
       patch.expiresAt = expiry.expiresAt;
     }
 
-    const pickup = patch.pickup ?? ride.pickup;
-    const destination = patch.destination ?? ride.destination;
+    const pickupLandmark =
+      patch.pickupLandmark === undefined ? ride.pickupLandmark : patch.pickupLandmark;
+    const destinationLandmark =
+      patch.destinationLandmark === undefined
+        ? ride.destinationLandmark
+        : patch.destinationLandmark;
     const notes = patch.notes === undefined ? ride.notes : patch.notes;
     const contacts = body.contacts ?? storedContacts(ride);
     const screenedChanged =
-      pickup !== ride.pickup ||
-      destination !== ride.destination ||
+      pickupLandmark !== ride.pickupLandmark ||
+      destinationLandmark !== ride.destinationLandmark ||
       notes !== ride.notes ||
       !sameContacts(contacts, storedContacts(ride));
 
@@ -341,7 +385,10 @@ export const rideRoutes = new Hono<AppEnv>()
         {
           user: me,
           targetType: "ride",
-          input: { texts: [pickup, destination, ...(notes ? [notes] : [])], contacts },
+          input: {
+            texts: [pickupLandmark, destinationLandmark, notes].filter((t): t is string => !!t),
+            contacts,
+          },
           previousStatus: ride.status,
           save: async (moderation) => {
             await repo.update(id, { ...patch, ...moderation }, now);

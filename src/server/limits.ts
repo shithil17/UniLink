@@ -34,9 +34,10 @@ import {
   RESOURCE_EXPIRY_MIN_MS,
   RESOURCE_NOTE_MAX_LENGTH,
 } from "../shared/schemas/resources.ts";
+import { AREA_NAME_MAX_LENGTH } from "../shared/schemas/areas.ts";
 import {
   RIDE_NOTES_MAX_LENGTH,
-  RIDE_PLACE_MAX_LENGTH,
+  RIDE_LANDMARK_MAX_LENGTH,
   RIDE_PRICE_MAX_TAKA,
   RIDE_SEARCH_MAX_LENGTH,
   RIDE_SEATS_MAX,
@@ -172,9 +173,9 @@ export const limits = {
   resourceHelpableMax: 50,
   // ceiling: three months: long enough to find the link again after the exam, short enough to keep shared links from piling up. The UI states it. Defined in shared code so the screens can state it. Revisit if students ask for longer.
   resourceFulfilledKeepMs: RESOURCE_FULFILLED_KEEP_MS,
-  // ceiling: a place name, a note, a bus's seats and a fare are all short and bounded; the seat cap is also a CHECK on the rides table. Defined in shared code for the client form. Revisit if honest rides are refused.
+  // ceiling: a landmark, a note, a bus's seats and a fare are all short and bounded; the seat cap is also a CHECK on the rides table. Defined in shared code for the client form. Revisit if honest rides are refused.
   rideField: {
-    placeMax: RIDE_PLACE_MAX_LENGTH,
+    landmarkMax: RIDE_LANDMARK_MAX_LENGTH,
     notesMax: RIDE_NOTES_MAX_LENGTH,
     seatsMax: RIDE_SEATS_MAX,
     priceMaxTaka: RIDE_PRICE_MAX_TAKA,
@@ -188,6 +189,12 @@ export const limits = {
   rideOpenMax: 10,
   // ceiling: a phone screen shows about this many rows; more arrive through the cursor. Revisit if the feed feels short.
   ridePage: { defaultSize: 20, maxSize: 50 },
+  // ceiling: an area is a neighbourhood or district name. Defined in shared code for the mod form. Revisit if a real name is refused.
+  areaField: { nameMax: AREA_NAME_MAX_LENGTH },
+  // ceiling: the Dhaka list is about 100 areas and mods add a few sub-areas; the picker loads them all in one small response, so this only stops a runaway list. Past it the extra areas are not listed. Revisit with a search box if the list ever nears it.
+  areaListMax: 500,
+  // ceiling: a mod adds, renames, hides or shows a handful of areas in a sitting; this stops a loop. Revisit if mods report hitting it.
+  areaModWrite: { limit: 60, windowMs: HOUR },
   /** The screening pipeline: what the rules accept and how long the model step may take. */
   screen: {
     // ceiling: the longest screened field (a description or note) is a few paragraphs; a wall of text is spam. Per-post-type schemas set tighter caps. Revisit if honest posts are rejected for length.

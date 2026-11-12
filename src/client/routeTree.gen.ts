@@ -19,6 +19,7 @@ import { Route as RoutineRouteImport } from './routes/routine'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ModIndexRouteImport } from './routes/mod.index'
+import { Route as ModAreasRouteImport } from './routes/mod.areas'
 import { Route as ModAuditRouteImport } from './routes/mod.audit'
 import { Route as ModCoursesRouteImport } from './routes/mod.courses'
 import { Route as ModFacultyRouteImport } from './routes/mod.faculty'
@@ -82,6 +83,11 @@ const SignupRoute = SignupRouteImport.update({
 const ModIndexRoute = ModIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => ModRoute,
+} as any)
+const ModAreasRoute = ModAreasRouteImport.update({
+  id: '/areas',
+  path: '/areas',
   getParentRoute: () => ModRoute,
 } as any)
 const ModAuditRoute = ModAuditRouteImport.update({
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/routine': typeof RoutineRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/mod/areas': typeof ModAreasRoute
   '/mod/audit': typeof ModAuditRoute
   '/mod/courses': typeof ModCoursesRoute
   '/mod/faculty': typeof ModFacultyRoute
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/routine': typeof RoutineRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/mod/areas': typeof ModAreasRoute
   '/mod/audit': typeof ModAuditRoute
   '/mod/courses': typeof ModCoursesRoute
   '/mod/faculty': typeof ModFacultyRoute
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/routine': typeof RoutineRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/mod/areas': typeof ModAreasRoute
   '/mod/audit': typeof ModAuditRoute
   '/mod/courses': typeof ModCoursesRoute
   '/mod/faculty': typeof ModFacultyRoute
@@ -245,6 +254,7 @@ export interface FileRouteTypes {
     | '/routine'
     | '/settings'
     | '/signup'
+    | '/mod/areas'
     | '/mod/audit'
     | '/mod/courses'
     | '/mod/faculty'
@@ -270,6 +280,7 @@ export interface FileRouteTypes {
     | '/routine'
     | '/settings'
     | '/signup'
+    | '/mod/areas'
     | '/mod/audit'
     | '/mod/courses'
     | '/mod/faculty'
@@ -296,6 +307,7 @@ export interface FileRouteTypes {
     | '/routine'
     | '/settings'
     | '/signup'
+    | '/mod/areas'
     | '/mod/audit'
     | '/mod/courses'
     | '/mod/faculty'
@@ -404,6 +416,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModIndexRouteImport
       parentRoute: typeof ModRoute
     }
+    '/mod/areas': {
+      id: '/mod/areas'
+      path: '/areas'
+      fullPath: '/mod/areas'
+      preLoaderRoute: typeof ModAreasRouteImport
+      parentRoute: typeof ModRoute
+    }
     '/mod/audit': {
       id: '/mod/audit'
       path: '/audit'
@@ -506,6 +525,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface ModRouteChildren {
+  ModAreasRoute: typeof ModAreasRoute
   ModAuditRoute: typeof ModAuditRoute
   ModCoursesRoute: typeof ModCoursesRoute
   ModFacultyRoute: typeof ModFacultyRoute
@@ -517,6 +537,7 @@ interface ModRouteChildren {
 }
 
 const ModRouteChildren: ModRouteChildren = {
+  ModAreasRoute: ModAreasRoute,
   ModAuditRoute: ModAuditRoute,
   ModCoursesRoute: ModCoursesRoute,
   ModFacultyRoute: ModFacultyRoute,

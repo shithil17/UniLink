@@ -23,8 +23,10 @@ const FRI_0730 = Date.UTC(2026, 10, 20, 1, 30);
 const ride = (over: Partial<RideSummary> = {}): RideSummary => ({
   id: 5,
   kind: "one_off",
-  pickup: "NSU gate",
-  destination: "Mirpur 10",
+  pickupArea: { id: 1, name: "Bashundhara R/A" },
+  destinationArea: { id: 60, name: "Mirpur" },
+  pickupLandmark: "NSU gate",
+  destinationLandmark: "Mirpur 10",
   vehicle: "car",
   totalSeats: 4,
   seatsRemaining: 3,
@@ -98,7 +100,9 @@ function renderDetail(
 describe("Ride detail", () => {
   it("shows the ride and keeps the contact hidden until it is asked for", async () => {
     const fetchMock = renderDetail(ride());
-    expect(await screen.findByRole("heading", { name: "NSU gate to Mirpur 10" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Bashundhara R/A to Mirpur" })).toBeTruthy();
+    expect(screen.getByText("Bashundhara R/A (NSU gate)")).toBeTruthy();
+    expect(screen.getByText("Mirpur (Mirpur 10)")).toBeTruthy();
     expect(screen.getByText("Fri 20 Nov, 7:30 am")).toBeTruthy();
     expect(screen.getByText("3 of 4 seats left")).toBeTruthy();
     expect(screen.getByText("150 taka a seat")).toBeTruthy();

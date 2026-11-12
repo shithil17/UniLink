@@ -1,13 +1,14 @@
 import { z } from "zod";
 import { isDepartureTime, WEEKDAYS } from "../rides";
 import { parseDhakaDate } from "../time";
-import { contacts, instant, page, postStatus, reasonCategory } from "./common";
+import { areaRef } from "./areas";
+import { contacts, id, instant, page, postStatus, reasonCategory } from "./common";
 
 // Weekdays and departure times are Asia/Dhaka local values. A ride is one of two kinds: a one-off with a
 // departure instant, or a recurring ride with weekdays, a time of day and an end date.
 
-/** Pickup and destination are place names ("NSU gate", "Mirpur 10"), not addresses. */
-export const RIDE_PLACE_MAX_LENGTH = 80;
+/** A landmark is the fine detail inside an area ("north gate", "Mirpur 10 roundabout"), not an address. */
+export const RIDE_LANDMARK_MAX_LENGTH = 80;
 export const RIDE_NOTES_MAX_LENGTH = 300;
 /** The most seats one ride can offer. A bus is the largest vehicle. */
 export const RIDE_SEATS_MAX = 60;
@@ -20,12 +21,13 @@ export const rideKind = z.enum(["one_off", "recurring"]);
 /** What a reader sees of a ride: a ride past its expiry is `expired` whatever its seats say. */
 export const rideState = z.enum(["open", "full", "expired"]);
 
-const place = (what: string) =>
-  z
-    .string()
-    .trim()
-    .min(1, `Enter ${what}`)
-    .max(RIDE_PLACE_MAX_LENGTH, `Keep it under ${RIDE_PLACE_MAX_LENGTH} characters`);
+/** An area id in a request body. */
+const areaId = z.number().int().positive();
+
+const landmark = z
+  .string()
+  .trim()
+  .max(RIDE_LANDMARK_MAX_LENGTH, `Keep it under ${RIDE_LANDMARK_MAX_LENGTH} characters`);
 
 const notes = z
   .string()
@@ -57,8 +59,12 @@ const departureTime = z
 const days = z.array(weekday).min(1, "Pick at least one day").max(WEEKDAYS.length);
 
 const rideBase = z.object({
-  pickup: place("a pickup place"),
-  destination: place("a destination"),
+  // Both areas are required and must be visible areas (the server checks).
+  pickupAreaId: areaId,
+  destinationAreaId: areaId,
+  // Blank becomes absent.
+  pickupLandmark: landmark.optional().transform((v) => (v === "" ? undefined : v)),
+  destinationLandmark: landmark.optional().transform((v) => (v === "" ? undefined : v)),
   vehicle: vehicleType,
   totalSeats: seats,
   pricePerSeatTaka: price,
@@ -90,8 +96,11 @@ export const rideInput = z.discriminatedUnion("kind", [
  */
 export const ridePatch = z
   .object({
-    pickup: place("a pickup place").optional(),
-    destination: place("a destination").optional(),
+    pickupAreaId: areaId.optional(),
+    destinationAreaId: areaId.optional(),
+    // Blank or null clears the landmark.
+    pickupLandmark: landmark.nullable().optional(),
+    destinationLandmark: landmark.nullable().optional(),
     vehicle: vehicleType.optional(),
     totalSeats: seats.optional(),
     pricePerSeatTaka: price.optional(),
@@ -117,13 +126,16 @@ export const rideSeatsInput = z.object({
 });
 
 /**
- * The feed's search params (kept in the URL). `q` matches pickup or destination. `date` is a Dhaka day:
+ * The feed's search params (kept in the URL). `from` and `to` are area ids: a top-level area also
+ * matches its sub-areas. `q` is a text fallback that matches landmarks and area names. `date` is a Dhaka day:
  * one-off rides leaving that day and recurring rides that run on its weekday and have not ended.
  * `day` is a weekday: recurring rides on it and one-off rides leaving on it. `cursor` is the
  * `nextCursor` of the previous page.
  */
 export const rideFeedQuery = z.object({
   q: z.string().trim().max(RIDE_SEARCH_MAX_LENGTH).optional(),
+  from: id.optional(),
+  to: id.optional(),
   vehicle: vehicleType.optional(),
   date: dhakaDateString.optional(),
   day: weekday.optional(),
@@ -139,8 +151,11 @@ export const rideFeedQuery = z.object({
 export const rideSummary = z.object({
   id: z.number().int(),
   kind: rideKind,
-  pickup: z.string(),
-  destination: z.string(),
+  pickupArea: areaRef,
+  destinationArea: areaRef,
+  /** The fine detail inside the area, or null. */
+  pickupLandmark: z.string().nullable(),
+  destinationLandmark: z.string().nullable(),
   vehicle: vehicleType,
   totalSeats: z.number().int(),
   seatsRemaining: z.number().int().nonnegative(),

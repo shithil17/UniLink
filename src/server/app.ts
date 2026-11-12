@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { areaRoutes } from "./features/areas/routes";
 import { authRoutes } from "./features/auth/routes";
 import { attemptRoutes } from "./features/attempts/routes";
 import { routineRoutes } from "./features/routine/routes";
@@ -21,6 +22,7 @@ export const app = new Hono<AppEnv>()
   .use(sessionLoader)
   .route("/health", healthRoutes)
   .route("/auth", authRoutes)
+  .route("/areas", areaRoutes)
   .route("/courses", courseRoutes)
   .route("/attempts", attemptRoutes)
   .route("/routine", routineRoutes)

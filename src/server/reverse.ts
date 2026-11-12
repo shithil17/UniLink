@@ -7,6 +7,7 @@ import { instant } from "../shared/schemas/common";
 import { courseKind, prereqRule } from "../shared/schemas/courses";
 import type { Db } from "./db/client";
 import { checkCourseChange, type RuleRow } from "./features/courses/courseRules";
+import { areaConflictOf, areasRepo, type AreaState } from "./repos/areas";
 import { auditLogRepo, type AuditRow } from "./repos/auditLog";
 import { courseCodeConflictOf, curriculaRepo, type CourseState } from "./repos/curricula";
 import { facultyConflictOf, facultyRepo, type FacultyState } from "./repos/faculty";
@@ -41,7 +42,10 @@ import { softDeleteTargets, type SoftDeleteTargets } from "./softDelete";
  * |              |                             | prerequisite needs a code the old values would remove (`value_in_use`) |
  * | course_hide, course_unhide | { hidden }    | puts `hidden` back (shown or hidden again)            |
  *
- * Not reversible: adding a faculty member or a course, a password reset (the old hash is never stored), a report resolution, an ID lookup,
+ * | area_rename | { name }                     | puts the name back; refused if a sibling has taken it since (`value_in_use`) |
+ * | area_hide, area_unhide | { hidden, hiddenReason } | puts both back (shown or hidden again, with the old reason) |
+ *
+ * Not reversible: adding a faculty member, a course or an area, a password reset (the old hash is never stored), a report resolution, an ID lookup,
  * automatic actions and a reversal itself. To undo a reversal, repeat the original action. Each row
  * is reversed at most once. A user who has become an admin since is never touched.
  */
@@ -94,6 +98,16 @@ const courseSnapshot = z
     alternatives: z.array(z.strictObject({ code: z.string(), title: z.string() })),
     prereq: prereqRule.nullable(),
     hidden: z.boolean(),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0);
+
+/** Only the columns the action changed are in the snapshot, so every key is optional. */
+const areaSnapshot = z
+  .strictObject({
+    name: z.string().min(1),
+    hidden: z.boolean(),
+    hiddenReason: z.string().nullable(),
   })
   .partial()
   .refine((v) => Object.keys(v).length > 0);
@@ -242,6 +256,26 @@ async function planCourseReversal(
   return { current, restore: repo.restoreCourseStatement(id, restore) };
 }
 
+async function planAreaReversal(
+  db: Db,
+  row: AuditRow,
+  snapshot: unknown,
+): Promise<Plan | ReverseFailure> {
+  const parsed = areaSnapshot.safeParse(snapshot);
+  const id = Number(row.targetId);
+  if (!parsed.success || !Number.isSafeInteger(id)) return "not_reversible";
+
+  const repo = areasRepo(db);
+  const state = await repo.findById(id);
+  if (!state) return "target_missing";
+
+  const restore: Partial<AreaState> = parsed.data;
+  const current = Object.fromEntries(
+    Object.keys(restore).map((k) => [k, state[k as keyof typeof state]]),
+  );
+  return { current, restore: repo.restoreStatement(id, restore) };
+}
+
 function planFor(
   db: Db,
   row: AuditRow,
@@ -253,6 +287,7 @@ function planFor(
   }
   if (row.targetType === "faculty") return planFacultyReversal(db, row, snapshot);
   if (row.targetType === "course") return planCourseReversal(db, row, snapshot);
+  if (row.targetType === "area") return planAreaReversal(db, row, snapshot);
   return planUserReversal(db, row, snapshot);
 }
 
@@ -300,7 +335,7 @@ export async function reverse(
     if (failedUnique(err, "audit_log.reverses_id"))
       return { ok: false, reason: "already_reversed" };
     if (failedUnique(err, "users.student_key")) return { ok: false, reason: "key_in_use" };
-    if (facultyConflictOf(err) || courseCodeConflictOf(err))
+    if (facultyConflictOf(err) || courseCodeConflictOf(err) || areaConflictOf(err))
       return { ok: false, reason: "value_in_use" };
     throw err;
   }

@@ -8,7 +8,7 @@ import { runCronJobs } from "../../cron";
 import { getDb } from "../../db/client";
 import { limits } from "../../limits";
 import { SESSION_COOKIE } from "../../middleware/session";
-import { createTestSession, createTestUser } from "../../test/factories";
+import { areaIdBySlug, createTestSession, createTestUser, resetAreas } from "../../test/factories";
 
 const db = () => getDb(env.DB);
 const HOUR = 60 * 60 * 1000;
@@ -38,13 +38,18 @@ async function person(
   return { id: user.id, token: await createTestSession(db(), user.id), username: user.username };
 }
 
+/** Ids of a few seeded areas (migration 0020), looked up by slug before each test. */
+const A = { bashundhara: 0, mirpur: 0, uttara: 0, gulshan: 0, banani: 0 };
+
 const PHONE = "+8801712345678";
 const WHATSAPP = "https://wa.me/8801712345678";
 
 const oneOff = (extra: Record<string, unknown> = {}) => ({
   kind: "one_off",
-  pickup: "NSU gate",
-  destination: "Mirpur 10",
+  pickupAreaId: A.bashundhara,
+  pickupLandmark: "NSU gate",
+  destinationAreaId: A.mirpur,
+  destinationLandmark: "Mirpur 10",
   vehicle: "car",
   totalSeats: 4,
   pricePerSeatTaka: 150,
@@ -55,8 +60,9 @@ const oneOff = (extra: Record<string, unknown> = {}) => ({
 
 const recurring = (extra: Record<string, unknown> = {}) => ({
   kind: "recurring",
-  pickup: "Uttara",
-  destination: "NSU gate",
+  pickupAreaId: A.uttara,
+  destinationAreaId: A.bashundhara,
+  destinationLandmark: "NSU gate",
   vehicle: "bus",
   totalSeats: 30,
   pricePerSeatTaka: 60,
@@ -76,8 +82,10 @@ type Insert = {
   authorId: number;
   kind?: "one_off" | "recurring";
   status?: string;
-  pickup?: string;
-  destination?: string;
+  pickupAreaId?: number;
+  destinationAreaId?: number;
+  pickupLandmark?: string | null;
+  destinationLandmark?: string | null;
   vehicle?: string;
   totalSeats?: number;
   seatsRemaining?: number;
@@ -97,15 +105,18 @@ async function insertRide(f: Insert): Promise<number> {
   const departsAt = kind === "one_off" ? (f.departsAt ?? now + DAY) : null;
   const total = f.totalSeats ?? 4;
   const row = await env.DB.prepare(
-    `INSERT INTO rides (author_id, pickup, destination, vehicle, total_seats, seats_remaining,
+    `INSERT INTO rides (author_id, pickup_area_id, destination_area_id, pickup_landmark,
+       destination_landmark, vehicle, total_seats, seats_remaining,
        price_per_seat_taka, notes, contact_phone, kind, departs_at, days, departure_minutes, ends_on,
        status, expires_at, created_at, updated_at, deleted_at, deleted_by)
-     VALUES (?, ?, ?, ?, ?, ?, 100, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 100, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
   )
     .bind(
       f.authorId,
-      f.pickup ?? "NSU gate",
-      f.destination ?? "Mirpur 10",
+      f.pickupAreaId ?? A.bashundhara,
+      f.destinationAreaId ?? A.mirpur,
+      f.pickupLandmark === undefined ? "NSU gate" : f.pickupLandmark,
+      f.destinationLandmark === undefined ? "Mirpur 10" : f.destinationLandmark,
       f.vehicle ?? "car",
       total,
       f.seatsRemaining ?? total,
@@ -149,6 +160,18 @@ const dhakaDay = (ms: number) => formatDhakaDate(dhakaDate(ms));
 const weekdayOf = (ms: number) => new Date(ms + 6 * HOUR).getUTCDay();
 
 beforeEach(async () => {
+  // Areas an earlier test added or hid go back to the seed, after the rides that use them.
+  await env.DB.prepare("DELETE FROM rides").run();
+  await resetAreas(env.DB);
+  for (const [key, slug] of [
+    ["bashundhara", "bashundhara-r-a"],
+    ["mirpur", "mirpur"],
+    ["uttara", "uttara"],
+    ["gulshan", "gulshan"],
+    ["banani", "banani"],
+  ] as const) {
+    A[key] = await areaIdBySlug(env.DB, slug);
+  }
   for (const table of [
     "rides",
     "notifications",
@@ -170,8 +193,10 @@ describe("creating a ride", () => {
 
     expect(ride).toMatchObject({
       kind: "one_off",
-      pickup: "NSU gate",
-      destination: "Mirpur 10",
+      pickupArea: { id: A.bashundhara, name: "Bashundhara R/A" },
+      destinationArea: { id: A.mirpur, name: "Mirpur" },
+      pickupLandmark: "NSU gate",
+      destinationLandmark: "Mirpur 10",
       totalSeats: 4,
       seatsRemaining: 4,
       state: "open",
@@ -255,8 +280,12 @@ describe("creating a ride", () => {
     expect(await status({ contacts: {} })).toBe(400);
     expect(await status({ contacts: { phone: "01712345678" } })).toBe(400);
     expect(await status({ vehicle: "boat" })).toBe(400);
-    expect(await status({ pickup: "" })).toBe(400);
-    expect(await status({ pickup: "x".repeat(limits.rideField.placeMax + 1) })).toBe(400);
+    expect(await status({ pickupLandmark: "x".repeat(limits.rideField.landmarkMax + 1) })).toBe(
+      400,
+    );
+    expect(
+      await status({ destinationLandmark: "x".repeat(limits.rideField.landmarkMax + 1) }),
+    ).toBe(400);
   });
 
   it("blocks a new account until the cooldown has passed, and needs a signed-in user", async () => {
@@ -410,7 +439,7 @@ describe("editing a ride", () => {
     expect(await auditRows()).toBe(before);
   });
 
-  it("screens the text again when the places or notes change", async () => {
+  it("screens the text again when the landmarks or notes change", async () => {
     const who = await person();
     const ride = await post(who, oneOff());
     expect(ride.status).toBe("published");
@@ -659,19 +688,42 @@ describe("the feed", () => {
     expect(text).not.toContain("authorId");
   });
 
-  it("filters by text in the pickup or the destination, matching % and _ literally", async () => {
+  it("filters by text in the landmarks or the area names, matching % and _ literally", async () => {
     const who = await person();
-    const a = await insertRide({ authorId: who.id, pickup: "Bashundhara R/A", destination: "NSU" });
+    const a = await insertRide({
+      authorId: who.id,
+      pickupAreaId: A.bashundhara,
+      destinationAreaId: A.banani,
+      pickupLandmark: "North gate",
+      destinationLandmark: null,
+    });
     const b = await insertRide({
       authorId: who.id,
-      pickup: "Dhanmondi",
-      destination: "Bashundhara gate",
+      pickupAreaId: A.banani,
+      destinationAreaId: A.bashundhara,
+      pickupLandmark: null,
+      destinationLandmark: "NSU",
     });
-    const c = await insertRide({ authorId: who.id, pickup: "Uttara 50% off", destination: "NSU" });
-    const d = await insertRide({ authorId: who.id, pickup: "Uttara 50x off", destination: "NSU" });
+    const c = await insertRide({
+      authorId: who.id,
+      pickupAreaId: A.gulshan,
+      destinationAreaId: A.banani,
+      pickupLandmark: "Uttara 50% off",
+      destinationLandmark: null,
+    });
+    const d = await insertRide({
+      authorId: who.id,
+      pickupAreaId: A.gulshan,
+      destinationAreaId: A.banani,
+      pickupLandmark: "Uttara 50x off",
+      destinationLandmark: null,
+    });
 
+    // An area name on either end, and a landmark.
     expect(await feedIds(who, "?q=bashundhara")).toEqual([a, b]);
-    expect(await feedIds(who, "?q=dhanmondi")).toEqual([b]);
+    expect(await feedIds(who, "?q=GULSHAN")).toEqual([c, d]);
+    expect(await feedIds(who, "?q=north%20gate")).toEqual([a]);
+    expect(await feedIds(who, "?q=nsu")).toEqual([b]);
     expect(await feedIds(who, "?q=50%25")).toEqual([c]);
     expect(await feedIds(who, "?q=50_")).toEqual([]);
     expect(await feedIds(who, "?q=")).toEqual([a, b, c, d]);
@@ -763,10 +815,11 @@ describe("the feed", () => {
 
   it("combines filters", async () => {
     const who = await person();
-    const hit = await insertRide({ authorId: who.id, vehicle: "bike", pickup: "Gulshan" });
-    await insertRide({ authorId: who.id, vehicle: "car", pickup: "Gulshan" });
-    await insertRide({ authorId: who.id, vehicle: "bike", pickup: "Banani" });
+    const hit = await insertRide({ authorId: who.id, vehicle: "bike", pickupAreaId: A.gulshan });
+    await insertRide({ authorId: who.id, vehicle: "car", pickupAreaId: A.gulshan });
+    await insertRide({ authorId: who.id, vehicle: "bike", pickupAreaId: A.banani });
     expect(await feedIds(who, "?vehicle=bike&q=gulshan")).toEqual([hit]);
+    expect(await feedIds(who, `?vehicle=bike&from=${A.gulshan}`)).toEqual([hit]);
   });
 
   it("pages by cursor, soonest expiry first, without repeats or gaps", async () => {
@@ -1088,7 +1141,7 @@ describe("reports and moderation", () => {
         kind: "report",
         targetType: "ride",
         targetId: String(ride.id),
-        targetLabel: "NSU gate → Mirpur 10",
+        targetLabel: "Bashundhara R/A (NSU gate) → Mirpur (Mirpur 10)",
         targetAuthor: author.username,
         reporter: reporter.username,
       }),
@@ -1184,5 +1237,183 @@ describe("reports and moderation", () => {
     expect(res.status).toBe(200);
     expect((await rideRow(held))?.status).toBe("published");
     expect(await feedIds(author)).toEqual([held]);
+  });
+});
+
+describe("ride areas", () => {
+  async function addArea(slug: string, name: string, parentId: number | null = null) {
+    const now = Date.now();
+    return (await env.DB.prepare(
+      "INSERT INTO areas (slug, name, parent_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?) RETURNING id",
+    )
+      .bind(slug, name, parentId, now, now)
+      .first<{ id: number }>())!.id;
+  }
+  const hide = (id: number) =>
+    env.DB.prepare("UPDATE areas SET hidden = 1, hidden_reason = 'test' WHERE id = ?")
+      .bind(id)
+      .run();
+
+  it("needs a pickup and a destination area", async () => {
+    const who = await person();
+    const body = async (extra: Record<string, unknown>) =>
+      (await call("POST", "/api/rides", who.token, extra)).status;
+    const { pickupAreaId, destinationAreaId, ...rest } = oneOff();
+    expect(await body(rest)).toBe(400);
+    expect(await body({ ...rest, pickupAreaId })).toBe(400);
+    expect(await body({ ...rest, destinationAreaId })).toBe(400);
+    expect(await body(oneOff({ pickupAreaId: "Bashundhara" }))).toBe(400);
+  });
+
+  it("refuses an unknown or hidden area, on create and when an edit changes it", async () => {
+    const who = await person();
+    const gone = await addArea("old-place", "Old place");
+    await hide(gone);
+    const create = async (extra: Record<string, unknown>) => {
+      const res = await call("POST", "/api/rides", who.token, oneOff(extra));
+      return [res.status, (await res.json<{ error?: string }>()).error] as const;
+    };
+    expect(await create({ pickupAreaId: 999_999 })).toEqual([400, "invalid_area"]);
+    expect(await create({ destinationAreaId: gone })).toEqual([400, "invalid_area"]);
+
+    const ride = await post(who, oneOff());
+    const patch = async (extra: Record<string, unknown>) => {
+      const res = await call("PATCH", `/api/rides/${ride.id}`, who.token, extra);
+      return [res.status, (await res.json<{ error?: string }>()).error] as const;
+    };
+    expect(await patch({ pickupAreaId: gone })).toEqual([400, "invalid_area"]);
+    expect(await patch({ destinationAreaId: 999_999 })).toEqual([400, "invalid_area"]);
+    // Nothing was written.
+    expect((await rideRow(ride.id))?.pickup_area_id).toBe(A.bashundhara);
+  });
+
+  it("refuses a sub-area whose parent is hidden", async () => {
+    const who = await person();
+    const parent = await addArea("zone", "Zone");
+    const sub = await addArea("zone-block-a", "Block A", parent);
+    expect(
+      (await call("POST", "/api/rides", who.token, oneOff({ pickupAreaId: sub }))).status,
+    ).toBe(201);
+    await hide(parent);
+    const res = await call("POST", "/api/rides", who.token, oneOff({ pickupAreaId: sub }));
+    expect(res.status).toBe(400);
+  });
+
+  it("keeps a ride's area after the area is hidden, and still accepts an edit that leaves it alone", async () => {
+    const who = await person();
+    const viewer = await person();
+    const place = await addArea("old-place", "Old place");
+    const ride = await post(who, oneOff({ pickupAreaId: place }));
+    await hide(place);
+
+    const detail = await call("GET", `/api/rides/${ride.id}`, viewer.token);
+    expect((await detail.json<RideSummary>()).pickupArea).toEqual({ id: place, name: "Old place" });
+    expect(await feedIds(viewer)).toEqual([ride.id]);
+
+    const edited = await call("PATCH", `/api/rides/${ride.id}`, who.token, {
+      pickupAreaId: place,
+      pricePerSeatTaka: 200,
+      destinationAreaId: A.banani,
+    });
+    expect(edited.status).toBe(200);
+    expect(await edited.json<RideSummary>()).toMatchObject({
+      pickupArea: { id: place },
+      destinationArea: { id: A.banani, name: "Banani" },
+      pricePerSeatTaka: 200,
+    });
+  });
+
+  it("makes the landmarks optional, blank means none, and a patch can set and clear them", async () => {
+    const who = await person();
+    const { pickupLandmark, destinationLandmark, ...bare } = oneOff();
+    expect(pickupLandmark && destinationLandmark).toBeTruthy();
+    const ride = await post(who, bare);
+    expect(ride).toMatchObject({ pickupLandmark: null, destinationLandmark: null });
+
+    const blank = await post(who, oneOff({ pickupLandmark: "   ", destinationLandmark: "" }));
+    expect(blank).toMatchObject({ pickupLandmark: null, destinationLandmark: null });
+
+    const set = await call("PATCH", `/api/rides/${ride.id}`, who.token, {
+      pickupLandmark: "North gate",
+    });
+    expect(await set.json<RideSummary>()).toMatchObject({
+      pickupLandmark: "North gate",
+      status: "published",
+    });
+    const cleared = await call("PATCH", `/api/rides/${ride.id}`, who.token, {
+      pickupLandmark: null,
+    });
+    expect((await cleared.json<RideSummary>()).pickupLandmark).toBeNull();
+  });
+
+  it("screens the landmarks on create and on edit", async () => {
+    const who = await person();
+    const bad = "call 01712345678 or visit https://bit.ly/buy";
+    const created = await call(
+      "POST",
+      "/api/rides",
+      who.token,
+      oneOff({ destinationLandmark: bad }),
+    );
+    expect(created.status).toBe(201);
+    expect((await created.json<RideSummary>()).status).toBe("rejected");
+
+    const ride = await post(who, oneOff());
+    expect(ride.status).toBe("published");
+    const edited = await call("PATCH", `/api/rides/${ride.id}`, who.token, { pickupLandmark: bad });
+    expect((await edited.json<RideSummary>()).status).toBe("rejected");
+  });
+
+  it("filters by pickup and destination area, a broad area also matching its sub-areas", async () => {
+    const who = await person();
+    const sub = await addArea("mirpur-10", "Mirpur 10", A.mirpur);
+    const otherSub = await addArea("banani-11", "Banani 11", A.banani);
+    const toMirpur = await insertRide({ authorId: who.id, destinationAreaId: A.mirpur });
+    const toSub = await insertRide({ authorId: who.id, destinationAreaId: sub });
+    const toBanani = await insertRide({ authorId: who.id, destinationAreaId: A.banani });
+    const toOtherSub = await insertRide({ authorId: who.id, destinationAreaId: otherSub });
+    const fromUttara = await insertRide({
+      authorId: who.id,
+      pickupAreaId: A.uttara,
+      destinationAreaId: sub,
+    });
+
+    // A broad area takes its sub-areas; a sub-area only itself.
+    expect(await feedIds(who, `?to=${A.mirpur}`)).toEqual([toMirpur, toSub, fromUttara]);
+    expect(await feedIds(who, `?to=${sub}`)).toEqual([toSub, fromUttara]);
+    expect(await feedIds(who, `?to=${A.banani}`)).toEqual([toBanani, toOtherSub]);
+    // From and to combine, and with the other filters.
+    expect(await feedIds(who, `?from=${A.uttara}&to=${A.mirpur}`)).toEqual([fromUttara]);
+    expect(await feedIds(who, `?from=${A.bashundhara}&to=${A.mirpur}`)).toEqual([toMirpur, toSub]);
+    expect(await feedIds(who, `?from=${A.bashundhara}&to=${A.mirpur}&vehicle=bike`)).toEqual([]);
+    expect(await feedIds(who, "?from=999999")).toEqual([]);
+    expect((await call("GET", "/api/rides?from=abc", who.token)).status).toBe(400);
+    expect(await feedIds(who)).toHaveLength(5);
+  });
+
+  it("filters by an area a ride kept after it was hidden", async () => {
+    const who = await person();
+    const place = await addArea("old-place", "Old place");
+    const ride = await insertRide({ authorId: who.id, pickupAreaId: place });
+    await hide(place);
+    expect(await feedIds(who, `?from=${place}`)).toEqual([ride]);
+  });
+
+  it("names the areas in the report queue label, with the landmarks when there are some", async () => {
+    const author = await person();
+    const reporter = await person();
+    const mod = await person({ role: "mod" });
+    const ride = await post(author, oneOff({ pickupLandmark: undefined }));
+    await call("POST", "/api/reports", reporter.token, {
+      targetType: "ride",
+      targetId: ride.id,
+      reason: "This looks like a scam",
+    });
+    const queue = await (
+      await call("GET", "/api/mod/queue", mod.token)
+    ).json<{
+      items: { targetLabel: string }[];
+    }>();
+    expect(queue.items[0]?.targetLabel).toBe("Bashundhara R/A → Mirpur (Mirpur 10)");
   });
 });

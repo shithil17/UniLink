@@ -85,6 +85,7 @@ export type ModSection = {
     | "/mod/users"
     | "/mod/faculty"
     | "/mod/courses"
+    | "/mod/areas"
     | "/mod/id-conflict"
     | "/mod/audit"
     | "/mod/import";
@@ -100,6 +101,7 @@ const modSections: readonly ModSection[] = [
   { to: "/mod/users", label: "Users", hint: "Search, ban and reset passwords" },
   { to: "/mod/faculty", label: "Faculty", hint: "The directory of faculty members" },
   { to: "/mod/courses", label: "Courses", hint: "Curriculum courses and electives" },
+  { to: "/mod/areas", label: "Areas", hint: "Places rides are posted from and to" },
   { to: "/mod/id-conflict", label: "ID check", hint: "Look into a student ID conflict" },
   { to: "/mod/audit", label: "Audit log", hint: "Every action, with reverse", adminOnly: true },
   { to: "/mod/import", label: "Import", hint: "Load a curriculum file" },

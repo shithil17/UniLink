@@ -51,7 +51,14 @@ function Rides() {
   const [cleared, setCleared] = useState(0);
   const clear = () => {
     setCleared((n) => n + 1);
-    setFilters({ q: undefined, vehicle: undefined, date: undefined, day: undefined });
+    setFilters({
+      q: undefined,
+      from: undefined,
+      to: undefined,
+      vehicle: undefined,
+      date: undefined,
+      day: undefined,
+    });
   };
 
   return (
@@ -119,7 +126,9 @@ function Feed({
             title={filtered ? "No rides match." : "No rides right now."}
             description={
               filtered
-                ? "Try another day or clear the filters."
+                ? filters.from || filters.to
+                  ? "Try a broader area, which also covers its sub-areas, another day, or clear the filters."
+                  : "Try another day or clear the filters."
                 : "Post one and other students can find it."
             }
             action={

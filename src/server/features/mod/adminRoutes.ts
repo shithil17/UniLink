@@ -12,6 +12,7 @@ import {
 import { getDb } from "../../db/client";
 import { requireRole } from "../../middleware/auth";
 import type { AppEnv } from "../../middleware/types";
+import { areasRepo } from "../../repos/areas";
 import { auditLogRepo } from "../../repos/auditLog";
 import { curriculaRepo } from "../../repos/curricula";
 import { facultyRepo } from "../../repos/faculty";
@@ -86,6 +87,11 @@ export const adminRoutes = new Hono<AppEnv>()
         r.targetType === "course" && /^\d+$/.test(r.targetId) ? [Number(r.targetId)] : [],
       ),
     );
+    const areaNames = await areasRepo(db).namesByIds(
+      page.items.flatMap((r) =>
+        r.targetType === "area" && /^\d+$/.test(r.targetId) ? [Number(r.targetId)] : [],
+      ),
+    );
     const resourceIds = (type: string) =>
       page.items.flatMap((r) =>
         r.targetType === type && /^\d+$/.test(r.targetId) ? [Number(r.targetId)] : [],
@@ -117,11 +123,13 @@ export const adminRoutes = new Hono<AppEnv>()
                 ? (facultyNames.get(Number(r.targetId))?.name ?? null)
                 : r.targetType === "course"
                   ? (courseLabels.get(Number(r.targetId))?.code ?? null)
-                  : r.targetType === "resource_request"
-                    ? (requestLabels.get(Number(r.targetId)) ?? null)
-                    : r.targetType === "resource_submission"
-                      ? (linkLabels.get(Number(r.targetId)) ?? null)
-                      : null,
+                  : r.targetType === "area"
+                    ? (areaNames.get(Number(r.targetId)) ?? null)
+                    : r.targetType === "resource_request"
+                      ? (requestLabels.get(Number(r.targetId)) ?? null)
+                      : r.targetType === "resource_submission"
+                        ? (linkLabels.get(Number(r.targetId)) ?? null)
+                        : null,
           reason: r.reason,
           createdAt: r.createdAt,
           reverses: r.reversesId,

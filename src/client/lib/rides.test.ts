@@ -8,6 +8,7 @@ import {
   departureToInstant,
   emptyRideFields,
   fieldsFromRide,
+  filtersOf,
   instantToDeparture,
   parseRideSearch,
   priceLine,
@@ -27,8 +28,10 @@ const FRI_0730 = Date.UTC(2026, 10, 20, 1, 30);
 const ride = (over: Partial<RideSummary> = {}): RideSummary => ({
   id: 1,
   kind: "one_off",
-  pickup: "NSU gate",
-  destination: "Mirpur 10",
+  pickupArea: { id: 1, name: "Bashundhara R/A" },
+  destinationArea: { id: 60, name: "Mirpur" },
+  pickupLandmark: "NSU gate",
+  destinationLandmark: "Mirpur 10",
   vehicle: "car",
   totalSeats: 4,
   seatsRemaining: 3,
@@ -60,8 +63,10 @@ const phone = "+8801712345678";
 
 const filled = (over: Partial<RideFormFields> = {}): RideFormFields => ({
   ...emptyRideFields("one_off"),
-  pickup: "NSU gate",
-  destination: "Mirpur 10",
+  pickupAreaId: "1",
+  destinationAreaId: "60",
+  pickupLandmark: "NSU gate",
+  destinationLandmark: "Mirpur 10",
   totalSeats: "3",
   pricePerSeatTaka: "100",
   departure: instantToDeparture(Date.now() + 3 * 86_400_000),
@@ -121,25 +126,59 @@ describe("search params", () => {
       parseRideSearch({
         tab: "mine",
         q: " gate ",
+        from: 1,
+        to: "60",
         vehicle: "bike",
         date: "2026-11-20",
         day: "mon",
       }),
-    ).toEqual({ tab: "mine", q: "gate", vehicle: "bike", date: "2026-11-20", day: "mon" });
+    ).toEqual({
+      tab: "mine",
+      q: "gate",
+      from: 1,
+      to: 60,
+      vehicle: "bike",
+      date: "2026-11-20",
+      day: "mon",
+    });
     expect(
-      parseRideSearch({ tab: "x", vehicle: "boat", date: "2026-02-31", day: "monday" }),
+      parseRideSearch({
+        tab: "x",
+        from: "mirpur",
+        to: 0,
+        vehicle: "boat",
+        date: "2026-02-31",
+        day: "monday",
+      }),
     ).toEqual({
       tab: undefined,
       q: undefined,
+      from: undefined,
+      to: undefined,
       vehicle: undefined,
       date: undefined,
       day: undefined,
     });
   });
 
+  it("round-trips the area filters through the search and the filters", () => {
+    const search = parseRideSearch({ from: 1, to: 60, vehicle: "car" });
+    expect(filtersOf(search)).toEqual({
+      q: undefined,
+      from: 1,
+      to: 60,
+      vehicle: "car",
+      date: undefined,
+      day: undefined,
+    });
+    // What the router writes back to the URL reads the same.
+    expect(parseRideSearch({ ...search })).toEqual(search);
+  });
+
   it("counts the filters that are on", () => {
     expect(activeFilterCount({})).toBe(0);
     expect(activeFilterCount({ q: "gate", vehicle: "car" })).toBe(2);
+    expect(activeFilterCount({ from: 1, to: 60 })).toBe(2);
   });
 });
 
@@ -167,12 +206,12 @@ describe("the form's values and the shared schema", () => {
         .errors as Record<string, { message?: string } | undefined>;
 
     const oneOff = await run(
-      filled({ departure: "", totalSeats: "", pricePerSeatTaka: "", pickup: " " }),
+      filled({ departure: "", totalSeats: "", pricePerSeatTaka: "", pickupAreaId: "" }),
     );
     expect(oneOff.departure?.message).toBe("Pick the departure date and time");
     expect(oneOff.totalSeats?.message).toBe("Enter how many seats you can offer");
     expect(oneOff.pricePerSeatTaka?.message).toBe("Enter the price, or 0 if it's free");
-    expect(oneOff.pickup?.message).toBe("Enter a pickup place");
+    expect(oneOff.pickupAreaId?.message).toBe("Pick a pickup area");
 
     const weekly = await run(filled({ kind: "recurring", days: [], departureTime: "" }));
     expect(weekly.days?.message).toBe("Pick at least one day");
@@ -232,8 +271,8 @@ describe("ridePatchFromFields", () => {
 
   it("does not resend a departure that is only the unchanged minute-truncated value", () => {
     const original = fieldsFromRide(ride({ departsAt: FRI_0730 + 20_000 }), contacts);
-    expect(ridePatchFromFields({ ...original, pickup: "Bashundhara" }, original)).toEqual({
-      pickup: "Bashundhara",
+    expect(ridePatchFromFields({ ...original, pickupLandmark: "North gate" }, original)).toEqual({
+      pickupLandmark: "North gate",
     });
   });
 });

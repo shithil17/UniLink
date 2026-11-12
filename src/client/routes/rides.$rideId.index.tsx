@@ -37,7 +37,7 @@ function RideScreen() {
   return (
     <div className="max-w-2xl space-y-5">
       <h1 className="text-[28px] leading-[1.15] font-bold tracking-[-0.01em] text-balance break-words text-ink md:text-[32px]">
-        {ride ? `${ride.pickup} to ${ride.destination}` : "Ride"}
+        {ride ? `${ride.pickupArea.name} to ${ride.destinationArea.name}` : "Ride"}
       </h1>
       {gone ? (
         <div className={panel}>

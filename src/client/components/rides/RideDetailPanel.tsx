@@ -7,6 +7,7 @@ import {
   seatsLine,
   VEHICLE_LABELS,
 } from "@/lib/rides";
+import { placeLine } from "@/lib/areas";
 import type { RideSummary } from "../../../shared/schemas/rides";
 
 /** One labelled row of the ride's facts, hairline-separated from the next. */
@@ -33,8 +34,8 @@ export function RideDetailPanel({ ride }: { ride: RideSummary }) {
       className="overflow-hidden rounded-panel bg-surface md:rounded-[24px]"
     >
       <dl>
-        <Fact label="From">{ride.pickup}</Fact>
-        <Fact label="To">{ride.destination}</Fact>
+        <Fact label="From">{placeLine(ride.pickupArea.name, ride.pickupLandmark)}</Fact>
+        <Fact label="To">{placeLine(ride.destinationArea.name, ride.destinationLandmark)}</Fact>
         <Fact label={ride.kind === "one_off" ? "Departs" : "Leaves"}>
           {scheduleLine(ride)}
           {runs ? <span className="block text-[13px] text-soft">{runs}</span> : null}

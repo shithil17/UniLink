@@ -159,6 +159,9 @@ export type RideSearch = {
   /** "mine" is the poster's own rides; the feed is the default. */
   tab?: "mine";
   q?: string;
+  /** Pickup and destination area ids. A top-level area also matches its sub-areas. */
+  from?: number;
+  to?: number;
   vehicle?: Vehicle;
   date?: string;
   day?: Weekday;
@@ -175,17 +178,21 @@ export function parseRideSearch(raw: Record<string, unknown>): RideSearch {
   return {
     tab: raw.tab === "mine" ? "mine" : undefined,
     q: q ? q : undefined,
+    from: keep(rideFeedQuery.shape.from.safeParse(raw.from)),
+    to: keep(rideFeedQuery.shape.to.safeParse(raw.to)),
     vehicle: keep(rideFeedQuery.shape.vehicle.safeParse(raw.vehicle)),
     date: keep(rideFeedQuery.shape.date.safeParse(raw.date)),
     day: keep(rideFeedQuery.shape.day.safeParse(raw.day)),
   };
 }
 
-export type RideFilters = Pick<RideFeedQuery, "q" | "vehicle" | "date" | "day">;
+export type RideFilters = Pick<RideFeedQuery, "q" | "from" | "to" | "vehicle" | "date" | "day">;
 
 /** The filters in a search, nothing else. */
 export const filtersOf = (s: RideSearch): RideFilters => ({
   q: s.q,
+  from: s.from,
+  to: s.to,
   vehicle: s.vehicle,
   date: s.date,
   day: s.day,
@@ -193,15 +200,18 @@ export const filtersOf = (s: RideSearch): RideFilters => ({
 
 /** How many filters are on, for the Filters button. */
 export const activeFilterCount = (f: RideFilters): number =>
-  [f.q, f.vehicle, f.date, f.day].filter(Boolean).length;
+  [f.q, f.from, f.to, f.vehicle, f.date, f.day].filter(Boolean).length;
 
 // ---- The form ------------------------------------------------------------------------------------
 
 /** What the form holds: strings and the weekday list, as the inputs give them. Turned into a `RideInput` by `rideInputFromFields`. */
 export type RideFormFields = {
   kind: Kind;
-  pickup: string;
-  destination: string;
+  /** An area id as the picker gives it: a number as text, empty until picked. */
+  pickupAreaId: string;
+  destinationAreaId: string;
+  pickupLandmark: string;
+  destinationLandmark: string;
   vehicle: Vehicle;
   totalSeats: string;
   pricePerSeatTaka: string;
@@ -217,8 +227,10 @@ export type RideFormFields = {
 
 export const emptyRideFields = (kind: Kind = "one_off"): RideFormFields => ({
   kind,
-  pickup: "",
-  destination: "",
+  pickupAreaId: "",
+  destinationAreaId: "",
+  pickupLandmark: "",
+  destinationLandmark: "",
   vehicle: "car",
   totalSeats: "",
   pricePerSeatTaka: "",
@@ -254,8 +266,10 @@ export function fieldsFromRide(
 ): RideFormFields {
   return {
     kind: ride.kind,
-    pickup: ride.pickup,
-    destination: ride.destination,
+    pickupAreaId: String(ride.pickupArea.id),
+    destinationAreaId: String(ride.destinationArea.id),
+    pickupLandmark: ride.pickupLandmark ?? "",
+    destinationLandmark: ride.destinationLandmark ?? "",
     vehicle: ride.vehicle,
     totalSeats: String(ride.totalSeats),
     pricePerSeatTaka: String(ride.pricePerSeatTaka),
@@ -280,8 +294,10 @@ const number = (value: string): number | undefined => {
 /** The form's values in the shape `rideInput` checks. Blank numbers and dates stay absent so the schema, not this, says what is wrong. */
 export function rideInputFromFields(f: RideFormFields): unknown {
   const base = {
-    pickup: f.pickup,
-    destination: f.destination,
+    pickupAreaId: number(f.pickupAreaId),
+    destinationAreaId: number(f.destinationAreaId),
+    pickupLandmark: f.pickupLandmark,
+    destinationLandmark: f.destinationLandmark,
     vehicle: f.vehicle,
     totalSeats: number(f.totalSeats),
     pricePerSeatTaka: number(f.pricePerSeatTaka),
@@ -309,6 +325,8 @@ const FIELD_OF_PATH: Record<string, string> = { departsAt: "departure" };
 
 /** The schema's catch-all message for a blank number or date, said the way the field would. */
 const BLANK_MESSAGES: Record<string, string> = {
+  pickupAreaId: "Pick a pickup area",
+  destinationAreaId: "Pick a destination area",
   totalSeats: "Enter how many seats you can offer",
   pricePerSeatTaka: "Enter the price, or 0 if it's free",
   departure: "Pick the departure date and time",
@@ -336,8 +354,10 @@ export const rideFormResolver: Resolver<RideFormFields> = (values) => {
 
 const trimmed = (f: RideFormFields) => ({
   ...f,
-  pickup: f.pickup.trim(),
-  destination: f.destination.trim(),
+  pickupAreaId: f.pickupAreaId.trim(),
+  destinationAreaId: f.destinationAreaId.trim(),
+  pickupLandmark: f.pickupLandmark.trim(),
+  destinationLandmark: f.destinationLandmark.trim(),
   totalSeats: f.totalSeats.trim(),
   pricePerSeatTaka: f.pricePerSeatTaka.trim(),
   notes: f.notes.trim(),
@@ -363,8 +383,14 @@ export function ridePatchFromFields(
   const now = trimmed(fields);
   const was = trimmed(original);
   const patch: Record<string, unknown> = {};
-  if (now.pickup !== was.pickup) patch.pickup = next.pickup;
-  if (now.destination !== was.destination) patch.destination = next.destination;
+  if (now.pickupAreaId !== was.pickupAreaId) patch.pickupAreaId = next.pickupAreaId;
+  if (now.destinationAreaId !== was.destinationAreaId) {
+    patch.destinationAreaId = next.destinationAreaId;
+  }
+  if (now.pickupLandmark !== was.pickupLandmark) patch.pickupLandmark = next.pickupLandmark ?? null;
+  if (now.destinationLandmark !== was.destinationLandmark) {
+    patch.destinationLandmark = next.destinationLandmark ?? null;
+  }
   if (now.vehicle !== was.vehicle) patch.vehicle = next.vehicle;
   if (now.totalSeats !== was.totalSeats) patch.totalSeats = next.totalSeats;
   if (now.pricePerSeatTaka !== was.pricePerSeatTaka) {
@@ -390,7 +416,12 @@ export const rideFeedInfinite = (filters: RideFilters) =>
     queryKey: ["rides", "feed", filtersOf(filters)],
     queryFn: ({ pageParam }) =>
       apiGet(
-        `/api/rides${queryString({ ...filtersOf(filters), cursor: pageParam || undefined })}`,
+        `/api/rides${queryString({
+          ...filtersOf(filters),
+          from: filters.from?.toString(),
+          to: filters.to?.toString(),
+          cursor: pageParam || undefined,
+        })}`,
         rideFeedPage,
       ),
     initialPageParam: "",

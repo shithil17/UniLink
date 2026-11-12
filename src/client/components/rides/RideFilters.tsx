@@ -1,12 +1,16 @@
-import { SearchIcon, SlidersHorizontalIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { SearchIcon, SlidersHorizontalIcon, XIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { AreaPicker } from "@/components/areas/AreaPicker";
 import { Button } from "@/components/ui/button";
-import { Chip } from "@/components/ui/chip";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Chip, chipClass } from "@/components/ui/chip";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { areaNameOf, areasQuery } from "@/lib/areas";
 import { SEARCH_DEBOUNCE_MS } from "@/lib/useDebouncedValue";
 import {
   activeFilterCount,
+  dayLabel,
   VEHICLE_LABELS,
   VEHICLES,
   WEEKDAY_LONG,
@@ -17,8 +21,9 @@ import { WEEKDAYS } from "../../../shared/rides";
 import { RIDE_SEARCH_MAX_LENGTH } from "../../../shared/schemas/rides";
 
 /**
- * The feed's filters, kept in the URL by the route: a text search over pickup and destination, always
- * in view, and a Filters panel for vehicle, weekday and date. A weekday and a date are alternatives
+ * The feed's filters, kept in the URL by the route: a text search over landmarks and area names, always
+ * in view, and a Filters panel for the From and To areas, vehicle, weekday and date. While the panel is
+ * closed, each active filter shows as a chip that removes it. A weekday and a date are alternatives
  * (a date already has a weekday), so picking one clears the other. The text box keeps what is typed
  * and sends it after a short pause; the route remounts the bar (new `key`) when filters are cleared.
  */
@@ -36,6 +41,28 @@ export function RideFiltersBar({
   const [open, setOpen] = useState(() => count - (filters.q ? 1 : 0) > 0);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
+
+  // Names for the area chips; the pickers share this query, so it is one request.
+  const areas = useQuery({ ...areasQuery, enabled: Boolean(filters.from || filters.to) });
+  const areaLabel = (prefix: string, id: number) =>
+    `${prefix} ${areaNameOf(areas.data, id) ?? "an area"}`;
+  const chips: { key: string; label: string; clear: Partial<RideFilters> }[] = [
+    ...(filters.from
+      ? [{ key: "from", label: areaLabel("From", filters.from), clear: { from: undefined } }]
+      : []),
+    ...(filters.to
+      ? [{ key: "to", label: areaLabel("To", filters.to), clear: { to: undefined } }]
+      : []),
+    ...(filters.vehicle
+      ? [{ key: "vehicle", label: VEHICLE_LABELS[filters.vehicle], clear: { vehicle: undefined } }]
+      : []),
+    ...(filters.day
+      ? [{ key: "day", label: WEEKDAY_LONG[filters.day], clear: { day: undefined } }]
+      : []),
+    ...(filters.date
+      ? [{ key: "date", label: dayLabel(filters.date), clear: { date: undefined } }]
+      : []),
+  ];
 
   const typed = (value: string) => {
     clearTimeout(timer.current);
@@ -56,8 +83,8 @@ export function RideFiltersBar({
           />
           <Input
             type="search"
-            aria-label="Search pickup or destination"
-            placeholder="Search pickup or destination"
+            aria-label="Search landmark or area"
+            placeholder="Search landmark or area"
             maxLength={RIDE_SEARCH_MAX_LENGTH}
             autoComplete="off"
             className="pl-10"
@@ -78,8 +105,47 @@ export function RideFiltersBar({
         </Button>
       </div>
 
+      {!open && chips.length > 0 ? (
+        <ul aria-label="Active filters" className="flex flex-wrap gap-2">
+          {chips.map((c) => (
+            <li key={c.key}>
+              <button
+                type="button"
+                aria-label={`Remove filter: ${c.label}`}
+                className={`${chipClass} bg-brand-soft pr-3 text-brand-ink`}
+                onClick={() => onChange(c.clear)}
+              >
+                {c.label}
+                <XIcon aria-hidden className="size-4 shrink-0" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
       {open ? (
         <div id="ride-filter-panel" className="grid gap-4 rounded-panel bg-surface p-4">
+          <Field>
+            <FieldLabel htmlFor="ride-filter-from">From</FieldLabel>
+            <AreaPicker
+              id="ride-filter-from"
+              title="Rides from"
+              anyLabel="Any area"
+              value={filters.from ?? null}
+              onChange={(next) => onChange({ from: next ?? undefined })}
+            />
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="ride-filter-to">To</FieldLabel>
+            <AreaPicker
+              id="ride-filter-to"
+              title="Rides to"
+              anyLabel="Any area"
+              value={filters.to ?? null}
+              onChange={(next) => onChange({ to: next ?? undefined })}
+            />
+            <FieldDescription>Pick a whole area to include its sub-areas too.</FieldDescription>
+          </Field>
           <Field>
             <FieldLabel id="ride-filter-vehicle">Vehicle</FieldLabel>
             <div

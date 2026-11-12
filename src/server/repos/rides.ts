@@ -1,13 +1,47 @@
-import { and, count, desc, eq, gt, inArray, isNull, lt, ne, or, sql, type SQL } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  gt,
+  inArray,
+  isNull,
+  lt,
+  ne,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm";
+import { alias, type SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { weekdayBit } from "../../shared/rides";
 import { DHAKA_OFFSET_MS, parseDhakaDate, startOfDhakaDay } from "../../shared/time";
 import type { Db } from "../db/client";
-import { rides } from "../db/schema";
+import { areas, rides } from "../db/schema";
 import { limits } from "../limits";
 import { notExpired } from "./postLifecycle";
 import { visibleTo, type Viewer } from "./visibility";
 
-export type RideRow = typeof rides.$inferSelect;
+// Every read of a ride joins its two areas for their names, so the views never need a second query.
+const pickupArea = alias(areas, "pickup_area");
+const destinationArea = alias(areas, "destination_area");
+
+/** A ride with the names of its pickup and destination areas (shown as they are now, hidden or not). */
+export type RideRow = typeof rides.$inferSelect & {
+  pickupAreaName: string;
+  destinationAreaName: string;
+};
+
+const selectRides = (db: Db) =>
+  db
+    .select({
+      ...getTableColumns(rides),
+      pickupAreaName: pickupArea.name,
+      destinationAreaName: destinationArea.name,
+    })
+    .from(rides)
+    .innerJoin(pickupArea, eq(pickupArea.id, rides.pickupAreaId))
+    .innerJoin(destinationArea, eq(destinationArea.id, rides.destinationAreaId));
 
 export type NewRide = Omit<typeof rides.$inferInsert, "id" | "deletedAt" | "deletedBy">;
 
@@ -34,7 +68,15 @@ export type RidePatch = Partial<
 export type RideCursor = { expiresAt: number; id: number };
 
 export type RideFeedFilter = {
+  /**
+   * Text fallback: a substring of either landmark or either area name. `like '%x%'` cannot use an
+   * index, so it only ever runs over the live rows the other conditions leave, never the whole table.
+   */
   q?: string;
+  /** Pickup area id. A top-level area also matches its sub-areas. */
+  from?: number;
+  /** Destination area id, matched the same way. */
+  to?: number;
   vehicle?: RideRow["vehicle"];
   /** A Dhaka day, "YYYY-MM-DD". */
   date?: string;
@@ -56,12 +98,21 @@ const departureWeekday = sql`(((${rides.departsAt} + ${sql.raw(String(DHAKA_OFFS
 const recursOn = (weekday: number) =>
   sql`(${rides.kind} = 'recurring' and (${rides.days} & ${sql.raw(String(weekdayBit(weekday)))}) != 0)`;
 
+/**
+ * Rides whose `column` is the area or one of its sub-areas. One subquery over `areas`: the id is the
+ * primary key and the children come from `areas_parent_idx`, and an area has one level of children.
+ */
+const inArea = (column: SQLiteColumn, areaId: number) =>
+  sql`${column} in (select ${areas.id} from ${areas} where ${areas.id} = ${areaId} or ${areas.parentId} = ${areaId})`;
+
 function filterConditions(filter: RideFeedFilter): (SQL | undefined)[] {
   const conditions: (SQL | undefined)[] = [];
+  if (filter.from !== undefined) conditions.push(inArea(rides.pickupAreaId, filter.from));
+  if (filter.to !== undefined) conditions.push(inArea(rides.destinationAreaId, filter.to));
   if (filter.q) {
     const pattern = `%${escapeLike(filter.q)}%`;
     conditions.push(
-      sql`(${rides.pickup} like ${pattern} escape '\\' or ${rides.destination} like ${pattern} escape '\\')`,
+      sql`(${rides.pickupLandmark} like ${pattern} escape '\\' or ${rides.destinationLandmark} like ${pattern} escape '\\' or ${pickupArea.name} like ${pattern} escape '\\' or ${destinationArea.name} like ${pattern} escape '\\')`,
     );
   }
   if (filter.vehicle) conditions.push(eq(rides.vehicle, filter.vehicle));
@@ -100,14 +151,12 @@ export function ridesRepo(db: Db) {
       return created.id;
     },
     async find(id: number): Promise<RideRow | null> {
-      return (await db.select().from(rides).where(eq(rides.id, id)).get()) ?? null;
+      return (await selectRides(db).where(eq(rides.id, id)).get()) ?? null;
     },
     /** A ride the viewer may see (the shared visibility filter), not removed. Null otherwise. Expiry is the caller's call. */
     async findVisible(id: number, viewer: Viewer): Promise<RideRow | null> {
       return (
-        (await db
-          .select()
-          .from(rides)
+        (await selectRides(db)
           .where(and(eq(rides.id, id), isNull(rides.deletedAt), visibleTo(rides, viewer)))
           .get()) ?? null
       );
@@ -117,9 +166,7 @@ export function ridesRepo(db: Db) {
      * a lapsed recurring ride can be renewed). `beforeId` is the last id of the previous page.
      */
     async listMine(authorId: number, limit: number, beforeId: number | null): Promise<RideRow[]> {
-      return db
-        .select()
-        .from(rides)
+      return selectRides(db)
         .where(
           and(
             eq(rides.authorId, authorId),
@@ -151,8 +198,8 @@ export function ridesRepo(db: Db) {
      * One page of the public feed, soonest to lapse first (a one-off's departure; a recurring ride sorts
      * by its end date), keyset-paged by `(expires_at, id)` so the walk uses `rides_expires_idx` and
      * never reads a lapsed row. Published, not removed, not lapsed, and visible to the viewer; full rides
-     * stay in. Walks `rides_expires_idx` (or `rides_vehicle_expires_idx` for a vehicle filter); the
-     * text, date and day filters apply to the live rows only. Fetch `limit + 1` rows to know if there is a next page.
+     * stay in. Walks `rides_expires_idx` (or `rides_vehicle_expires_idx` for a vehicle filter, or an area
+     * index for an area filter); the text, date and day filters apply to the live rows only. Fetch `limit + 1` rows to know if there is a next page.
      */
     async feed(
       viewer: Viewer,
@@ -161,9 +208,7 @@ export function ridesRepo(db: Db) {
       limit: number,
       cursor: RideCursor | null,
     ): Promise<RideRow[]> {
-      return db
-        .select()
-        .from(rides)
+      return selectRides(db)
         .where(
           and(
             // The feed is the public list: a viewer's own held ride is in "my rides", not here.
@@ -254,17 +299,25 @@ export function ridesRepo(db: Db) {
         .returning({ id: rides.id });
       return rows.length > 0;
     },
-    /** Short labels for the report queue ("Pickup → Destination"), by ride id. Never a contact. Missing ids have no label. */
+    /**
+     * Short labels for the report queue, by ride id: "Pickup area → Destination area", each with its
+     * landmark in parentheses when it has one. Screened text, never a contact. Missing ids have no label.
+     */
     async labelsByIds(ids: number[]): Promise<Map<number, string>> {
       const labels = new Map<number, string>();
       const unique = [...new Set(ids)];
       for (let i = 0; i < unique.length; i += limits.d1MaxBoundParams) {
-        const rows = await db
-          .select({ id: rides.id, pickup: rides.pickup, destination: rides.destination })
-          .from(rides)
+        const rows = await selectRides(db)
           .where(inArray(rides.id, unique.slice(i, i + limits.d1MaxBoundParams)))
           .all();
-        for (const r of rows) labels.set(r.id, `${r.pickup} → ${r.destination}`);
+        for (const r of rows) {
+          const end = (area: string, landmark: string | null) =>
+            landmark ? `${area} (${landmark})` : area;
+          labels.set(
+            r.id,
+            `${end(r.pickupAreaName, r.pickupLandmark)} → ${end(r.destinationAreaName, r.destinationLandmark)}`,
+          );
+        }
       }
       return labels;
     },

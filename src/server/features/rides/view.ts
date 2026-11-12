@@ -20,8 +20,10 @@ export function toRideView(r: RideRow, viewerId: number, now: number): RideView 
   return {
     id: r.id,
     kind: r.kind,
-    pickup: r.pickup,
-    destination: r.destination,
+    pickupArea: { id: r.pickupAreaId, name: r.pickupAreaName },
+    destinationArea: { id: r.destinationAreaId, name: r.destinationAreaName },
+    pickupLandmark: r.pickupLandmark,
+    destinationLandmark: r.destinationLandmark,
     vehicle: r.vehicle,
     totalSeats: r.totalSeats,
     seatsRemaining: r.seatsRemaining,

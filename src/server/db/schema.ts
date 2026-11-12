@@ -8,6 +8,7 @@ import {
   sqliteTable,
   text,
   uniqueIndex,
+  type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
 import type { PrereqRule } from "../../shared/prereq";
 import { RIDE_SEATS_MAX, vehicleType } from "../../shared/schemas/rides";
@@ -457,6 +458,38 @@ export const resourceSubmissions = sqliteTable(
   ],
 );
 
+// Places students pick from (rides now; lost and found may reuse them). A top-level area has no parent;
+// a sub-area has a top-level parent, one level only (the mod action checks it). Mods hide an area in place
+// of deleting it, so rows that point at it keep working. `sort_order` is a pin: lower sorts first
+// (Bashundhara 0, the rest 1, "Outside Dhaka" 2), then by name.
+export const areas = sqliteTable(
+  "areas",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    // Stable, kebab-case, set when the area is added and never changed by a rename.
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    parentId: integer("parent_id").references((): AnySQLiteColumn => areas.id),
+    sortOrder: integer("sort_order").notNull().default(1),
+    hidden: integer("hidden", { mode: "boolean" }).notNull().default(false),
+    hiddenReason: text("hidden_reason"),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (t) => [
+    uniqueIndex("areas_slug_idx").on(t.slug),
+    // A name is unique among siblings, ignoring case: one index for the top level, one under each parent
+    // (NULLs never collide in a unique index, so the top level needs its own).
+    uniqueIndex("areas_top_name_idx")
+      .on(sql`lower(${t.name})`)
+      .where(sql`${t.parentId} is null`),
+    uniqueIndex("areas_sub_name_idx")
+      .on(t.parentId, sql`lower(${t.name})`)
+      .where(sql`${t.parentId} is not null`),
+    index("areas_parent_idx").on(t.parentId),
+  ],
+);
+
 // A ride a student offers: one-off (a departure instant) or recurring (weekdays, a time of day and an
 // end date). Contacts are only ever returned by `GET /api/rides/:id/contact`. A lapsed ride is
 // hard-deleted by cron (src/server/cron.ts). Whether it is full is not stored: it is `seats_remaining
@@ -469,8 +502,15 @@ export const rides = sqliteTable(
     authorId: integer("author_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    pickup: text("pickup").notNull(),
-    destination: text("destination").notNull(),
+    // Where from and to, by area. The landmark is the fine detail ("north gate"), screened text.
+    pickupAreaId: integer("pickup_area_id")
+      .notNull()
+      .references(() => areas.id),
+    pickupLandmark: text("pickup_landmark"),
+    destinationAreaId: integer("destination_area_id")
+      .notNull()
+      .references(() => areas.id),
+    destinationLandmark: text("destination_landmark"),
     vehicle: text("vehicle", {
       enum: vehicleType.options as [Vehicle, ...Vehicle[]],
     }).notNull(),
@@ -522,5 +562,8 @@ export const rides = sqliteTable(
     // The feed filtered by vehicle, and by kind with a departure day.
     index("rides_vehicle_expires_idx").on(t.vehicle, t.expiresAt),
     index("rides_kind_departs_idx").on(t.kind, t.departsAt),
+    // The feed filtered by area.
+    index("rides_pickup_area_expires_idx").on(t.pickupAreaId, t.expiresAt),
+    index("rides_destination_area_expires_idx").on(t.destinationAreaId, t.expiresAt),
   ],
 );

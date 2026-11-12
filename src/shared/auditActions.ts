@@ -22,6 +22,10 @@ export const auditActions = {
   courseEdit: "course_edit",
   courseHide: "course_hide",
   courseUnhide: "course_unhide",
+  areaAdd: "area_add",
+  areaRename: "area_rename",
+  areaHide: "area_hide",
+  areaUnhide: "area_unhide",
   modApprovePost: "mod_approve_post",
   modRejectPost: "mod_reject_post",
   automodApprove: "automod_approve",
@@ -35,7 +39,7 @@ export type AuditAction = (typeof auditActions)[keyof typeof auditActions];
 /**
  * The actions an admin can reverse from the stored snapshot. A reversal is not one of them (do the
  * original action again instead), and neither are a password reset (the old hash is never stored),
- * a report resolution or an ID lookup (nothing to restore), adding a faculty member or a course (nothing to restore;
+ * a report resolution or an ID lookup (nothing to restore), adding a faculty member, a course or an area (nothing to restore;
  * hide the row instead). A mod's decision on a held post is not
  * either: the author has already been told, so the author edits and resubmits instead.
  */
@@ -52,6 +56,9 @@ export const reversibleActions: readonly string[] = [
   auditActions.courseEdit,
   auditActions.courseHide,
   auditActions.courseUnhide,
+  auditActions.areaRename,
+  auditActions.areaHide,
+  auditActions.areaUnhide,
 ];
 
 const LABELS: Record<AuditAction, string> = {
@@ -73,6 +80,10 @@ const LABELS: Record<AuditAction, string> = {
   course_edit: "Edited a course",
   course_hide: "Hid a course",
   course_unhide: "Showed a course again",
+  area_add: "Added an area",
+  area_rename: "Renamed an area",
+  area_hide: "Hid an area",
+  area_unhide: "Showed an area again",
   mod_approve_post: "Approved a held post",
   mod_reject_post: "Rejected a held post",
   automod_approve: "Published a post",

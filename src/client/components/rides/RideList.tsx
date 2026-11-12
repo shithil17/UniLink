@@ -13,6 +13,16 @@ import {
 } from "@/lib/rides";
 import type { RideSummary } from "../../../shared/schemas/rides";
 
+/** An area in the row's title, with the poster's landmark after it in lighter type. */
+function Place({ area, landmark }: { area: string; landmark: string | null }) {
+  return (
+    <span>
+      {area}
+      {landmark ? <span className="font-normal text-soft"> ({landmark})</span> : null}
+    </span>
+  );
+}
+
 /**
  * Rides as one flat panel of hairline-separated rows, each opening the detail. A ride here never
  * carries a contact; those come only after "Show contact" on the detail. On "My rides" a ride that is
@@ -40,14 +50,14 @@ export function RideList({
             >
               <span className="grid min-w-0 flex-1 gap-1">
                 <span className="flex flex-wrap items-center gap-x-1.5 text-[15px] leading-[1.3] font-semibold break-words text-ink">
-                  <span>{ride.pickup}</span>
+                  <Place area={ride.pickupArea.name} landmark={ride.pickupLandmark} />
                   <span className="sr-only">to</span>
                   <ArrowRightIcon
                     aria-hidden
                     strokeWidth={1.75}
                     className="size-4 shrink-0 text-faint"
                   />
-                  <span>{ride.destination}</span>
+                  <Place area={ride.destinationArea.name} landmark={ride.destinationLandmark} />
                 </span>
                 <span className="text-[13px] leading-[1.4] text-soft">
                   {scheduleLine(ride)}

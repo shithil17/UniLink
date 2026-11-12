@@ -1,5 +1,7 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
 import { useState } from "react";
+import { AreaPicker } from "@/components/areas/AreaPicker";
 import { ContactInput } from "@/components/posts/ContactInput";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
@@ -7,6 +9,8 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input";
 import { RadioChip, RadioGroup } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { ApiError } from "@/lib/api";
+import { areaNameOf, areasQuery } from "@/lib/areas";
 import { toastPostFailure } from "@/lib/resources";
 import {
   emptyRideFields,
@@ -29,7 +33,7 @@ import { toast } from "@/lib/toast";
 import { WEEKDAYS } from "../../../shared/rides";
 import {
   RIDE_NOTES_MAX_LENGTH,
-  RIDE_PLACE_MAX_LENGTH,
+  RIDE_LANDMARK_MAX_LENGTH,
   RIDE_PRICE_MAX_TAKA,
   RIDE_SEATS_MAX,
   type RideSummary,
@@ -72,6 +76,7 @@ export function RideForm({
   onSaved: (ride: RideSummary) => void;
   onCancel: () => void;
 }) {
+  const queryClient = useQueryClient();
   const create = useCreateRide();
   const update = useUpdateRide(ride?.id ?? 0);
   // The values the form opened with: the edit compares against them to send only what changed.
@@ -84,6 +89,29 @@ export function RideForm({
   const { errors } = form.formState;
   const kind = useWatch({ control: form.control, name: "kind" });
   const notes = useWatch({ control: form.control, name: "notes" }) ?? "";
+
+  // The server refuses an area that was hidden since the list was loaded without saying which one,
+  // so check the changed areas against a fresh list and mark the ones that are gone.
+  const failed = async (err: unknown) => {
+    if (err instanceof ApiError && err.code === "invalid_area") {
+      const options = await queryClient
+        .fetchQuery({ ...areasQuery, staleTime: 0 })
+        .catch(() => undefined);
+      const gone = (name: "pickupAreaId" | "destinationAreaId") => {
+        const value = form.getValues(name);
+        return (
+          value !== original[name] && (!options || areaNameOf(options, Number(value)) === undefined)
+        );
+      };
+      const names = (["pickupAreaId", "destinationAreaId"] as const).filter(gone);
+      for (const name of names.length > 0
+        ? names
+        : (["pickupAreaId", "destinationAreaId"] as const)) {
+        form.setError(name, { message: "That area isn't available. Pick another." });
+      }
+    }
+    toastPostFailure(err);
+  };
 
   const submit = form.handleSubmit((values) => {
     if (ride) {
@@ -98,7 +126,7 @@ export function RideForm({
           savedToast(saved, true);
           onSaved(saved);
         },
-        onError: toastPostFailure,
+        onError: failed,
       });
       return;
     }
@@ -107,7 +135,7 @@ export function RideForm({
         savedToast(saved, false);
         onSaved(saved);
       },
-      onError: toastPostFailure,
+      onError: failed,
     });
   });
 
@@ -136,29 +164,70 @@ export function RideForm({
             </Field>
           )}
 
-          <Field data-invalid={Boolean(errors.pickup)}>
-            <FieldLabel htmlFor="ride-pickup">Pickup</FieldLabel>
+          <Field data-invalid={Boolean(errors.pickupAreaId)}>
+            <FieldLabel htmlFor="ride-from">From</FieldLabel>
+            <Controller
+              control={form.control}
+              name="pickupAreaId"
+              render={({ field }) => (
+                <AreaPicker
+                  id="ride-from"
+                  title="Where does it start?"
+                  placeholder="Pick the pickup area"
+                  value={field.value ? Number(field.value) : null}
+                  current={ride?.pickupArea}
+                  invalid={Boolean(errors.pickupAreaId)}
+                  onChange={(next) => field.onChange(next === null ? "" : String(next))}
+                />
+              )}
+            />
+            <FieldError errors={[errors.pickupAreaId]} />
+          </Field>
+          <Field data-invalid={Boolean(errors.pickupLandmark)}>
+            <FieldLabel htmlFor="ride-pickup">Pickup landmark (optional)</FieldLabel>
             <Input
               id="ride-pickup"
               placeholder="NSU gate"
-              maxLength={RIDE_PLACE_MAX_LENGTH}
+              maxLength={RIDE_LANDMARK_MAX_LENGTH}
               autoComplete="off"
-              aria-invalid={Boolean(errors.pickup)}
-              {...form.register("pickup")}
+              aria-invalid={Boolean(errors.pickupLandmark)}
+              {...form.register("pickupLandmark")}
             />
-            <FieldError errors={[errors.pickup]} />
+            <FieldDescription>Gate, road or landmark where riders meet you.</FieldDescription>
+            <FieldError errors={[errors.pickupLandmark]} />
           </Field>
-          <Field data-invalid={Boolean(errors.destination)}>
-            <FieldLabel htmlFor="ride-destination">Destination</FieldLabel>
+
+          <Field data-invalid={Boolean(errors.destinationAreaId)}>
+            <FieldLabel htmlFor="ride-to">To</FieldLabel>
+            <Controller
+              control={form.control}
+              name="destinationAreaId"
+              render={({ field }) => (
+                <AreaPicker
+                  id="ride-to"
+                  title="Where does it go?"
+                  placeholder="Pick the destination area"
+                  value={field.value ? Number(field.value) : null}
+                  current={ride?.destinationArea}
+                  invalid={Boolean(errors.destinationAreaId)}
+                  onChange={(next) => field.onChange(next === null ? "" : String(next))}
+                />
+              )}
+            />
+            <FieldError errors={[errors.destinationAreaId]} />
+          </Field>
+          <Field data-invalid={Boolean(errors.destinationLandmark)}>
+            <FieldLabel htmlFor="ride-destination">Destination landmark (optional)</FieldLabel>
             <Input
               id="ride-destination"
               placeholder="Mirpur 10"
-              maxLength={RIDE_PLACE_MAX_LENGTH}
+              maxLength={RIDE_LANDMARK_MAX_LENGTH}
               autoComplete="off"
-              aria-invalid={Boolean(errors.destination)}
-              {...form.register("destination")}
+              aria-invalid={Boolean(errors.destinationLandmark)}
+              {...form.register("destinationLandmark")}
             />
-            <FieldError errors={[errors.destination]} />
+            <FieldDescription>Gate, road or landmark where it ends.</FieldDescription>
+            <FieldError errors={[errors.destinationLandmark]} />
           </Field>
 
           <Field>

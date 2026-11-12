@@ -45,6 +45,12 @@ describe("mainTabs", () => {
 });
 
 describe("modSectionsFor", () => {
+  it("gives mods and admins the Areas section", () => {
+    for (const role of ["mod", "admin"] as const) {
+      expect(modSectionsFor(role).map((s) => s.to)).toContain("/mod/areas");
+    }
+  });
+
   it("hides the audit log from mods but not admins", () => {
     expect(modSectionsFor("mod").map((s) => s.to)).not.toContain("/mod/audit");
     expect(modSectionsFor("admin").map((s) => s.to)).toContain("/mod/audit");
