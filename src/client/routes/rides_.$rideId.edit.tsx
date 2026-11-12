@@ -7,7 +7,7 @@ import { ApiError, errorMessage } from "@/lib/api";
 import { meQuery } from "@/lib/queries";
 import { ownContactsQuery, rideDetailQuery } from "@/lib/rides";
 
-export const Route = createFileRoute("/rides/$rideId/edit")({
+export const Route = createFileRoute("/rides_/$rideId/edit")({
   beforeLoad: async ({ context }) => {
     if (!(await context.queryClient.ensureQueryData(meQuery).catch(() => null))) {
       throw redirect({ to: "/login" });

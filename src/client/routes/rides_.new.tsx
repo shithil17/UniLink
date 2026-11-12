@@ -2,7 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { RideForm } from "@/components/rides/RideForm";
 import { meQuery } from "@/lib/queries";
 
-export const Route = createFileRoute("/rides/new")({
+export const Route = createFileRoute("/rides_/new")({
   beforeLoad: async ({ context }) => {
     if (!(await context.queryClient.ensureQueryData(meQuery).catch(() => null))) {
       throw redirect({ to: "/login" });

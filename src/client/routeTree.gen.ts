@@ -15,6 +15,7 @@ import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ModRouteImport } from './routes/mod'
+import { Route as RidesRouteImport } from './routes/rides'
 import { Route as RoutineRouteImport } from './routes/routine'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
@@ -30,10 +31,9 @@ import { Route as ModUsersRouteImport } from './routes/mod.users'
 import { Route as ResourcesIndexRouteImport } from './routes/resources.index'
 import { Route as ResourcesRequestIdRouteImport } from './routes/resources.$requestId'
 import { Route as ResourcesNewRouteImport } from './routes/resources.new'
-import { Route as RidesIndexRouteImport } from './routes/rides.index'
-import { Route as RidesNewRouteImport } from './routes/rides.new'
+import { Route as RidesNewRouteImport } from './routes/rides_.new'
 import { Route as RidesRideIdIndexRouteImport } from './routes/rides.$rideId.index'
-import { Route as RidesRideIdEditRouteImport } from './routes/rides.$rideId.edit'
+import { Route as RidesRideIdEditRouteImport } from './routes/rides_.$rideId.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -63,6 +63,11 @@ const LoginRoute = LoginRouteImport.update({
 const ModRoute = ModRouteImport.update({
   id: '/mod',
   path: '/mod',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RidesRoute = RidesRouteImport.update({
+  id: '/rides',
+  path: '/rides',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RoutineRoute = RoutineRouteImport.update({
@@ -140,23 +145,18 @@ const ResourcesNewRoute = ResourcesNewRouteImport.update({
   path: '/resources/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RidesIndexRoute = RidesIndexRouteImport.update({
-  id: '/rides/',
-  path: '/rides/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const RidesNewRoute = RidesNewRouteImport.update({
-  id: '/rides/new',
+  id: '/rides_/new',
   path: '/rides/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RidesRideIdIndexRoute = RidesRideIdIndexRouteImport.update({
-  id: '/rides/$rideId/',
-  path: '/rides/$rideId/',
-  getParentRoute: () => rootRouteImport,
+  id: '/$rideId/',
+  path: '/$rideId/',
+  getParentRoute: () => RidesRoute,
 } as any)
 const RidesRideIdEditRoute = RidesRideIdEditRouteImport.update({
-  id: '/rides/$rideId/edit',
+  id: '/rides_/$rideId/edit',
   path: '/rides/$rideId/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
@@ -168,6 +168,7 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/mod': typeof ModRouteWithChildren
+  '/rides': typeof RidesRouteWithChildren
   '/routine': typeof RoutineRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
@@ -184,7 +185,6 @@ export interface FileRoutesByFullPath {
   '/rides/new': typeof RidesNewRoute
   '/mod/': typeof ModIndexRoute
   '/resources/': typeof ResourcesIndexRoute
-  '/rides/': typeof RidesIndexRoute
   '/rides/$rideId/edit': typeof RidesRideIdEditRoute
   '/rides/$rideId/': typeof RidesRideIdIndexRoute
 }
@@ -194,6 +194,7 @@ export interface FileRoutesByTo {
   '/courses': typeof CoursesRoute
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
+  '/rides': typeof RidesRouteWithChildren
   '/routine': typeof RoutineRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
@@ -210,7 +211,6 @@ export interface FileRoutesByTo {
   '/rides/new': typeof RidesNewRoute
   '/mod': typeof ModIndexRoute
   '/resources': typeof ResourcesIndexRoute
-  '/rides': typeof RidesIndexRoute
   '/rides/$rideId/edit': typeof RidesRideIdEditRoute
   '/rides/$rideId': typeof RidesRideIdIndexRoute
 }
@@ -222,6 +222,7 @@ export interface FileRoutesById {
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/mod': typeof ModRouteWithChildren
+  '/rides': typeof RidesRouteWithChildren
   '/routine': typeof RoutineRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
@@ -235,11 +236,10 @@ export interface FileRoutesById {
   '/mod/users': typeof ModUsersRoute
   '/resources/$requestId': typeof ResourcesRequestIdRoute
   '/resources/new': typeof ResourcesNewRoute
-  '/rides/new': typeof RidesNewRoute
+  '/rides_/new': typeof RidesNewRoute
   '/mod/': typeof ModIndexRoute
   '/resources/': typeof ResourcesIndexRoute
-  '/rides/': typeof RidesIndexRoute
-  '/rides/$rideId/edit': typeof RidesRideIdEditRoute
+  '/rides_/$rideId/edit': typeof RidesRideIdEditRoute
   '/rides/$rideId/': typeof RidesRideIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -251,6 +251,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/login'
     | '/mod'
+    | '/rides'
     | '/routine'
     | '/settings'
     | '/signup'
@@ -267,7 +268,6 @@ export interface FileRouteTypes {
     | '/rides/new'
     | '/mod/'
     | '/resources/'
-    | '/rides/'
     | '/rides/$rideId/edit'
     | '/rides/$rideId/'
   fileRoutesByTo: FileRoutesByTo
@@ -277,6 +277,7 @@ export interface FileRouteTypes {
     | '/courses'
     | '/inbox'
     | '/login'
+    | '/rides'
     | '/routine'
     | '/settings'
     | '/signup'
@@ -293,7 +294,6 @@ export interface FileRouteTypes {
     | '/rides/new'
     | '/mod'
     | '/resources'
-    | '/rides'
     | '/rides/$rideId/edit'
     | '/rides/$rideId'
   id:
@@ -304,6 +304,7 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/login'
     | '/mod'
+    | '/rides'
     | '/routine'
     | '/settings'
     | '/signup'
@@ -317,11 +318,10 @@ export interface FileRouteTypes {
     | '/mod/users'
     | '/resources/$requestId'
     | '/resources/new'
-    | '/rides/new'
+    | '/rides_/new'
     | '/mod/'
     | '/resources/'
-    | '/rides/'
-    | '/rides/$rideId/edit'
+    | '/rides_/$rideId/edit'
     | '/rides/$rideId/'
   fileRoutesById: FileRoutesById
 }
@@ -332,6 +332,7 @@ export interface RootRouteChildren {
   InboxRoute: typeof InboxRoute
   LoginRoute: typeof LoginRoute
   ModRoute: typeof ModRouteWithChildren
+  RidesRoute: typeof RidesRouteWithChildren
   RoutineRoute: typeof RoutineRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
@@ -339,9 +340,7 @@ export interface RootRouteChildren {
   ResourcesNewRoute: typeof ResourcesNewRoute
   RidesNewRoute: typeof RidesNewRoute
   ResourcesIndexRoute: typeof ResourcesIndexRoute
-  RidesIndexRoute: typeof RidesIndexRoute
   RidesRideIdEditRoute: typeof RidesRideIdEditRoute
-  RidesRideIdIndexRoute: typeof RidesRideIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -386,6 +385,13 @@ declare module '@tanstack/react-router' {
       path: '/mod'
       fullPath: '/mod'
       preLoaderRoute: typeof ModRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rides': {
+      id: '/rides'
+      path: '/rides'
+      fullPath: '/rides'
+      preLoaderRoute: typeof RidesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/routine': {
@@ -493,15 +499,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResourcesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/rides/': {
-      id: '/rides/'
-      path: '/rides'
-      fullPath: '/rides/'
-      preLoaderRoute: typeof RidesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/rides/new': {
-      id: '/rides/new'
+    '/rides_/new': {
+      id: '/rides_/new'
       path: '/rides/new'
       fullPath: '/rides/new'
       preLoaderRoute: typeof RidesNewRouteImport
@@ -509,13 +508,13 @@ declare module '@tanstack/react-router' {
     }
     '/rides/$rideId/': {
       id: '/rides/$rideId/'
-      path: '/rides/$rideId'
+      path: '/$rideId'
       fullPath: '/rides/$rideId/'
       preLoaderRoute: typeof RidesRideIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof RidesRoute
     }
-    '/rides/$rideId/edit': {
-      id: '/rides/$rideId/edit'
+    '/rides_/$rideId/edit': {
+      id: '/rides_/$rideId/edit'
       path: '/rides/$rideId/edit'
       fullPath: '/rides/$rideId/edit'
       preLoaderRoute: typeof RidesRideIdEditRouteImport
@@ -550,6 +549,16 @@ const ModRouteChildren: ModRouteChildren = {
 
 const ModRouteWithChildren = ModRoute._addFileChildren(ModRouteChildren)
 
+interface RidesRouteChildren {
+  RidesRideIdIndexRoute: typeof RidesRideIdIndexRoute
+}
+
+const RidesRouteChildren: RidesRouteChildren = {
+  RidesRideIdIndexRoute: RidesRideIdIndexRoute,
+}
+
+const RidesRouteWithChildren = RidesRoute._addFileChildren(RidesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChangePasswordRoute: ChangePasswordRoute,
@@ -557,6 +566,7 @@ const rootRouteChildren: RootRouteChildren = {
   InboxRoute: InboxRoute,
   LoginRoute: LoginRoute,
   ModRoute: ModRouteWithChildren,
+  RidesRoute: RidesRouteWithChildren,
   RoutineRoute: RoutineRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
@@ -564,9 +574,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResourcesNewRoute: ResourcesNewRoute,
   RidesNewRoute: RidesNewRoute,
   ResourcesIndexRoute: ResourcesIndexRoute,
-  RidesIndexRoute: RidesIndexRoute,
   RidesRideIdEditRoute: RidesRideIdEditRoute,
-  RidesRideIdIndexRoute: RidesRideIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

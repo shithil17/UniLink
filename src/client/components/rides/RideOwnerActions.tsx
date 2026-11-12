@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { MinusIcon, PencilIcon, PlusIcon, RefreshCwIcon } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { DeletePostButton } from "@/components/posts/DeletePostButton";
@@ -6,7 +7,7 @@ import { errorMessage } from "@/lib/api";
 import {
   dayLabel,
   RIDE_EXPIRY_WORDS,
-  seatsLine,
+  seatsTakenLine,
   useMarkFull,
   useRenewRide,
   useSetSeats,
@@ -15,8 +16,10 @@ import { toast } from "@/lib/toast";
 import type { RideSummary } from "../../../shared/schemas/rides";
 
 /**
- * What the poster can do with their own ride: change the seats left (one step at a time, or mark it
- * full), edit it, renew a recurring one, or delete it. Says in words when it disappears.
+ * What the poster can do with their own ride: set how many seats are taken (a draft the stepper
+ * changes and Save sends once, or Mark as full in one tap), edit it, renew a recurring one, or delete
+ * it. Save, Cancel and Mark as full are always there and only disabled, so nothing jumps. Says in
+ * words when it disappears.
  */
 export function RideOwnerActions({
   ride,
@@ -31,9 +34,24 @@ export function RideOwnerActions({
   const ended = ride.state === "expired";
   const busy = setSeats.isPending || markFull.isPending;
 
-  const seatsTo = (n: number) =>
-    setSeats.mutate(n, {
-      onSuccess: (saved) => toast.success(seatsLine(saved)),
+  // The stepper counts seats taken and only changes a draft; Save sends it as one request. The draft
+  // starts at the saved count, follows the server while it is untouched, and starts over for another ride.
+  const saved = ride.totalSeats - ride.seatsRemaining;
+  const [draft, setDraft] = useState(saved);
+  const [synced, setSynced] = useState({ id: ride.id, saved });
+  if (synced.id !== ride.id || synced.saved !== saved) {
+    if (synced.id !== ride.id || draft === synced.saved) setDraft(saved);
+    setSynced({ id: ride.id, saved });
+  }
+  const changed = draft !== saved;
+
+  const save = () =>
+    setSeats.mutate(ride.totalSeats - draft, {
+      onSuccess: (done) => {
+        const taken = done.totalSeats - done.seatsRemaining;
+        setDraft(taken);
+        toast.success(seatsTakenLine(done.totalSeats, taken));
+      },
       onError: (err) => toast.error(errorMessage(err)),
     });
 
@@ -46,47 +64,56 @@ export function RideOwnerActions({
         <div className="grid gap-3">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[15px] leading-[1.3] font-semibold text-ink">Seats left</p>
+              <p className="text-[15px] leading-[1.3] font-semibold text-ink">Seats taken</p>
               <p className="text-[13px] leading-[1.4] text-soft tabular-nums">
-                {ride.seatsRemaining} of {ride.totalSeats}
+                {draft} of {ride.totalSeats}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="icon"
-                aria-label="A seat was taken"
-                disabled={busy || ride.seatsRemaining === 0}
-                onClick={() => seatsTo(ride.seatsRemaining - 1)}
+                aria-label="One seat freed up"
+                disabled={busy || draft === 0}
+                onClick={() => setDraft(draft - 1)}
               >
                 <MinusIcon aria-hidden strokeWidth={1.75} />
               </Button>
               <Button
                 variant="outline"
                 size="icon"
-                aria-label="A seat is free again"
-                disabled={busy || ride.seatsRemaining >= ride.totalSeats}
-                onClick={() => seatsTo(ride.seatsRemaining + 1)}
+                aria-label="One more seat taken"
+                disabled={busy || draft >= ride.totalSeats}
+                onClick={() => setDraft(draft + 1)}
               >
                 <PlusIcon aria-hidden strokeWidth={1.75} />
               </Button>
             </div>
           </div>
-          {ride.seatsRemaining > 0 ? (
-            <Button
-              variant="secondary"
-              loading={markFull.isPending}
-              disabled={busy}
-              onClick={() =>
-                markFull.mutate(undefined, {
-                  onSuccess: () => toast.success("Marked as full."),
-                  onError: (err) => toast.error(errorMessage(err)),
-                })
-              }
-            >
-              Mark as full
+          <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" disabled={busy || !changed} onClick={() => setDraft(saved)}>
+              Cancel
             </Button>
-          ) : null}
+            <Button loading={setSeats.isPending} disabled={busy || !changed} onClick={save}>
+              Save
+            </Button>
+          </div>
+          <Button
+            variant="secondary"
+            loading={markFull.isPending}
+            disabled={busy || ride.seatsRemaining === 0}
+            onClick={() =>
+              markFull.mutate(undefined, {
+                onSuccess: (done) => {
+                  setDraft(done.totalSeats - done.seatsRemaining);
+                  toast.success("Marked as full.");
+                },
+                onError: (err) => toast.error(errorMessage(err)),
+              })
+            }
+          >
+            Mark as full
+          </Button>
         </div>
       )}
 

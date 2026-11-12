@@ -45,12 +45,19 @@ export function useRevealContact(basePath: `/api/${string}`) {
   });
 }
 
-/** Deletes the author's own post at `DELETE <basePath>/:id` and refreshes every query (feeds, mine, detail). */
+/**
+ * Deletes the author's own post at `DELETE <basePath>/:id` and refreshes every query (feeds, mine,
+ * other posts). The deleted post's own detail query (keyed `[type, "detail", id]`) is left alone:
+ * asking for it again would only 404 and flash "not available" on the detail that is closing.
+ */
 export function useDeletePost(basePath: `/api/${string}`) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => apiDelete(`${basePath}/${id}`, ok),
-    onSuccess: () => queryClient.invalidateQueries(),
+    onSuccess: (_, id) =>
+      queryClient.invalidateQueries({
+        predicate: ({ queryKey }) => !(queryKey[1] === "detail" && queryKey[2] === id),
+      }),
   });
 }
 

@@ -2,7 +2,7 @@
 import "@/index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { Me } from "../../shared/schemas/auth";
 import type { RideSummary } from "../../shared/schemas/rides";
@@ -10,6 +10,8 @@ import { routeTree } from "../routeTree.gen";
 
 vi.mock("@/components/pwa/UpdatePrompt", () => ({ UpdatePrompt: () => null }));
 vi.mock("@/components/pwa/InstallHint", () => ({ InstallHint: () => null }));
+const toasts = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+vi.mock("@/lib/toast", () => ({ toast: Object.assign(vi.fn(), toasts) }));
 
 const me: Me = {
   username: "dev_cse",
@@ -47,6 +49,8 @@ const ride = (over: Partial<RideSummary> = {}): RideSummary => ({
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  toasts.success.mockClear();
+  toasts.error.mockClear();
 });
 
 const contacts = {
@@ -58,6 +62,7 @@ const contacts = {
 function renderDetail(
   detail: RideSummary,
   contactResponse: () => Response = () => Response.json({ contacts }),
+  api: (path: string, init?: RequestInit) => Response | undefined = () => undefined,
 ) {
   vi.stubGlobal("matchMedia", () => ({
     matches: true,
@@ -72,11 +77,13 @@ function renderDetail(
       disconnect() {}
     },
   );
-  const fetchMock = vi.fn((path: string) =>
-    path === `/api/rides/${detail.id}/contact`
-      ? Promise.resolve(contactResponse())
-      : Promise.reject(new Error("No network in this test")),
-  );
+  const fetchMock = vi.fn((path: string, init?: RequestInit) => {
+    const response =
+      path === `/api/rides/${detail.id}/contact` ? contactResponse() : api(path, init);
+    return response
+      ? Promise.resolve(response)
+      : Promise.reject(new Error("No network in this test"));
+  });
   vi.stubGlobal("fetch", fetchMock);
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity, refetchOnMount: false } },
@@ -94,7 +101,7 @@ function renderDetail(
       <RouterProvider router={router} />
     </QueryClientProvider>,
   );
-  return fetchMock;
+  return Object.assign(fetchMock, { router, queryClient });
 }
 
 describe("Ride detail", () => {
@@ -111,7 +118,8 @@ describe("Ride detail", () => {
     expect(screen.getByRole("button", { name: "Report this ride" })).toBeTruthy();
     expect(document.body.textContent).not.toMatch(/\+8801|wa\.me|m\.me/);
     expect(document.querySelector("a[href^='tel:']")).toBeNull();
-    expect(fetchMock).not.toHaveBeenCalled();
+    // Only the list behind the panel was fetched: no contact request until it is asked for.
+    expect(fetchMock).not.toHaveBeenCalledWith("/api/rides/5/contact", expect.anything());
   });
 
   it("reveals the contact as real tel:, wa.me and m.me links", async () => {
@@ -142,13 +150,146 @@ describe("Ride detail", () => {
     renderDetail(ride({ mine: true, status: "pending_review" }));
     expect(await screen.findByText(/Waiting for a moderator/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Edit" }).getAttribute("href")).toBe("/rides/5/edit");
-    expect(screen.getByRole("button", { name: "A seat was taken" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "One more seat taken" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Mark as full" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Delete this ride" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Show contact" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Report this ride" })).toBeNull();
     // A one-off cannot be renewed.
     expect(screen.queryByRole("button", { name: "Renew" })).toBeNull();
+  });
+
+  describe("the poster's seat stepper", () => {
+    const mine = (over: Partial<RideSummary> = {}) => ride({ mine: true, ...over });
+    const taken = () => screen.getByText(/^\d+ of 4$/).textContent;
+    // A tiny server for one ride: it keeps the seats it was sent and answers the refetch after a save.
+    const seatsApi = (start: RideSummary = mine()) => {
+      let current = start;
+      return (path: string, init?: RequestInit) => {
+        if (path === "/api/rides/5/seats") {
+          const body = JSON.parse(init?.body as string) as { seatsRemaining: number };
+          current = { ...current, seatsRemaining: body.seatsRemaining };
+        } else if (path === "/api/rides/5/full") {
+          current = { ...current, seatsRemaining: 0, state: "full" };
+        } else if (path !== "/api/rides/5") return undefined;
+        return Response.json(current);
+      };
+    };
+    const button = (name: string) => screen.getByRole("button", { name }) as HTMLButtonElement;
+
+    it("counts seats taken and only changes a draft until Save, which sends one request", async () => {
+      const fetchMock = renderDetail(mine(), undefined, seatsApi());
+      await screen.findByText("Seats taken");
+      // 3 of 4 seats left is 1 taken.
+      expect(taken()).toBe("1 of 4");
+      fireEvent.click(button("One more seat taken"));
+      fireEvent.click(button("One more seat taken"));
+      fireEvent.click(button("One seat freed up"));
+      expect(taken()).toBe("2 of 4");
+      expect(fetchMock).not.toHaveBeenCalledWith("/api/rides/5/seats", expect.anything());
+
+      fireEvent.click(button("Save"));
+      await waitFor(() => expect(toasts.success).toHaveBeenCalledWith("2 of 4 seats taken."));
+      const posts = fetchMock.mock.calls.filter(([path]) => path === "/api/rides/5/seats");
+      expect(posts).toHaveLength(1);
+      expect(JSON.parse(posts[0]![1]?.body as string)).toEqual({ seatsRemaining: 2 });
+      await waitFor(() => expect(button("Save").disabled).toBe(true));
+      expect(taken()).toBe("2 of 4");
+    });
+
+    it("keeps Save, Cancel and Mark as full in place: Save and Cancel are disabled until the count changes, and Cancel starts over", async () => {
+      renderDetail(mine(), undefined, seatsApi());
+      await screen.findByText("Seats taken");
+      expect(button("Save").disabled).toBe(true);
+      expect(button("Cancel").disabled).toBe(true);
+      expect(button("Mark as full").disabled).toBe(false);
+      fireEvent.click(button("One more seat taken"));
+      expect(button("Save").disabled).toBe(false);
+      expect(button("Cancel").disabled).toBe(false);
+      fireEvent.click(button("Cancel"));
+      expect(taken()).toBe("1 of 4");
+      expect(button("Save").disabled).toBe(true);
+      expect(button("Cancel").disabled).toBe(true);
+    });
+
+    it("stops the stepper at none and all taken", async () => {
+      renderDetail(mine({ seatsRemaining: 4 }));
+      await screen.findByText("Seats taken");
+      expect(button("One seat freed up").disabled).toBe(true);
+      for (let i = 0; i < 4; i++) fireEvent.click(button("One more seat taken"));
+      expect(taken()).toBe("4 of 4");
+      expect(button("One more seat taken").disabled).toBe(true);
+    });
+
+    it("says when all seats are taken, and Mark as full stays but is disabled once the ride is full", async () => {
+      renderDetail(mine({ seatsRemaining: 1 }), undefined, seatsApi(mine({ seatsRemaining: 1 })));
+      await screen.findByText("Seats taken");
+      fireEvent.click(button("One more seat taken"));
+      fireEvent.click(button("Save"));
+      await waitFor(() =>
+        expect(toasts.success).toHaveBeenCalledWith(
+          "All 4 seats taken. Your ride now shows as full.",
+        ),
+      );
+      await waitFor(() => expect(button("Mark as full").disabled).toBe(true));
+    });
+
+    it("Mark as full saves full in one request and drops an unsaved draft", async () => {
+      const fetchMock = renderDetail(mine(), undefined, seatsApi());
+      await screen.findByText("Seats taken");
+      fireEvent.click(button("One seat freed up"));
+      expect(taken()).toBe("0 of 4");
+      fireEvent.click(button("Mark as full"));
+      await waitFor(() => expect(toasts.success).toHaveBeenCalledWith("Marked as full."));
+      await waitFor(() => expect(taken()).toBe("4 of 4"));
+      expect(fetchMock).not.toHaveBeenCalledWith("/api/rides/5/seats", expect.anything());
+      expect(button("Save").disabled).toBe(true);
+    });
+
+    it("keeps the draft and toasts the error when Save fails", async () => {
+      renderDetail(mine(), undefined, (path) =>
+        path === "/api/rides/5/seats"
+          ? Response.json({ error: "conflict", message: "Try again." }, { status: 409 })
+          : path === "/api/rides/5"
+            ? Response.json(mine())
+            : undefined,
+      );
+      await screen.findByText("Seats taken");
+      fireEvent.click(button("One more seat taken"));
+      fireEvent.click(button("Save"));
+      await waitFor(() => expect(toasts.error).toHaveBeenCalledWith("Try again."));
+      expect(taken()).toBe("2 of 4");
+      expect(button("Save").disabled).toBe(false);
+    });
+
+    it("follows the server while the draft is untouched, and keeps an unsaved draft when it changes", async () => {
+      const view = renderDetail(mine());
+      await screen.findByText("Seats taken");
+      act(
+        () =>
+          void view.queryClient.setQueryData(["rides", "detail", 5], mine({ seatsRemaining: 1 })),
+      );
+      await waitFor(() => expect(taken()).toBe("3 of 4"));
+      fireEvent.click(button("One seat freed up"));
+      expect(taken()).toBe("2 of 4");
+      act(
+        () =>
+          void view.queryClient.setQueryData(["rides", "detail", 5], mine({ seatsRemaining: 0 })),
+      );
+      await waitFor(() => expect(button("Mark as full").disabled).toBe(true));
+      expect(taken()).toBe("2 of 4");
+    });
+
+    it("starts the draft over when another ride is shown", async () => {
+      const first = renderDetail(mine());
+      await screen.findByText("Seats taken");
+      fireEvent.click(button("One more seat taken"));
+      expect(taken()).toBe("2 of 4");
+      first.queryClient.setQueryData(["rides", "detail", 6], mine({ id: 6, seatsRemaining: 4 }));
+      await first.router.navigate({ to: "/rides/$rideId", params: { rideId: "6" } });
+      await waitFor(() => expect(taken()).toBe("0 of 4"));
+      expect(button("Save").disabled).toBe(true);
+    });
   });
 
   it("lets a recurring ride be renewed and says it runs through its end date", async () => {

@@ -19,6 +19,7 @@ import {
   runsUntilLine,
   scheduleLine,
   seatsLine,
+  seatsTakenLine,
   type RideFormFields,
 } from "./rides";
 
@@ -95,6 +96,14 @@ describe("schedule words", () => {
     expect(scheduleLine(recurring())).toBe("Sun to Thu at 7:30 am");
     expect(runsUntilLine(recurring())).toBe("Runs until 19 Jan");
     expect(runsUntilLine(ride())).toBe("");
+  });
+
+  it("says seats taken for the poster's stepper, and that a ride shows as full once all are taken", () => {
+    expect(seatsTakenLine(4, 2)).toBe("2 of 4 seats taken.");
+    expect(seatsTakenLine(4, 1)).toBe("1 of 4 seats taken.");
+    expect(seatsTakenLine(4, 0)).toBe("No seats taken.");
+    expect(seatsTakenLine(4, 4)).toBe("All 4 seats taken. Your ride now shows as full.");
+    expect(seatsTakenLine(1, 1)).toBe("The seat is taken. Your ride now shows as full.");
   });
 
   it("says seats, price and which badge a ride carries", () => {

@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useMatch } from "@tanstack/react-router";
 import { ArrowRightIcon, ChevronRightIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { focusRing } from "@/components/ui/focus";
@@ -24,17 +24,22 @@ function Place({ area, landmark }: { area: string; landmark: string | null }) {
 }
 
 /**
- * Rides as one flat panel of hairline-separated rows, each opening the detail. A ride here never
+ * Rides as one flat panel of hairline-separated rows, each opening the detail over or beside the list, with the open one marked. A ride here never
  * carries a contact; those come only after "Show contact" on the detail. On "My rides" a ride that is
  * held, turned down, full or ended says so in a badge.
  */
 export function RideList({
   items,
   withBadge = false,
+  onOpen,
 }: {
   items: RideSummary[];
   withBadge?: boolean;
+  /** Runs with the row's link when it is tapped to open its ride. */
+  onOpen?: (row: HTMLElement) => void;
 }) {
+  // With a ride already open (the side panel), another row swaps it in place instead of stacking history.
+  const open = useMatch({ from: "/rides/$rideId/", shouldThrow: false }) !== undefined;
   return (
     <ul className="overflow-hidden rounded-panel bg-surface md:rounded-[24px]">
       {items.map((ride) => {
@@ -46,7 +51,12 @@ export function RideList({
             <Link
               to="/rides/$rideId"
               params={{ rideId: String(ride.id) }}
-              className={`flex min-h-15 items-center gap-3 px-4 py-3 outline-none hover:bg-tint active:bg-tint ${focusRing} focus-visible:-outline-offset-2 ${press}`}
+              // Keep the filters and tab in the URL, and the list where it is scrolled.
+              search
+              resetScroll={false}
+              replace={open}
+              onClick={(event) => onOpen?.(event.currentTarget)}
+              className={`flex min-h-15 items-center gap-3 px-4 py-3 outline-none hover:bg-tint active:bg-tint aria-[current=page]:bg-brand-soft ${focusRing} focus-visible:-outline-offset-2 ${press}`}
             >
               <span className="grid min-w-0 flex-1 gap-1">
                 <span className="flex flex-wrap items-center gap-x-1.5 text-[15px] leading-[1.3] font-semibold break-words text-ink">

@@ -140,6 +140,19 @@ export function seatsLine(r: Pick<RideSummary, "state" | "seatsRemaining" | "tot
   return `${r.seatsRemaining} of ${r.totalSeats} seats left`;
 }
 
+/**
+ * What the poster's seat stepper says after a save, counting seats taken: "2 of 4 seats taken.",
+ * "No seats taken.", or, when every seat is gone, that the ride now shows as full. Riders see
+ * `seatsLine` (seats left) instead.
+ */
+export function seatsTakenLine(totalSeats: number, taken: number): string {
+  if (taken <= 0) return "No seats taken.";
+  if (taken >= totalSeats) {
+    return `${totalSeats === 1 ? "The seat is" : `All ${totalSeats} seats`} taken. Your ride now shows as full.`;
+  }
+  return `${taken} of ${totalSeats} seats taken.`;
+}
+
 /** "Free", or "150 taka a seat". */
 export const priceLine = (taka: number): string => (taka === 0 ? "Free" : `${taka} taka a seat`);
 

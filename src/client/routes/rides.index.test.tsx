@@ -2,7 +2,7 @@
 import "@/index.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { Me } from "../../shared/schemas/auth";
 import type { RideFeedPage, RideSummary } from "../../shared/schemas/rides";
@@ -49,13 +49,15 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** `phone` is a viewport below the split width, where a ride opens in a sheet; the default is a wide one. */
 function renderAt(
   path: string,
   feeds: { filters: object; page: RideFeedPage }[],
   mine: RideFeedPage = { items: [], nextCursor: null },
+  { phone = false, details = [] }: { phone?: boolean; details?: RideSummary[] } = {},
 ) {
-  vi.stubGlobal("matchMedia", () => ({
-    matches: true,
+  vi.stubGlobal("matchMedia", (query: string) => ({
+    matches: query.includes("min-width") ? !phone : true,
     addEventListener: () => {},
     removeEventListener: () => {},
   }));
@@ -92,6 +94,7 @@ function renderAt(
     ],
   );
   queryClient.setQueryData(["rides", "mine"], { pages: [mine], pageParams: [""] });
+  for (const detail of details) queryClient.setQueryData(["rides", "detail", detail.id], detail);
   const router = createRouter({
     routeTree,
     context: { queryClient },
@@ -321,5 +324,188 @@ describe("Rides screen", () => {
     expect(screen.getByText("Ended")).toBeTruthy();
     expect(screen.getByText(/disappears from the feed when it departs/)).toBeTruthy();
     expect(screen.getByText(/gone for everyone right away/)).toBeTruthy();
+  });
+
+  describe("opening a ride", () => {
+    const feed = (items: RideSummary[]) => [{ filters: {}, page: { items, nextCursor: null } }];
+    const one = ride({ id: 5, notes: "Wait at gate 2" });
+
+    it("on a phone opens it in a sheet over the list and closing returns to the intact list", async () => {
+      const router = renderAt("/rides", feed([one, ride({ id: 6 })]), undefined, {
+        phone: true,
+        details: [one],
+      });
+      const row = (await screen.findAllByRole("link", { name: /Bashundhara R\/A/ }))[0]!;
+      fireEvent.click(row);
+
+      const sheet = await screen.findByRole("dialog", { name: "Bashundhara R/A to Mirpur" });
+      expect(router.state.location.pathname).toBe("/rides/5");
+      expect(sheet.textContent).toContain("Wait at gate 2");
+      expect(sheet.textContent).toMatch(/doesn't arrange or guarantee rides/);
+      // The list is still mounted behind it, both rows.
+      expect(screen.getAllByRole("link", { name: /Bashundhara R\/A/, hidden: true })).toHaveLength(
+        2,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Close" }));
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      await waitFor(() => expect(router.state.location.pathname).toBe("/rides"));
+      expect(screen.getAllByRole("link", { name: /Bashundhara R\/A/ })).toHaveLength(2);
+      expect(document.activeElement).toBe(row);
+    });
+
+    it("on a phone the browser back button closes the sheet", async () => {
+      const router = renderAt(
+        "/rides?vehicle=car",
+        [{ filters: { vehicle: "car" }, page: { items: [one], nextCursor: null } }],
+        undefined,
+        { phone: true, details: [one] },
+      );
+      fireEvent.click(await screen.findByRole("link", { name: /Bashundhara R\/A/ }));
+      await screen.findByRole("dialog", { name: "Bashundhara R/A to Mirpur" });
+      // The filters ride along in the URL.
+      expect(router.state.location.search).toEqual({ vehicle: "car" });
+      router.history.back();
+      await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+      expect(router.state.location.pathname).toBe("/rides");
+    });
+
+    it("Escape in the report sheet closes only the report, not the ride under it", async () => {
+      const router = renderAt("/rides", feed([one]), undefined, { phone: true, details: [one] });
+      fireEvent.click(await screen.findByRole("link", { name: /Bashundhara R\/A/ }));
+      await screen.findByRole("dialog", { name: "Bashundhara R/A to Mirpur" });
+      fireEvent.click(screen.getByRole("button", { name: "Report this ride" }));
+      const report = await screen.findByRole("dialog", { name: "Report this ride" });
+      fireEvent.keyDown(report, { key: "Escape" });
+      await waitFor(() =>
+        expect(screen.queryByRole("dialog", { name: "Report this ride" })).toBeNull(),
+      );
+      expect(screen.getByRole("dialog", { name: "Bashundhara R/A to Mirpur" })).toBeTruthy();
+      expect(router.state.location.pathname).toBe("/rides/5");
+    });
+
+    it("opens /rides/5 directly as a sheet over the list", async () => {
+      renderAt("/rides/5", feed([one]), undefined, { phone: true, details: [one] });
+      expect(await screen.findByRole("dialog", { name: "Bashundhara R/A to Mirpur" })).toBeTruthy();
+      expect(screen.getByRole("link", { name: /Bashundhara R\/A/, hidden: true })).toBeTruthy();
+    });
+
+    it("on a wide screen reserves the panel with a prompt, then shows the ride beside the list with its row selected", async () => {
+      const router = renderAt("/rides", feed([one, ride({ id: 6 })]), undefined, {
+        details: [one],
+      });
+      expect(await screen.findByText("Pick a ride to see the details")).toBeTruthy();
+      const rows = await screen.findAllByRole("link", { name: /Bashundhara R\/A/ });
+      expect(rows[0]!.getAttribute("aria-current")).toBeNull();
+
+      fireEvent.click(rows[0]!);
+      const panel = await screen.findByRole("complementary", { name: "Ride details" });
+      await waitFor(() => expect(panel.textContent).toContain("Wait at gate 2"));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(screen.queryByText("Pick a ride to see the details")).toBeNull();
+      expect(router.state.location.pathname).toBe("/rides/5");
+      expect(
+        screen.getAllByRole("link", { name: /Bashundhara R\/A/ })[0]!.getAttribute("aria-current"),
+      ).toBe("page");
+      expect(
+        screen.getAllByRole("link", { name: /Bashundhara R\/A/ })[1]!.getAttribute("aria-current"),
+      ).toBeNull();
+    });
+
+    it("on a wide screen switching rides keeps the last ride up, dimmed, until the next arrives", async () => {
+      renderAt(
+        "/rides/5",
+        feed([one, ride({ id: 6, pickupArea: { id: 60, name: "Mirpur" } })]),
+        undefined,
+        {
+          details: [one],
+        },
+      );
+      const panel = await screen.findByRole("complementary", { name: "Ride details" });
+      await waitFor(() => expect(panel.textContent).toContain("Wait at gate 2"));
+
+      let resolve!: (r: Response) => void;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => new Promise<Response>((r) => (resolve = r))),
+      );
+      fireEvent.click(screen.getByRole("link", { name: /^Mirpur/ }));
+      await waitFor(() => expect(panel.querySelector("[aria-busy='true']")).not.toBeNull());
+      expect(panel.textContent).toContain("Wait at gate 2");
+      expect(screen.queryByRole("status", { name: "Loading the ride" })).toBeNull();
+
+      resolve(
+        Response.json(
+          ride({ id: 6, pickupArea: { id: 60, name: "Mirpur" }, notes: "Second ride" }),
+        ),
+      );
+      await waitFor(() => expect(panel.textContent).toContain("Second ride"));
+      expect(panel.querySelector("[aria-busy='true']")).toBeNull();
+    });
+
+    // The poster's delete: the detail closes and "My rides" shows. The deleted ride's own detail is not
+    // asked for again (it would 404 and flash "isn't available" while the detail slides away).
+    it.each([
+      ["wide", false],
+      ["phone", true],
+    ])(
+      "after the poster deletes their ride (%s) the detail closes and the list shows My rides",
+      async (_, phone) => {
+        const mine = ride({ id: 5, mine: true });
+        const router = renderAt(
+          "/rides/5",
+          feed([]),
+          { items: [mine], nextCursor: null },
+          {
+            phone,
+            details: [mine],
+          },
+        );
+        const fetchMock = vi.fn((path: string, init?: RequestInit) =>
+          Promise.resolve(
+            init?.method === "DELETE"
+              ? Response.json({ ok: true })
+              : path === "/api/rides/5"
+                ? Response.json({ error: "not_found" }, { status: 404 })
+                : Response.json({ items: [], nextCursor: null }),
+          ),
+        );
+        vi.stubGlobal("fetch", fetchMock);
+        fireEvent.click(await screen.findByRole("button", { name: "Delete this ride" }));
+        fireEvent.click(await screen.findByRole("button", { name: "Delete" }));
+        await waitFor(() => expect(router.state.location.pathname).toBe("/rides"));
+        expect(router.state.location.search).toEqual({ tab: "mine" });
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/rides/5",
+          expect.objectContaining({ method: "DELETE" }),
+        );
+        expect(fetchMock).not.toHaveBeenCalledWith(
+          "/api/rides/5",
+          expect.objectContaining({ method: "GET" }),
+        );
+        expect(screen.queryByText("This ride isn't available.")).toBeNull();
+        if (phone) await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+        else expect(await screen.findByText("Pick a ride to see the details")).toBeTruthy();
+      },
+    );
+
+    it("when the back button closes the ride while its report sheet is open, both close, the scroll is released and focus returns to the row", async () => {
+      const router = renderAt("/rides", feed([one]), undefined, { phone: true, details: [one] });
+      const row = await screen.findByRole("link", { name: /Bashundhara R\/A/ });
+      fireEvent.click(row);
+      await screen.findByRole("dialog", { name: "Bashundhara R/A to Mirpur" });
+      fireEvent.click(screen.getByRole("button", { name: "Report this ride" }));
+      await screen.findByRole("dialog", { name: "Report this ride" });
+
+      act(() => router.history.back());
+      await waitFor(() =>
+        expect(screen.queryAllByRole("dialog", { hidden: true })).toHaveLength(0),
+      );
+      expect(router.state.location.pathname).toBe("/rides");
+      expect(document.body.style.cssText).not.toContain("overflow");
+      expect(document.querySelector("[data-base-ui-inert]")).toBeNull();
+      expect(row.getAttribute("aria-hidden")).toBeNull();
+      expect(document.activeElement).toBe(row);
+    });
   });
 });
