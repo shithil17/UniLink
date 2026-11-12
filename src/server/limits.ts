@@ -34,6 +34,13 @@ import {
   RESOURCE_EXPIRY_MIN_MS,
   RESOURCE_NOTE_MAX_LENGTH,
 } from "../shared/schemas/resources.ts";
+import {
+  RIDE_NOTES_MAX_LENGTH,
+  RIDE_PLACE_MAX_LENGTH,
+  RIDE_PRICE_MAX_TAKA,
+  RIDE_SEARCH_MAX_LENGTH,
+  RIDE_SEATS_MAX,
+} from "../shared/schemas/rides.ts";
 import { AUTHOR_DELETE_PURGE_MS } from "../shared/posts.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
 import { RESOURCE_URL_MAX_LENGTH } from "../shared/resourceUrl.ts";
@@ -161,6 +168,22 @@ export const limits = {
   resourceHelpableMax: 50,
   // ceiling: three months: long enough to find the link again after the exam, short enough to keep shared links from piling up. The UI states it. Defined in shared code so the screens can state it. Revisit if students ask for longer.
   resourceFulfilledKeepMs: RESOURCE_FULFILLED_KEEP_MS,
+  // ceiling: a place name, a note, a bus's seats and a fare are all short and bounded; the seat cap is also a CHECK on the rides table. Defined in shared code for the client form. Revisit if honest rides are refused.
+  rideField: {
+    placeMax: RIDE_PLACE_MAX_LENGTH,
+    notesMax: RIDE_NOTES_MAX_LENGTH,
+    seatsMax: RIDE_SEATS_MAX,
+    priceMaxTaka: RIDE_PRICE_MAX_TAKA,
+    searchMax: RIDE_SEARCH_MAX_LENGTH,
+  },
+  // ceiling: a student posts a ride or two a day (a commute plus a one-off); this stops a loop from filling the feed. Revisit if students report hitting it.
+  rideCreate: { limit: 10, windowMs: DAY },
+  // ceiling: edits, seat changes and renewals are a few taps per ride; generous, but it stops a loop. Revisit if posters report hitting it.
+  rideUpdate: { limit: 60, windowMs: HOUR },
+  // ceiling: a student runs a handful of rides at once (a commute each way, a weekend trip). Past this, a new ride is a 409 until one lapses or is deleted. Revisit if students report hitting it.
+  rideOpenMax: 10,
+  // ceiling: a phone screen shows about this many rows; more arrive through the cursor. Revisit if the feed feels short.
+  ridePage: { defaultSize: 20, maxSize: 50 },
   /** The screening pipeline: what the rules accept and how long the model step may take. */
   screen: {
     // ceiling: the longest screened field (a description or note) is a few paragraphs; a wall of text is spam. Per-post-type schemas set tighter caps. Revisit if honest posts are rejected for length.

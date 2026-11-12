@@ -5,6 +5,7 @@ describe("auditActionLabel", () => {
   it("names what a removal took down", () => {
     expect(auditActionLabel("soft_delete", "resource_request")).toBe("Removed a request");
     expect(auditActionLabel("soft_delete", "resource_submission")).toBe("Removed a link");
+    expect(auditActionLabel("soft_delete", "ride")).toBe("Removed a ride");
   });
 
   it("falls back to post for an unknown target, and still labels other actions", () => {

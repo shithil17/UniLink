@@ -17,7 +17,8 @@ import { rateLimit, rateLimitedResponse } from "../../middleware/rateLimit";
 import type { AppEnv, SessionUser } from "../../middleware/types";
 import { notify } from "../../notify";
 import { pageParams, toPage } from "../../paging";
-import { submitPost, type SubmitResult } from "../../moderation/submit";
+import { submitPost } from "../../moderation/submit";
+import { postBlocked } from "../../posts/postBlocked";
 import { facultyRepo } from "../../repos/faculty";
 import { resourceRequestsRepo, resourceSubmissionsRepo } from "../../repos/resources";
 import { validateJson, validateQuery } from "../../validate";
@@ -45,21 +46,6 @@ function spanWords(ms: number): string {
       ? [ms / DAY_MS, "a day", "days"]
       : [Math.round(ms / HOUR_MS), "an hour", "hours"];
   return n === 1 ? one : `${n} ${many}`;
-}
-
-/** The 429 for a post that may not be made yet: a new account, or the probing cooldown. */
-function postBlocked(c: Context, blocked: Extract<SubmitResult, { ok: false }>) {
-  c.header("Retry-After", String(Math.ceil(blocked.retryAfterMs / 1000)));
-  return c.json(
-    {
-      error: blocked.reason,
-      message:
-        blocked.reason === "new_account"
-          ? "New accounts can post after their first day. Try again later."
-          : "You can post again shortly. Try again later.",
-    },
-    429,
-  );
 }
 
 /**

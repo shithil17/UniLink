@@ -73,10 +73,13 @@ export type NotificationTarget =
   | { to: "/resources/$requestId"; params: { requestId: string } };
 
 /** Requests are on the default "mine" tab of Materials; links a student sent are on "help". */
-const resourcesFor = (kind: RemovedContentKind): NotificationTarget =>
-  kind === "resource_submission"
-    ? { to: "/resources", search: { tab: "help" } }
-    : { to: "/resources" };
+const resourcesFor = (kind: RemovedContentKind): NotificationTarget | null =>
+  kind === "ride"
+    ? // TODO(rides screens): open `/rides` once that route exists. Until then the notice is only marked read.
+      null
+    : kind === "resource_submission"
+      ? { to: "/resources", search: { tab: "help" } }
+      : { to: "/resources" };
 
 /**
  * The screen a notification opens, or null when it has none (it is only marked read). A request

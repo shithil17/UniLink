@@ -12,6 +12,7 @@ import { reportRoutes } from "./features/mod/reportRoutes";
 import { postRoutes } from "./features/posts/routes";
 import { pushRoutes } from "./features/push/routes";
 import { resourceRoutes } from "./features/resources/routes";
+import { rideRoutes } from "./features/rides/routes";
 import { sessionLoader } from "./middleware/session";
 import type { AppEnv } from "./middleware/types";
 
@@ -30,6 +31,7 @@ export const app = new Hono<AppEnv>()
   .route("/posts", postRoutes)
   .route("/reports", reportRoutes)
   .route("/resources", resourceRoutes)
+  .route("/rides", rideRoutes)
   .route("/mod", modRoutes)
   .route("/admin", adminRoutes);
 

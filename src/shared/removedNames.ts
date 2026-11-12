@@ -1,7 +1,11 @@
 // The word for what a moderator removes, by target type. One map so the audit log, the confirm
 // sheets and the queue all call a removed request a "request" and a removed link a "link".
 
-const REMOVED_NAME = { resource_request: "request", resource_submission: "link" } as const;
+const REMOVED_NAME = {
+  resource_request: "request",
+  resource_submission: "link",
+  ride: "ride",
+} as const;
 
 export type RemovedName = (typeof REMOVED_NAME)[keyof typeof REMOVED_NAME];
 

@@ -43,6 +43,12 @@ describe("notificationCopy for a removal", () => {
     ).toBe("A moderator removed your request for materials");
   });
 
+  it("names a removed ride", () => {
+    const copy = notificationCopy("content_removed", { kind: "ride", reason: "Looks like a scam" });
+    expect(copy.title).toBe("A moderator removed your ride");
+    expect(copy.detail).toBe("Reason: Looks like a scam");
+  });
+
   it("falls back to fixed words for a payload that does not parse", () => {
     const copy = notificationCopy("content_removed", { kind: "nope", reason: "x" });
     expect(copy.title).toBe("A moderator removed something you posted");

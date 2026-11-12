@@ -1,5 +1,5 @@
 import { auditActionLabel, auditActions } from "../../shared/auditActions";
-import { removedName } from "../../shared/removedNames";
+import { removedName, type RemovedName } from "../../shared/removedNames";
 import { DEPARTMENTS } from "../../shared/departments";
 import type { Role } from "../../shared/modPolicy";
 import { notificationCopy } from "../../shared/notificationCopy";
@@ -174,6 +174,7 @@ const MISSING_TARGET: Record<ModReport["targetType"], string> = {
   user: "Removed account",
   resource_request: "A removed request",
   resource_submission: "A removed link",
+  ride: "A removed ride",
 };
 
 /** What a report row calls its target when the label is gone, by what kind of target it was. */
@@ -202,8 +203,8 @@ export function resolveReportConfirm(
   };
 }
 
-/** "request" or "link" for a report target a mod can remove, or null when Remove isn't offered. */
-export function removableName(targetType: ModReport["targetType"]): "request" | "link" | null {
+/** "request", "link" or "ride" for a report target a mod can remove, or null when Remove isn't offered. */
+export function removableName(targetType: ModReport["targetType"]): RemovedName | null {
   return removedName(targetType);
 }
 

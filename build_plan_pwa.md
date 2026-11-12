@@ -968,13 +968,13 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Build order
 
 - [x] **Shared kit:** `contact.ts`, `ContactInput`, the contact reveal endpoint pattern, the expiry helper, `ReportButton`, `StatusNote` ("Waiting for a moderator" and rejection reason with "Ask a moderator to look"), the author-delete endpoint pattern and `DeletePostButton`, the purge rule (window passed and no open report) used by every cron job.
-- [ ] **Step 1:** `rides` table, check constraints and indexes.
-- [ ] **Step 2:** create and edit API with contact validation and `screen()`. One-off rides first, then recurring.
-- [ ] **Step 3:** seat logic (single-statement update, auto `full` at 0).
-- [ ] **Step 4:** feed and filters, paginated, excluding expired rides in the query.
-- [ ] **Step 5:** expiry and renewal, and the ride cleanup job in `cron.ts`.
+- [x] **Step 1:** `rides` table, check constraints and indexes.
+- [x] **Step 2:** create and edit API with contact validation and `screen()`. One-off rides first, then recurring.
+- [x] **Step 3:** seat logic (single-statement update, auto `full` at 0).
+- [x] **Step 4:** feed and filters, paginated, excluding expired rides in the query.
+- [x] **Step 5:** expiry and renewal, and the ride cleanup job in `cron.ts`.
 - [ ] **Step 6:** screens: post a ride, edit, my rides, feed, detail with contact buttons (`tel:`, `wa.me`, `m.me`), safety notice.
-- [ ] **Step 7:** report a ride, mod removal, admin reversal (`target_type` `ride`).
+- [x] **Step 7:** report a ride, mod removal, admin reversal (`target_type` `ride`).
 
 ### Checklist — Docs & QA (C, D)
 
@@ -984,7 +984,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Test Scripts & Smoke Tests
 
 - [x] `src/shared/contact.test.ts`: valid and invalid phone numbers, wa.me, m.me and facebook.com links, at least one required.
-- [ ] `src/server/features/rides/rides.api.test.ts`: seats never go below 0 or above the total, auto `full` at 0, one-off vs recurring validation, the default end date, renewal, the feed hides expired and pending rides, the contact reveal needs a login and hits its rate limit, the feed response has no contact fields, report + removal + reversal, edits are screened again, an author delete hides the ride at once, another user cannot delete it, the cron purges it after the window but not while a report is open.
+- [x] `src/server/features/rides/rides.api.test.ts`: seats never go below 0 or above the total, auto `full` at 0, one-off vs recurring validation, the default end date, renewal, the feed hides expired and pending rides, the contact reveal needs a login and hits its rate limit, the feed response has no contact fields, report + removal + reversal, edits are screened again, an author delete hides the ride at once, another user cannot delete it, the cron purges it after the window but not while a report is open.
 - [ ] Run: `vp test contact rides`
 
 ### Test Gate 11

@@ -1,7 +1,7 @@
 // Calendar values ("today", the current year) are computed in Asia/Dhaka, never in UTC or the device's zone.
 
 // Bangladesh is UTC+6 with no daylight saving time.
-const DHAKA_OFFSET_MS = 6 * 60 * 60 * 1000;
+export const DHAKA_OFFSET_MS = 6 * 60 * 60 * 1000;
 
 /** The calendar year in Asia/Dhaka at the instant `now` (UTC epoch ms). */
 export function dhakaYear(now: number = Date.now()): number {
@@ -28,4 +28,28 @@ export function dhakaMinutes(now: number = Date.now()): number {
 /** The first instant (UTC epoch ms) of the Asia/Dhaka day after the given calendar date, so a post "until 20 Nov" is live through all of 20 Nov in Dhaka. */
 export function endOfDhakaDay(date: { year: number; month: number; day: number }): number {
   return Date.UTC(date.year, date.month - 1, date.day + 1) - DHAKA_OFFSET_MS;
+}
+
+/** The first instant (UTC epoch ms) of the given Asia/Dhaka calendar day. */
+export function startOfDhakaDay(date: { year: number; month: number; day: number }): number {
+  return Date.UTC(date.year, date.month - 1, date.day) - DHAKA_OFFSET_MS;
+}
+
+/** "YYYY-MM-DD" for a Dhaka calendar date. */
+export function formatDhakaDate(date: { year: number; month: number; day: number }): string {
+  const pad = (n: number, width: number) => String(n).padStart(width, "0");
+  return `${pad(date.year, 4)}-${pad(date.month, 2)}-${pad(date.day, 2)}`;
+}
+
+/** The calendar date of a "YYYY-MM-DD" string, or null when it is not a real date. */
+export function parseDhakaDate(value: string): { year: number; month: number; day: number } | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!m) return null;
+  const date = { year: Number(m[1]), month: Number(m[2]), day: Number(m[3]) };
+  const check = new Date(Date.UTC(date.year, date.month - 1, date.day));
+  return check.getUTCFullYear() === date.year &&
+    check.getUTCMonth() === date.month - 1 &&
+    check.getUTCDate() === date.day
+    ? date
+    : null;
 }

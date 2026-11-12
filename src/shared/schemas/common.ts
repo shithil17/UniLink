@@ -39,7 +39,7 @@ export const reasonCategory = z.enum([
 ]);
 
 /** What a report can point at. Each post type adds one value here when it ships. */
-export const reportTargetType = z.enum(["user", "resource_request", "resource_submission"]);
+export const reportTargetType = z.enum(["user", "resource_request", "resource_submission", "ride"]);
 
 /**
  * The report targets a mod can remove from the queue: the ones with a table in `softDeleteTargets`
@@ -49,6 +49,7 @@ export const reportTargetType = z.enum(["user", "resource_request", "resource_su
 export const removableReportTargets: readonly z.infer<typeof reportTargetType>[] = [
   "resource_request",
   "resource_submission",
+  "ride",
 ];
 
 /** One contact field: trimmed, blank becomes absent, anything left must match its kind's format. */

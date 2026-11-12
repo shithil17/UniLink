@@ -3,6 +3,7 @@ import { audit } from "./audit";
 import type { Db } from "./db/client";
 import { getDb } from "./db/client";
 import { limits } from "./limits";
+import { rides } from "./db/schema";
 import { postLifecycleRepo, type PurgeablePostTable } from "./repos/postLifecycle";
 import { resourceRequestsRepo } from "./repos/resources";
 
@@ -56,6 +57,7 @@ export function postPurgeJob(name: string, targetType: string, table: PurgeableP
 export const cronJobs: readonly CronJob[] = [
   purgeExpiredResourceRequests,
   purgeFulfilledResourceRequests,
+  postPurgeJob("rides", "ride", rides),
 ];
 
 /**

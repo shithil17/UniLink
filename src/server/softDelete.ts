@@ -3,7 +3,7 @@ import { removedContentKind } from "../shared/schemas/inbox";
 import type { PushSender } from "./adapters/push";
 import { audit } from "./audit";
 import type { Db } from "./db/client";
-import { resourceRequests, resourceSubmissions } from "./db/schema";
+import { resourceRequests, resourceSubmissions, rides } from "./db/schema";
 import { notify } from "./notify";
 import { softDeleteRepo, type SoftDeletableTable } from "./repos/softDelete";
 
@@ -18,6 +18,7 @@ export type SoftDeleteTargets = Readonly<Record<string, SoftDeletableTable>>;
 export const softDeleteTargets: SoftDeleteTargets = {
   resource_request: resourceRequests,
   resource_submission: resourceSubmissions,
+  ride: rides,
 };
 
 export type SoftDeleteInput = {

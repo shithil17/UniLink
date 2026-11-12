@@ -10,7 +10,11 @@ import {
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 import type { PrereqRule } from "../../shared/prereq";
+import { RIDE_SEATS_MAX, vehicleType } from "../../shared/schemas/rides";
+import { contactColumns, contactConstraint } from "./contactColumns";
 import { moderationColumns, moderationConstraints } from "./moderationColumns";
+
+type Vehicle = (typeof vehicleType.options)[number];
 
 // Key/value facts about the database itself (schema version and similar).
 export const appMeta = sqliteTable("app_meta", {
@@ -450,5 +454,73 @@ export const resourceSubmissions = sqliteTable(
     // The requester's list of links, and the per-request caps.
     index("resource_submissions_request_idx").on(t.requestId, t.id),
     index("resource_submissions_author_idx").on(t.authorId, t.requestId),
+  ],
+);
+
+// A ride a student offers: one-off (a departure instant) or recurring (weekdays, a time of day and an
+// end date). Contacts are only ever returned by `GET /api/rides/:id/contact`. A lapsed ride is
+// hard-deleted by cron (src/server/cron.ts). Whether it is full is not stored: it is `seats_remaining
+// = 0`, so it can never disagree with the seat count.
+export const rides = sqliteTable(
+  "rides",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    // The poster. Deleting the user deletes their rides.
+    authorId: integer("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    pickup: text("pickup").notNull(),
+    destination: text("destination").notNull(),
+    vehicle: text("vehicle", {
+      enum: vehicleType.options as [Vehicle, ...Vehicle[]],
+    }).notNull(),
+    totalSeats: integer("total_seats").notNull(),
+    // Changed only by single guarded UPDATEs, never read-then-write.
+    seatsRemaining: integer("seats_remaining").notNull(),
+    pricePerSeatTaka: integer("price_per_seat_taka").notNull(),
+    notes: text("notes"),
+    ...contactColumns,
+    kind: text("kind", { enum: ["one_off", "recurring"] }).notNull(),
+    // One-off: the departure, UTC epoch ms.
+    departsAt: integer("departs_at"),
+    // Recurring: bit i is Asia/Dhaka weekday i (Sunday is bit 0), see src/shared/rides.ts.
+    days: integer("days"),
+    // Recurring: minutes after midnight in Asia/Dhaka.
+    departureMinutes: integer("departure_minutes"),
+    // Recurring: the last Asia/Dhaka day it runs, "YYYY-MM-DD". `expires_at` is the end of that day.
+    endsOn: text("ends_on"),
+    ...moderationColumns,
+    // One-off: the departure. Recurring: the end of `ends_on` in Asia/Dhaka. The feed hides a row past it.
+    expiresAt: integer("expires_at").notNull(),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+    deletedAt: integer("deleted_at"),
+    deletedBy: integer("deleted_by").references(() => users.id, { onDelete: "set null" }),
+  },
+  (t) => [
+    ...moderationConstraints("rides", t),
+    contactConstraint("rides", t),
+    check(
+      "rides_vehicle_check",
+      sql`${t.vehicle} in (${sql.raw(vehicleType.options.map((v) => `'${v}'`).join(", "))})`,
+    ),
+    check(
+      "rides_seats_check",
+      sql`${t.totalSeats} between 1 and ${sql.raw(String(RIDE_SEATS_MAX))} and ${t.seatsRemaining} between 0 and ${t.totalSeats}`,
+    ),
+    check("rides_price_check", sql`${t.pricePerSeatTaka} >= 0`),
+    // Each kind has exactly its own fields.
+    check(
+      "rides_kind_check",
+      sql`(${t.kind} = 'one_off' and ${t.departsAt} is not null and ${t.days} is null and ${t.departureMinutes} is null and ${t.endsOn} is null)
+        or (${t.kind} = 'recurring' and ${t.departsAt} is null and ${t.days} is not null and ${t.days} between 1 and 127 and ${t.departureMinutes} is not null and ${t.departureMinutes} between 0 and 1439 and ${t.endsOn} is not null and ${t.endsOn} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')`,
+    ),
+    // "My rides", newest first.
+    index("rides_author_idx").on(t.authorId, t.id),
+    // The feed: soonest to lapse first (a one-off's departure), paged by (expires_at, id), and the cron purge.
+    index("rides_expires_idx").on(t.expiresAt, t.id),
+    // The feed filtered by vehicle, and by kind with a departure day.
+    index("rides_vehicle_expires_idx").on(t.vehicle, t.expiresAt),
+    index("rides_kind_departs_idx").on(t.kind, t.departsAt),
   ],
 );
