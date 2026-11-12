@@ -20,6 +20,7 @@ const ICON: Record<NotificationType, LucideIcon> = {
   resource_submitted: LinkIcon,
   resource_accepted: CircleCheckIcon,
   lost_found_possible_match: SearchIcon,
+  content_removed: CircleAlertIcon,
   push_test: BellIcon,
 };
 

@@ -32,6 +32,19 @@ describe("InboxRow", () => {
     expect(screen.getByText("5 min ago")).toBeTruthy();
   });
 
+  it("shows a removal's kind and the moderator's reason", () => {
+    const row = make({
+      type: "content_removed",
+      payload: { kind: "resource_request", reason: "Not course material" },
+      readAt: NOW,
+    });
+    render(<InboxRow n={row} now={NOW} onOpen={() => {}} />);
+    expect(screen.getByText("A moderator removed your request for materials")).toBeTruthy();
+    expect(screen.getByText("Reason: Not course material")).toBeTruthy();
+    // It opens the Materials screen, so a read row is still a control.
+    expect(screen.getByRole("button")).toBeTruthy();
+  });
+
   it("keeps a read row a control when it opens a screen, so it can be opened again", () => {
     const onOpen = vi.fn();
     const row = make({ type: "resource_requested", payload: { requestId: 3 }, readAt: NOW });

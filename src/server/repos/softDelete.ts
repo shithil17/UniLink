@@ -10,6 +10,8 @@ export type SoftDeletableTable = SQLiteTable & {
   id: SQLiteColumn;
   deletedAt: SQLiteColumn;
   deletedBy: SQLiteColumn;
+  /** The post tables all name their owner `author_id`; a table without one never notifies. */
+  authorId?: SQLiteColumn;
 };
 
 /** The columns a soft delete changes: the before-snapshot, and what a reversal puts back. */
@@ -25,6 +27,16 @@ export function softDeleteRepo(db: Db, table: SoftDeletableTable) {
         .where(eq(table.id, id))
         .get();
       return (row as SoftDeleteState | undefined) ?? null;
+    },
+    /** Who wrote the row, or null when the table has no author column or the row is missing. */
+    async authorOf(id: number): Promise<number | null> {
+      if (!table.authorId) return null;
+      const row = await db
+        .select({ authorId: table.authorId })
+        .from(table)
+        .where(eq(table.id, id))
+        .get();
+      return (row?.authorId as number | null | undefined) ?? null;
     },
     /** Marks a live row deleted. False when it is already deleted or missing. Never removes the row. */
     async markDeleted(id: number, by: number, now: number): Promise<boolean> {

@@ -283,8 +283,9 @@ A bottom sheet titled "Report this request" or "Report this link", with "Say wha
 
 ### Notifications
 
-| Inbox row                              | Opens                                |
-| -------------------------------------- | ------------------------------------ |
-| "A student is looking for a resource"  | Help with a request                  |
-| "Someone sent a link for your request" | My requests                          |
-| "Your link was accepted"               | Nothing: the row is only marked read |
+| Inbox row                                                                                              | Opens                                                               |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| "A student is looking for a resource"                                                                  | Help with a request                                                 |
+| "Someone sent a link for your request"                                                                 | My requests                                                         |
+| "Your link was accepted"                                                                               | Nothing: the row is only marked read                                |
+| "A moderator removed your request for materials" or "A moderator removed a link you sent to a request" | Materials. The second line reads "Reason: <the moderator's reason>" |

@@ -956,6 +956,75 @@ describe("reports and moderation", () => {
       expect((await again.json<{ error: string }>()).error).toBe("already_resolved");
     });
 
+    it("tells the author of a removed link, with the reason, and nobody else", async () => {
+      const { requester, helper, mod, link, reportId } = await reportedLink();
+      const before = (await inbox(helper.id)).length;
+      await call("POST", `/api/mod/reports/${reportId}/remove`, mod.token, { reason: reasonText });
+
+      const told = (await inbox(helper.id)).slice(before);
+      expect(told).toHaveLength(1);
+      expect(told[0].type).toBe("content_removed");
+      // Only the kind and the reason: no URL, no ids, no one's name.
+      expect(JSON.parse(told[0].payload)).toEqual({
+        kind: "resource_submission",
+        reason: reasonText,
+      });
+      expect(told[0].payload).not.toContain(driveLink);
+      expect(told[0].payload).not.toContain(String(link.id));
+      // The requester who reported it, and the mod, hear nothing.
+      expect(await typesFor(requester.id)).not.toContain("content_removed");
+      expect(await typesFor(mod.id)).toEqual([]);
+    });
+
+    it("tells the author of a removed request", async () => {
+      const requester = await person();
+      const stranger = await person();
+      const mod = await person({ role: "mod" });
+      const request = await makeRequest(requester);
+      const reported = await call("POST", "/api/reports", stranger.token, {
+        targetType: "resource_request",
+        targetId: request.id,
+        reason: "Looks like spam to me",
+      });
+      const { id: reportId } = await reported.json<{ id: number }>();
+      await call("POST", `/api/mod/reports/${reportId}/remove`, mod.token, { reason: reasonText });
+
+      const told = (await inbox(requester.id)).filter((n) => n.type === "content_removed");
+      expect(told).toHaveLength(1);
+      expect(JSON.parse(told[0].payload)).toEqual({
+        kind: "resource_request",
+        reason: reasonText,
+      });
+      expect(await typesFor(stranger.id)).toEqual([]);
+    });
+
+    it("tells no one when the author removes their own content, or when the removal is refused", async () => {
+      const requester = await person({ role: "mod" });
+      const request = await makeRequest(requester);
+      const input = {
+        actor: requester.id,
+        targetType: "resource_request",
+        targetId: request.id,
+        reason: reasonText,
+      };
+      expect(await softDelete(db(), input)).toEqual({ ok: true });
+      expect(await softDelete(db(), input)).toMatchObject({ ok: false });
+      expect(await typesFor(requester.id)).toEqual([]);
+    });
+
+    it("does not tell the author of a link the cron purge deletes", async () => {
+      const requester = await person();
+      const helper = await person();
+      const request = await makeRequest(requester);
+      await sendLink(helper, request.id);
+      const beforeHelper = (await inbox(helper.id)).length;
+      const beforeRequester = (await inbox(requester.id)).length;
+      await runCronJobs(db(), Date.now() + 120 * DAY);
+      expect(await count("resource_requests")).toBe(0);
+      expect((await inbox(helper.id)).length).toBe(beforeHelper);
+      expect((await inbox(requester.id)).length).toBe(beforeRequester);
+    });
+
     it("lets an admin reverse the removal, and the link shows again", async () => {
       const { requester, mod, link, reportId } = await reportedLink();
       const admin = await person({ role: "admin" });

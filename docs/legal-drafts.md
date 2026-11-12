@@ -55,7 +55,7 @@ Students can also use the Report button in the app. UniLink does not host files,
 **What the moderators do.**
 
 - A moderator reads the report or email and decides.
-- If the content should go, a moderator removes it with a soft delete: it stops showing to anyone, and the removal is recorded in the audit log with who did it, when and why. An admin can reverse a removal that turns out to be a mistake.
+- If the content should go, a moderator removes it with a soft delete: it stops showing to anyone, and the removal is recorded in the audit log with who did it, when and why. An admin can reverse a removal that turns out to be a mistake. The student who wrote the content is told in the app, with the reason.
 - The student who sent it may be warned or restricted if it is repeated or deliberate.
 - Moderators only soft-delete. Rows are hard-deleted only by the automatic daily cleanup (expired requests, and accepted ones after 90 days).
 - We reply to the address you gave within 7 days.

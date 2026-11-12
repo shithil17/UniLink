@@ -1,3 +1,4 @@
+import type { PushSender } from "../../adapters/push";
 import { auditActions } from "../../../shared/auditActions";
 import { canActOn } from "../../../shared/modPolicy";
 import { audit } from "../../audit";
@@ -276,7 +277,7 @@ export async function resolveReport(
 
 /**
  * Removes the content a report points at (a soft delete, so an admin can reverse it) and closes every
- * open report on it as handled. `softDelete()` writes the removal's audit row with the reason; each
+ * open report on it as handled. `softDelete()` tells the author and writes the removal's audit row with the reason; each
  * closed report gets its own row like any other resolution. A target that was already removed leaves
  * the reports as they are: the mod closes them with Mark handled.
  */
@@ -286,6 +287,7 @@ export async function removeReported(
   reportId: number,
   reason: string,
   now: number = Date.now(),
+  push?: PushSender | null,
 ): Promise<ActionResult<{ resolved: number }>> {
   const reports = reportsRepo(db);
   const report = await reports.findById(reportId);
@@ -299,7 +301,7 @@ export async function removeReported(
   const removed = await softDelete(
     db,
     { actor: actor.id, targetType: report.targetType, targetId, reason },
-    { now },
+    { now, push },
   );
   if (!removed.ok) {
     return {

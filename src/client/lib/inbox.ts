@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { NotificationType } from "../../shared/schemas/inbox";
+import { removedContentKind, type NotificationType } from "../../shared/schemas/inbox";
 import type { Hue } from "./courseHue";
 
 // ceiling: the nav badge reads "9+" past this count so it never outgrows the tab. Revisit if
@@ -32,6 +32,7 @@ export const NOTIFICATION_HUE: Record<NotificationType, Hue> = {
   resource_submitted: "lilac",
   resource_accepted: "mint",
   lost_found_possible_match: "butter",
+  content_removed: "rose",
   push_test: "sky",
 };
 
@@ -70,7 +71,7 @@ export type NotificationTarget =
 /**
  * The screen a notification opens, or null when it has none (it is only marked read). A request
  * that matches you opens its submit screen. A link sent to your request opens your requests, where
- * the link is. An accepted link has no screen: the request is closed to everyone but its owner by
+ * the link is. Removed content opens the Materials screen. An accepted link has no screen: the request is closed to everyone but its owner by
  * then, so there is nothing left to open. Anything with a payload that does not parse goes nowhere
  * rather than to a broken page.
  */
@@ -79,6 +80,10 @@ export function notificationTarget(
   payload: Record<string, unknown> | undefined,
 ): NotificationTarget | null {
   if (type === "resource_submitted") return { to: "/resources" };
+  // Removed content is gone for its author too, so this opens the Materials screen, not the item.
+  if (type === "content_removed" && removedContentKind.safeParse(payload?.kind).success) {
+    return { to: "/resources" };
+  }
   if (type === "resource_requested") {
     const parsed = requestPayload.safeParse(payload);
     if (parsed.success) {

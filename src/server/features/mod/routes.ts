@@ -189,6 +189,8 @@ export const modRoutes = new Hono<AppEnv>()
       actorOf(c),
       id,
       c.req.valid("json").reason,
+      Date.now(),
+      pushSenderFromEnv(c.env),
     );
     return result.ok ? c.json({ ok: true }) : actionFailure(c, result.reason);
   })

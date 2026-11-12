@@ -1,6 +1,11 @@
 import { rejectReasonMessage } from "./rejectReasons";
 import { reasonCategory } from "./schemas/common";
-import type { NotificationType } from "./schemas/inbox";
+import { reasonText } from "./schemas/moderation";
+import {
+  removedContentKind,
+  type NotificationType,
+  type RemovedContentKind,
+} from "./schemas/inbox";
 
 // Shared by the inbox screen and web push, so a notification reads the same everywhere.
 
@@ -31,16 +36,27 @@ const COPY: Record<NotificationType, NotificationCopy> = {
     title: "A found post may match your lost item",
     detail: "Someone posted something similar. Check whether it's yours.",
   },
+  // The base words are what a push shows on a lock screen: no kind, no reason.
+  content_removed: {
+    title: "A moderator removed something you posted",
+    detail: "Open your inbox to see what and why.",
+  },
   push_test: {
     title: "Test notification",
     detail: "Notifications reach this device. Nothing else to do.",
   },
 };
 
+const REMOVED_TITLE: Record<RemovedContentKind, string> = {
+  resource_request: "A moderator removed your request for materials",
+  resource_submission: "A moderator removed a link you sent to a request",
+};
+
 /**
- * Words for a notification, built here from its type. Free text from a payload is never shown. The one
- * payload value that changes the words is a rejection's `category`, and only after it parses as one of
- * the known categories; the sentence itself comes from `rejectReasonMessage`.
+ * Words for a notification, built here from its type. Free text from a payload is never shown, with
+ * one exception: a removal's `reason`, which a moderator wrote and which must parse as a valid mod
+ * reason. Otherwise a payload value only picks among fixed words: a rejection's `category` (after it
+ * parses as a known category; the sentence comes from `rejectReasonMessage`) and a removal's `kind`.
  */
 export function notificationCopy(
   type: NotificationType,
@@ -51,6 +67,14 @@ export function notificationCopy(
     if (category.success) {
       return { title: COPY[type].title, detail: rejectReasonMessage(category.data) };
     }
+  }
+  if (type === "content_removed") {
+    const kind = removedContentKind.safeParse(payload?.kind);
+    const reason = reasonText.safeParse(payload?.reason);
+    return {
+      title: kind.success ? REMOVED_TITLE[kind.data] : COPY[type].title,
+      detail: reason.success ? `Reason: ${reason.data}` : "It was taken down by a moderator.",
+    };
   }
   return COPY[type];
 }

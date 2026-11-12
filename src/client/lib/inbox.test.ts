@@ -29,6 +29,27 @@ describe("notificationCopy", () => {
   });
 });
 
+describe("notificationCopy for a removal", () => {
+  it("names the kind and shows the moderator's reason", () => {
+    const link = notificationCopy("content_removed", {
+      kind: "resource_submission",
+      reason: "Not course material",
+    });
+    expect(link.title).toBe("A moderator removed a link you sent to a request");
+    expect(link.detail).toBe("Reason: Not course material");
+    expect(
+      notificationCopy("content_removed", { kind: "resource_request", reason: "Spam request" })
+        .title,
+    ).toBe("A moderator removed your request for materials");
+  });
+
+  it("falls back to fixed words for a payload that does not parse", () => {
+    const copy = notificationCopy("content_removed", { kind: "nope", reason: "x" });
+    expect(copy.title).toBe("A moderator removed something you posted");
+    expect(copy.detail).toBe("It was taken down by a moderator.");
+  });
+});
+
 describe("notificationHue", () => {
   it("has no entry for a kind that does not exist", () => {
     expect(Object.keys(NOTIFICATION_HUE).sort()).toEqual([...notificationType.options].sort());
@@ -70,6 +91,17 @@ describe("notificationTarget", () => {
     expect(notificationTarget("resource_submitted", { requestId: 7 })).toEqual({
       to: "/resources",
     });
+  });
+
+  it("opens the Materials screen for removed content, and nowhere for an unknown kind", () => {
+    expect(notificationTarget("content_removed", { kind: "resource_submission" })).toEqual({
+      to: "/resources",
+    });
+    expect(notificationTarget("content_removed", { kind: "resource_request" })).toEqual({
+      to: "/resources",
+    });
+    expect(notificationTarget("content_removed", { kind: "nope" })).toBeNull();
+    expect(notificationTarget("content_removed", undefined)).toBeNull();
   });
 
   it("goes nowhere for an accepted link, where the request is closed to everyone else", () => {

@@ -9,11 +9,21 @@ export const notificationType = z.enum([
   "resource_submitted",
   "resource_accepted",
   "lost_found_possible_match",
+  // A moderator removed something the user posted. The payload is `{ kind, reason }` only.
+  "content_removed",
   // An admin checking that web push reaches their own devices.
   "push_test",
 ]);
 
 export type NotificationType = z.infer<typeof notificationType>;
+
+/**
+ * The content a moderator can remove, by the audit target type `softDelete()` writes. A test keeps
+ * this in step with `softDeleteTargets`.
+ */
+export const removedContentKind = z.enum(["resource_request", "resource_submission"]);
+
+export type RemovedContentKind = z.infer<typeof removedContentKind>;
 
 export const notification = z.object({
   id,
