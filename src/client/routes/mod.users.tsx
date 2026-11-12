@@ -16,6 +16,7 @@ import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { modPanel as panel, modRowLine, modRowMin, modTitle } from "@/components/mod/modStyles";
 import { UserSheet } from "@/components/mod/UserSheet";
 import { errorMessage } from "@/lib/api";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { timeAgo } from "@/lib/inbox";
 import { modUsersList } from "@/lib/mod";
 import { meQuery } from "@/lib/queries";
@@ -48,8 +49,9 @@ function UsersPage() {
     resolver: zodResolver(userSearchForm),
     defaultValues: { q },
   });
-  const search = form.handleSubmit((values) =>
-    navigate({ search: { q: values.q === "" ? undefined : values.q } }),
+  const search = form.handleSubmit(
+    (values) => navigate({ search: { q: values.q === "" ? undefined : values.q } }),
+    toastFirstFieldError,
   );
 
   const users = list.data?.pages.flatMap((p) => p.items) ?? [];
@@ -98,7 +100,7 @@ function UsersPage() {
         </div>
       ) : (
         <>
-          <ul className={panel}>
+          <ul className={panel} aria-busy={list.isPlaceholderData}>
             {users.map((u) => (
               <li key={u.id} className={modRowLine}>
                 <button

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { BookOpenIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
@@ -80,7 +80,7 @@ function CoursesPage() {
             onChange={(v) => setPickedId(Number(v))}
             options={list.map((c) => ({ value: String(c.id), label: curriculumLabel(c) }))}
           />
-          <CurriculumCourses key={curriculum.id} curriculum={curriculum} />
+          <CurriculumCourses curriculum={curriculum} />
         </>
       )}
     </section>
@@ -88,11 +88,22 @@ function CoursesPage() {
 }
 
 function CurriculumCourses({ curriculum }: { curriculum: ModCurriculum }) {
-  const list = useQuery(modCoursesQuery(curriculum.id));
+  // The previous curriculum's courses stay on screen until the picked one's arrive.
+  const list = useQuery({ ...modCoursesQuery(curriculum.id), placeholderData: keepPreviousData });
   const [query, setQuery] = useState("");
   const [showHidden, setShowHidden] = useState(false);
   const [target, setTarget] = useState<CourseSheetTarget>(null);
   const [newIn, setNewIn] = useState<string | null>(null);
+  // Switching curriculum starts a fresh search and closes the sheet, adjusted during render
+  // because the component is no longer remounted by a key.
+  const [shownId, setShownId] = useState(curriculum.id);
+  if (shownId !== curriculum.id) {
+    setShownId(curriculum.id);
+    setQuery("");
+    setShowHidden(false);
+    setTarget(null);
+    setNewIn(null);
+  }
 
   const all = useMemo(() => list.data ?? [], [list.data]);
   const hiddenCount = all.filter((c) => c.hidden).length;
@@ -114,7 +125,11 @@ function CurriculumCourses({ curriculum }: { curriculum: ModCurriculum }) {
           Effective from admission year{" "}
           <span className="tabular-nums">{curriculum.effectiveFromYear}</span>
         </p>
-        <Button className="shrink-0" onClick={() => openNew(null)}>
+        <Button
+          className="shrink-0"
+          disabled={list.isPlaceholderData}
+          onClick={() => openNew(null)}
+        >
           <PlusIcon data-icon="inline-start" />
           Add course
         </Button>
@@ -170,26 +185,33 @@ function CurriculumCourses({ curriculum }: { curriculum: ModCurriculum }) {
           />
         </div>
       ) : (
-        groups.map((group) => (
-          <section key={group.name} aria-label={group.name}>
-            <SectionHeader
-              title={group.name}
-              count={group.courses.length}
-              action={
-                <Button variant="ghost" size="sm" onClick={() => openNew(group.name)}>
-                  Add here
-                </Button>
-              }
-            />
-            <ul className={panel}>
-              {group.courses.map((course) => (
-                <li key={course.id} className="border-t border-line first:border-t-0">
-                  <CourseRow course={course} onOpen={() => setTarget(course)} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))
+        // While the picked curriculum loads, the old rows stay but can't be opened.
+        <div
+          aria-busy={list.isPlaceholderData}
+          inert={list.isPlaceholderData}
+          className="space-y-5"
+        >
+          {groups.map((group) => (
+            <section key={group.name} aria-label={group.name}>
+              <SectionHeader
+                title={group.name}
+                count={group.courses.length}
+                action={
+                  <Button variant="ghost" size="sm" onClick={() => openNew(group.name)}>
+                    Add here
+                  </Button>
+                }
+              />
+              <ul className={panel}>
+                {group.courses.map((course) => (
+                  <li key={course.id} className="border-t border-line first:border-t-0">
+                    <CourseRow course={course} onOpen={() => setTarget(course)} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
       )}
 
       <CourseEditSheet

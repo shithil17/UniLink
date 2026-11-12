@@ -18,6 +18,7 @@ import { ErrorBlock } from "@/components/ui/error-block";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { defaultElectiveCategory, formatCredits, overNote } from "@/lib/courseMap";
 import { retakeCodes } from "@/lib/attempts";
+import { readRoadmapTipDone } from "@/lib/roadmapTip";
 import { attemptsQuery, courseMapQuery, meQuery } from "@/lib/queries";
 
 const SequenceCanvas = lazy(() =>
@@ -307,8 +308,8 @@ function MapLoading() {
           <>
             <div>
               <h1 className="sr-only">Course map</h1>
-              <Skeleton className="h-8 w-44 md:h-9" />
-              <Skeleton className="mt-2 h-4 w-56 max-w-full" />
+              <Skeleton className="h-8 w-44 md:h-[37px]" />
+              <Skeleton className="mt-2.5 h-4 w-56 max-w-full" />
             </div>
             <div className={`${panel} grid gap-3`}>
               <Skeleton className="h-6 w-48" />
@@ -325,6 +326,7 @@ function MapLoading() {
             </div>
           </>
         }
+        side={<MapSideLoading />}
         main={[0, 1].map((i) => (
           <section key={i} className="grid gap-3">
             <Skeleton className="h-6 w-40" />
@@ -332,6 +334,30 @@ function MapLoading() {
           </section>
         ))}
       />
+    </div>
+  );
+}
+
+/**
+ * The side column's placeholder for `xl`, where the map is two columns: the CGPA summary panel
+ * and, on desktop, the roadmap tip's space under it. Hidden below `xl`, where the map is one
+ * column and the summary sits after the categories.
+ */
+function MapSideLoading() {
+  const tipDone = readRoadmapTipDone();
+  return (
+    <div className="hidden xl:block">
+      <CgpaSummary />
+      <div className={`${panel} mt-4 hidden gap-3 ${tipDone ? "" : "md:grid"}`}>
+        <Skeleton className="h-28" />
+        <div className="grid gap-1">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-10" />
+        </div>
+        <div className="flex h-9 items-center">
+          <Skeleton className="h-9 w-32" />
+        </div>
+      </div>
     </div>
   );
 }

@@ -25,8 +25,12 @@ import { routineCourseChoices, titleByCode, useClearRoutine } from "@/lib/routin
 import {
   CALENDAR_VIEWS,
   classesOn,
+  DAY_END_HOUR,
+  DAY_START_HOUR,
+  monthGridWeeks,
   periodLabel,
   stepDate,
+  WEEK_HOUR_PX,
   type CalendarView,
 } from "@/lib/routineCalendar";
 import { toast } from "@/lib/toast";
@@ -38,7 +42,6 @@ import {
   inRange,
   isDateKey,
   monthOf,
-  monthWeeks,
   weekOf,
   type DateKey,
 } from "../../shared/calendar";
@@ -94,20 +97,24 @@ function RoutinePage() {
 
   // The grid below is drawn from `shown`, which trails `view` by one 110ms fade-out.
   const { shown, fading } = useViewFade(view);
+  // Only an empty routine gets the big panel: no tap toggles it. A day without classes is a
+  // one-line note in a slot that Day view always reserves, so stepping days never moves the grid.
   const empty =
-    shown === "day" && !inRange(date, range)
+    routine.data && entries.length === 0
       ? {
-          title: "No classes this day.",
-          description: `This day is outside ${termLabel(term)}.`,
+          title: "No classes yet.",
+          description: "Add the ones you're taking this term, or tap an empty slot on the grid.",
         }
-      : routine.data && entries.length === 0
-        ? {
-            title: "No classes yet.",
-            description: "Add the ones you're taking this term, or tap an empty slot on the grid.",
-          }
-        : shown === "day" && routine.data && classesOn(entries, date, range).length === 0
-          ? { title: date === today ? "No classes today." : "No classes this day." }
-          : null;
+      : null;
+  const dayNote = empty
+    ? ""
+    : !inRange(date, range)
+      ? `No classes this day. It's outside ${termLabel(term)}.`
+      : classesOn(entries, date, range).length === 0
+        ? date === today
+          ? "No classes today."
+          : "No classes this day."
+        : "";
 
   return (
     <div className="flex flex-col gap-4">
@@ -135,7 +142,10 @@ function RoutinePage() {
       </Tabs>
 
       <div className="flex items-center justify-between gap-2">
-        <h2 className="min-w-0 text-lg leading-[1.3] font-semibold text-ink" aria-live="polite">
+        <h2
+          className="min-w-0 truncate text-lg leading-[1.3] font-semibold text-ink"
+          aria-live="polite"
+        >
           {periodLabel(view, date)}
         </h2>
         <div className="-mr-2.5 flex shrink-0 items-center gap-1">
@@ -171,11 +181,14 @@ function RoutinePage() {
           aria-busy="true"
           role="status"
           aria-label="Loading your routine"
-          className="grid gap-3 rounded-panel bg-surface p-4 md:rounded-[24px]"
+          className="rounded-panel bg-surface py-3 pr-2 pl-1.5 md:rounded-[24px]"
         >
-          {Array.from({ length: 6 }, (_, i) => (
-            <Skeleton key={i} className="h-12" />
-          ))}
+          {/* Sized like the week grid: a 44px header row, then the default hours at the week's hour height. */}
+          <Skeleton className="h-11" />
+          <Skeleton
+            className="mt-1.5"
+            style={{ height: (DAY_END_HOUR - DAY_START_HOUR) * WEEK_HOUR_PX }}
+          />
         </div>
       ) : routine.isError ? (
         <ErrorBlock
@@ -197,9 +210,14 @@ function RoutinePage() {
               <EmptyState icon={CalendarIcon} {...empty} />
             </div>
           ) : null}
+          {shown === "day" ? (
+            <p className="h-6 truncate text-soft" aria-live="polite">
+              {dayNote}
+            </p>
+          ) : null}
           {shown === "month" ? (
             <MonthGrid
-              weeks={monthWeeks(date)}
+              weeks={monthGridWeeks(date)}
               month={monthOf(date)}
               entries={entries}
               term={range}
@@ -278,8 +296,8 @@ function ClearTermDialog({
           <Button variant="outline" size="lg" onClick={onClose}>
             Keep them
           </Button>
-          <Button variant="destructive" size="lg" disabled={clear.isPending} onClick={onClear}>
-            {clear.isPending ? "Clearing..." : "Clear routine"}
+          <Button variant="destructive" size="lg" loading={clear.isPending} onClick={onClear}>
+            Clear routine
           </Button>
         </DialogFooter>
       </DialogContent>

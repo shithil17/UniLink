@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { modPanel as panel, modRowMin, modTitle } from "@/components/mod/modStyles";
 import { errorMessage } from "@/lib/api";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { idHolderLookup, useReleaseKey } from "@/lib/mod";
 import { releaseKeyConfirm } from "@/lib/modConfirm";
 import { meQuery } from "@/lib/queries";
@@ -44,7 +45,10 @@ function IdConflictPage() {
         Someone says their student ID is already registered? Look up who holds it. This is the only
         screen that shows a student ID, and each lookup is logged.
       </p>
-      <form onSubmit={form.handleSubmit((values) => setKey(values.key))} noValidate>
+      <form
+        onSubmit={form.handleSubmit((values) => setKey(values.key), toastFirstFieldError)}
+        noValidate
+      >
         <div className="flex items-start gap-2">
           <Field data-invalid={Boolean(errors.key)} className="flex-1">
             <FieldLabel htmlFor="id-key" className="sr-only">
@@ -80,11 +84,25 @@ function Holder({ studentKey }: { studentKey: string }) {
 
   if (lookup.isPending) {
     return (
-      <div role="status" aria-busy="true" className={`${panel} grid gap-3 p-4`}>
+      // Shaped like the loaded card: the header row, two detail rows, and the action area's room.
+      <div role="status" aria-busy="true" className={panel}>
         <span className="sr-only">Looking up</span>
-        <Skeleton className="h-5 w-1/3" />
-        <Skeleton className="h-4 w-1/2" />
-        <Skeleton className="h-4 w-2/5" />
+        <div className="flex items-center px-4 py-3.5">
+          <Skeleton className="h-6 w-1/3" />
+        </div>
+        <div className={detailRow}>
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <div className={detailRow}>
+          <Skeleton className="h-4 w-14" />
+          <Skeleton className="h-4 w-20" />
+        </div>
+        <div className="space-y-4 border-t border-line p-4">
+          <Skeleton className="h-11" />
+          <Skeleton className="h-28" />
+          <Skeleton className="h-12" />
+        </div>
       </div>
     );
   }

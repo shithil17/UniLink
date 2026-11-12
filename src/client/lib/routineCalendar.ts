@@ -2,8 +2,10 @@ import {
   addDays,
   addMonths,
   inRange,
+  monthWeeks,
   startOfWeek,
   weekdayOf,
+  weekOf,
   type DateKey,
 } from "../../shared/calendar";
 import {
@@ -43,8 +45,26 @@ export function statusOn(
 
 // ceiling: the grid always shows 8 AM to 6 PM, NSU's teaching day, and grows to fit any class
 // outside it. Revisit if the university moves its day.
-const DAY_START_HOUR = 8;
-const DAY_END_HOUR = 18;
+export const DAY_START_HOUR = 8;
+export const DAY_END_HOUR = 18;
+
+/** The week grid's hour height in px, mirrored from TimeGrid so the loading skeleton can match it. */
+export const WEEK_HOUR_PX = 44;
+
+/** Every month grid shows this many weeks, so stepping months never moves what sits below it. */
+export const MONTH_GRID_WEEKS = 6;
+
+/**
+ * The weeks of a month grid, padded to six rows by appending the following weeks. Those dates are
+ * outside the month, and the grid prints them in faint ink like any other neighbour-month day.
+ */
+export function monthGridWeeks(key: DateKey): DateKey[][] {
+  const weeks = monthWeeks(key);
+  while (weeks.length < MONTH_GRID_WEEKS) {
+    weeks.push(weekOf(addDays(weeks[weeks.length - 1][0], 7)));
+  }
+  return weeks;
+}
 
 /** The whole hours the time grid shows: the teaching day, widened to fit every class. */
 export function gridHours(entries: readonly RoutineEntry[]): { start: number; end: number } {
@@ -108,11 +128,11 @@ const format = (options: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat("en-US", { ...options, timeZone: "UTC" });
 const monthYear = format({ month: "long", year: "numeric" });
 const monthDay = format({ month: "short", day: "numeric" });
-const fullDay = format({ weekday: "long", month: "short", day: "numeric" });
+const fullDay = format({ weekday: "short", month: "short", day: "numeric" });
 const shortWeekday = format({ weekday: "short" });
 const longDate = format({ weekday: "long", month: "long", day: "numeric", year: "numeric" });
 
-/** "October 2026", "Oct 18 - 24", "Oct 25 - Nov 1" or "Tuesday, Oct 21": what the view is showing. */
+/** "October 2026", "Oct 18 - 24", "Oct 25 - Nov 1" or "Tue, Oct 21": what the view is showing. */
 export function periodLabel(view: CalendarView, date: DateKey): string {
   if (view === "month") return monthYear.format(at(date));
   if (view === "day") return fullDay.format(at(date));

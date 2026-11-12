@@ -4,6 +4,7 @@ import {
   classesOn,
   gridHours,
   hourLabel,
+  monthGridWeeks,
   periodLabel,
   placeDay,
   statusOn,
@@ -119,6 +120,24 @@ describe("placeDay", () => {
   });
 });
 
+describe("monthGridWeeks", () => {
+  it("always returns six weeks of seven days", () => {
+    for (const key of ["2026-02-10", "2026-10-21", "2026-11-12", "2026-05-01", "2027-02-01"]) {
+      const weeks = monthGridWeeks(key);
+      expect(weeks).toHaveLength(6);
+      for (const w of weeks) expect(w).toHaveLength(7);
+    }
+  });
+
+  it("pads a four-week month with the following weeks, in order", () => {
+    // February 2026 starts on a Sunday and has 28 days: four weeks on its own.
+    const weeks = monthGridWeeks("2026-02-10");
+    expect(weeks[3][6]).toBe("2026-02-28");
+    expect(weeks[4][0]).toBe("2026-03-01");
+    expect(weeks[5][6]).toBe("2026-03-14");
+  });
+});
+
 describe("navigation and labels", () => {
   it("steps by a month, a week or a day", () => {
     expect(stepDate("month", "2026-10-21", 1)).toBe("2026-11-21");
@@ -133,7 +152,7 @@ describe("navigation and labels", () => {
     expect(periodLabel("week", "2026-09-29")).toBe("Sep 27 - Oct 3");
     expect(periodLabel("week", "2026-11-01")).toBe("Nov 1 - 7");
     expect(periodLabel("week", "2026-12-30")).toBe("Dec 27 - Jan 2");
-    expect(periodLabel("day", "2026-10-21")).toBe("Wednesday, Oct 21");
+    expect(periodLabel("day", "2026-10-21")).toBe("Wed, Oct 21");
   });
 
   it("labels hours the way the routine prints times", () => {
