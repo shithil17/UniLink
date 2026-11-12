@@ -24,6 +24,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - (2026-10-20) Mods manage curriculum courses in the panel (`/mod/courses`): add, edit (including prerequisites as text, such as `CSE215 and (MAT120 or MAT125)`) and hide or show again with a reason, never delete (`courses.hidden`, migration 0011). Hidden courses leave students' maps unless the student already has an attempt on them. Re-importing a version still replaces all its courses, edits included, and the import screen warns. A slot with alternatives shows all its codes joined with "/" until the student takes one.
 - (2026-10-21) Elective trails and open electives: a curriculum can list its specialized elective trails (CSE: six trails, at least two courses from one trail). Students fill trail elective slots by picking from the trail list, see their trail progress on the map, and get title and credits filled in from a course code for open electives. CSE498 Internship/Co-op is on the CSE map as a non-credit course (Phase 4).
 - (2026-11-12) Rides, lost and found and marketplace now come straight after resources (renumbered 11, 12, 13), then Clef auto-moderation (14), hardening (15) and delivery (16). Faculty research profiles and the AI supervisor finder are optional phases O1 and O2 at the bottom and may never ship; the finder gate moved from Clef to O2. The faculty directory is unchanged. Marketplace moves to Dev A, after Clef.
+- (2026-11-12, later) Clef auto-moderation is optional phase O3 at the bottom too. The release ships with the rules step, the stub model step and the human review queue: posts publish after the rules, posts with photos always wait for a mod, and reports cover the rest. Hardening and delivery are now 14 and 15. Lost and found moves to Dev A and marketplace to Dev B.
 - (2026-11-02) New Phase 9b: a Planner view in Courses. Students set a target CGPA (saved to the account), try mock grades on past and future courses (kept in the browser only), and get advice that prefers doing better in remaining courses and suggests the fewest retakes only when the target needs them. It runs before Phase 10.
 - (2026-11-12) Resource requests also reach students who did not get the publish-time notification. The Materials screen has a Help others tab listing open requests for any course the student has recorded (any faculty) and faculty-only requests for a faculty member they had, with same-faculty ones first and tagged. The requester sees whether each link's sender took the same faculty. Notifications and the purge rules are unchanged.
 
@@ -62,8 +63,8 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 **Process**
 
 - Vite+ is the entry point (`vp`). Custom scripts always go through `vp run <script>`, never `vp <script>`. Pin the Vite+ and Node versions and upgrade on purpose.
-- Feature branches, pull requests, protected `main`. Every pull request is reviewed by the other developer. Dev A reviews rides, lost and found, and marketplace. Dev B reviews resource sharing and faculty.
-- **Core feature freeze at the end of Week 6.** Only Phases 13 to 16 may land in Week 7. Week 8 is for hardening, documents and the demo.
+- Feature branches, pull requests, protected `main`. Every pull request is reviewed by the other developer.
+- **Core feature freeze at the end of Week 6.** Only lost and found and marketplace (Phases 12 and 13) may land in Week 7. Week 8 is for hardening, documents and the demo.
 - Intentional limits are tagged `ceiling:` with the reason and what would justify revisiting them.
 
 **Definition of done (every phase)**
@@ -86,27 +87,27 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 ## Tech Stack Decisions
 
-| Role            | Library / Tool                                                                                                          | Why                                                                                 |
-| --------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| Toolchain       | **Vite+** (`vp`): Vite, Vitest, Oxlint, Oxfmt, Rolldown, task runner                                                    | One dependency and one config for dev, build, lint, format and test                 |
-| Package manager | pnpm, one `package.json`, no workspaces                                                                                 | Simple. Vite+ drives it (`vp install`, `vp add`)                                    |
-| App             | React + TypeScript, Tailwind CSS v4, shadcn/ui                                                                          | Team knows React. shadcn gives accessible parts that follow the theme tokens        |
-| PWA             | `vite-plugin-pwa` **≥ 1.3.0** (Vite 8 support)                                                                          | Manifest + service worker without hand-written Workbox config                       |
-| Routing         | TanStack Router (file-based, typed links, Zod search params)                                                            | Filters become shareable URLs that work with the back button. Loaders prefetch data |
-| Server state    | TanStack Query                                                                                                          | Caching, loading and error states, invalidation after changes                       |
-| Forms           | shadcn form + React Hook Form + Zod                                                                                     | shadcn default. Shares schemas with the API                                         |
-| Theming         | Tailwind v4 `@theme` tokens + `:root[data-theme]` overrides, `ThemeProvider`, picker ported from the mock site          | Colors only. shadcn variables alias the tokens                                      |
-| API             | Hono on Cloudflare Workers, Zod validation                                                                              | Small, typed, built for Workers                                                     |
-| Hosting         | Workers Static Assets via `@cloudflare/vite-plugin`                                                                     | One deploy ships the API and the PWA together, so they also roll back together      |
-| Database        | Cloudflare D1 (SQLite)                                                                                                  | Same platform as the Worker, free tier                                              |
-| Object storage  | Cloudflare R2, private bucket bound to the Worker (`POST_PHOTOS`). Lost-and-found and marketplace photos, WebP only     | Same platform, no egress fees, free tier far above expected use                     |
-| ORM             | Drizzle (`schema.ts`, `drizzle-kit` migrations)                                                                         | Typed queries, versioned migrations                                                 |
-| Auth            | Own `sessions` table, hashed tokens, HttpOnly + Secure + SameSite=Lax cookie, WebCrypto PBKDF2                          | No third-party auth. Works on Workers                                               |
-| Scheduled jobs  | Cloudflare Cron Triggers (same Worker)                                                                                  | No extra service                                                                    |
-| AI text         | DeepSeek V4.1 Flash (`deepseek-flash`), key as a Worker secret. Only used by the optional phases O1 and O2              | Cheap. Context caching suits the fixed faculty block                                |
-| AI decisions    | Clef-flash (`@cf/cloudflare/clef-flash`) via the Workers AI binding. Clef (`@cf/cloudflare/clef`) as the fallback model | Same account, no key, very cheap screening                                          |
-| Research data   | OpenAlex (primary), ORCID public API (cross-check), Crossref (optional). Google Scholar is link-out only                | Structured JSON. No scraping                                                        |
-| CI              | GitHub Actions with `voidzero-dev/setup-vp`                                                                             | Official Vite+ setup                                                                |
+| Role            | Library / Tool                                                                                                       | Why                                                                                 |
+| --------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Toolchain       | **Vite+** (`vp`): Vite, Vitest, Oxlint, Oxfmt, Rolldown, task runner                                                 | One dependency and one config for dev, build, lint, format and test                 |
+| Package manager | pnpm, one `package.json`, no workspaces                                                                              | Simple. Vite+ drives it (`vp install`, `vp add`)                                    |
+| App             | React + TypeScript, Tailwind CSS v4, shadcn/ui                                                                       | Team knows React. shadcn gives accessible parts that follow the theme tokens        |
+| PWA             | `vite-plugin-pwa` **≥ 1.3.0** (Vite 8 support)                                                                       | Manifest + service worker without hand-written Workbox config                       |
+| Routing         | TanStack Router (file-based, typed links, Zod search params)                                                         | Filters become shareable URLs that work with the back button. Loaders prefetch data |
+| Server state    | TanStack Query                                                                                                       | Caching, loading and error states, invalidation after changes                       |
+| Forms           | shadcn form + React Hook Form + Zod                                                                                  | shadcn default. Shares schemas with the API                                         |
+| Theming         | Tailwind v4 `@theme` tokens + `:root[data-theme]` overrides, `ThemeProvider`, picker ported from the mock site       | Colors only. shadcn variables alias the tokens                                      |
+| API             | Hono on Cloudflare Workers, Zod validation                                                                           | Small, typed, built for Workers                                                     |
+| Hosting         | Workers Static Assets via `@cloudflare/vite-plugin`                                                                  | One deploy ships the API and the PWA together, so they also roll back together      |
+| Database        | Cloudflare D1 (SQLite)                                                                                               | Same platform as the Worker, free tier                                              |
+| Object storage  | Cloudflare R2, private bucket bound to the Worker (`POST_PHOTOS`). Lost-and-found and marketplace photos, WebP only  | Same platform, no egress fees, free tier far above expected use                     |
+| ORM             | Drizzle (`schema.ts`, `drizzle-kit` migrations)                                                                      | Typed queries, versioned migrations                                                 |
+| Auth            | Own `sessions` table, hashed tokens, HttpOnly + Secure + SameSite=Lax cookie, WebCrypto PBKDF2                       | No third-party auth. Works on Workers                                               |
+| Scheduled jobs  | Cloudflare Cron Triggers (same Worker)                                                                               | No extra service                                                                    |
+| AI text         | DeepSeek V4.1 Flash (`deepseek-flash`), key as a Worker secret. Only used by the optional phases O1 and O2           | Cheap. Context caching suits the fixed faculty block                                |
+| AI decisions    | Optional (Phase O3): Clef-flash (`@cf/cloudflare/clef-flash`) via the Workers AI binding, Clef as the fallback model | Same account, no key, very cheap screening                                          |
+| Research data   | OpenAlex (primary), ORCID public API (cross-check), Crossref (optional). Google Scholar is link-out only             | Structured JSON. No scraping                                                        |
+| CI              | GitHub Actions with `voidzero-dev/setup-vp`                                                                          | Official Vite+ setup                                                                |
 
 > **Why Vite+ while it is in beta (0.2.x)?** One config replaces the separate ESLint, Prettier, Vitest and lint-staged setups, and it sits on top of plain Vite, so the escape hatch is cheap. Phase 0 proves the full stack under `vp`. If any piece conflicts, fall back to plain Vite + Vitest + pnpm and record that decision in Phase 0.
 
@@ -175,7 +176,7 @@ unilink/                         # repo name until the app name is chosen
     │   ├── moderation/
     │   │   ├── screen.ts        # Chain of Responsibility: rules → model → verdict     [P8]
     │   │   └── rules.ts         # deterministic rules                                   [P8]
-    │   ├── adapters/            # openalex, orcid, crossref, deepseek, clef + fakes    [O1, O2, P14]
+    │   ├── adapters/            # openalex, orcid, crossref, deepseek, clef + fakes    [O1, O2, O3]
     │   ├── cron.ts              # list of cleanup jobs, one function per table         [P10]
     │   └── features/<module>/   # routes + services: auth, courses, attempts, inbox,
     │                            # mod, routine, resources, faculty, rides, lostfound,
@@ -196,7 +197,7 @@ Tests sit next to the code: `*.test.ts` for unit tests and `*.api.test.ts` for A
 
 ## Phase numbering
 
-Phases are numbered 0 to 16 in **build order, not strict sequence**. Two developer tracks run in parallel (see Suggested Build Order). Within a track, do one phase at a time and pass its gate before moving on. A phase may start once its **Depends on** phases have passed their gates. Stretch work uses the `S` prefix (S1 to S3) and stays parked until the go/no-go at the start of Sprint 4. Phase 4b (design language) was inserted on 2026-10-20 and keeps the letter so later numbers stay stable. Phase 9b (grade planner) was inserted the same way on 2026-11-02. On 2026-11-12 the phases after 10 were renumbered so rides, lost and found and marketplace come first (old 12, 15, 16 are now 11, 12, 13; Clef stays 14; hardening and delivery are 15 and 16), and faculty profiles and the finder (old 11 and 13) became optional phases O1 and O2 at the bottom.
+Phases are numbered 0 to 15 in **build order, not strict sequence**. Two developer tracks run in parallel (see Suggested Build Order). Within a track, do one phase at a time and pass its gate before moving on. A phase may start once its **Depends on** phases have passed their gates. Stretch work uses the `S` prefix (S1 to S3) and stays parked until the go/no-go at the start of Sprint 4. Phase 4b (design language) was inserted on 2026-10-20 and keeps the letter so later numbers stay stable. Phase 9b (grade planner) was inserted the same way on 2026-11-02. On 2026-11-12 the phases after 10 were renumbered so rides, lost and found and marketplace come first (old 12, 15, 16 are now 11, 12, 13; Clef stays 14; hardening and delivery are 15 and 16), and faculty profiles and the finder (old 11 and 13) became optional phases O1 and O2 at the bottom. Later the same day Clef auto-moderation (14) became optional phase O3, and hardening and delivery became 14 and 15.
 
 Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" checklists inside a phase are the non-developer work tied to that feature. They do not block the dev's gate unless the gate says so.
 
@@ -230,7 +231,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] Drizzle `src/server/db/schema.ts` with an `app_meta` table. Generate the migration and apply it locally and to staging.
 - [x] Hono app mounted at `/api`. `GET /api/health` returns `{ ok: true, dbVersion }` read from `app_meta`. Every non-`/api` path falls through to static assets.
 - [x] Package scripts: `db:generate`, `db:migrate:local`, `db:migrate:staging`, `db:migrate:prod`, `deploy:staging`, `deploy:prod`, `seed`. Each one is called through `vp run`.
-- [x] CI (`setup-vp`): `vp install --frozen-lockfile`, `vp check`, `vp test`, `vp build`. On merge to `main`, run the staging migrations and then deploy to staging. On a `v*` tag, deploy to production (the production migration is a manual step, see Phase 15).
+- [x] CI (`setup-vp`): `vp install --frozen-lockfile`, `vp check`, `vp test`, `vp build`. On merge to `main`, run the staging migrations and then deploy to staging. On a `v*` tag, deploy to production (the production migration is a manual step, see Phase 14).
 - [ ] Secrets set in staging and production. `.dev.vars` and `.env*` are in `.gitignore`.
 
 ### Checklist — Client stack
@@ -732,7 +733,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 **Goal:** One `screen()` function runs the deterministic rules and a stub model step, posts end up published, pending review or rejected, and mods clear held posts from the same queue as reports.
 
-> **Justification:** Every post type calls `screen()` from its first commit, so the real Clef step in Phase 14 is a swap behind an interface and no feature code changes.
+> **Justification:** Every post type calls `screen()` from its first commit, so a real model step (Clef, optional Phase O3) is a swap behind an interface and no feature code changes. Until then the stub model step stays.
 
 > **Design decisions (locked in):**
 >
@@ -746,7 +747,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - **Audit:** every automatic decision writes an audit row with actor `automod`, the model name, the category, the scores and a text snapshot.
 > - A test-only flag forces `review`, so the queue can be exercised before Clef exists.
 > - The mod's decision overrides the model. The author gets a `notify()` message on approve or reject.
-> - **Images (added 2026-10-19, for post photos in Phases 15 and 16):** `screen()` input takes optional `images` (WebP bytes). The rules step treats a bad image (not WebP, too large, wrong dimensions, EXIF or XMP chunk) as a clear rule violation. The model step receives the images with the text. The stub model step returns `review` whenever images are present, so photos are never published unscreened.
+> - **Images (added 2026-10-19, for post photos in Phases 12 and 13):** `screen()` input takes optional `images` (WebP bytes). The rules step treats a bad image (not WebP, too large, wrong dimensions, EXIF or XMP chunk) as a clear rule violation. The model step receives the images with the text. The stub model step returns `review` whenever images are present, so photos are never published unscreened.
 
 ### Checklist
 
@@ -972,7 +973,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Docs & QA (C, D)
 
 - [ ] C: update the SRS and diagrams for rides.
-- [ ] D: ride screens. ToS ride-safety wording. Ride test cases. Start the auto-moderation calibration set (Phase 14).
+- [ ] D: ride screens. ToS ride-safety wording. Ride test cases. The auto-moderation calibration set only if Phase O3 is picked up.
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -991,7 +992,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ## Phase 12 — Lost and found
 
-**Owner:** Dev B (Dev A reviews) · **When:** Week 6-7 · **Depends on:** Phase 11
+**Owner:** Dev A (Dev B reviews) · **When:** Weeks 6-7 · **Depends on:** Phase 11
 
 **Goal:** Students post lost or found items, filter and search the feed, contact each other through the shared kit, and mark posts resolved. Found posts keep a private verification detail.
 
@@ -1011,7 +1012,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - Optional, at most 3 photos per post (multiple angles). The first is the cover shown in the feed. Only WebP is ever stored. Rides have no photos.
 > - **Encoding in the browser:** the client resizes each photo so its longest side is at most the max side in `limits.ts` (start at 1600px) and encodes WebP at quality 0.8. Re-encoding through a canvas drops EXIF, including GPS. If `canvas.toBlob(..., "image/webp")` returns a blob that is not WebP (some Safari versions fall back to PNG), the client uses a WASM WebP encoder (`@jsquash/webp`) instead. The server never converts images: Workers Free allows 10 ms CPU per request.
 > - **Server checks (never trust the client):** create and edit are one multipart request carrying the fields and the photos, so a photo never exists without its post. `src/shared/webp.ts` accepts only RIFF/WEBP files within the byte limit and dimension limits read from the header, with no `EXIF` or `XMP ` chunk. The client uses the same parser to check its own output. A bad file is a field error, returned before R2 or Clef is touched.
-> - **Screening:** photos go through `screen()` with the text (Phase 8 image hook, Phase 14 photo questions). Until Clef is live, a post with photos goes to `pending_review`. Edits that add, remove or reorder photos are screened again.
+> - **Screening:** photos go through `screen()` with the text (Phase 8 image hook; Phase O3 photo questions if it ships). Without Clef, every post with photos goes to `pending_review`, so a mod sees each photo before it is published. Edits that add, remove or reorder photos are screened again.
 > - **Storage:** private R2 bucket per environment, binding `POST_PHOTOS`. Keys are `<target_type>/<postId>/<random>.webp`. The post ID is generated in the Worker before the insert. Objects are written first, then the D1 rows. If the D1 write fails, the request deletes the objects it wrote. One `post_photos` table (target type, target ID, key, position, width, height, bytes), indexed on target type + target ID, holds the keys for every post type. Photos removed in an edit are deleted from R2 after the D1 update. `ceiling:` a Worker killed between the R2 write and the D1 write leaves an orphan object. The key prefix makes a later sweep possible. Revisit if the bucket size drifts from the sum of `bytes`.
 > - **Serving:** `GET /api/photos/:key` looks up the row, applies `visibleTo(user)` to its post and streams the object with `Cache-Control: private, max-age=<limits.ts>, immutable`. A key never gets new content, so long caching is safe. The bucket has no public access, no `r2.dev` URL and no custom domain, so photos of a hidden or deleted post stop loading for anyone who has not cached them. Mods see photos in the queue through the same endpoint. `ceiling:` every uncached photo is one Worker request against the 100,000/day free limit, and feeds load full-size covers (no thumbnails). Revisit if photo requests pass about 30% of daily requests or users report heavy data use.
 > - **Cleanup:** mod removal and author delete stay soft deletes. The objects stay until the purge, so a mod reversal restores the photos. Each type's cron job deletes a post's R2 objects through the kit (one batched `delete()` per run, at most 1,000 keys) before its rows, so a failed run retries next time instead of losing the keys.
@@ -1060,7 +1061,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ## Phase 13 — Marketplace
 
-**Owner:** Dev A (Dev B reviews) · **When:** Week 7 · **Depends on:** Phase 11, Phase 12 (post photos kit)
+**Owner:** Dev B (Dev A reviews) · **When:** Week 7 · **Depends on:** Phase 11, Phase 12 (post photos kit)
 
 **Goal:** Students list second-hand items with price, condition and contacts, filter the feed, and mark listings sold, within the 10-active-listing limit.
 
@@ -1101,49 +1102,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ---
 
-## Phase 14 — Clef auto-moderation
+## Phase 14 — Hardening & release
 
-**Owner:** Dev A (thresholds with D) · **When:** Weeks 6-7 · **Depends on:** Phase 8, D's calibration set. The photo questions wait for Phase 12's post photos kit.
-
-**Goal:** The stub model step is replaced by Clef-flash with thresholds tuned on a labelled set, so clear posts publish or are rejected on their own and only the uncertain band reaches a mod.
-
-> **Note (2026-11-12):** the finder gate that used to live here moved to Phase O2 with the finder. Auto-moderation itself stays in scope.
-
-> **Design decisions (locked in):**
->
-> - `ClefClient` adapter on the `AI` binding with a timeout and a daily cap. Any failure → `pending_review` (the fail safe from Phase 8). Default model `@cf/cloudflare/clef-flash`. Switch to `@cf/cloudflare/clef` only if calibration shows Clef-flash cannot meet the target.
-> - Two thresholds, both from calibration and never guessed: auto-reject needs a high score on a clear category, auto-approve needs a high score on "fine", and everything in between goes to a human. The target is a very low false-reject rate (the exact number is an Open decision). The review band is kept narrow so the mod queue stays manageable.
-> - Students write English, Bangla and Banglish. The calibration set (about 150 examples: allowed posts, each prohibited category, personal data, spam, Banglish) covers all three, and uncertain results go to humans.
-> - The model sees only post text, never usernames or IDs.
-> - **Photos (added 2026-10-19):** post photos go to Clef-flash in the same call as the text, as image bytes (Clef does not accept URLs), never with filenames or metadata. Extra questions: does a photo show a readable ID or card number, a phone number or other personal data (→ personal data; on "ID or card" lost-and-found posts this goes to review, never auto-reject, since those posts are always reviewed), nudity or violence (→ abuse), or a prohibited item (→ prohibited item). The same two thresholds apply. Cost: about 1,030 input tokens per photo (one token per 32×32 block, capped at 1,024, plus 3), so a 3-photo post is about 11 Neurons.
-> - **Fallback (cut order step 4):** if Clef is not ready, the stub stays and posts publish straight away after the rules. The report flow covers the rest.
-
-### Checklist — Build order
-
-- [ ] **Step 5:** `ClefClient` + fake. Confirm the exact call format on the model page, including how image bytes are passed in `images`. Wire it in as the `ModelStep` behind the existing interface.
-- [ ] **Step 6:** calibration runner script (`vp run moderation:calibrate`): runs the labelled set and reports the false-reject rate, the false-approve rate and the share sent to review at the candidate thresholds. Lock the chosen thresholds in `limits.ts` and record them here: `________`.
-- [ ] **Step 7:** tests with the fake Clef client (Dev A and Dev B).
-
-### Checklist — Docs & QA (C, D)
-
-- [ ] D: finish the calibration set early in Week 7 and run it with Dev A. Banglish samples in the manual test run.
-- [ ] D: about 30 labelled post photos in the calibration set: ordinary items, ID cards, payment cards, screenshots with phone numbers, prohibited items.
-
-### Checklist — Test Scripts & Smoke Tests
-
-- [ ] `src/server/moderation/clef.test.ts`: the score-to-verdict mapping at and around each threshold, timeout, error and cap → review, the audit row has the model name and scores, images reach the fake client, a fake "readable ID number" answer on a photo gives personal data, and review (not reject) on an "ID or card" lost-and-found post.
-- [ ] Run: `vp test clef moderation` and `vp run moderation:calibrate`
-
-### Test Gate 14
-
-- [ ] **Clef tests pass.**
-- [ ] **The calibration run meets the agreed false-reject target, and the result is recorded in this phase.**
-
----
-
-## Phase 15 — Hardening & release
-
-**Owner:** Dev B (lead), Dev A (bug fixes) · **When:** Week 8 · **Depends on:** Phases 1 to 14 (or their cut fallbacks). Not the optional phases.
+**Owner:** Dev B (lead), Dev A (bug fixes) · **When:** Week 8 · **Depends on:** Phases 1 to 13 (or their cut fallbacks). Not the optional phases.
 
 **Goal:** Production is live from a tag, a rollback has been rehearsed, and every cross-cutting rule (limits, moderation on every post type, privacy, themes, PWA) is checked against the real app.
 
@@ -1157,14 +1118,14 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [ ] Every write route has a `rateLimit()` (signup, login, every post create, reports, contact reveal). List them in `limits.ts` comments.
 - [ ] Reports, mod removal and admin reversal confirmed for resource submissions, rides, lost and found, and marketplace listings.
 - [ ] Hard-coded color search is clean. D has checked the key screens (Home, course map, feeds, forms, mod panel) in every palette at phone width.
-- [ ] Re-check the Clef-flash price, free allowance and context, the R2 prices, and the Workers and D1 limits. Set the production caps. Confirm the R2 billing notification is on.
-- [ ] Re-run the calibration set against production thresholds.
-- [ ] Privacy note in the app (the moderation model gets only post text and photos, never usernames or IDs).
+- [ ] Re-check the R2 prices and the Workers and D1 limits. Set the production caps. Confirm the R2 billing notification is on.
+- [ ] Confirm the review queue keeps up without a model step: every post with photos waits for a mod, so check the number of mods and their turnaround (Open decisions).
+- [ ] Privacy note in the app. The release sends nothing to an AI service; if an optional AI phase ships later, the note says what it receives (never usernames or IDs).
 - [ ] Lighthouse PWA audit passes.
 - [ ] Production migration, then `vp run deploy:prod` from a tag. Admin seeded in production and password changed.
 - [ ] Rollback rehearsal: deploy tag N+1 to staging, roll back to N, confirm the app and API both revert and the installed app picks up the change.
 
-### Test Gate 15
+### Test Gate 14
 
 - [ ] **CI is green on the release tag, and production `/api/health` is OK.**
 - [ ] **(Manual) The rollback rehearsal succeeded and was written down.**
@@ -1172,9 +1133,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ---
 
-## Phase 16 — Delivery: documents, full test run & demo
+## Phase 15 — Delivery: documents, full test run & demo
 
-**Owner:** C, D, All · **When:** Week 8 · **Depends on:** Phase 15
+**Owner:** C, D, All · **When:** Week 8 · **Depends on:** Phase 14
 
 **Goal:** The final SRS, design report, diagrams and manual test report match what shipped, and the team has done two demo dry runs on an installed phone.
 
@@ -1186,9 +1147,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [ ] D: demo script. Final ToS, takedown policy, disclaimer and "unofficial student-run app" wording.
 - [ ] All: two demo dry runs on an installed phone. Final release tag.
 
-**Course outcome mapping:** CO1 Requirements (20%) → SRS + survey. CO2 OO design (30%) → diagrams + design report. CO3 Implementation (30%) → the one-Worker PWA, API, D1 and cron, the shared moderation flow, Clef behind an adapter (plus OpenAlex and DeepSeek if O1 or O2 ships), and the live demo on an installed phone. CO4 Testing (20%) → unit, API and manual tests linked to SRS IDs.
+**Course outcome mapping:** CO1 Requirements (20%) → SRS + survey. CO2 OO design (30%) → diagrams + design report. CO3 Implementation (30%) → the one-Worker PWA, API, D1 and cron, the shared moderation flow, web push behind an adapter with a fake (plus Clef, OpenAlex and DeepSeek if the optional phases ship), and the live demo on an installed phone. CO4 Testing (20%) → unit, API and manual tests linked to SRS IDs.
 
-### Test Gate 16
+### Test Gate 15
 
 - [ ] **(Manual) Every SRS requirement ID has a test case, and the final run's defect report is published.**
 - [ ] **(Manual) Two dry runs were completed, and the release is tagged.**
@@ -1197,7 +1158,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ## Optional phases (may never ship)
 
-Faculty research profiles and the AI supervisor finder were moved here on 2026-11-12 (they were Phases 11 and 13). They are not part of the release, nothing in Phases 0 to 16 depends on them, and they may never be built. They keep their locked decisions so they can be picked up later without re-planning. The faculty directory the attempt picker and resource requests use (Phase 6, mod-managed) is already built and is not affected. If either phase is picked up, it runs after Phase 15, with Phase 15's checks repeated for the new routes.
+Faculty research profiles and the AI supervisor finder were moved here on 2026-11-12 (they were Phases 11 and 13), and Clef auto-moderation later the same day (it was Phase 14). They are not part of the release, nothing in Phases 0 to 15 depends on them, and they may never be built. They keep their locked decisions so they can be picked up later without re-planning. The faculty directory the attempt picker and resource requests use (Phase 6, mod-managed) is already built and is not affected. Any of them runs after Phase 14, with Phase 14's checks repeated for what it adds. O3 stands alone; O2 needs O1, and its gate needs O3's `ClefClient`.
 
 ---
 
@@ -1247,7 +1208,7 @@ Faculty research profiles and the AI supervisor finder were moved here on 2026-1
 
 ## Phase O2 — AI matching & supervisor finder chat
 
-**Owner:** Dev A · **When:** after the release, if at all · **Depends on:** Phase O1, Phase 14 (`ClefClient`, for the gate)
+**Owner:** Dev A · **When:** after the release, if at all · **Depends on:** Phase O1, Phase O3 (`ClefClient`, for the gate)
 
 **Goal:** A student describes their interests in a chat and gets up to 5 real faculty suggestions with one-line reasons, from one stateless, validated, rate-limited DeepSeek call per message.
 
@@ -1260,13 +1221,13 @@ Faculty research profiles and the AI supervisor finder were moved here on 2026-1
 > - Limits: 10 matches per user per day and a global daily cap, both checked before the call (`limits.ts`).
 > - UI: a popup on desktop and a full-screen chat on mobile, sharing one in-memory thread. A greeting and quick-prompt chips ("ML for CSE499", "Databases", "Networks & security", "Algorithms"). The footer says "suggested from published work". Results never claim that a faculty member is taking students, and the chat tells students to contact faculty through official channels.
 > - **Fallback if the chat UI slips:** a single interest box with a results list, using the same endpoint.
-> - **Finder gate:** cheap checks first (empty, over 500 characters, symbols only), then one Clef decision (needs Phase 14's `ClefClient`): relevant / too vague / off-topic / abusive or instruction attempt. Only "relevant" goes on to DeepSeek. The others get fixed server-written replies, and "too vague" has its own reply that suggests topics. Chips skip the gate. The gate sees only the message, never the faculty list. Gate limit: 30 per user per day. If Clef is down or capped, the message goes to the match step, where the normal limits apply. Only messages that pass the gate count toward the 10-per-day match limit. `note:` the gate saves money but is not a security boundary. The match call still treats the text as data.
+> - **Finder gate:** cheap checks first (empty, over 500 characters, symbols only), then one Clef decision (needs Phase O3's `ClefClient`): relevant / too vague / off-topic / abusive or instruction attempt. Only "relevant" goes on to DeepSeek. The others get fixed server-written replies, and "too vague" has its own reply that suggests topics. Chips skip the gate. The gate sees only the message, never the faculty list. Gate limit: 30 per user per day. If Clef is down or capped, the message goes to the match step, where the normal limits apply. Only messages that pass the gate count toward the 10-per-day match limit. `note:` the gate saves money but is not a security boundary. The match call still treats the text as data.
 
 ### Checklist — Build order
 
 - [ ] **Step 1:** `POST /api/finder/match`: limits, prompt builder, `DeepSeekClient` (match mode), validation, ID filter, one retry, server-built reply.
 - [ ] **Step 2:** chat UI (greeting, chips, 500-character input, cards, fallback reply, footer note). Popup and full-screen layouts sharing state.
-- [ ] **Step 3:** finder gate in front of `/api/finder/match` (Phase 14's `ClefClient`).
+- [ ] **Step 3:** finder gate in front of `/api/finder/match` (Phase O3's `ClefClient`).
 - [ ] **Step 4:** tests with the fake DeepSeek and Clef clients.
 
 ### Checklist — Docs & QA (C, D)
@@ -1287,6 +1248,46 @@ Faculty research profiles and the AI supervisor finder were moved here on 2026-1
 
 ---
 
+## Phase O3 — Clef auto-moderation
+
+**Owner:** Dev A (thresholds with D) · **When:** after the release, if at all · **Depends on:** Phase 8, Phase 12 (post photos kit, for the photo questions), D's calibration set
+
+**Goal:** The stub model step is replaced by Clef-flash with thresholds tuned on a labelled set, so clear posts publish or are rejected on their own and only the uncertain band reaches a mod.
+
+> **Note (2026-11-12):** optional. The release runs without it (see "Without this phase" below). The finder gate that used to live here moved to Phase O2.
+
+> **Design decisions (locked in):**
+>
+> - `ClefClient` adapter on the `AI` binding with a timeout and a daily cap. Any failure → `pending_review` (the fail safe from Phase 8). Default model `@cf/cloudflare/clef-flash`. Switch to `@cf/cloudflare/clef` only if calibration shows Clef-flash cannot meet the target.
+> - Two thresholds, both from calibration and never guessed: auto-reject needs a high score on a clear category, auto-approve needs a high score on "fine", and everything in between goes to a human. The target is a very low false-reject rate (the exact number is an Open decision). The review band is kept narrow so the mod queue stays manageable.
+> - Students write English, Bangla and Banglish. The calibration set (about 150 examples: allowed posts, each prohibited category, personal data, spam, Banglish) covers all three, and uncertain results go to humans.
+> - The model sees only post text, never usernames or IDs.
+> - **Photos (added 2026-10-19):** post photos go to Clef-flash in the same call as the text, as image bytes (Clef does not accept URLs), never with filenames or metadata. Extra questions: does a photo show a readable ID or card number, a phone number or other personal data (→ personal data; on "ID or card" lost-and-found posts this goes to review, never auto-reject, since those posts are always reviewed), nudity or violence (→ abuse), or a prohibited item (→ prohibited item). The same two thresholds apply. Cost: about 1,030 input tokens per photo (one token per 32×32 block, capped at 1,024, plus 3), so a 3-photo post is about 11 Neurons.
+> - **Without this phase:** the stub model step stays, so posts publish straight after the rules step, posts with photos always go to `pending_review`, and the report flow covers the rest.
+
+### Checklist — Build order
+
+- [ ] **Step 1:** `ClefClient` + fake. Confirm the exact call format on the model page, including how image bytes are passed in `images`. Wire it in as the `ModelStep` behind the existing interface.
+- [ ] **Step 2:** calibration runner script (`vp run moderation:calibrate`): runs the labelled set and reports the false-reject rate, the false-approve rate and the share sent to review at the candidate thresholds. Lock the chosen thresholds in `limits.ts` and record them here: `________`.
+- [ ] **Step 3:** tests with the fake Clef client.
+
+### Checklist — Docs & QA (C, D)
+
+- [ ] D: build the calibration set and run it with Dev A. Banglish samples in the manual test run.
+- [ ] D: about 30 labelled post photos in the calibration set: ordinary items, ID cards, payment cards, screenshots with phone numbers, prohibited items.
+
+### Checklist — Test Scripts & Smoke Tests
+
+- [ ] `src/server/moderation/clef.test.ts`: the score-to-verdict mapping at and around each threshold, timeout, error and cap → review, the audit row has the model name and scores, images reach the fake client, a fake "readable ID number" answer on a photo gives personal data, and review (not reject) on an "ID or card" lost-and-found post.
+- [ ] Run: `vp test clef moderation` and `vp run moderation:calibrate`
+
+### Test Gate O3
+
+- [ ] **Clef tests pass.**
+- [ ] **The calibration run meets the agreed false-reject target, and the result is recorded in this phase.**
+
+---
+
 ## Stretch phases (parked until the Sprint 4 go/no-go)
 
 | Phase | Work                                                                                                                                   | Owner |
@@ -1301,10 +1302,10 @@ Faculty research profiles and the AI supervisor finder were moved here on 2026-1
 
 ```
             Week 0      Weeks 1-2       Weeks 3-4             Weeks 5-6        Week 7             Week 8
-Both/B:   P0 + P1 ──→ P2 → P3 → P4b → P7 → P8 → P9 ───────→ P11 ─────────→ P12 ─────────────→ P15 ─┐
-Dev A:    P0 ───────→ P4 ──────────→ P5 → P6 → P9b ───────→ P10 → P14 ───→ P13 ─────────────→ bugs ├→ P16
+Both/B:   P0 + P1 ──→ P2 → P3 → P4b → P7 → P8 → P9 ───────→ P11 ─────────→ P13 ─────────────→ P14 ─┐
+Dev A:    P0 ───────→ P4 ──────────→ P5 → P6 → P9b ───────→ P10 → P12 ───────────────────────→ bugs ├→ P15
 C / D:    Docs & QA subsections inside each phase ─────────────────────────────────────────────────┘
-Optional: O1 → O2, only after P15, if ever (see Optional phases)
+Optional: O1 → O2 and O3, only after P14, if ever (see Optional phases)
 ```
 
 **Dependencies that cross tracks:**
@@ -1312,7 +1313,6 @@ Optional: O1 → O2, only after P15, if ever (see Optional phases)
 - P4b (design language) restyles P4's course screens, so it starts once P4's screens are merged.
 - P8 (held-post notifications) needs P5's `notify()`. P5 is Dev A's first Sprint 2 task. Until it lands, Dev B codes against the signature in `docs/api-contracts.md`.
 - P10 (resources) needs P7 (reports) and P8 (`screen()`). P11 (rides) needs the same.
-- P14 needs D's calibration set (started with rides in P11). Its photo questions need P12's post photos kit, so they land last.
 - P9b (grade planner) needs P6's `grading.ts` and attempts. It lands before P10 starts.
 - P12 and P13 need P11's shared post kit. P13 also needs P12's post photos kit.
 
@@ -1324,13 +1324,12 @@ Optional: O1 → O2, only after P15, if ever (see Optional phases)
 2. Lost-and-found possible-match notification (P12 step 8)
 3. Recurring-ride renewal (rides keep their default end date)
 4. Post photos (P12 photo setup and photos kit, P13 photos). Posts stay text-only.
-5. The Clef step (P14). The rules, the stub and the human queue stay, and posts publish after the rules (posts with photos go to review).
-6. Marketplace (P13)
-7. Lost and found (P12)
+5. Marketplace (P13)
+6. Lost and found (P12)
 
-The optional phases (O1 faculty profiles, O2 supervisor finder) are not in the cut order: they are outside the release.
+The optional phases (O1 faculty profiles, O2 supervisor finder, O3 Clef auto-moderation) are not in the cut order: they are outside the release.
 
-Shrink Phase 15 hardening only as a last resort. **Never cut** moderation, audit or reversal (P7, P8). The class routine (P9) is small and is not expected to be cut.
+Shrink Phase 14 hardening only as a last resort. **Never cut** moderation, audit or reversal (P7, P8). The class routine (P9) is small and is not expected to be cut.
 
 **Still parked (do not schedule without new evidence):**
 
@@ -1354,7 +1353,7 @@ Each row names the phase that needs the answer. When it is settled, move it into
 | Decision                                                                                                         | Needed by         | Owner    |
 | ---------------------------------------------------------------------------------------------------------------- | ----------------- | -------- |
 | Project deadline, demo date, required SRS format or presentation                                                 | P0                | C        |
-| Clef-flash: re-check price and allowance before launch (findings below)                                          | P14, P15          | Dev A    |
+| Clef-flash: re-check price and allowance before launch (findings below)                                          | O3                | Dev A    |
 | DeepSeek prepaid budget and global daily cap (model and price below)                                             | O2                | Dev A    |
 | App name, icon set, theme storage key                                                                            | P1, P3            | All      |
 | Mock `BottomSheet` vs shadcn Drawer: **decided**, shadcn `Sheet` (`side="bottom"`)                               | P1                | Dev B    |
@@ -1368,14 +1367,15 @@ Each row names the phase that needs the answer. When it is settled, move it into
 | Faculty summary refresh cadence (suggested: once a semester)                                                     | O1                | Dev A    |
 | Recurring ride policy (60-day default end date + renewal)                                                        | P11               | All      |
 | Exact course codes and names for CSE299, CSE499, CSE498R (ask a CSE advisor)                                     | O2                | D        |
-| Target false-reject rate, number of mods, target review turnaround                                               | P14               | All      |
+| Number of mods and target review turnaround (every photo post waits for a mod)                                   | P14               | All      |
+| Target false-reject rate                                                                                         | O3                | All      |
 | Campus lost-property office or security desk to link                                                             | P12               | D        |
 | Marketplace prohibited-items list and ToS wording                                                                | P13               | All      |
 | Post photo caps (bytes, max side, per-user and global daily uploads), cache lifetime, author-delete purge window | P11, P12          | Dev B    |
 | Stretch go/no-go                                                                                                 | Start of Sprint 4 | All      |
-| "Unofficial student-run app" wording; whether NSU name approval can wait until after the demo                    | P16               | All      |
+| "Unofficial student-run app" wording; whether NSU name approval can wait until after the demo                    | P15               | All      |
 
-**Platform facts (checked 2026-10-18, re-check in P15):**
+**Platform facts (checked 2026-10-18, re-check in P14):**
 
 - **Workers Free:** 100,000 requests/day (resets 00:00 UTC), 10 ms CPU per request and per cron run, 50 subrequests per invocation, 5 Cron Triggers per account, 64 MiB uncompressed Worker size, 20,000 static files of at most 25 MiB each. Over the limit, requests fail; nothing is billed.
 - **D1 Free:** 5 million rows read/day, 100,000 rows written/day, 5 GB storage. Over a daily limit, queries fail until 00:00 UTC (06:00 Asia/Dhaka).
@@ -1418,7 +1418,7 @@ Seeded with the platform gotchas already known from `plan_pwa.md`. Add real ones
 | Figma (D)                               | Mobile-first screens for every phase                                                               |
 | Manual test cases and defect report (D) | Linked to SRS requirement IDs (DoD item 4)                                                         |
 | ToS, takedown policy, disclaimer (D)    | Legal wording referenced in Phases 10, 11, 12, 15, 16                                              |
-| Calibration set (D)                     | About 150 labelled examples for Phase 14                                                           |
+| Calibration set (D)                     | About 150 labelled examples for Phase O3                                                           |
 | Theme mock site                         | Source of the palettes and picker components ported in Phase 1 (add link)                          |
 
 ---
