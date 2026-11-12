@@ -1,4 +1,4 @@
-import { Link, useMatch } from "@tanstack/react-router";
+import { Link, useLocation, useMatch } from "@tanstack/react-router";
 import { ArrowRightIcon, ChevronRightIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { focusRing } from "@/components/ui/focus";
@@ -40,6 +40,9 @@ export function RideList({
 }) {
   // With a ride already open (the side panel), another row swaps it in place instead of stacking history.
   const open = useMatch({ from: "/rides/$rideId/", shouldThrow: false }) !== undefined;
+  // A new entry sits on top of the list entry, which closing goes back to; a swap keeps whatever the
+  // open ride's entry already says (a shared link has no list entry below it).
+  const fromList = useLocation({ select: (l) => l.state.rideFromList === true });
   return (
     <ul className="overflow-hidden rounded-panel bg-surface md:rounded-[24px]">
       {items.map((ride) => {
@@ -55,6 +58,7 @@ export function RideList({
               search
               resetScroll={false}
               replace={open}
+              state={{ rideFromList: open ? fromList : true }}
               onClick={(event) => onOpen?.(event.currentTarget)}
               className={`flex min-h-15 items-center gap-3 px-4 py-3 outline-none hover:bg-tint active:bg-tint aria-[current=page]:bg-brand-soft ${focusRing} focus-visible:-outline-offset-2 ${press}`}
             >

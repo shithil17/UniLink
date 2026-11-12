@@ -20,6 +20,7 @@ import {
   fieldsFromRide,
   instantToDeparture,
   RIDE_DEFAULT_END_WORDS,
+  RIDE_EDIT_END_WORDS,
   RIDE_EXPIRY_WORDS,
   rideBodyFromFields,
   rideFormResolver,
@@ -397,7 +398,7 @@ export function RideForm({
                         ref={field.ref}
                         onBlur={field.onBlur}
                         label="Runs until (optional)"
-                        clearable
+                        clearable={!ride}
                         value={field.value}
                         aria-invalid={Boolean(errors.endsOn)}
                         onChange={field.onChange}
@@ -408,7 +409,9 @@ export function RideForm({
                 </Field>
               </div>
               <FieldDescription className="-mt-3">
-                Dhaka time. {RIDE_DEFAULT_END_WORDS} {RIDE_EXPIRY_WORDS.recurring}
+                {ride
+                  ? `Dhaka time. ${RIDE_EDIT_END_WORDS}`
+                  : `Dhaka time. ${RIDE_DEFAULT_END_WORDS} ${RIDE_EXPIRY_WORDS.recurring}`}
               </FieldDescription>
             </>
           )}

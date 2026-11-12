@@ -54,7 +54,11 @@ function renderAt(
   path: string,
   feeds: { filters: object; page: RideFeedPage }[],
   mine: RideFeedPage = { items: [], nextCursor: null },
-  { phone = false, details = [] }: { phone?: boolean; details?: RideSummary[] } = {},
+  {
+    phone = false,
+    details = [],
+    before = [],
+  }: { phone?: boolean; details?: RideSummary[]; before?: string[] } = {},
 ) {
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query.includes("min-width") ? !phone : true,
@@ -98,7 +102,8 @@ function renderAt(
   const router = createRouter({
     routeTree,
     context: { queryClient },
-    history: createMemoryHistory({ initialEntries: [path] }),
+    // `before` are entries under the page, such as the site a shared link was opened from.
+    history: createMemoryHistory({ initialEntries: [...before, path] }),
   });
   render(
     <QueryClientProvider client={queryClient}>
@@ -441,6 +446,52 @@ describe("Rides screen", () => {
       );
       await waitFor(() => expect(panel.textContent).toContain("Second ride"));
       expect(panel.querySelector("[aria-busy='true']")).toBeNull();
+    });
+
+    // Where "Back to rides" lands once the ride is not available, with the ride's fetch failing as a 404.
+    const rideGone = () =>
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(() => Promise.resolve(Response.json({ error: "not_found" }, { status: 404 }))),
+      );
+
+    it("closing after a shared link and another row stays on /rides with the same search", async () => {
+      const router = renderAt(
+        "/rides/5?vehicle=car",
+        [
+          {
+            filters: { vehicle: "car" },
+            page: {
+              items: [one, ride({ id: 6, pickupArea: { id: 60, name: "Mirpur" } })],
+              nextCursor: null,
+            },
+          },
+        ],
+        undefined,
+        { details: [one], before: ["/settings"] },
+      );
+      const panel = await screen.findByRole("complementary", { name: "Ride details" });
+      await waitFor(() => expect(panel.textContent).toContain("Wait at gate 2"));
+      rideGone();
+      // The row replaces the shared link's entry, so closing must not go back off the page.
+      fireEvent.click(screen.getByRole("link", { name: /^Mirpur/ }));
+      await waitFor(() => expect(router.state.location.pathname).toBe("/rides/6"));
+      fireEvent.click(await screen.findByRole("button", { name: "Back to rides" }));
+      await waitFor(() => expect(router.state.location.pathname).toBe("/rides"));
+      expect(router.state.location.search).toEqual({ vehicle: "car" });
+    });
+
+    it("closing after a tab change under the open ride lands on /rides with the new tab", async () => {
+      const router = renderAt("/rides", feed([one]), { items: [one], nextCursor: null });
+      fireEvent.click(await screen.findByRole("link", { name: /Bashundhara R\/A/ }));
+      await waitFor(() => expect(router.state.location.pathname).toBe("/rides/5"));
+      rideGone();
+      // The entry under the ride has no tab, so closing by going back would lose it.
+      fireEvent.click(screen.getByRole("tab", { name: "My rides" }));
+      await waitFor(() => expect(router.state.location.search).toEqual({ tab: "mine" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Back to rides" }));
+      await waitFor(() => expect(router.state.location.pathname).toBe("/rides"));
+      expect(router.state.location.search).toEqual({ tab: "mine" });
     });
 
     // The poster's delete: the detail closes and "My rides" shows. The deleted ride's own detail is not

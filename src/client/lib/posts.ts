@@ -52,11 +52,15 @@ export function useRevealContact(basePath: `/api/${string}`) {
  */
 export function useDeletePost(basePath: `/api/${string}`) {
   const queryClient = useQueryClient();
+  // "/api/rides" is the "rides" in query keys. Only that type's detail is skipped: another type's
+  // post can have the same id.
+  const type = basePath.split("/")[2];
   return useMutation({
     mutationFn: (id: number) => apiDelete(`${basePath}/${id}`, ok),
     onSuccess: (_, id) =>
       queryClient.invalidateQueries({
-        predicate: ({ queryKey }) => !(queryKey[1] === "detail" && queryKey[2] === id),
+        predicate: ({ queryKey }) =>
+          !(queryKey[0] === type && queryKey[1] === "detail" && queryKey[2] === id),
       }),
   });
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import {
   contactValuesFromNumbers,
   emptyNumbers,
+  foreignWhatsappLabel,
   formatBdNumber,
   normalizeLocalDigits,
   numbersFromContacts,
@@ -79,7 +80,13 @@ describe("numbersFromContacts", () => {
   });
 
   it("shows one number with both toggles when both are the same, with or without a plus", () => {
-    const both = { digits: "1712345678", calls: true, whatsapp: true, otherWhatsapp: null };
+    const both = {
+      digits: "1712345678",
+      calls: true,
+      whatsapp: true,
+      otherWhatsapp: null,
+      foreignWhatsapp: null,
+    };
     expect(
       numbersFromContacts({ phone: "+8801712345678", whatsapp: "https://wa.me/8801712345678" }),
     ).toEqual(both);
@@ -118,10 +125,36 @@ describe("numbersFromContacts", () => {
     }
   });
 
-  it("does not cut a foreign WhatsApp number down", () => {
-    expect(numbersFromContacts({ whatsapp: "https://wa.me/14155550123" }).digits).toBe(
-      "14155550123",
-    );
+  it("keeps a foreign WhatsApp link as stored instead of reading it as a +880 number", () => {
+    for (const whatsapp of ["https://wa.me/14155550123", "https://wa.me/+14155550123"]) {
+      const stored = { phone: "+8801712345678", whatsapp };
+      const numbers = numbersFromContacts(stored);
+      expect(numbers).toMatchObject({ digits: "1712345678", foreignWhatsapp: whatsapp });
+      expect(contactValuesFromNumbers(numbers)).toEqual(stored);
+      // Changing the phone leaves the WhatsApp link exactly as it was.
+      expect(contactValuesFromNumbers({ ...numbers, digits: "1812345678" })).toEqual({
+        phone: "+8801812345678",
+        whatsapp,
+      });
+    }
+  });
+
+  it("keeps a foreign WhatsApp link that has no phone beside it", () => {
+    const stored = { phone: "", whatsapp: "https://wa.me/14155550123" };
+    expect(contactValuesFromNumbers(numbersFromContacts(stored))).toEqual(stored);
+  });
+
+  it("does not take a Bangladeshi WhatsApp link, with or without the trunk zero, for a foreign one", () => {
+    for (const whatsapp of ["https://wa.me/8801712345678", "https://wa.me/01712345678"]) {
+      expect(numbersFromContacts({ whatsapp }).foreignWhatsapp).toBeNull();
+    }
+  });
+});
+
+describe("foreignWhatsappLabel", () => {
+  it("shows the stored number with its plus", () => {
+    expect(foreignWhatsappLabel("https://wa.me/14155550123")).toBe("+14155550123");
+    expect(foreignWhatsappLabel("https://wa.me/+14155550123")).toBe("+14155550123");
   });
 });
 

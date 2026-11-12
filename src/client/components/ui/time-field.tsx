@@ -122,7 +122,7 @@ export function TimeField({
             <SheetTitle>{PLACEHOLDER}</SheetTitle>
             <SheetDescription className="sr-only">
               Arrow keys change the hour, minute or AM and PM, Left and Right arrows move between
-              them, Enter picks the time.
+              them, Enter or Space picks the time.
             </SheetDescription>
           </SheetHeader>
           <TimePanel
@@ -156,8 +156,8 @@ const PERIODS: Item[] = [
 function minuteItems(extra: number | undefined): Item[] {
   const minutes = Array.from({ length: 60 / MINUTE_STEP }, (_, i) => i * MINUTE_STEP);
   if (extra !== undefined && !minutes.includes(extra)) minutes.push(extra);
-  return minutes
-    .toSorted((a, b) => a - b)
+  return [...minutes]
+    .sort((a, b) => a - b)
     .map((m) => ({ id: String(m), text: String(m).padStart(2, "0") }));
 }
 
@@ -240,7 +240,7 @@ function TimePanel({
       const to = index + (e.key === "ArrowRight" ? 1 : -1);
       columnsOf(panelRef)[to]?.querySelector<HTMLElement>("[aria-selected='true']")?.focus();
       return;
-    } else if (e.key === "Enter") {
+    } else if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onDone(draft);
       return;

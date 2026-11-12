@@ -77,8 +77,11 @@ export const RIDE_EXPIRY_WORDS = {
   deleted: "A deleted ride is gone for everyone right away.",
 } as const;
 
-/** Under the end date field. */
+/** Under the end date field of a new ride. */
 export const RIDE_DEFAULT_END_WORDS = `Leave it empty and the ride runs for ${POST_DEFAULT_EXPIRY_DAYS} days.`;
+
+/** Under the end date field of a ride being edited, where the date can move but not be cleared. */
+export const RIDE_EDIT_END_WORDS = `Pick another date to change it, or renew the ride to add ${POST_RENEW_EXTEND_DAYS} days.`;
 
 export const RIDE_REPORT_DESCRIPTION =
   "Say what is wrong, such as a ride that isn't real or a post that breaks the rules. Moderators read every report.";
@@ -165,6 +168,13 @@ export function rideBadge(
   if (r.state === "expired") return "Ended";
   if (r.state === "full") return "Full";
   return null;
+}
+
+declare module "@tanstack/history" {
+  interface HistoryState {
+    /** Set on a ride's entry when a row of the list pushed it, so closing goes back to the list entry. */
+    rideFromList?: boolean;
+  }
 }
 
 // ---- The feed's search params --------------------------------------------------------------------

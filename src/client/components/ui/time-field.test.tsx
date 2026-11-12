@@ -126,6 +126,17 @@ describe("TimeField", () => {
     expect(onChange).toHaveBeenCalledWith("22:55");
   });
 
+  it("Space commits like Enter", async () => {
+    const { onChange } = setup({ value: "09:00" });
+    open();
+    await screen.findByRole("listbox", { name: "Hour" });
+    await waitFor(() => expect(document.activeElement).toBe(option("Hour", "9")));
+    fireEvent.keyDown(document.activeElement!, { key: "ArrowDown" });
+    fireEvent.keyDown(document.activeElement!, { key: " " });
+    expect(onChange).toHaveBeenCalledWith("10:00");
+    await closed();
+  });
+
   it("closes on Escape without changing the value and hands focus back", async () => {
     const { onChange } = setup({ value: "09:00" });
     open();

@@ -4,6 +4,7 @@ import {
   Link,
   redirect,
   useMatch,
+  useLocation,
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
@@ -57,8 +58,11 @@ function Rides() {
   const router = useRouter();
   const wide = useMediaQuery(RIDE_SPLIT_QUERY);
   const rideId = useMatch({ from: "/rides/$rideId/", shouldThrow: false })?.params.rideId;
-  // Set when a row opens a ride, so closing goes back to the list entry instead of stacking another.
-  const openedFromList = useRef(false);
+  // History state the row's link sets when it pushes the ride over the list, so closing goes back to
+  // the list entry instead of stacking another. It lives in the entry, so it survives a trip to the
+  // edit page and back, and is gone when a shared link opened the ride or the tab or filters changed
+  // under it (those replace the entry), as the entry below no longer has the same search.
+  const openedFromList = useLocation({ select: (l) => l.state.rideFromList === true });
   // The row that opened the ride, so closing the sheet puts focus back on it even where taps don't focus links.
   const openerRef = useRef<HTMLElement | null>(null);
   const tab = search.tab ?? "find";
@@ -73,8 +77,7 @@ function Rides() {
   const setFilters = (patch: Partial<RideFilters>) =>
     void navigate({ to: ".", search: (previous) => ({ ...previous, ...patch }), replace: true });
   const closeRide = () => {
-    if (openedFromList.current) {
-      openedFromList.current = false;
+    if (openedFromList) {
       router.history.back();
     } else {
       void navigate({ to: "/rides", search: true, replace: true });
@@ -82,7 +85,6 @@ function Rides() {
   };
   // The ride is gone, so land on the list's "mine" tab, where it no longer is.
   const rideDeleted = () => {
-    openedFromList.current = false;
     void navigate({ to: "/rides", search: { tab: "mine" }, replace: true });
   };
   // Remounts the filter bar (not the list), so its search box empties along with the URL.
@@ -99,7 +101,6 @@ function Rides() {
     });
   };
   const onOpen = (row: HTMLElement) => {
-    openedFromList.current = true;
     openerRef.current = row;
   };
 
@@ -113,7 +114,11 @@ function Rides() {
             </h1>
             <p className="mt-1 text-soft">Share a ride to campus, or find one going your way.</p>
           </div>
-          <Link to="/rides/new" className={buttonVariants({ size: "sm", className: "shrink-0" })}>
+          <Link
+            to="/rides/new"
+            search
+            className={buttonVariants({ size: "sm", className: "shrink-0" })}
+          >
             <PlusIcon aria-hidden strokeWidth={1.75} />
             Post a ride
           </Link>
@@ -198,7 +203,7 @@ function Feed({
                   Clear filters
                 </Button>
               ) : (
-                <Link to="/rides/new" className={buttonVariants({ size: "sm" })}>
+                <Link to="/rides/new" search className={buttonVariants({ size: "sm" })}>
                   Post a ride
                 </Link>
               )
@@ -253,7 +258,7 @@ function MyRides({ onOpen }: { onOpen: (row: HTMLElement) => void }) {
             title="You haven't posted a ride."
             description="Going to campus most days? Post it once and let students join."
             action={
-              <Link to="/rides/new" className={buttonVariants({ size: "sm" })}>
+              <Link to="/rides/new" search className={buttonVariants({ size: "sm" })}>
                 Post a ride
               </Link>
             }

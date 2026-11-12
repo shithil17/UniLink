@@ -126,6 +126,8 @@ export function RideOwnerActions({
           <Link
             to="/rides/$rideId/edit"
             params={{ rideId: String(ride.id) }}
+            // The list's filters and tab come along, and come back when the edit is saved or cancelled.
+            search
             className={buttonVariants({ variant: "outline", size: "sm" })}
           >
             <PencilIcon aria-hidden strokeWidth={1.75} />

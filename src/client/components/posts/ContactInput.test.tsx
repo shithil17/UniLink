@@ -188,6 +188,60 @@ describe("ContactInput", () => {
     });
   });
 
+  it("keeps a foreign WhatsApp number as stored when the phone is edited, and replaces it on request", async () => {
+    const onValid = vi.fn();
+    const foreign = "https://wa.me/14155550123";
+    render(
+      <Harness
+        onValid={onValid}
+        initial={{ ...blank, phone: "+8801712345678", whatsapp: foreign }}
+      />,
+    );
+    // Shown as it is, not under the +880 prefix, and not editable as digits.
+    const field = screen.getByLabelText("WhatsApp number") as HTMLInputElement;
+    expect(field.value).toBe("+14155550123");
+    expect(field.readOnly).toBe(true);
+    expect(screen.getAllByText("+880")).toHaveLength(1);
+    type("Phone number", "1812345678");
+    save();
+    expect(await submitted(onValid)).toEqual({
+      phone: "+8801812345678",
+      whatsapp: foreign,
+      messenger: undefined,
+    });
+    cleanup();
+
+    const again = vi.fn();
+    render(
+      <Harness
+        onValid={again}
+        initial={{ ...blank, phone: "+8801712345678", whatsapp: foreign }}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Replace it" }));
+    type("WhatsApp number", "01912345678");
+    save();
+    expect(await submitted(again)).toMatchObject({
+      phone: "+8801712345678",
+      whatsapp: "https://wa.me/8801912345678",
+    });
+  });
+
+  it("keeps the number when Calls is off and WhatsApp gets its own field and then the same number again", async () => {
+    const onValid = vi.fn();
+    render(<Harness onValid={onValid} />);
+    type("Phone number", "1712345678");
+    toggle("Calls");
+    fireEvent.click(screen.getByRole("button", { name: "Use a different WhatsApp number" }));
+    expect((screen.getByLabelText("WhatsApp number") as HTMLInputElement).value).toBe("1712345678");
+    fireEvent.click(screen.getByRole("button", { name: "Use the same number" }));
+    expect((screen.getByLabelText("Phone number") as HTMLInputElement).value).toBe("1712345678");
+    save();
+    expect(await submitted(onValid)).toMatchObject({
+      whatsapp: "https://wa.me/8801712345678",
+    });
+  });
+
   it("still takes a Messenger link on its own", async () => {
     const onValid = vi.fn();
     render(<Harness onValid={onValid} />);

@@ -337,7 +337,10 @@ describe("seats", () => {
 
     const over = await setSeats(who, ride.id, 5);
     expect(over.status).toBe(409);
-    expect((await over.json<{ error: string }>()).error).toBe("invalid_seats");
+    expect(await over.json<{ error: string; message: string }>()).toEqual({
+      error: "invalid_seats",
+      message: "Seat count must be between 0 and 4.",
+    });
     // Below 0 is refused by the shared schema before it gets to the database.
     expect((await setSeats(who, ride.id, -1)).status).toBe(400);
     expect((await setSeats(who, ride.id, 1.5)).status).toBe(400);
@@ -373,6 +376,19 @@ describe("seats", () => {
 
     const open = await (await setSeats(who, ride.id, 1)).json<RideSummary>();
     expect(open).toMatchObject({ seatsRemaining: 1, state: "open" });
+  });
+
+  it("empties a full ride again: a new ride has 0 taken, Mark as full stores 0 left, and saving all seats left reopens it", async () => {
+    const who = await person();
+    const ride = await post(who, oneOff({ totalSeats: 3 }));
+    expect(await rideRow(ride.id)).toMatchObject({ total_seats: 3, seats_remaining: 3 });
+
+    await call("POST", `/api/rides/${ride.id}/full`, who.token);
+    expect((await rideRow(ride.id))?.seats_remaining).toBe(0);
+
+    const reset = await (await setSeats(who, ride.id, 3)).json<RideSummary>();
+    expect(reset).toMatchObject({ totalSeats: 3, seatsRemaining: 3, state: "open" });
+    expect((await rideRow(ride.id))?.seats_remaining).toBe(3);
   });
 
   it("marks a ride fully booked in one call", async () => {

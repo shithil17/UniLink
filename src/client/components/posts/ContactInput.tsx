@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import {
   BD_PREFIX,
   contactValuesFromNumbers,
+  foreignWhatsappLabel,
   normalizeLocalDigits,
   numbersFromContacts,
   type ContactNumbers,
@@ -81,6 +82,9 @@ export function ContactInput() {
   );
   const e = errors.contacts;
   const split = numbers.otherWhatsapp !== null;
+  const foreign = numbers.foreignWhatsapp !== null;
+  // WhatsApp has a field of its own, so the first field only holds the phone.
+  const ownWhatsapp = split || foreign;
 
   const apply = (next: ContactNumbers) => {
     setNumbers(next);
@@ -98,9 +102,9 @@ export function ContactInput() {
     (el: HTMLInputElement | null) => {
       primary.current = el;
       phoneRef(el);
-      if (!split) whatsappRef(el);
+      if (!ownWhatsapp) whatsappRef(el);
     },
-    [phoneRef, whatsappRef, split],
+    [phoneRef, whatsappRef, ownWhatsapp],
   );
 
   const setToggle = (key: "calls" | "whatsapp", on: boolean) => {
@@ -111,7 +115,7 @@ export function ContactInput() {
     apply({ ...numbers, [key]: on });
   };
 
-  const primaryInvalid = Boolean(e?.phone) || (!split && Boolean(e?.whatsapp));
+  const primaryInvalid = Boolean(e?.phone) || (!ownWhatsapp && Boolean(e?.whatsapp));
 
   return (
     <FieldGroup>
@@ -124,9 +128,34 @@ export function ContactInput() {
           inputRef={setPrimary}
           onChange={(digits) => apply({ ...numbers, digits })}
         />
-        <FieldError errors={[e?.phone, split ? undefined : e?.whatsapp]} />
+        <FieldError errors={[e?.phone, ownWhatsapp ? undefined : e?.whatsapp]} />
       </Field>
-      {split ? (
+      {foreign ? (
+        <Field data-invalid={Boolean(e?.whatsapp)}>
+          <div className="flex items-center justify-between gap-3">
+            <FieldLabel htmlFor="contact-whatsapp">WhatsApp number</FieldLabel>
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="-my-3.5 -mr-1.5"
+              onClick={() => apply({ ...numbers, foreignWhatsapp: null, otherWhatsapp: "" })}
+            >
+              Replace it
+            </Button>
+          </div>
+          {/* Shown as stored, outside the +880 field: it is not a Bangladeshi number. */}
+          <Input
+            id="contact-whatsapp"
+            ref={whatsappRef}
+            readOnly
+            value={foreignWhatsappLabel(numbers.foreignWhatsapp ?? "")}
+            aria-invalid={Boolean(e?.whatsapp)}
+            className="tabular-nums"
+          />
+          <FieldError errors={[e?.whatsapp]} />
+        </Field>
+      ) : split ? (
         <Field data-invalid={Boolean(e?.whatsapp)}>
           <div className="flex items-center justify-between gap-3">
             <FieldLabel htmlFor="contact-whatsapp">WhatsApp number</FieldLabel>
@@ -136,7 +165,13 @@ export function ContactInput() {
               size="sm"
               className="-my-3.5 -mr-1.5"
               onClick={() =>
-                apply({ ...numbers, calls: true, whatsapp: true, otherWhatsapp: null })
+                apply({
+                  ...numbers,
+                  digits: numbers.digits || (numbers.otherWhatsapp ?? ""),
+                  calls: true,
+                  whatsapp: true,
+                  otherWhatsapp: null,
+                })
               }
             >
               Use the same number

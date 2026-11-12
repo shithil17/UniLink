@@ -1,0 +1,1 @@
+CREATE INDEX `rides_deleted_idx` ON `rides` (`deleted_at`) WHERE "rides"."deleted_at" is not null;

@@ -121,7 +121,7 @@ export const rideSeatsInput = z.object({
   seatsRemaining: z
     .number()
     .int()
-    .min(0, "Seats left can't be negative")
+    .min(0, "Seat count can't be negative")
     .max(RIDE_SEATS_MAX, `A ride can have at most ${RIDE_SEATS_MAX} seats`),
 });
 

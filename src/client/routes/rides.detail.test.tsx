@@ -246,6 +246,60 @@ describe("Ride detail", () => {
       expect(button("Save").disabled).toBe(true);
     });
 
+    // The case from a real report: a 3-seat ride, tapped to full under the old seats-left stepper.
+    describe("a 3-seat ride", () => {
+      const three = (seatsRemaining: number) =>
+        mine({ totalSeats: 3, seatsRemaining, state: seatsRemaining === 0 ? "full" : "open" });
+      const takenOf3 = () => screen.getByText(/^\d+ of 3$/).textContent;
+      const sent = (fetchMock: ReturnType<typeof renderDetail>) =>
+        fetchMock.mock.calls
+          .filter(([path]) => path === "/api/rides/5/seats")
+          .map(([, init]) => JSON.parse(init?.body as string));
+
+      it("starts with 0 taken, and + then Save sends 2 seats left", async () => {
+        const fetchMock = renderDetail(three(3), undefined, seatsApi(three(3)));
+        await screen.findByText("Seats taken");
+        expect(takenOf3()).toBe("0 of 3");
+        fireEvent.click(button("One more seat taken"));
+        fireEvent.click(button("Save"));
+        await waitFor(() => expect(toasts.success).toHaveBeenCalledWith("1 of 3 seats taken."));
+        expect(sent(fetchMock)).toEqual([{ seatsRemaining: 2 }]);
+      });
+
+      it("from full, - then Save sends 1 seat left", async () => {
+        const fetchMock = renderDetail(three(0), undefined, seatsApi(three(0)));
+        await screen.findByText("Seats taken");
+        expect(takenOf3()).toBe("3 of 3");
+        fireEvent.click(button("One seat freed up"));
+        fireEvent.click(button("Save"));
+        await waitFor(() => expect(toasts.success).toHaveBeenCalledWith("2 of 3 seats taken."));
+        expect(sent(fetchMock)).toEqual([{ seatsRemaining: 1 }]);
+      });
+
+      it("from full, - three times then Save empties the ride: 0 taken, 3 left", async () => {
+        const fetchMock = renderDetail(three(0), undefined, seatsApi(three(0)));
+        await screen.findByText("Seats taken");
+        for (let i = 0; i < 3; i++) fireEvent.click(button("One seat freed up"));
+        expect(takenOf3()).toBe("0 of 3");
+        fireEvent.click(button("Save"));
+        await waitFor(() => expect(toasts.success).toHaveBeenCalledWith("No seats taken."));
+        expect(sent(fetchMock)).toEqual([{ seatsRemaining: 3 }]);
+        await waitFor(() => expect(button("Mark as full").disabled).toBe(false));
+        expect(takenOf3()).toBe("0 of 3");
+      });
+
+      it("Mark as full calls the full endpoint, which the server stores as 0 seats left", async () => {
+        const fetchMock = renderDetail(three(3), undefined, seatsApi(three(3)));
+        await screen.findByText("Seats taken");
+        fireEvent.click(button("Mark as full"));
+        await waitFor(() => expect(takenOf3()).toBe("3 of 3"));
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/rides/5/full",
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+    });
+
     it("keeps the draft and toasts the error when Save fails", async () => {
       renderDetail(mine(), undefined, (path) =>
         path === "/api/rides/5/seats"

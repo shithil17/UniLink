@@ -148,6 +148,13 @@
       "when": 1794482553868,
       "tag": "0020_ride_areas",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1794489730705,
+      "tag": "0021_ride_deleted_index",
+      "breakpoints": true
     }
   ]
 }

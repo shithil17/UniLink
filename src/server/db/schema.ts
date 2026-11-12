@@ -565,5 +565,9 @@ export const rides = sqliteTable(
     // The feed filtered by area.
     index("rides_pickup_area_expires_idx").on(t.pickupAreaId, t.expiresAt),
     index("rides_destination_area_expires_idx").on(t.destinationAreaId, t.expiresAt),
+    // The cron purge of author-deleted rides: only deleted rows are indexed, so it never scans the table.
+    index("rides_deleted_idx")
+      .on(t.deletedAt)
+      .where(sql`${t.deletedAt} is not null`),
   ],
 );

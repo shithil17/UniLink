@@ -20,6 +20,12 @@ export type ContactNumbers = {
   whatsapp: boolean;
   /** A separate WhatsApp number, for a person whose WhatsApp is not their calling number. Null for one number. */
   otherWhatsapp: string | null;
+  /**
+   * A stored WhatsApp link for a number outside Bangladesh (the schema allows any 7 to 15 digit
+   * wa.me link), kept exactly as stored until the poster replaces it. Never shown under "+880" and
+   * never rewritten when the phone changes. Null when there is none.
+   */
+  foreignWhatsapp: string | null;
 };
 
 export const emptyNumbers = (): ContactNumbers => ({
@@ -27,6 +33,7 @@ export const emptyNumbers = (): ContactNumbers => ({
   calls: true,
   whatsapp: true,
   otherWhatsapp: null,
+  foreignWhatsapp: null,
 });
 
 /** Strips the country code or the trunk zero off whatever digits were typed or pasted. */
@@ -63,25 +70,73 @@ const whatsappOf = (digits: string, on: boolean) => {
 
 /** The `phone` and `whatsapp` form values for the typed number and toggles; empty strings mean absent. */
 export function contactValuesFromNumbers(n: ContactNumbers): { phone: string; whatsapp: string } {
+  if (n.foreignWhatsapp !== null) {
+    return { phone: phoneOf(n.digits, true), whatsapp: n.foreignWhatsapp };
+  }
   if (n.otherWhatsapp !== null) {
     return { phone: phoneOf(n.digits, true), whatsapp: whatsappOf(n.otherWhatsapp, true) };
   }
   return { phone: phoneOf(n.digits, n.calls), whatsapp: whatsappOf(n.digits, n.whatsapp) };
 }
 
+/** A stored WhatsApp link's number with its country code, "+14155550123", for showing it as it is. */
+export const foreignWhatsappLabel = (stored: string) => "+" + stored.replace(/\D/g, "");
+
+// A country code never starts with 0, and 880 is Bangladesh's.
+const isForeignWhatsapp = (stored: string) => {
+  const all = stored.replace(/^https?:\/\/wa\.me\//i, "").replace(/\D/g, "");
+  return all !== "" && !all.startsWith("880") && !all.startsWith("0");
+};
+
 /**
  * The number state for stored `phone` and `whatsapp` values (a wa.me link with or without "+"). The
  * same number in both turns both toggles on; only one turns on its toggle; two different numbers
- * become the first with Calls plus a separate WhatsApp number, so neither is lost. Nothing stored
- * gives the default of both toggles on.
+ * become the first with Calls plus a separate WhatsApp number, so neither is lost. A WhatsApp link
+ * for a foreign number is kept as stored, beside the phone. Nothing stored gives the default of both
+ * toggles on.
  */
 export function numbersFromContacts(c: { phone?: string; whatsapp?: string }): ContactNumbers {
   const phone = localDigits(c.phone ?? "");
+  if (c.whatsapp && isForeignWhatsapp(c.whatsapp)) {
+    return {
+      digits: phone,
+      calls: true,
+      whatsapp: false,
+      otherWhatsapp: null,
+      foreignWhatsapp: c.whatsapp,
+    };
+  }
   const whatsapp = localDigits((c.whatsapp ?? "").replace(/^https?:\/\/wa\.me\//i, ""));
   if (phone === "" && whatsapp === "") return emptyNumbers();
-  if (whatsapp === "") return { digits: phone, calls: true, whatsapp: false, otherWhatsapp: null };
-  if (phone === "") return { digits: whatsapp, calls: false, whatsapp: true, otherWhatsapp: null };
+  if (whatsapp === "")
+    return {
+      digits: phone,
+      calls: true,
+      whatsapp: false,
+      otherWhatsapp: null,
+      foreignWhatsapp: null,
+    };
+  if (phone === "")
+    return {
+      digits: whatsapp,
+      calls: false,
+      whatsapp: true,
+      otherWhatsapp: null,
+      foreignWhatsapp: null,
+    };
   if (phone === whatsapp)
-    return { digits: phone, calls: true, whatsapp: true, otherWhatsapp: null };
-  return { digits: phone, calls: true, whatsapp: false, otherWhatsapp: whatsapp };
+    return {
+      digits: phone,
+      calls: true,
+      whatsapp: true,
+      otherWhatsapp: null,
+      foreignWhatsapp: null,
+    };
+  return {
+    digits: phone,
+    calls: true,
+    whatsapp: false,
+    otherWhatsapp: whatsapp,
+    foreignWhatsapp: null,
+  };
 }

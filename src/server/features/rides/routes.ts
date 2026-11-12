@@ -483,7 +483,7 @@ async function setSeats(c: Context<AppEnv>, seatsRemaining: number) {
     return c.json(
       {
         error: "invalid_seats",
-        message: `Seats left must be between 0 and ${ride.totalSeats}.`,
+        message: `Seat count must be between 0 and ${ride.totalSeats}.`,
       },
       409,
     );

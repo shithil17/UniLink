@@ -4,6 +4,8 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { toast } from "@/lib/toast";
 import { CONTACT_REQUIRED_MESSAGE } from "../../../shared/contact";
+import { POST_RENEW_EXTEND_DAYS } from "../../../shared/posts";
+import type { RideSummary } from "../../../shared/schemas/rides";
 import { RideForm } from "./RideForm";
 
 vi.mock("@/lib/toast", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
@@ -315,5 +317,60 @@ describe("RideForm", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
     const body = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string);
     expect(body.endsOn).toMatch(/^\d{4}-\d{2}-15$/);
+  });
+
+  describe("editing a recurring ride", () => {
+    const recurring: RideSummary = {
+      id: 7,
+      kind: "recurring",
+      pickupArea: { id: 1, name: "Bashundhara R/A" },
+      destinationArea: { id: 2, name: "Mirpur" },
+      pickupLandmark: null,
+      destinationLandmark: null,
+      vehicle: "car",
+      totalSeats: 4,
+      seatsRemaining: 4,
+      pricePerSeatTaka: 100,
+      notes: null,
+      departsAt: null,
+      days: ["tue"],
+      departureTime: "07:30",
+      endsOn: "2026-12-15",
+      state: "open",
+      status: "published",
+      expiresAt: Date.UTC(2026, 11, 15),
+      createdAt: Date.UTC(2026, 10, 1),
+      mine: true,
+    };
+
+    function renderEdit() {
+      vi.stubGlobal("fetch", (path: string) =>
+        path === "/api/areas" ? Promise.resolve(Response.json(AREAS)) : Promise.reject(new Error()),
+      );
+      render(
+        <QueryClientProvider
+          client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
+        >
+          <RideForm
+            ride={recurring}
+            contacts={{ phone: "01712345678" }}
+            onSaved={() => {}}
+            onCancel={() => {}}
+          />
+        </QueryClientProvider>,
+      );
+    }
+
+    it("does not offer to clear the end date, and says renewing is how to add days", async () => {
+      renderEdit();
+      // The hint line is there for both modes; on edit it no longer promises a default for an empty date.
+      expect(screen.queryByText(/Leave it empty/)).toBeNull();
+      expect(
+        screen.getByText(new RegExp(`renew the ride to add ${POST_RENEW_EXTEND_DAYS} days`)),
+      ).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: /^Runs until \(optional\), / }));
+      await screen.findByRole("button", { name: "Next month" });
+      expect(screen.queryByRole("button", { name: "Clear" })).toBeNull();
+    });
   });
 });
