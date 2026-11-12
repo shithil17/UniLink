@@ -8,7 +8,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 **Restyle note (2026-10-24):** The Pocket Planner restyle is done; it supersedes the visual locks of Phase 4b. The non-visual locks stay.
 
-**Status (2026-11-12):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. The Pocket Planner restyle replaced the Phase 4b visual language on 2026-10-24, and `DESIGN.md` now records the built system. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty/` holds the ECE faculty from the public department listing plus partial lists for eight other departments (see `docs/faculty-sources.md`). Phase 7 automated gate passed (2026-10-20): mod tests pass; the staging check (an admin reverses a ban and a soft delete and both reversals appear in the audit log) is pending, and needs a content type with `deleted_at` registered in `softDeleteTargets` before a soft delete can happen on staging. Report reasons are not screened until `screen()` lands (Phase 8). Phase 8 automated gate passed (2026-10-20): moderation tests pass; the staging check (forced-review post reaches the mod queue, a mod approves it, the author gets an inbox message) waits for the first post type to register in `moderatedPostTypes` and call `submitPost()`. Phase 9 automated gate passed (2026-10-20): routine tests pass; the manual check (entries show on Home on the right weekday and in time order, on a phone) is pending, and D still confirms the NSU day letters (S M T W R F A). Phase 9b automated gate passed (2026-11-05): planner and target tests pass; the manual check (D's two hand-calculated scenarios match the planner on a phone) is pending, and so are C's and D's planner docs. Phase 10 automated gate passed (2026-11-12): resource and URL allowlist tests pass, `cron.ts` runs the two resource purges daily at 03:00 Dhaka, and resource requests and links are the first registered moderated post types. The staging check (request → notification → submit → accept between two seeded students, with the link hidden from the second one's view) is pending, as are C's and D's resource docs. Changes from `plan_pwa.md`:
+**Status (2026-11-12):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. The Pocket Planner restyle replaced the Phase 4b visual language on 2026-10-24, and `DESIGN.md` now records the built system. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty/` holds the ECE faculty from the public department listing plus partial lists for eight other departments (see `docs/faculty-sources.md`). Phase 7 automated gate passed (2026-10-20): mod tests pass; the staging check (an admin reverses a ban and a soft delete and both reversals appear in the audit log) is pending, and needs a content type with `deleted_at` registered in `softDeleteTargets` before a soft delete can happen on staging. Report reasons are not screened until `screen()` lands (Phase 8). Phase 8 automated gate passed (2026-10-20): moderation tests pass; the staging check (forced-review post reaches the mod queue, a mod approves it, the author gets an inbox message) waits for the first post type to register in `moderatedPostTypes` and call `submitPost()`. Phase 9 automated gate passed (2026-10-20): routine tests pass; the manual check (entries show on Home on the right weekday and in time order, on a phone) is pending, and D still confirms the NSU day letters (S M T W R F A). Phase 9b automated gate passed (2026-11-05): planner and target tests pass; the manual check (D's two hand-calculated scenarios match the planner on a phone) is pending. C's and D's planner docs are written. Phase 10 automated gate passed (2026-11-12): resource and link rule tests pass, `cron.ts` runs the two resource purges daily at 03:00 Dhaka, and resource requests and links are the first registered moderated post types. The staging check (request → notification → submit → accept between two seeded students, with the link hidden from the second one's view) is pending. C's and D's resource docs and the legal drafts are written. Changes from `plan_pwa.md`:
 
 - The two cut orders that disagreed are now one locked order (see Suggested Build Order).
 - Course "ticks" are graded attempts, so attempts are the only source of truth for done courses, credits and CGPA (Phase 4).
@@ -26,6 +26,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - (2026-11-12) Rides, lost and found and marketplace now come straight after resources (renumbered 11, 12, 13), then Clef auto-moderation (14), hardening (15) and delivery (16). Faculty research profiles and the AI supervisor finder are optional phases O1 and O2 at the bottom and may never ship; the finder gate moved from Clef to O2. The faculty directory is unchanged. Marketplace moves to Dev A, after Clef.
 - (2026-11-12, later) Clef auto-moderation is optional phase O3 at the bottom too. The release ships with the rules step, the stub model step and the human review queue: posts publish after the rules, posts with photos always wait for a mod, and reports cover the rest. Hardening and delivery are now 14 and 15. Lost and found moves to Dev A and marketplace to Dev B.
 - (2026-11-02) New Phase 9b: a Planner view in Courses. Students set a target CGPA (saved to the account), try mock grades on past and future courses (kept in the browser only), and get advice that prefers doing better in remaining courses and suggests the fewest retakes only when the target needs them. It runs before Phase 10.
+- (2026-11-12) The resource link rule is no longer a five-host allowlist: any public https site is accepted, and a short list of link shorteners, IP addresses and private names is refused (Phase 10). The open decision on the list of sharing hosts is settled.
 - (2026-11-12) Resource requests also reach students who did not get the publish-time notification. The Materials screen has a Help others tab listing open requests for any course the student has recorded (any faculty) and faculty-only requests for a faculty member they had, with same-faculty ones first and tagged. The requester sees whether each link's sender took the same faculty. Notifications and the purge rules are unchanged.
 
 ---
@@ -162,7 +163,7 @@ unilink/                         # repo name until the app name is chosen
     │   ├── grading.ts           # Strategy: grade scale + retake policy + CGPA         [P6]
     │   ├── terms.ts             # term type, current term (Asia/Dhaka)                 [P4]
     │   ├── routine.ts           # overlap check                                         [P9]
-    │   ├── urlAllowlist.ts      # sharing hosts                                         [P10]
+    │   ├── resourceUrl.ts       # safe https link rule, shortener list                  [P10]
     │   ├── contact.ts           # phone / wa.me / m.me / facebook.com rules            [P11]
     │   └── webp.ts              # WebP header parser: magic, size, chunks              [P12]
     ├── server/
@@ -878,8 +879,8 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] C: planner activity diagram (target → needed average → no retakes / retakes / out of reach). SRS requirements for the planner.
-- [ ] D: planner screens in `docs/screens.md` and test cases, including two hand-calculated scenarios (one reaches the target with no retakes, one needs retakes).
+- [x] C: planner activity diagram (target → needed average → no retakes / retakes / out of reach). SRS requirements for the planner (Flow: docs/planner-flow.md. Requirements FR-67 to FR-79 in docs/srs.md)
+- [x] D: planner screens in `docs/screens.md` and test cases, including two hand-calculated scenarios (one reaches the target with no retakes, one needs retakes) (Screens: docs/screens.md, Grade planner. Test cases: docs/test-cases.md, section L)
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -898,11 +899,11 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 **Owner:** Dev A · **When:** Sprint 3 (Weeks 5-6) · **Depends on:** Phase 5, Phase 6, Phase 7, Phase 8
 
-**Goal:** Students request materials by course and/or faculty, matching students are notified, others submit allowlisted links, and the requester accepts, rejects or reports them, with expiry and purge handled by cron.
+**Goal:** Students request materials by course and/or faculty, matching students are notified, others submit safe https links, and the requester accepts, rejects or reports them, with expiry and purge handled by cron.
 
 > **Design decisions (locked in):**
 >
-> - Links only. `ceiling:` no file hosting. URLs must be `https` and on the allowlist of sharing hosts in `src/shared/urlAllowlist.ts`.
+> - Links only. `ceiling:` no file hosting. A link must be `https`, at most 500 characters, with no username, password or port, and its host must be a public DNS name (not an IP address, `localhost` or a private or reserved name). Known link shorteners (`bit.ly` and 12 others, listed in `URL_SHORTENER_HOSTS`) are refused. The rule is `src/shared/resourceUrl.ts`, used by the form and again by the server (changed 2026-11-12: any public https site, shorteners refused). `ceiling:` nothing scans the page behind a link; reports and mods cover bad ones.
 > - A request needs a course, a faculty, or both. The notification goes to users with an attempt that matches **every field the request sets**, excluding the requester and banned users, through `notify()`. The requester is never told who was notified.
 > - Several students can submit to one request, and the requester accepts one. The requester sees the uploader's username. Only the requester sees the link.
 > - The requester sets the expiry. Cron hard-deletes expired open requests, and hard-deletes fulfilled requests 3 months after fulfilment. The UI says this clearly.
@@ -913,21 +914,21 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist
 
 - [x] `resource_requests` and `resource_submissions` tables with moderation status, expiry and `fulfilled_at`. Indexes for the fan-out query (attempts by course and faculty).
-- [x] Create request (screened, fan-out notify), list my requests, submit link (allowlist, cooldown, screened), accept, reject, report.
+- [x] Create request (screened, fan-out notify), list my requests, submit link (safe https link rule, cooldown, screened), accept, reject, report.
 - [x] `cron.ts` with the two resource jobs. A cron trigger added in `wrangler.jsonc` for both environments.
 - [x] Screens: new request, my requests with their submissions, submit to a request (reached from the notification), clear expiry and purge wording.
 - [x] Help others (2026-11-12): `GET /api/resources/requests/helpable` (any faculty for a recorded course, faculty-only for a faculty the student had, same-faculty first, capped by `resourceHelpableMax`), a Help others tab on the Materials screen, and a same-faculty line on each link the requester sees. Indexes `resource_requests_course_idx` and `resource_requests_faculty_idx`.
 
 ### Checklist — Docs & QA (C, D)
 
-- [ ] C: resource flow sequence diagram.
-- [ ] D: resource screens and test cases. ToS, disclaimer and takedown policy drafts.
+- [x] C: resource flow sequence diagram, and SRS requirements for resource sharing (Flow: docs/resource-flow.md. Requirements FR-80 to FR-95 in docs/srs.md, navigation FR-96)
+- [x] D: resource screens and test cases. ToS, disclaimer and takedown policy drafts (Screens: docs/screens.md, App flow and Materials. Test cases: docs/test-cases.md, sections M and N. Drafts: docs/legal-drafts.md)
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [x] `src/shared/urlAllowlist.test.ts`: allowed hosts, look-alike hosts (`drive.google.com.evil.io`), http rejected.
+- [x] `src/shared/resourceUrl.test.ts`: public https hosts accepted, http and other schemes, credentials, ports, IP and private hosts refused, every shortener refused (subdomains too, look-alikes not), length cap, international hosts shown as punycode.
 - [x] `src/server/features/resources/resources.api.test.ts`: the fan-out matches the course, the faculty and both, the requester is excluded, only the requester sees the link, accepting one fulfils the request, the cooldown blocks new accounts, expiry filtering, the cron purge timing, a report on a submission reaches the queue.
-- [x] Run: `vp test resources urlAllowlist`
+- [x] Run: `vp test resources resourceUrl`
 
 ### Test Gate 10
 
@@ -1350,30 +1351,29 @@ Shrink Phase 14 hardening only as a last resort. **Never cut** moderation, audit
 
 Each row names the phase that needs the answer. When it is settled, move it into that phase's locked block and delete the row.
 
-| Decision                                                                                                         | Needed by         | Owner    |
-| ---------------------------------------------------------------------------------------------------------------- | ----------------- | -------- |
-| Project deadline, demo date, required SRS format or presentation                                                 | P0                | C        |
-| Clef-flash: re-check price and allowance before launch (findings below)                                          | O3                | Dev A    |
-| DeepSeek prepaid budget and global daily cap (model and price below)                                             | O2                | Dev A    |
-| App name, icon set, theme storage key                                                                            | P1, P3            | All      |
-| Mock `BottomSheet` vs shadcn Drawer: **decided**, shadcn `Sheet` (`side="bottom"`)                               | P1                | Dev B    |
-| Confirm the four launch palettes                                                                                 | P1                | D        |
-| New-account cooldown length, signup and login rate limits                                                        | P2                | Dev B    |
-| NSU term start dates and routine day letters                                                                     | P4, P9            | D        |
-| URL allowlist of sharing hosts                                                                                   | P10               | Dev A, D |
-| Faculty list scope, and whether to tell the department before profiles go live                                   | O1                | All      |
-| How many faculty have an ORCID; name matching vs the manual list for the rest                                    | O1                | D        |
-| OpenAlex access terms (free key?) and rate limits                                                                | O1                | Dev A    |
-| Faculty summary refresh cadence (suggested: once a semester)                                                     | O1                | Dev A    |
-| Recurring ride policy (60-day default end date + renewal)                                                        | P11               | All      |
-| Exact course codes and names for CSE299, CSE499, CSE498R (ask a CSE advisor)                                     | O2                | D        |
-| Number of mods and target review turnaround (every photo post waits for a mod)                                   | P14               | All      |
-| Target false-reject rate                                                                                         | O3                | All      |
-| Campus lost-property office or security desk to link                                                             | P12               | D        |
-| Marketplace prohibited-items list and ToS wording                                                                | P13               | All      |
-| Post photo caps (bytes, max side, per-user and global daily uploads), cache lifetime, author-delete purge window | P11, P12          | Dev B    |
-| Stretch go/no-go                                                                                                 | Start of Sprint 4 | All      |
-| "Unofficial student-run app" wording; whether NSU name approval can wait until after the demo                    | P15               | All      |
+| Decision                                                                                                         | Needed by         | Owner |
+| ---------------------------------------------------------------------------------------------------------------- | ----------------- | ----- |
+| Project deadline, demo date, required SRS format or presentation                                                 | P0                | C     |
+| Clef-flash: re-check price and allowance before launch (findings below)                                          | O3                | Dev A |
+| DeepSeek prepaid budget and global daily cap (model and price below)                                             | O2                | Dev A |
+| App name, icon set, theme storage key                                                                            | P1, P3            | All   |
+| Mock `BottomSheet` vs shadcn Drawer: **decided**, shadcn `Sheet` (`side="bottom"`)                               | P1                | Dev B |
+| Confirm the four launch palettes                                                                                 | P1                | D     |
+| New-account cooldown length, signup and login rate limits                                                        | P2                | Dev B |
+| NSU term start dates and routine day letters                                                                     | P4, P9            | D     |
+| Faculty list scope, and whether to tell the department before profiles go live                                   | O1                | All   |
+| How many faculty have an ORCID; name matching vs the manual list for the rest                                    | O1                | D     |
+| OpenAlex access terms (free key?) and rate limits                                                                | O1                | Dev A |
+| Faculty summary refresh cadence (suggested: once a semester)                                                     | O1                | Dev A |
+| Recurring ride policy (60-day default end date + renewal)                                                        | P11               | All   |
+| Exact course codes and names for CSE299, CSE499, CSE498R (ask a CSE advisor)                                     | O2                | D     |
+| Number of mods and target review turnaround (every photo post waits for a mod)                                   | P14               | All   |
+| Target false-reject rate                                                                                         | O3                | All   |
+| Campus lost-property office or security desk to link                                                             | P12               | D     |
+| Marketplace prohibited-items list and ToS wording                                                                | P13               | All   |
+| Post photo caps (bytes, max side, per-user and global daily uploads), cache lifetime, author-delete purge window | P11, P12          | Dev B |
+| Stretch go/no-go                                                                                                 | Start of Sprint 4 | All   |
+| "Unofficial student-run app" wording; whether NSU name approval can wait until after the demo                    | P15               | All   |
 
 **Platform facts (checked 2026-10-18, re-check in P14):**
 

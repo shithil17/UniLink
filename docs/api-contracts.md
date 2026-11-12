@@ -29,19 +29,21 @@ Rules that apply to every endpoint:
 
 ## Courses, attempts and student courses
 
-| Method | Path                       | Auth | Schema                                                                               |
-| ------ | -------------------------- | ---- | ------------------------------------------------------------------------------------ |
-| GET    | `/api/courses/map`         | user | `courses.ts` → `courseMap` (empty state: `curriculum: null`)                         |
-| POST   | `/api/courses/import`      | mod  | `courses.ts` → `curriculumImportEnvelope` (rows checked one by one) → `importResult` |
-| GET    | `/api/attempts`            | user | `attempts.ts` → `attempt[]` (own only)                                               |
-| POST   | `/api/attempts`            | user | `attempts.ts` → `attemptInput` → `attempt`                                           |
-| GET    | `/api/attempts/summary`    | user | CGPA, earned and remaining credits by category (own only)                            |
-| PATCH  | `/api/attempts/:id`        | user | `attempts.ts` → `attemptUpdate` → `attempt`                                          |
-| DELETE | `/api/attempts/:id`        | user | –                                                                                    |
-| GET    | `/api/student-courses`     | user | `courses.ts` → `studentCourse[]` (own only)                                          |
-| POST   | `/api/student-courses`     | user | `courses.ts` → `studentCourseInput` → `studentCourse`                                |
-| PATCH  | `/api/student-courses/:id` | user | `courses.ts` → `studentCourseUpdate` → `studentCourse` (code is fixed once added)    |
-| DELETE | `/api/student-courses/:id` | user | – (also deletes the course's attempts)                                               |
+| Method | Path                       | Auth | Schema                                                                                                                                               |
+| ------ | -------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/courses/map`         | user | `courses.ts` → `courseMap` (empty state: `curriculum: null`)                                                                                         |
+| POST   | `/api/courses/import`      | mod  | `courses.ts` → `curriculumImportEnvelope` (rows checked one by one) → `importResult`                                                                 |
+| GET    | `/api/attempts`            | user | `attempts.ts` → `attempt[]` (own only)                                                                                                               |
+| POST   | `/api/attempts`            | user | `attempts.ts` → `attemptInput` → `attempt`                                                                                                           |
+| GET    | `/api/attempts/summary`    | user | CGPA, earned and remaining credits by category (own only)                                                                                            |
+| GET    | `/api/attempts/target`     | user | `attempts.ts` → `targetCgpaResponse`: the planner's saved target (own only), or null                                                                 |
+| PUT    | `/api/attempts/target`     | user | `targetCgpaInput` → `targetCgpaResponse`. 0.01 to 4.00; 409 `target_not_above_current` when not above the CGPA; rate-limited (`limits.targetWrites`) |
+| PATCH  | `/api/attempts/:id`        | user | `attempts.ts` → `attemptUpdate` → `attempt`                                                                                                          |
+| DELETE | `/api/attempts/:id`        | user | –                                                                                                                                                    |
+| GET    | `/api/student-courses`     | user | `courses.ts` → `studentCourse[]` (own only)                                                                                                          |
+| POST   | `/api/student-courses`     | user | `courses.ts` → `studentCourseInput` → `studentCourse`                                                                                                |
+| PATCH  | `/api/student-courses/:id` | user | `courses.ts` → `studentCourseUpdate` → `studentCourse` (code is fixed once added)                                                                    |
+| DELETE | `/api/student-courses/:id` | user | – (also deletes the course's attempts)                                                                                                               |
 
 Attempts and student courses are readable by their owner only, never by mods or admins (enforced in the repo layer); another user's student course id is a 404. An attempt's course code must be in the user's curriculum (a slot code or an alternative) or one of their student courses (400 `unknown_course`). A student course code must not clash with the curriculum or their other courses (409 `code_taken`), its category must be one of the curriculum's categories (400 `unknown_category`), and adding past `limits.studentCoursesMax` is a 409 `student_course_limit`. The import keeps valid rows and lists the rest in `rejected`; a file with no valid row is a 422 and changes nothing. **An import of a program and version that already exist replaces every course of that version, including changes made in the mod Courses screen** (added, edited and hidden courses are all reset; the course ids change).
 
@@ -128,14 +130,19 @@ Reversal rules (`src/server/reverse.ts`): ban, unban, role change, key release a
 
 ## Resources
 
-| Method | Path                                      | Auth | Schema                                     |
-| ------ | ----------------------------------------- | ---- | ------------------------------------------ |
-| POST   | `/api/resources/requests`                 | user | `resources.ts` → `resourceRequestInput`    |
-| GET    | `/api/resources/requests/mine`            | user | `resources.ts` → `page(resourceRequest)`   |
-| PATCH  | `/api/resources/requests/:id`             | user | `resources.ts` → `resourceRequestInput`    |
-| POST   | `/api/resources/requests/:id/submissions` | user | `resources.ts` → `resourceSubmissionInput` |
-| POST   | `/api/resources/submissions/:id/accept`   | user | requester only                             |
-| POST   | `/api/resources/submissions/:id/reject`   | user | requester only                             |
+Requests and links are user-written posts: each goes through `submitPost()` and `screen()`. A link must pass `parseResourceUrl()` in `src/shared/resourceUrl.ts` (a public `https` site, no shortener). Reports use `POST /api/reports` with the target types `resource_request` and `resource_submission`. Only the requester ever receives a link address.
+
+| Method | Path                                      | Auth | Schema / note                                                                                                                                                                           |
+| ------ | ----------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/resources/requests`                 | user | `resourceRequestInput` → `resourceRequest`. Course, faculty or both. Rate-limited per day; 409 `too_many_open`; 429 for a new account or the probing cooldown                           |
+| GET    | `/api/resources/requests/mine`            | user | `pageQuery` → page of `resourceRequest` with the links sent to each (`resourceSubmissionForRequester`: link, sender username, same-faculty flag)                                        |
+| GET    | `/api/resources/requests/helpable`        | user | `helpableResourceRequestList`. Open requests the student can help with; no requester and no link; same faculty first; at most `limits.resourceHelpableMax`                              |
+| GET    | `/api/resources/requests/:id`             | user | `resourceRequestDetail`: the request and the caller's own links to it. 404 when unknown, removed or not visible, and for anyone but the requester when it is held, expired or fulfilled |
+| POST   | `/api/resources/requests/:id/submissions` | user | `resourceSubmissionInput` (`url`, `note`). 400 `own_request`, 409 `closed`, 409 `too_many_links`; rate-limited per hour; 429 for a new account                                          |
+| POST   | `/api/resources/submissions/:id/accept`   | user | Requester only (404 otherwise). One guarded update; fulfils the request and tells the uploader                                                                                          |
+| POST   | `/api/resources/submissions/:id/reject`   | user | Requester only (404 otherwise). Marks the link turned down; the uploader is not told                                                                                                    |
+
+There is no route to edit or delete a request or a link. Expired and old fulfilled requests are hard-deleted by the daily cron (`src/server/cron.ts`).
 
 ## Rides, lost and found, marketplace
 

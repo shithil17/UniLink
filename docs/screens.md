@@ -22,14 +22,27 @@ flowchart LR
   Change --> Home
   P -- no --> Home[Home]
   Home --> Courses[Course map]
-  Home --> Routine[Routine]
-  Routine --> ClassSheet[Add or edit a class]
+  Home --> Materials[Materials]
   Home --> Inbox[Inbox]
-  Home --> Settings[Settings]
+  Home --> More[More sheet: phones]
+  More --> Routine[Routine]
+  More --> Settings[Settings]
+  More --> Mod[Moderation panel: mods only]
+  Home --> Routine
+  Routine --> ClassSheet[Add or edit a class]
   Courses --> Sheet[Course sheet]
+  Courses --> Planner[Grade planner]
   Sheet --> Attempt[Record a grade / attempts]
   Attempt --> Picker[Faculty picker]
-  Settings --> Mod[Moderation panel: mods only]
+  Materials --> Help[Help others]
+  Materials --> Mine[My requests]
+  Materials --> NewReq[New request]
+  Help --> Submit[Help with a request]
+  Inbox --> Submit
+  Inbox --> Mine
+  Mine --> Report[Report sheet]
+  Submit --> Report
+  Settings --> Mod
   Mod --> Queue[Review queue]
   Mod --> Users[Users]
   Mod --> Faculty[Faculty directory]
@@ -41,7 +54,7 @@ flowchart LR
 
 Navigation:
 
-- **Main tabs.** A floating pill bar on phones, a 240px left rail from `md`. Students: Home, Courses, Routine, Inbox (unread badge), Settings. Mods and admins: Home, Courses, Inbox, Mod, Settings; the Mod tab opens the moderation panel and stays marked while any `/mod/...` screen is open. Mods and admins get Mod in place of Routine so the bar never goes past five; they reach their own routine from Home ("Full routine"). Students never see Mod. The current tab is marked by `aria-current` and a sliding `brand-soft` pill on phones; the rail uses a `brand-soft` active row. Moderation is also still listed under Settings.
+- **Main tabs.** On a phone, a floating pill bar with five slots: Home, Courses, Materials, Inbox (unread badge) and More. More opens a bottom sheet titled "More" with the rest, each row with an icon, a name and a one-line hint: Routine ("Your classes for the week"), Mod ("Held posts, users and curriculum", mods and admins only) and Settings ("Theme, password and account"). From `md`, a left rail lists Home, Courses, Materials, Routine, Inbox (unread badge), Mod (mods and admins only) and Settings; it is 240px wide when open and icons only when collapsed. Students never see Mod. The current tab is marked by `aria-current` and a sliding `brand-soft` pill on phones, and the pill sits on More while a screen from the More sheet is open (the sheet's current row is tinted and ticked, and screen readers hear "More, Routine open"); the rail uses a `brand-soft` active row. The bar slides away while scrolling down and returns on scrolling up. Home also links to the full routine, and moderation is also listed under Settings. The Mod tab stays marked while any `/mod/...` screen is open.
 - **No tabs when they would lead nowhere.** Log in, Create an account and the forced Change password screen show only the wordmark; the tabs return once the user is signed in and has no temporary password.
 - **Moderation sections.** From `md`: an underline tab row (Queue, Users, Faculty, Courses, ID check, Audit log for admins, Import). On a phone seven sections do not fit a row, so the screen shows "Moderation" with a button naming the current section; it opens a bottom sheet listing every section the role can open, each with a one-line hint. The current row is tinted and ticked (`aria-current="page"`), and choosing a row closes the sheet.
 - **Back paths.** Mod sections are peers of one top-level panel, so they need no back. Change password, opened from Settings, shows "Settings" with a back chevron above its title (not while the change is forced). Sheets (course sheet, pickers, mod sheets) close with their X, Esc or a tap on the scrim.
@@ -174,3 +187,104 @@ When the days and times clash with another class: "This overlaps another class. 
 - **ID conflict**, **Curriculum import** and **Audit log** (admins: filter, Reverse) as described in [`moderation-flow.md`](moderation-flow.md). When the chosen file's program and version are already imported, the import screen shows a note: "Importing replaces every course of this version, including changes made in the Courses screen." The intro text says the same.
 
 Flows for screening and the queue are in [`screening-flow.md`](screening-flow.md).
+
+## Grade planner (Phase 9b)
+
+A third view in Courses where a student sets a target CGPA, tries mock grades and reads advice on whether the remaining courses reach it or a few retakes are worth paying for. It is private to the student, and the advice is arithmetic on their own grades, never a promise. How the advice is worked out is in [`planner-flow.md`](planner-flow.md).
+
+### Planner (`/courses?view=planner`)
+
+- **View switch.** The Courses header has a segmented switch: List and Planner on a phone; List, Planner and Roadmap from `md`. The view is in the URL (`?view=planner`).
+- **Layout.** On a phone the CGPA and target panel comes first, then the tabs. From `xl` the panel is a 360px column beside the tabs.
+- Loading: a flat placeholder panel and four placeholder rows. Error: "Couldn't load your grades" / "The planner needs them. Check your connection and try again." with Retry.
+
+### Your CGPA and target
+
+| Element         | Notes                                                                                                                                                                                                                                  |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Title           | "Your CGPA", with an "At target today" badge once the real CGPA is at or above the target                                                                                                                                              |
+| Current         | The CGPA to two decimals, or "–" with the note "No grades yet"                                                                                                                                                                         |
+| Projected       | The CGPA with the mock grades, with the note "With 2 mock grades" (or "With 1 mock grade"). Equal to Current when there are no mocks                                                                                                   |
+| Target CGPA     | A text field with a decimal keypad, placeholder `3.50`, and the button "Save target". Helper: "From 0.01 to 4.00, above your CGPA." while no target is saved, "Set a higher target to keep going." once it is reached                  |
+| Field errors    | "Enter a number between 0.01 and 4.00." and "Use at most two decimal places." from the shared schema; from the server "Your CGPA is already 3.35. Set a target above it." Any other error is a toast. Toast on success: "Target saved" |
+| Target problems | Loading: two flat placeholder bars. Error: "Your target did not load." with "Try again"                                                                                                                                                |
+
+### Tabs
+
+A tab row under the panel: **Advice**, **Retakes** (with its row count) and **Upcoming** (with its row count). Retakes and Upcoming appear only while they have rows; if the open list empties, the screen falls back to Advice.
+
+**Advice**
+
+- Title for the outcome: "Target reached" or "Reached with your mock grades", "Too early to call", "No retakes needed", "One retake would help" or "A few retakes would help", "A stretch", "Out of reach" or "Too many retakes needed", then one short sentence ("On track without retakes.", "Retaking 2 courses gets you there.").
+- Hairline rows: "Predicted at graduation", "Needed in your remaining N credits" ("over 4.00" above 4.00, "Any passing grade" at or below 0) and "Your usual average there". Out of reach adds "Best case" and "Straight A's". Too early and reached show no rows.
+- "Suggested retakes" (or "Retakes that help most" when out of reach): one row per course with the state mark, code, title, credits and the move, such as `D → C+` (read out as "D to C+").
+- Foot: what the predictions rest on ("Predicted from your grades by category (average 3.22)." or "Rough until you have 8 graded courses (2 so far). Best case assumes A-." or, while too early, "Predictions start at 8 graded courses (2 so far).") and "Estimates only. Retake rules and fees are set by NSU."
+- No target: "Set a target CGPA to see what you need." While the target loads: two placeholder lines. If it failed: "No advice until your target loads."
+
+**Retakes** and **Upcoming**
+
+- A line "Try a grade on any course. Mocks stay on this device." and, once any mock is set, "Clear mock grades".
+- One hairline list. Each row: state mark, code, title, "3 cr · best D" (or "3 cr · General Education" for a course with no grade yet), a grade picker (No mock, then A to F) and, once picked, a "Mock" badge on a `brand-soft` row. Under a mocked past course: "Retake: D becomes B." or "No change: your best stays B+." Mocks stay in this browser, per account and curriculum version, and never change anything outside the planner.
+- **Retakes** lists graded courses a retake is allowed on (best grade below B+), worst grade first, with "2 courses hidden: already B+ or better." under the list. **Upcoming** lists every unfinished credit-bearing slot, including elective slots with no course picked, each taking a first-attempt mock; a required course that only has an F reads "best F".
+- A list opens on its first 10 rows plus any row with a mock; "Show all 24" shows the rest.
+- Nothing left: "Nothing left to plan", under the advice panel.
+
+## Materials (Phase 10)
+
+Students ask for course materials and send each other links. UniLink hosts no files. Only the student who asked can see a link. Times are Asia/Dhaka. The flow is in [`resource-flow.md`](resource-flow.md).
+
+### Materials (`/resources`)
+
+- Header "Materials" with "Ask for notes, or send them to someone who asked." and the button "New request".
+- A tab row: **Help others** (with a count of requests the student has not answered yet) and **My requests**. My requests is the default; `?tab=help` opens Help others. Switching tabs replaces the URL entry, so Back leaves the screen.
+
+**Help others**
+
+- One flat panel of hairline rows. Each row: the course chip and the faculty name ("Name (INITIALS)"), the note (two lines at most), then a line with a "Same faculty" tag when the student had that faculty member, the time left ("3 days left", "Under an hour left") and "You sent a link" or "You sent 2 links". A chevron ends the row; tapping it opens the request screen.
+- Order: same faculty first, then the soonest to expire. At most 50 rows. It lists open requests for any course the student has recorded (whichever faculty member taught it) and faculty-only requests for a faculty member the student had. It never shows who asked or any link.
+- Empty: "Nothing to help with right now." / "Requests for courses you've recorded show up here." Loading: three placeholder rows. Error: "Requests didn't load" with Retry.
+
+**My requests**
+
+- Under the tabs, a line with an info icon: "A request that expires without an accepted link is deleted. Once you accept a link, the request and its links are deleted 3 months later. Save what you need before then."
+- One flat panel per request, newest first, 20 at a time with "Show older". The head shows the course chip and the faculty name, a state badge (Open, Fulfilled, Expired), the note and an expiry line: "3 days left. Expires 20 Nov, 6:00 pm, then it is deleted.", "Fulfilled 12 Nov. Deleted on 10 Feb." or "Expired 5 Nov. It is deleted automatically."
+- A request that is not published shows a status note: "Waiting for a moderator. Your request is shown to others once it is approved." or "A moderator didn't approve this request."
+- Under the head, one hairline row per link: the sender's username, a line "Took it with the same faculty" or "Different faculty, or not recorded" (only when the request names a faculty member), the time since it was sent, the sender's note, then the buttons. "Open on drive.google.com" opens the link in a new tab (named for its host, `noopener noreferrer nofollow`). While the request is open and the link is undecided there are "Accept" and "Turn down"; otherwise an "Accepted" or "Turned down" badge. Every link has a "Report" button.
+- With no links: "No links yet. You'll get a notification when one arrives." (open) or "No links were sent."
+- **Accept** opens a confirm sheet, "Accept this link": "Accepting closes your request. You can't change your mind afterwards.", "Sent by `username`", and three effects: no more links can be sent, the sender is told, and the request and its links are deleted 3 months from now. Button "Accept link", toast "Link accepted. Thanks for closing the loop." **Turn down** acts at once: toast "Link turned down".
+- Empty: "No requests yet." / "Ask for a course's notes and students who took it are told." with "New request". Loading: a flat placeholder panel. Error: "Your requests didn't load" with Retry.
+
+### New request (`/resources/new`)
+
+Title "New request", "Ask other students for materials." One form on a flat panel.
+
+| Field                                | Notes                                                                                                                                                                                                            |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Course (optional)                    | A button showing the chosen code ("Any course" when empty) that opens the course picker "Which course?" over the courses on the student's own course map; an X button clears it                                  |
+| Faculty (optional)                   | The faculty picker, "Which faculty member?". Helper under it: "Pick a course, a faculty member, or both. Students who took what you pick are told." With neither: "A request needs a course, a faculty, or both" |
+| What are you looking for? (optional) | A text box, placeholder "Midterm notes, past papers, lecture slides", with a counter "0 / 300"                                                                                                                   |
+| Keep it open for                     | Five choices: 1 day, 3 days, 7 days (the default), 14 days, 1 month. Helper: the two deletion sentences from My requests                                                                                         |
+
+Buttons: "Post request" and "Cancel" (both return to Materials). Toasts: "Request posted. You'll get a notification when someone sends a link." or, when held, "Request saved. It goes out once a moderator approves it." A refused post is a toast with the server's sentence: the daily limit, "You can have 10 open requests at a time.", or, for a new account, the title "New accounts can't post yet" with how long to wait.
+
+### Help with a request (`/resources/:id`)
+
+Reached from a notification ("A student is looking for a resource") or a row on Help others.
+
+- Title "Help with a request". The request in a flat panel (course chip, faculty, note, expiry line), then "Only the student who asked can open your link, and they see your username next to it."
+- **Send a link** form: Link (a URL field, placeholder `https://drive.google.com/...`; helper "Any https link: Google Drive, YouTube, Samsung Cloud, transfer.it and so on. Make sure anyone with the link can open it."; errors "Use a full https link to a public website" and "Link shorteners aren't allowed. Paste the full link instead") and Note (optional, placeholder "What is in it, for example Midterm notes, Spring 2026", counter "0 / 300"). Button "Send link". Toast "Link sent. You'll get a notification if it is accepted." or, when held, "Link saved. It goes to the student once a moderator approves it." A refused send is a toast with the server's sentence ("You can't send a link to your own request.", "This request is no longer open.", "This request can't take another link from you.", or the new-account wait).
+- **Your links**: the student's own links to this request, each with the host, the time since, the note, a badge (Sent, Accepted, Turned down) and, when held or not approved, the same status note as above. Never anyone else's link.
+- A ghost button "Report this request" opens the report sheet.
+- Closed (fulfilled, expired, held or removed, or an id that does not exist): "This request is closed." / "It was fulfilled, it expired or it was removed. Thanks for looking." with "Back to inbox". Opening your own request goes to My requests. Loading: a flat placeholder panel. Error: "The request didn't load" with Retry.
+
+### Report sheet
+
+A bottom sheet titled "Report this request" or "Report this link", with "Say what is wrong, such as a link that isn't what it claims or a request that breaks the rules. Moderators read every report." One field, "What is wrong" (3 to 300 characters, the shared reason rule), and the buttons "Send report" and "Cancel". Toast "Report sent. A moderator will take a look." A second open report from the same student on the same target is refused with "You already reported this." The report reaches the review queue, where a request is labelled by course and faculty and a link by its address.
+
+### Notifications
+
+| Inbox row                              | Opens                                |
+| -------------------------------------- | ------------------------------------ |
+| "A student is looking for a resource"  | Help with a request                  |
+| "Someone sent a link for your request" | My requests                          |
+| "Your link was accepted"               | Nothing: the row is only marked read |
