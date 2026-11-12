@@ -149,6 +149,21 @@ describe("numbersFromContacts", () => {
       expect(numbersFromContacts({ whatsapp }).foreignWhatsapp).toBeNull();
     }
   });
+
+  it("reads a wa.me link of a 10-digit local mobile without 880 as Bangladeshi", () => {
+    expect(numbersFromContacts({ whatsapp: "https://wa.me/1712345678" })).toMatchObject({
+      digits: "1712345678",
+      calls: false,
+      whatsapp: true,
+      foreignWhatsapp: null,
+    });
+  });
+
+  it("still treats an 11-digit +1 number, or a 10-digit one outside the mobile shape, as foreign", () => {
+    for (const whatsapp of ["https://wa.me/14155550123", "https://wa.me/1212345678"]) {
+      expect(numbersFromContacts({ whatsapp }).foreignWhatsapp).toBe(whatsapp);
+    }
+  });
 });
 
 describe("foreignWhatsappLabel", () => {

@@ -90,6 +90,8 @@ export function RideForm({
   );
   // A one-off cannot leave before today in Dhaka; the calendar greys out earlier days.
   const [earliest] = useState(() => instantToDeparture(Date.now()));
+  // Fixed for the life of the form (the mode never changes), so the label cannot shift the layout.
+  const endsOnLabel = ride ? "Runs until" : "Runs until (optional)";
   const form = useForm<RideFormFields>({ resolver: rideFormResolver, defaultValues: original });
   const { errors } = form.formState;
   const kind = useWatch({ control: form.control, name: "kind" });
@@ -387,7 +389,7 @@ export function RideForm({
                   <FieldError errors={[errors.departureTime]} />
                 </Field>
                 <Field data-invalid={Boolean(errors.endsOn)}>
-                  <FieldLabel htmlFor="ride-ends">Runs until (optional)</FieldLabel>
+                  <FieldLabel htmlFor="ride-ends">{endsOnLabel}</FieldLabel>
                   <Controller
                     control={form.control}
                     name="endsOn"
@@ -397,7 +399,7 @@ export function RideForm({
                         name={field.name}
                         ref={field.ref}
                         onBlur={field.onBlur}
-                        label="Runs until (optional)"
+                        label={endsOnLabel}
                         clearable={!ride}
                         value={field.value}
                         aria-invalid={Boolean(errors.endsOn)}

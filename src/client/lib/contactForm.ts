@@ -82,10 +82,12 @@ export function contactValuesFromNumbers(n: ContactNumbers): { phone: string; wh
 /** A stored WhatsApp link's number with its country code, "+14155550123", for showing it as it is. */
 export const foreignWhatsappLabel = (stored: string) => "+" + stored.replace(/\D/g, "");
 
-// A country code never starts with 0, and 880 is Bangladesh's.
+// A country code never starts with 0, and 880 is Bangladesh's. A bare 10-digit local mobile (the
+// shared regex allows wa.me links without 880) is Bangladeshi too, not a +1 number.
+const LOCAL_MOBILE = /^1[3-9]\d{8}$/;
 const isForeignWhatsapp = (stored: string) => {
   const all = stored.replace(/^https?:\/\/wa\.me\//i, "").replace(/\D/g, "");
-  return all !== "" && !all.startsWith("880") && !all.startsWith("0");
+  return all !== "" && !all.startsWith("880") && !all.startsWith("0") && !LOCAL_MOBILE.test(all);
 };
 
 /**

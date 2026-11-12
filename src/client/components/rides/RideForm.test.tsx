@@ -319,6 +319,12 @@ describe("RideForm", () => {
     expect(body.endsOn).toMatch(/^\d{4}-\d{2}-15$/);
   });
 
+  it("keeps '(optional)' on the end date label of a new recurring ride", () => {
+    setup();
+    fireEvent.click(screen.getByRole("radio", { name: "Recurring" }));
+    expect(screen.getByText("Runs until (optional)")).toBeTruthy();
+  });
+
   describe("editing a recurring ride", () => {
     const recurring: RideSummary = {
       id: 7,
@@ -368,9 +374,16 @@ describe("RideForm", () => {
       expect(
         screen.getByText(new RegExp(`renew the ride to add ${POST_RENEW_EXTEND_DAYS} days`)),
       ).toBeTruthy();
-      fireEvent.click(screen.getByRole("button", { name: /^Runs until \(optional\), / }));
+      fireEvent.click(screen.getByRole("button", { name: /^Runs until, / }));
       await screen.findByRole("button", { name: "Next month" });
       expect(screen.queryByRole("button", { name: "Clear" })).toBeNull();
+    });
+
+    it("labels the end date 'Runs until' on edit, without '(optional)'", () => {
+      renderEdit();
+      expect(screen.getByText("Runs until")).toBeTruthy();
+      expect(screen.queryByText(/Runs until \(optional\)/)).toBeNull();
+      expect(screen.queryByRole("button", { name: /^Runs until \(optional\), / })).toBeNull();
     });
   });
 });
