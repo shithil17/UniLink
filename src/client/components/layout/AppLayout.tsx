@@ -3,6 +3,7 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BookOpenIcon,
   CalendarDaysIcon,
+  CarIcon,
   CheckIcon,
   EllipsisIcon,
   HandHelpingIcon,
@@ -49,6 +50,7 @@ const tabIcons: Record<MainTab["to"], LucideIcon> = {
   "/": HouseIcon,
   "/courses": BookOpenIcon,
   "/resources": HandHelpingIcon,
+  "/rides": CarIcon,
   "/routine": CalendarDaysIcon,
   "/inbox": InboxIcon,
   "/mod": ShieldCheckIcon,

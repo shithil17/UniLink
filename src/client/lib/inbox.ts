@@ -70,13 +70,16 @@ const requestPayload = z.object({ requestId: z.number().int().positive() });
 /** Where tapping a notification goes: a route and its params, ready for the router's `navigate`. */
 export type NotificationTarget =
   | { to: "/resources"; search?: { tab: "help" } }
+  | { to: "/rides"; search: { tab: "mine" } }
   | { to: "/resources/$requestId"; params: { requestId: string } };
 
-/** Requests are on the default "mine" tab of Materials; links a student sent are on "help". */
-const resourcesFor = (kind: RemovedContentKind): NotificationTarget | null =>
+/**
+ * Where a removed or decided post lives. Requests are on the default "mine" tab of Materials; links a
+ * student sent are on "help"; a ride is on the "mine" tab of Rides, where its status and reason show.
+ */
+const resourcesFor = (kind: RemovedContentKind): NotificationTarget =>
   kind === "ride"
-    ? // TODO(rides screens): open `/rides` once that route exists. Until then the notice is only marked read.
-      null
+    ? { to: "/rides", search: { tab: "mine" } }
     : kind === "resource_submission"
       ? { to: "/resources", search: { tab: "help" } }
       : { to: "/resources" };
@@ -84,7 +87,7 @@ const resourcesFor = (kind: RemovedContentKind): NotificationTarget | null =>
 /**
  * The screen a notification opens, or null when it has none (it is only marked read). A request
  * that matches you opens its submit screen. A link sent to your request opens your requests, where
- * the link is. Removed content, and a decision on a held request or link, opens the Materials screen (the Help tab for a link). An accepted link has no screen: the request is closed to everyone but its owner by
+ * the link is. Removed content, and a decision on a held request, link or ride, opens the screen it lives on: Materials (the Help tab for a link) or My rides. An accepted link has no screen: the request is closed to everyone but its owner by
  * then, so there is nothing left to open. Anything with a payload that does not parse goes nowhere
  * rather than to a broken page.
  */
@@ -93,7 +96,7 @@ export function notificationTarget(
   payload: Record<string, unknown> | undefined,
 ): NotificationTarget | null {
   if (type === "resource_submitted") return { to: "/resources" };
-  // Removed content is gone for its author too, so this opens the Materials screen, not the item.
+  // Removed content is gone for its author too, so this opens the screen it lived on, not the item.
   if (type === "content_removed") {
     const kind = removedContentKind.safeParse(payload?.kind);
     if (kind.success) return resourcesFor(kind.data);

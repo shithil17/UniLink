@@ -41,7 +41,11 @@ import {
   RIDE_SEARCH_MAX_LENGTH,
   RIDE_SEATS_MAX,
 } from "../shared/schemas/rides.ts";
-import { AUTHOR_DELETE_PURGE_MS } from "../shared/posts.ts";
+import {
+  AUTHOR_DELETE_PURGE_MS,
+  POST_DEFAULT_EXPIRY_DAYS,
+  POST_RENEW_EXTEND_DAYS,
+} from "../shared/posts.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
 import { RESOURCE_URL_MAX_LENGTH } from "../shared/resourceUrl.ts";
 
@@ -212,12 +216,12 @@ export const limits = {
   contactReveal: { limit: 30, windowMs: HOUR },
   /** When a post type's `expires_at` falls and how far a renewal can push it (see `src/server/posts/expiry.ts`). */
   postExpiry: {
-    // ceiling: a post with no date of its own (a recurring ride's end date) lives about a term's half. Revisit if posters keep renewing early.
-    defaultMs: 60 * DAY,
+    // ceiling: a post with no date of its own (a recurring ride's end date) lives about a term's half. Defined in shared code so the screens can state it. Revisit if posters keep renewing early.
+    defaultMs: POST_DEFAULT_EXPIRY_DAYS * DAY,
     // ceiling: stops a date years away from pinning a row in the feed. Revisit if a type needs longer plans.
     maxMs: 180 * DAY,
     // ceiling: one renewal adds as much as the default, so renewing twice never outruns the maximum by much. Revisit with the default.
-    renewExtendMs: 60 * DAY,
+    renewExtendMs: POST_RENEW_EXTEND_DAYS * DAY,
     // ceiling: gives the poster a week to renew a lapsed post before the cron deletes it. Revisit if posters miss the window.
     expiredPurgeMs: 7 * DAY,
   },

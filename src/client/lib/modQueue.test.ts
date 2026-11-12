@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { reasonCategory } from "../../shared/schemas/common";
 import { ruleName } from "../../shared/schemas/moderation";
-import { categoryLabel, confidenceLabel, ruleLabel } from "./modQueue";
+import { categoryLabel, confidenceLabel, postTypeLabel, ruleLabel } from "./modQueue";
+import { missingTargetLabel, removableName } from "./modConfirm";
 
 describe("mod queue labels", () => {
   it("has words for every category and rule", () => {
@@ -13,5 +14,13 @@ describe("mod queue labels", () => {
     expect(confidenceLabel(0.644)).toBe("64%");
     expect(confidenceLabel(0)).toBe("0%");
     expect(confidenceLabel(null)).toBeNull();
+  });
+});
+
+describe("a ride in the mod queue", () => {
+  it("is called a ride, and a removed one reads as a removed ride", () => {
+    expect(postTypeLabel("ride")).toBe("ride");
+    expect(removableName("ride")).toBe("ride");
+    expect(missingTargetLabel("ride")).toBe("A removed ride");
   });
 });

@@ -29,6 +29,10 @@ import { Route as ModUsersRouteImport } from './routes/mod.users'
 import { Route as ResourcesIndexRouteImport } from './routes/resources.index'
 import { Route as ResourcesRequestIdRouteImport } from './routes/resources.$requestId'
 import { Route as ResourcesNewRouteImport } from './routes/resources.new'
+import { Route as RidesIndexRouteImport } from './routes/rides.index'
+import { Route as RidesNewRouteImport } from './routes/rides.new'
+import { Route as RidesRideIdIndexRouteImport } from './routes/rides.$rideId.index'
+import { Route as RidesRideIdEditRouteImport } from './routes/rides.$rideId.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -130,6 +134,26 @@ const ResourcesNewRoute = ResourcesNewRouteImport.update({
   path: '/resources/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RidesIndexRoute = RidesIndexRouteImport.update({
+  id: '/rides/',
+  path: '/rides/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RidesNewRoute = RidesNewRouteImport.update({
+  id: '/rides/new',
+  path: '/rides/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RidesRideIdIndexRoute = RidesRideIdIndexRouteImport.update({
+  id: '/rides/$rideId/',
+  path: '/rides/$rideId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RidesRideIdEditRoute = RidesRideIdEditRouteImport.update({
+  id: '/rides/$rideId/edit',
+  path: '/rides/$rideId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -150,8 +174,12 @@ export interface FileRoutesByFullPath {
   '/mod/users': typeof ModUsersRoute
   '/resources/$requestId': typeof ResourcesRequestIdRoute
   '/resources/new': typeof ResourcesNewRoute
+  '/rides/new': typeof RidesNewRoute
   '/mod/': typeof ModIndexRoute
   '/resources/': typeof ResourcesIndexRoute
+  '/rides/': typeof RidesIndexRoute
+  '/rides/$rideId/edit': typeof RidesRideIdEditRoute
+  '/rides/$rideId/': typeof RidesRideIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -171,8 +199,12 @@ export interface FileRoutesByTo {
   '/mod/users': typeof ModUsersRoute
   '/resources/$requestId': typeof ResourcesRequestIdRoute
   '/resources/new': typeof ResourcesNewRoute
+  '/rides/new': typeof RidesNewRoute
   '/mod': typeof ModIndexRoute
   '/resources': typeof ResourcesIndexRoute
+  '/rides': typeof RidesIndexRoute
+  '/rides/$rideId/edit': typeof RidesRideIdEditRoute
+  '/rides/$rideId': typeof RidesRideIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -194,8 +226,12 @@ export interface FileRoutesById {
   '/mod/users': typeof ModUsersRoute
   '/resources/$requestId': typeof ResourcesRequestIdRoute
   '/resources/new': typeof ResourcesNewRoute
+  '/rides/new': typeof RidesNewRoute
   '/mod/': typeof ModIndexRoute
   '/resources/': typeof ResourcesIndexRoute
+  '/rides/': typeof RidesIndexRoute
+  '/rides/$rideId/edit': typeof RidesRideIdEditRoute
+  '/rides/$rideId/': typeof RidesRideIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -218,8 +254,12 @@ export interface FileRouteTypes {
     | '/mod/users'
     | '/resources/$requestId'
     | '/resources/new'
+    | '/rides/new'
     | '/mod/'
     | '/resources/'
+    | '/rides/'
+    | '/rides/$rideId/edit'
+    | '/rides/$rideId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -239,8 +279,12 @@ export interface FileRouteTypes {
     | '/mod/users'
     | '/resources/$requestId'
     | '/resources/new'
+    | '/rides/new'
     | '/mod'
     | '/resources'
+    | '/rides'
+    | '/rides/$rideId/edit'
+    | '/rides/$rideId'
   id:
     | '__root__'
     | '/'
@@ -261,8 +305,12 @@ export interface FileRouteTypes {
     | '/mod/users'
     | '/resources/$requestId'
     | '/resources/new'
+    | '/rides/new'
     | '/mod/'
     | '/resources/'
+    | '/rides/'
+    | '/rides/$rideId/edit'
+    | '/rides/$rideId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -277,7 +325,11 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   ResourcesRequestIdRoute: typeof ResourcesRequestIdRoute
   ResourcesNewRoute: typeof ResourcesNewRoute
+  RidesNewRoute: typeof RidesNewRoute
   ResourcesIndexRoute: typeof ResourcesIndexRoute
+  RidesIndexRoute: typeof RidesIndexRoute
+  RidesRideIdEditRoute: typeof RidesRideIdEditRoute
+  RidesRideIdIndexRoute: typeof RidesRideIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -422,6 +474,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResourcesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rides/': {
+      id: '/rides/'
+      path: '/rides'
+      fullPath: '/rides/'
+      preLoaderRoute: typeof RidesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rides/new': {
+      id: '/rides/new'
+      path: '/rides/new'
+      fullPath: '/rides/new'
+      preLoaderRoute: typeof RidesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rides/$rideId/': {
+      id: '/rides/$rideId/'
+      path: '/rides/$rideId'
+      fullPath: '/rides/$rideId/'
+      preLoaderRoute: typeof RidesRideIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rides/$rideId/edit': {
+      id: '/rides/$rideId/edit'
+      path: '/rides/$rideId/edit'
+      fullPath: '/rides/$rideId/edit'
+      preLoaderRoute: typeof RidesRideIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -461,7 +541,11 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   ResourcesRequestIdRoute: ResourcesRequestIdRoute,
   ResourcesNewRoute: ResourcesNewRoute,
+  RidesNewRoute: RidesNewRoute,
   ResourcesIndexRoute: ResourcesIndexRoute,
+  RidesIndexRoute: RidesIndexRoute,
+  RidesRideIdEditRoute: RidesRideIdEditRoute,
+  RidesRideIdIndexRoute: RidesRideIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

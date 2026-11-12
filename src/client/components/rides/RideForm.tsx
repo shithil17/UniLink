@@ -1,0 +1,333 @@
+import { Controller, FormProvider, useForm, useWatch } from "react-hook-form";
+import { useState } from "react";
+import { ContactInput } from "@/components/posts/ContactInput";
+import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { RadioChip, RadioGroup } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
+import { toastPostFailure } from "@/lib/resources";
+import {
+  emptyRideFields,
+  fieldsFromRide,
+  instantToDeparture,
+  RIDE_DEFAULT_END_WORDS,
+  RIDE_EXPIRY_WORDS,
+  rideBodyFromFields,
+  rideFormResolver,
+  ridePatchFromFields,
+  useCreateRide,
+  useUpdateRide,
+  VEHICLE_LABELS,
+  VEHICLES,
+  WEEKDAY_LONG,
+  WEEKDAY_SHORT,
+  type RideFormFields,
+} from "@/lib/rides";
+import { toast } from "@/lib/toast";
+import { WEEKDAYS } from "../../../shared/rides";
+import {
+  RIDE_NOTES_MAX_LENGTH,
+  RIDE_PLACE_MAX_LENGTH,
+  RIDE_PRICE_MAX_TAKA,
+  RIDE_SEATS_MAX,
+  type RideSummary,
+} from "../../../shared/schemas/rides";
+import { RideSafetyNotice } from "./RideSafetyNotice";
+
+type Contacts = { phone?: string; whatsapp?: string; messenger?: string };
+
+/** What a save says in a toast: live, held for a moderator, or turned down. */
+function savedToast(ride: RideSummary, edited: boolean) {
+  if (ride.status === "pending_review") {
+    toast.success(
+      edited
+        ? "Saved. Your ride shows again once a moderator approves it."
+        : "Ride saved. It goes live once a moderator approves it.",
+    );
+  } else if (ride.status === "rejected") {
+    toast.error("A moderator didn't approve this ride.", {
+      description: "See why under My rides.",
+    });
+  } else {
+    toast.success(edited ? "Ride updated." : "Ride posted.");
+  }
+}
+
+/**
+ * Posts a ride, or edits one when `ride` and its `contacts` are given. The values go through the shared
+ * `rideInput` schema (the resolver), so the server's own messages show under the fields. A new ride
+ * picks one-off or recurring; an existing ride keeps its kind. The edit sends only what changed.
+ */
+export function RideForm({
+  ride,
+  contacts,
+  onSaved,
+  onCancel,
+}: {
+  ride?: RideSummary;
+  /** The poster's current contacts, needed to edit a ride. */
+  contacts?: Contacts;
+  onSaved: (ride: RideSummary) => void;
+  onCancel: () => void;
+}) {
+  const create = useCreateRide();
+  const update = useUpdateRide(ride?.id ?? 0);
+  // The values the form opened with: the edit compares against them to send only what changed.
+  const [original] = useState<RideFormFields>(() =>
+    ride ? fieldsFromRide(ride, contacts ?? {}) : emptyRideFields(),
+  );
+  // A one-off cannot leave before now; the picker greys out earlier minutes.
+  const [earliest] = useState(() => instantToDeparture(Date.now()));
+  const form = useForm<RideFormFields>({ resolver: rideFormResolver, defaultValues: original });
+  const { errors } = form.formState;
+  const kind = useWatch({ control: form.control, name: "kind" });
+  const notes = useWatch({ control: form.control, name: "notes" }) ?? "";
+
+  const submit = form.handleSubmit((values) => {
+    if (ride) {
+      const patch = ridePatchFromFields(values, original);
+      if (!patch) {
+        toast.success("Nothing to change.");
+        onSaved(ride);
+        return;
+      }
+      update.mutate(patch, {
+        onSuccess: (saved) => {
+          savedToast(saved, true);
+          onSaved(saved);
+        },
+        onError: toastPostFailure,
+      });
+      return;
+    }
+    create.mutate(rideBodyFromFields(values), {
+      onSuccess: (saved) => {
+        savedToast(saved, false);
+        onSaved(saved);
+      },
+      onError: toastPostFailure,
+    });
+  });
+
+  return (
+    <FormProvider {...form}>
+      <form onSubmit={submit} noValidate>
+        <FieldGroup>
+          {ride ? null : (
+            <Field>
+              <FieldLabel id="ride-kind-label">How often</FieldLabel>
+              <Controller
+                control={form.control}
+                name="kind"
+                render={({ field }) => (
+                  <RadioGroup
+                    aria-labelledby="ride-kind-label"
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    className="grid-cols-2 gap-2"
+                  >
+                    <RadioChip value="one_off">One-off</RadioChip>
+                    <RadioChip value="recurring">Recurring</RadioChip>
+                  </RadioGroup>
+                )}
+              />
+            </Field>
+          )}
+
+          <Field data-invalid={Boolean(errors.pickup)}>
+            <FieldLabel htmlFor="ride-pickup">Pickup</FieldLabel>
+            <Input
+              id="ride-pickup"
+              placeholder="NSU gate"
+              maxLength={RIDE_PLACE_MAX_LENGTH}
+              autoComplete="off"
+              aria-invalid={Boolean(errors.pickup)}
+              {...form.register("pickup")}
+            />
+            <FieldError errors={[errors.pickup]} />
+          </Field>
+          <Field data-invalid={Boolean(errors.destination)}>
+            <FieldLabel htmlFor="ride-destination">Destination</FieldLabel>
+            <Input
+              id="ride-destination"
+              placeholder="Mirpur 10"
+              maxLength={RIDE_PLACE_MAX_LENGTH}
+              autoComplete="off"
+              aria-invalid={Boolean(errors.destination)}
+              {...form.register("destination")}
+            />
+            <FieldError errors={[errors.destination]} />
+          </Field>
+
+          <Field>
+            <FieldLabel id="ride-vehicle-label">Vehicle</FieldLabel>
+            <Controller
+              control={form.control}
+              name="vehicle"
+              render={({ field }) => (
+                <RadioGroup
+                  aria-labelledby="ride-vehicle-label"
+                  value={field.value}
+                  onValueChange={field.onChange}
+                  className="grid-cols-4 gap-1.5"
+                >
+                  {VEHICLES.map((v) => (
+                    <RadioChip key={v} value={v} aria-label={VEHICLE_LABELS[v]}>
+                      <span aria-hidden className="text-[15px] leading-none font-semibold">
+                        {VEHICLE_LABELS[v]}
+                      </span>
+                    </RadioChip>
+                  ))}
+                </RadioGroup>
+              )}
+            />
+          </Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field data-invalid={Boolean(errors.totalSeats)}>
+              <FieldLabel htmlFor="ride-seats">Seats</FieldLabel>
+              <Input
+                id="ride-seats"
+                type="number"
+                inputMode="numeric"
+                min={1}
+                max={RIDE_SEATS_MAX}
+                step={1}
+                placeholder="3"
+                aria-invalid={Boolean(errors.totalSeats)}
+                {...form.register("totalSeats")}
+              />
+              <FieldError errors={[errors.totalSeats]} />
+            </Field>
+            <Field data-invalid={Boolean(errors.pricePerSeatTaka)}>
+              <FieldLabel htmlFor="ride-price">Taka per seat</FieldLabel>
+              <Input
+                id="ride-price"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={RIDE_PRICE_MAX_TAKA}
+                step={1}
+                placeholder="100"
+                aria-invalid={Boolean(errors.pricePerSeatTaka)}
+                {...form.register("pricePerSeatTaka")}
+              />
+              <FieldError errors={[errors.pricePerSeatTaka]} />
+            </Field>
+          </div>
+          {ride ? (
+            <FieldDescription className="-mt-3">
+              Changing the seats keeps the seats already taken.
+            </FieldDescription>
+          ) : null}
+
+          {kind === "one_off" ? (
+            <Field data-invalid={Boolean(errors.departure)}>
+              <FieldLabel htmlFor="ride-departure">Departs</FieldLabel>
+              <Input
+                id="ride-departure"
+                type="datetime-local"
+                min={earliest}
+                aria-invalid={Boolean(errors.departure)}
+                {...form.register("departure")}
+              />
+              <FieldDescription>Dhaka time. {RIDE_EXPIRY_WORDS.one_off}</FieldDescription>
+              <FieldError errors={[errors.departure]} />
+            </Field>
+          ) : (
+            <>
+              <Field data-invalid={Boolean(errors.days)}>
+                <FieldLabel id="ride-days-label">Days</FieldLabel>
+                <Controller
+                  control={form.control}
+                  name="days"
+                  render={({ field }) => (
+                    <div
+                      role="group"
+                      aria-labelledby="ride-days-label"
+                      className="flex flex-wrap gap-2"
+                    >
+                      {WEEKDAYS.map((d) => (
+                        <Chip
+                          key={d}
+                          pressed={field.value.includes(d)}
+                          aria-label={WEEKDAY_LONG[d]}
+                          onPressedChange={(on) =>
+                            field.onChange(
+                              on ? [...field.value, d] : field.value.filter((x) => x !== d),
+                            )
+                          }
+                        >
+                          {WEEKDAY_SHORT[d]}
+                        </Chip>
+                      ))}
+                    </div>
+                  )}
+                />
+                <FieldError errors={[errors.days]} />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field data-invalid={Boolean(errors.departureTime)}>
+                  <FieldLabel htmlFor="ride-time">Leaves at</FieldLabel>
+                  <Input
+                    id="ride-time"
+                    type="time"
+                    aria-invalid={Boolean(errors.departureTime)}
+                    {...form.register("departureTime")}
+                  />
+                  <FieldError errors={[errors.departureTime]} />
+                </Field>
+                <Field data-invalid={Boolean(errors.endsOn)}>
+                  <FieldLabel htmlFor="ride-ends">Runs until (optional)</FieldLabel>
+                  <Input
+                    id="ride-ends"
+                    type="date"
+                    aria-invalid={Boolean(errors.endsOn)}
+                    {...form.register("endsOn")}
+                  />
+                  <FieldError errors={[errors.endsOn]} />
+                </Field>
+              </div>
+              <FieldDescription className="-mt-3">
+                Dhaka time. {RIDE_DEFAULT_END_WORDS} {RIDE_EXPIRY_WORDS.recurring}
+              </FieldDescription>
+            </>
+          )}
+
+          <Field data-invalid={Boolean(errors.notes)}>
+            <FieldLabel htmlFor="ride-notes">Notes (optional)</FieldLabel>
+            <Textarea
+              id="ride-notes"
+              placeholder="Where exactly you wait, bags, anything riders should know"
+              maxLength={RIDE_NOTES_MAX_LENGTH}
+              aria-invalid={Boolean(errors.notes)}
+              {...form.register("notes")}
+            />
+            <FieldDescription className="tabular-nums">
+              {notes.length} / {RIDE_NOTES_MAX_LENGTH}
+            </FieldDescription>
+            <FieldError errors={[errors.notes]} />
+          </Field>
+
+          <h2 className="-mb-2 text-lg leading-[1.3] font-semibold text-ink">
+            How riders reach you
+          </h2>
+          <ContactInput />
+
+          <RideSafetyNotice />
+
+          <div className="flex flex-col gap-2">
+            <Button type="submit" loading={create.isPending || update.isPending}>
+              {ride ? "Save changes" : "Post ride"}
+            </Button>
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+          </div>
+        </FieldGroup>
+      </form>
+    </FormProvider>
+  );
+}

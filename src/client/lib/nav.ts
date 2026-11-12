@@ -3,7 +3,7 @@ import type { Me } from "../../shared/schemas/auth";
 type Role = Me["role"];
 
 export type MainTab = {
-  to: "/" | "/courses" | "/resources" | "/routine" | "/inbox" | "/mod" | "/settings";
+  to: "/" | "/courses" | "/resources" | "/rides" | "/routine" | "/inbox" | "/mod" | "/settings";
   label: string;
   /** On the phone tab bar. The rest sit in the bar's More sheet; the desktop rail shows them all. */
   inBar: boolean;
@@ -14,6 +14,12 @@ export type MainTab = {
 const homeTab: MainTab = { to: "/", label: "Home", inBar: true };
 const coursesTab: MainTab = { to: "/courses", label: "Courses", inBar: true };
 const materialsTab: MainTab = { to: "/resources", label: "Materials", inBar: true };
+const ridesTab: MainTab = {
+  to: "/rides",
+  label: "Rides",
+  inBar: false,
+  hint: "Share a ride or find one",
+};
 const routineTab: MainTab = {
   to: "/routine",
   label: "Routine",
@@ -40,15 +46,16 @@ const settingsTab: MainTab = {
  *
  * ceiling: the phone bar holds four tabs plus More, so a fifth daily destination has to replace one
  * (Home already shows today's classes, which is why Routine moved to More). New destinations go
- * into More. Revisit if More grows past about six rows or usage shows a More item opened daily.
+ * into More (Rides is the latest). Revisit if More grows past about six rows or usage shows a More
+ * item opened daily.
  */
 export function mainTabs(
   user: { role: Role; mustChangePassword: boolean } | null | undefined,
 ): MainTab[] {
   if (!user || user.mustChangePassword) return [];
   return user.role === "student"
-    ? [homeTab, coursesTab, materialsTab, routineTab, inboxTab, settingsTab]
-    : [homeTab, coursesTab, materialsTab, routineTab, inboxTab, modTab, settingsTab];
+    ? [homeTab, coursesTab, materialsTab, ridesTab, routineTab, inboxTab, settingsTab]
+    : [homeTab, coursesTab, materialsTab, ridesTab, routineTab, inboxTab, modTab, settingsTab];
 }
 
 function isInside(to: MainTab["to"], pathname: string) {
