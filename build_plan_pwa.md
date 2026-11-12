@@ -19,10 +19,11 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - (2026-10-19) Any course can be marked waived: it counts as done and earns credits but never affects CGPA (Phase 4, Phase 6).
 - (2026-10-19) The course map covers every undergraduate program with a course map, picked by the program code in the student ID. Students add their own elective courses (code, title, credits), may go over the degree total, and can exclude extra courses from the transcript (Phase 4).
 - (2026-10-20) New Phase 4b: the Quiet Utility design language reorganizes Phase 1's four palettes into shared roles and restyles every existing screen. The app now serves all NSU undergraduates, with CSE-only extras (faculty profiles, supervisor finder). (2026-10-23) Its visual locks are superseded by [`build_plan_pocket_planner.md`](build_plan_pocket_planner.md).
-- (2026-10-19) Lost-and-found posts and marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (post photos kit, Phase 15). Photos in the "ID or card" category always go to a mod first. Authors can delete their own posts (Phase 12).
+- (2026-10-19) Lost-and-found posts and marketplace listings can carry up to 3 photos: WebP made in the browser, checked and screened by the server, stored in R2 (post photos kit, Phase 12). Photos in the "ID or card" category always go to a mod first. Authors can delete their own posts (Phase 11).
 - (2026-10-20) Faculty now covers every NSU department, each with a department, optional initials, an NSU page and a hidden flag; students search and filter the picker by name, initials and department; mods manage faculty (add, edit, hide, show again) in the panel.
 - (2026-10-20) Mods manage curriculum courses in the panel (`/mod/courses`): add, edit (including prerequisites as text, such as `CSE215 and (MAT120 or MAT125)`) and hide or show again with a reason, never delete (`courses.hidden`, migration 0011). Hidden courses leave students' maps unless the student already has an attempt on them. Re-importing a version still replaces all its courses, edits included, and the import screen warns. A slot with alternatives shows all its codes joined with "/" until the student takes one.
 - (2026-10-21) Elective trails and open electives: a curriculum can list its specialized elective trails (CSE: six trails, at least two courses from one trail). Students fill trail elective slots by picking from the trail list, see their trail progress on the map, and get title and credits filled in from a course code for open electives. CSE498 Internship/Co-op is on the CSE map as a non-credit course (Phase 4).
+- (2026-11-12) Rides, lost and found and marketplace now come straight after resources (renumbered 11, 12, 13), then Clef auto-moderation (14), hardening (15) and delivery (16). Faculty research profiles and the AI supervisor finder are optional phases O1 and O2 at the bottom and may never ship; the finder gate moved from Clef to O2. The faculty directory is unchanged. Marketplace moves to Dev A, after Clef.
 - (2026-11-02) New Phase 9b: a Planner view in Courses. Students set a target CGPA (saved to the account), try mock grades on past and future courses (kept in the browser only), and get advice that prefers doing better in remaining courses and suggests the fewest retakes only when the target needs them. It runs before Phase 10.
 
 ---
@@ -101,7 +102,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 | ORM             | Drizzle (`schema.ts`, `drizzle-kit` migrations)                                                                         | Typed queries, versioned migrations                                                 |
 | Auth            | Own `sessions` table, hashed tokens, HttpOnly + Secure + SameSite=Lax cookie, WebCrypto PBKDF2                          | No third-party auth. Works on Workers                                               |
 | Scheduled jobs  | Cloudflare Cron Triggers (same Worker)                                                                                  | No extra service                                                                    |
-| AI text         | DeepSeek V4.1 Flash (`deepseek-flash`), key as a Worker secret                                                          | Cheap. Context caching suits the fixed faculty block                                |
+| AI text         | DeepSeek V4.1 Flash (`deepseek-flash`), key as a Worker secret. Only used by the optional phases O1 and O2              | Cheap. Context caching suits the fixed faculty block                                |
 | AI decisions    | Clef-flash (`@cf/cloudflare/clef-flash`) via the Workers AI binding. Clef (`@cf/cloudflare/clef`) as the fallback model | Same account, no key, very cheap screening                                          |
 | Research data   | OpenAlex (primary), ORCID public API (cross-check), Crossref (optional). Google Scholar is link-out only                | Structured JSON. No scraping                                                        |
 | CI              | GitHub Actions with `voidzero-dev/setup-vp`                                                                             | Official Vite+ setup                                                                |
@@ -134,7 +135,7 @@ unilink/                         # repo name until the app name is chosen
 ├── .node-version                                                                       [P0]
 ├── vite.config.ts               # vite-plus config: plugins, lint, fmt, test, staged   [P0]
 ├── wrangler.jsonc               # staging + production envs, D1, assets, AI, crons     [P0]
-│                                # + R2 bucket POST_PHOTOS                              [P15]
+│                                # + R2 bucket POST_PHOTOS                              [P12]
 ├── drizzle.config.ts                                                                   [P0]
 ├── index.html                   # inline no-flash theme script + theme-color meta      [P1]
 ├── PRODUCT.md                   # product facts read by design work                   [P4b]
@@ -149,7 +150,7 @@ unilink/                         # repo name until the app name is chosen
 ├── scripts/
 │   ├── seed.ts                  # curricula + fake students for dev/tests             [P0→P4]
 │   ├── seed-admin.ts            # first admin from env vars                            [P2]
-│   └── faculty-sync.ts          # OpenAlex/ORCID → trim → DeepSeek → admin route       [P11]
+│   └── faculty-sync.ts          # OpenAlex/ORCID → trim → DeepSeek → admin route       [O1]
 └── src/
     ├── shared/                  # imported by both client and server
     │   ├── schemas/             # Zod request/response schemas per module
@@ -160,8 +161,8 @@ unilink/                         # repo name until the app name is chosen
     │   ├── terms.ts             # term type, current term (Asia/Dhaka)                 [P4]
     │   ├── routine.ts           # overlap check                                         [P9]
     │   ├── urlAllowlist.ts      # sharing hosts                                         [P10]
-    │   ├── contact.ts           # phone / wa.me / m.me / facebook.com rules            [P12]
-    │   └── webp.ts              # WebP header parser: magic, size, chunks              [P15]
+    │   ├── contact.ts           # phone / wa.me / m.me / facebook.com rules            [P11]
+    │   └── webp.ts              # WebP header parser: magic, size, chunks              [P12]
     ├── server/
     │   ├── index.ts             # Hono app, /api router, scheduled() handler           [P0]
     │   ├── limits.ts            # every limit, cap, cooldown, expiry, threshold        [P2]
@@ -173,7 +174,7 @@ unilink/                         # repo name until the app name is chosen
     │   ├── moderation/
     │   │   ├── screen.ts        # Chain of Responsibility: rules → model → verdict     [P8]
     │   │   └── rules.ts         # deterministic rules                                   [P8]
-    │   ├── adapters/            # openalex, orcid, crossref, deepseek, clef + fakes    [P11, P13, P14]
+    │   ├── adapters/            # openalex, orcid, crossref, deepseek, clef + fakes    [O1, O2, P14]
     │   ├── cron.ts              # list of cleanup jobs, one function per table         [P10]
     │   └── features/<module>/   # routes + services: auth, courses, attempts, inbox,
     │                            # mod, routine, resources, faculty, rides, lostfound,
@@ -184,8 +185,8 @@ unilink/                         # repo name until the app name is chosen
         ├── routes/              # TanStack file routes
         ├── components/ui/       # shadcn components
         ├── components/theme/    # ThemeProvider, ThemePicker, ThemePickerTrigger       [P1]
-        ├── components/post/     # ContactInput, ExpiryBadge, ReportButton, StatusNote  [P12]
-        └── lib/                 # query client, api fetcher, imageEncode.ts (WebP) [P15]
+        ├── components/post/     # ContactInput, ExpiryBadge, ReportButton, StatusNote  [P11]
+        └── lib/                 # query client, api fetcher, imageEncode.ts (WebP) [P12]
 ```
 
 Tests sit next to the code: `*.test.ts` for unit tests and `*.api.test.ts` for API tests that run against a local D1.
@@ -194,7 +195,7 @@ Tests sit next to the code: `*.test.ts` for unit tests and `*.api.test.ts` for A
 
 ## Phase numbering
 
-Phases are numbered 0 to 18 in **build order, not strict sequence**. Two developer tracks run in parallel (see Suggested Build Order). Within a track, do one phase at a time and pass its gate before moving on. A phase may start once its **Depends on** phases have passed their gates. Stretch work uses the `S` prefix (S1 to S3) and stays parked until the go/no-go at the start of Sprint 4. Phase 4b (design language) was inserted on 2026-10-20 and keeps the letter so later numbers stay stable. Phase 9b (grade planner) was inserted the same way on 2026-11-02.
+Phases are numbered 0 to 16 in **build order, not strict sequence**. Two developer tracks run in parallel (see Suggested Build Order). Within a track, do one phase at a time and pass its gate before moving on. A phase may start once its **Depends on** phases have passed their gates. Stretch work uses the `S` prefix (S1 to S3) and stays parked until the go/no-go at the start of Sprint 4. Phase 4b (design language) was inserted on 2026-10-20 and keeps the letter so later numbers stay stable. Phase 9b (grade planner) was inserted the same way on 2026-11-02. On 2026-11-12 the phases after 10 were renumbered so rides, lost and found and marketplace come first (old 12, 15, 16 are now 11, 12, 13; Clef stays 14; hardening and delivery are 15 and 16), and faculty profiles and the finder (old 11 and 13) became optional phases O1 and O2 at the bottom.
 
 Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" checklists inside a phase are the non-developer work tied to that feature. They do not block the dev's gate unless the gate says so.
 
@@ -228,7 +229,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] Drizzle `src/server/db/schema.ts` with an `app_meta` table. Generate the migration and apply it locally and to staging.
 - [x] Hono app mounted at `/api`. `GET /api/health` returns `{ ok: true, dbVersion }` read from `app_meta`. Every non-`/api` path falls through to static assets.
 - [x] Package scripts: `db:generate`, `db:migrate:local`, `db:migrate:staging`, `db:migrate:prod`, `deploy:staging`, `deploy:prod`, `seed`. Each one is called through `vp run`.
-- [x] CI (`setup-vp`): `vp install --frozen-lockfile`, `vp check`, `vp test`, `vp build`. On merge to `main`, run the staging migrations and then deploy to staging. On a `v*` tag, deploy to production (the production migration is a manual step, see Phase 17).
+- [x] CI (`setup-vp`): `vp install --frozen-lockfile`, `vp check`, `vp test`, `vp build`. On merge to `main`, run the staging migrations and then deploy to staging. On a `v*` tag, deploy to production (the production migration is a manual step, see Phase 15).
 - [ ] Secrets set in staging and production. `.dev.vars` and `.env*` are in `.gitignore`.
 
 ### Checklist — Client stack
@@ -518,7 +519,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 **Goal:** UniLink gets one calm, consistent look, Quiet Utility. Phase 1's four palettes are kept and reorganized into the same set of roles, and every existing screen is rebuilt in this look before later phases add more.
 
-> **Justification:** 14 phases of screens are still to come. Restyling 8 routes now costs less than restyling 30 later, and the post kit (Phase 12) should be built once, in its final form.
+> **Justification:** 14 phases of screens are still to come. Restyling 8 routes now costs less than restyling 30 later, and the post kit (Phase 11) should be built once, in its final form.
 
 > **Design decisions (locked in):**
 >
@@ -653,7 +654,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 >   Note (2026-10-19): **WV** (waived, Phase 4) earns credits but is excluded from CGPA and from the best grade (`countsInCgpa()` in `grading.ts`). A waived course with no graded attempt never blocks a retake.
 > - **Retake rule:** a new attempt is allowed only while the best grade so far (ignoring I and W) is below B+. There is no limit on the number of attempts while that holds. I and W attempts never block a retake.
 > - The scale and the retake policy are **Strategy** objects in `src/shared/grading.ts`, so a different scale or policy is a new strategy, not an `if`.
-> - The basic `faculty` table is created here for the attempt picker (since extended into the all-department directory, see the 2026-10-20 note at the top). Phase 11 extends it further.
+> - The basic `faculty` table is created here for the attempt picker (since extended into the all-department directory, see the 2026-10-20 note at the top). Phase O1 extends it further.
 > - Mods and admins cannot read attempts or CGPA. This is enforced in the repo layer, not only in the UI.
 
 ### Checklist
@@ -668,7 +669,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 ### Checklist — Docs & QA (C, D)
 
 - [ ] C: class diagram. Update the SRS from the survey results. (Class diagram written: `docs/class-diagram.md`. The SRS update waits for survey results.)
-- [x] D: CGPA screens. First manual test cases. Finish the CSE course data. Start the faculty list (name, designation, NSU page, Scholar URL, ORCID, checked OpenAlex author ID). (Screens: `docs/screens.md`. Test cases: `docs/test-cases.md`, sections D and E. CSE data: `data/curricula/42-cse.json`, 130 credits. Faculty list started in `data/faculty/`: 87 ECE faculty with name, initials, designation and NSU page from the public department listing; Scholar, ORCID and OpenAlex IDs come in Phase 11.)
+- [x] D: CGPA screens. First manual test cases. Finish the CSE course data. Start the faculty list (name, designation, NSU page, Scholar URL, ORCID, checked OpenAlex author ID). (Screens: `docs/screens.md`. Test cases: `docs/test-cases.md`, sections D and E. CSE data: `data/curricula/42-cse.json`, 130 credits. Faculty list started in `data/faculty/`: 87 ECE faculty with name, initials, designation and NSU page from the public department listing; Scholar, ORCID and OpenAlex IDs come in Phase O1.)
 
 ### Checklist — Test Scripts & Smoke Tests
 
@@ -931,51 +932,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ---
 
-## Phase 11 — Faculty profiles & research sync
-
-**Owner:** Dev A (Dev B takes the profile screens if Sprint 2 slipped) · **When:** Sprint 3 · **Depends on:** Phase 6 (faculty table), Phase 7 (report, hide)
-
-**Goal:** Every CSE faculty member in scope has a profile with verified papers, an AI summary built only from fetched JSON, topic tags and a Scholar link, and students can keyword-search them.
-
-> **Justification:** Profiles and keyword search are the shipped fallback if AI matching (Phase 13) slips, so they must stand on their own.
-
-> **Design decisions (locked in):**
->
-> - **No scraping.** Google Scholar is link-out only. The AI never browses. Our code calls structured JSON APIs: **OpenAlex** (primary, works by ORCID or author ID, abstract rebuilt from its inverted index), **ORCID** `/works` (cross-check and fallback, no abstracts), **Crossref** by DOI (optional, for a missing abstract or venue), and as a last resort a **manual list** D pastes into an admin form.
-> - **Identity check** is done by hand, once per person (D): ORCID and OpenAlex author ID checked against their Scholar and NSU pages. People without an ORCID are matched by name and affiliation and verified by hand.
-> - **Sync script** runs on a developer machine (`vp run faculty:sync`), not in the Worker. For each person: works from the last 5 to 8 years, at most 15, deduped by DOI, each trimmed to title, year, venue, the first 600 characters of the abstract and the top topics. Then one DeepSeek call: a summary of about 120 words + 5 to 8 tags, using **only** the supplied records, returned as JSON and validated with Zod. Saved through an admin-only route. The script logs in as an admin with credentials from local env. The trimmed input is stored next to the summary, so a mod can see what it was based on.
-> - **Thin data:** fewer than 3 usable papers → `limited_data`. The summary uses the manual list or interests entered by D, and the matcher is told the data is thin.
-> - **Profile page:** name, designation, department, photo link, public contact link, tags, AI summary, 5 to 10 recent papers (title, year, venue, link), Scholar link. The label "AI-generated from public publication records, may be incomplete or out of date", and a "Report a problem" button (`target_type` `faculty`).
-> - Mods can hide a profile (logged). Hidden profiles never appear in lists, search or matches. Faculty can ask for correction or removal through the takedown policy.
-> - Keyword search is a plain `LIKE` over name, summary and tags. About 100 rows does not need full-text search.
-> - Refresh once a semester, or when a mod flags a profile.
-
-### Checklist — Build order
-
-- [ ] **Step 1:** extend `faculty` (slug, photo link, Scholar URL, ORCID, OpenAlex ID, tags, summary, summary date, sync input JSON, `limited_data`) and add `faculty_papers`. `department`, optional `initials`, `nsu_page` and `hidden` already exist (faculty directory, 2026-10-20), as does the mod hide/show with its audit row; the profile screens reuse that flag. Seed from D's verified list.
-- [ ] **Step 2:** adapters + fakes: `OpenAlexClient` (check the current access terms and whether a free key or `mailto` is required), `OrcidClient`, `CrossrefClient`. Rebuild abstracts, merge and dedupe by DOI, handle missing abstracts.
-- [ ] **Step 3:** `scripts/faculty-sync.ts` with the `DeepSeekClient` adapter (summary mode) and Zod validation. Admin-only `PUT /api/admin/faculty/:id/summary`. Admin form for the manual paper list.
-- [ ] **Step 4:** faculty list, profile page, keyword search, report button, mod hide.
-
-### Checklist — Docs & QA (C, D)
-
-- [ ] D: finish and verify the faculty list. Faculty screens. AI label wording. Takedown policy including profile corrections. Read a sample of generated summaries against the real papers.
-
-### Checklist — Test Scripts & Smoke Tests
-
-- [ ] `src/server/adapters/openalex.test.ts`: inverted-index abstract rebuild, missing abstract, DOI dedupe across OpenAlex and ORCID, the 15-work and year window, 600-character trim.
-- [ ] `scripts/faculty-sync.test.ts` (fake clients): invalid summary JSON is rejected, fewer than 3 papers sets `limited_data`, the trimmed input is saved.
-- [ ] `src/server/features/faculty/faculty.api.test.ts`: hidden profiles are excluded from the list and search, the summary route is admin only, a report reaches the queue.
-- [ ] Run: `vp test openalex faculty`
-
-### Test Gate 11
-
-- [ ] **Faculty tests pass with fakes, and no test touches the network.**
-- [ ] **(Manual) A real sync has run for the full faculty list on staging. D has checked a sample against Scholar. Keyword search finds people by topic.**
-
----
-
-## Phase 12 — Shared post kit & rides
+## Phase 11 — Shared post kit & rides
 
 **Owner:** Dev B (Dev A reviews) · **When:** Sprint 3 · **Depends on:** Phase 7, Phase 8
 
@@ -1020,98 +977,18 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [ ] `src/server/features/rides/rides.api.test.ts`: seats never go below 0 or above the total, auto `full` at 0, one-off vs recurring validation, the default end date, renewal, the feed hides expired and pending rides, the contact reveal needs a login and hits its rate limit, the feed response has no contact fields, report + removal + reversal, edits are screened again, an author delete hides the ride at once, another user cannot delete it, the cron purges it after the window but not while a report is open.
 - [ ] Run: `vp test contact rides`
 
-### Test Gate 12
+### Test Gate 11
 
 - [ ] **Ride tests pass.**
 - [ ] **(Manual) On a phone, post a recurring ride, filter by weekday, reveal the contact, and the WhatsApp and dialer links open the right app.**
 
-**Sprint 3 milestone = core feature freeze (end of Week 6):** every Must-have works on staging except AI matching (13), the Clef step (14), lost and found (15) and marketplace (16). Faculty profiles with keyword search already work.
+**Sprint 3 milestone (end of Week 6):** resources and rides work on staging, and the shared post kit is ready for lost and found (12) and marketplace (13).
 
 ---
 
-## Phase 13 — AI matching & supervisor finder chat
+## Phase 12 — Lost and found
 
-**Owner:** Dev A · **When:** Week 7, first half · **Depends on:** Phase 11
-
-**Goal:** A student describes their interests in a chat and gets up to 5 real faculty suggestions with one-line reasons, from one stateless, validated, rate-limited DeepSeek call per message.
-
-> **Design decisions (locked in):**
->
-> - Input: interest text (at most 500 characters) and an optional course (CSE299, CSE499, CSE498R). The Worker sends the text and **all visible faculty summaries and tags** in one call: a stable prefix with the faculty block first and the student's text last (for DeepSeek context caching). It asks for JSON: top 5 faculty IDs, a one-line reason each, the matching topics. `limited_data` people are marked as such in the block.
-> - Zod-validate the output, drop unknown or hidden faculty IDs, and retry once on invalid output. The model cannot invent a person.
-> - **Each message is one independent call.** Earlier turns are never sent. The thread lives only in client memory and is lost on reload. Nothing is stored on the server, and no username or ID is sent.
-> - The reply text is **built by the server** from the validated JSON ("Suggested based on published work: 1. …") with result cards (initials, name, designation, tags, "View profile"). No matches → a fixed reply with example keywords.
-> - Limits: 10 matches per user per day and a global daily cap, both checked before the call (`limits.ts`).
-> - UI: a popup on desktop and a full-screen chat on mobile, sharing one in-memory thread. A greeting and quick-prompt chips ("ML for CSE499", "Databases", "Networks & security", "Algorithms"). The footer says "suggested from published work". Results never claim that a faculty member is taking students, and the chat tells students to contact faculty through official channels.
-> - **Fallback if the chat UI slips:** a single interest box with a results list, using the same endpoint.
-
-### Checklist — Build order
-
-- [ ] **Step 5:** `POST /api/finder/match`: limits, prompt builder, `DeepSeekClient` (match mode), validation, ID filter, one retry, server-built reply.
-- [ ] **Step 6:** chat UI (greeting, chips, 500-character input, cards, fallback reply, footer note). Popup and full-screen layouts sharing state.
-- [ ] **Step 7:** tests with the fake DeepSeek client.
-
-### Checklist — Docs & QA (C, D)
-
-- [ ] C: faculty matching sequence diagram, including the chat message round trip.
-- [ ] D: finder test cases (chips, limits, no-match reply, mobile and desktop).
-
-### Checklist — Test Scripts & Smoke Tests
-
-- [ ] `src/server/features/finder/match.api.test.ts`: malformed JSON → one retry → fixed reply, unknown and hidden IDs are dropped, per-user and global limits are checked before the client is called (spy), empty and over-length input, only the current message is in the prompt, the prompt contains no username or ID, nothing is written to D1 except rate-limit counters.
-- [ ] Run: `vp test finder`
-
-### Test Gate 13
-
-- [ ] **Finder tests pass.**
-- [ ] **(Manual) On staging, the chips and a free-text interest give sensible suggestions with working profile links on phone and desktop.**
-
----
-
-## Phase 14 — Clef auto-moderation & finder gate
-
-**Owner:** Dev A (thresholds with D) · **When:** Week 7 · **Depends on:** Phase 8, Phase 13, D's calibration set
-
-**Goal:** The stub model step is replaced by Clef-flash with thresholds tuned on a labelled set, and the supervisor finder stops vague, off-topic and abusive messages before DeepSeek is called.
-
-> **Design decisions (locked in):**
->
-> - `ClefClient` adapter on the `AI` binding with a timeout and a daily cap. Any failure → `pending_review` (the fail safe from Phase 8). Default model `@cf/cloudflare/clef-flash`. Switch to `@cf/cloudflare/clef` only if calibration shows Clef-flash cannot meet the target.
-> - Two thresholds, both from calibration and never guessed: auto-reject needs a high score on a clear category, auto-approve needs a high score on "fine", and everything in between goes to a human. The target is a very low false-reject rate (the exact number is an Open decision). The review band is kept narrow so the mod queue stays manageable.
-> - Students write English, Bangla and Banglish. The calibration set (about 150 examples: allowed posts, each prohibited category, personal data, spam, Banglish) covers all three, and uncertain results go to humans.
-> - The model sees only post text, never usernames or IDs.
-> - **Photos (added 2026-10-19):** post photos go to Clef-flash in the same call as the text, as image bytes (Clef does not accept URLs), never with filenames or metadata. Extra questions: does a photo show a readable ID or card number, a phone number or other personal data (→ personal data; on "ID or card" lost-and-found posts this goes to review, never auto-reject, since those posts are always reviewed), nudity or violence (→ abuse), or a prohibited item (→ prohibited item). The same two thresholds apply. Cost: about 1,030 input tokens per photo (one token per 32×32 block, capped at 1,024, plus 3), so a 3-photo post is about 11 Neurons.
-> - **Finder gate:** cheap checks first (empty, over 500 characters, symbols only), then one Clef decision: relevant / too vague / off-topic / abusive or instruction attempt. Only "relevant" goes on to DeepSeek. The others get fixed server-written replies, and "too vague" has its own reply that suggests topics. Chips skip the gate. The gate sees only the message, never the faculty list. Gate limit: 30 per user per day. If Clef is down or capped, the message goes to the match step, where the normal limits apply. Only messages that pass the gate count toward the 10-per-day match limit. `note:` the gate saves money but is not a security boundary. The match call still treats the text as data.
-> - **Fallback (cut order step 4):** if Clef is not ready, the stub stays and posts publish straight away after the rules. The report flow covers the rest.
-
-### Checklist — Build order
-
-- [ ] **Step 5:** `ClefClient` + fake. Confirm the exact call format on the model page, including how image bytes are passed in `images`. Wire it in as the `ModelStep` behind the existing interface.
-- [ ] **Step 6:** calibration runner script (`vp run moderation:calibrate`): runs the labelled set and reports the false-reject rate, the false-approve rate and the share sent to review at the candidate thresholds. Lock the chosen thresholds in `limits.ts` and record them here: `________`.
-- [ ] **Step 7:** finder gate in front of `/api/finder/match`.
-- [ ] **Step 8:** tests with the fake Clef client (Dev A and Dev B).
-
-### Checklist — Docs & QA (C, D)
-
-- [ ] D: finish the calibration set early in Week 7 and run it with Dev A. Banglish samples in the manual test run.
-- [ ] D: about 30 labelled post photos in the calibration set: ordinary items, ID cards, payment cards, screenshots with phone numbers, prohibited items.
-
-### Checklist — Test Scripts & Smoke Tests
-
-- [ ] `src/server/moderation/clef.test.ts`: the score-to-verdict mapping at and around each threshold, timeout, error and cap → review, the audit row has the model name and scores, images reach the fake client, a fake "readable ID number" answer on a photo gives personal data, and review (not reject) on an "ID or card" lost-and-found post.
-- [ ] `src/server/features/finder/gate.api.test.ts`: only "relevant" reaches DeepSeek (spy), each other class returns its fixed reply, chips skip the gate, the gate limit applies, a Clef failure falls through to the match limits.
-- [ ] Run: `vp test clef gate moderation` and `vp run moderation:calibrate`
-
-### Test Gate 14
-
-- [ ] **Clef and gate tests pass.**
-- [ ] **The calibration run meets the agreed false-reject target, and the result is recorded in this phase.**
-
----
-
-## Phase 15 — Lost and found
-
-**Owner:** Dev B (Dev A reviews) · **When:** Week 7 · **Depends on:** Phase 12
+**Owner:** Dev B (Dev A reviews) · **When:** Week 6-7 · **Depends on:** Phase 11
 
 **Goal:** Students post lost or found items, filter and search the feed, contact each other through the shared kit, and mark posts resolved. Found posts keep a private verification detail.
 
@@ -1126,7 +1003,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - **Possible match** (last item, first to cut): a new found post sends a `notify()` to the owners of open lost posts in the same category from the last 14 days. Nobody is told who else was notified.
 > - The ToS says the app does not hold items or verify ownership. The post screen points to the campus security or lost-property office.
 >
-> **Design decisions (locked in) — post photos kit (added 2026-10-19; built here, reused by the marketplace in Phase 16):**
+> **Design decisions (locked in) — post photos kit (added 2026-10-19; built here, reused by the marketplace in Phase 13):**
 >
 > - Optional, at most 3 photos per post (multiple angles). The first is the cover shown in the feed. Only WebP is ever stored. Rides have no photos.
 > - **Encoding in the browser:** the client resizes each photo so its longest side is at most the max side in `limits.ts` (start at 1600px) and encodes WebP at quality 0.8. Re-encoding through a canvas drops EXIF, including GPS. If `canvas.toBlob(..., "image/webp")` returns a blob that is not WebP (some Safari versions fall back to PNG), the client uses a WASM WebP encoder (`@jsquash/webp`) instead. The server never converts images: Workers Free allows 10 ms CPU per request.
@@ -1170,7 +1047,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [ ] `src/server/features/lostfound/lostfound.api.test.ts`: an ID number in the text is rejected, photos on an "ID or card" post go to `pending_review` even when the model approves, the verification detail is never returned to a non-owner (feed, detail and contact endpoints), renewal allowed once, resolve hides the post, author delete, the cron timing, report + removal, the possible match notifies the right users and not the poster.
 - [ ] Run: `vp test lostfound photos webp`
 
-### Test Gate 15
+### Test Gate 12
 
 - [ ] **Lost-and-found and photo tests pass.**
 - [ ] **(Manual) A found post triggers a possible-match notification for a seeded lost post on staging.**
@@ -1178,9 +1055,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ---
 
-## Phase 16 — Marketplace
+## Phase 13 — Marketplace
 
-**Owner:** Dev B (Dev A reviews) · **When:** Week 7 · **Depends on:** Phase 12, Phase 15 (post photos kit)
+**Owner:** Dev A (Dev B reviews) · **When:** Week 7 · **Depends on:** Phase 11, Phase 12 (post photos kit)
 
 **Goal:** Students list second-hand items with price, condition and contacts, filter the feed, and mark listings sold, within the 10-active-listing limit.
 
@@ -1192,7 +1069,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 > - Feed filters: category, price range, condition, keyword.
 > - Prohibited items (ToS and post form): weapons, drugs, alcohol, tobacco, exam papers or answers, pirated or copied material, university property, anything illegal in Bangladesh.
 > - The app does not handle payment, delivery or disputes. An in-app notice says to meet in public places on campus and inspect items before paying.
-> - **Photos (added 2026-10-19):** up to 3 per listing through the post photos kit from Phase 15 (`target_type` `listing`). The cover shows in the feed.
+> - **Photos (added 2026-10-19):** up to 3 per listing through the post photos kit from Phase 12 (`target_type` `listing`). The cover shows in the feed.
 
 ### Checklist — Build order
 
@@ -1213,7 +1090,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [ ] `src/server/features/market/market.api.test.ts`: the 11th active listing is refused, price and condition validation, free listings, mark sold hides the listing, renew, photos attach and show on the detail, author delete, the cron timing, report + removal + reversal.
 - [ ] Run: `vp test market`
 
-### Test Gate 16
+### Test Gate 13
 
 - [ ] **Marketplace tests pass.**
 - [ ] **(Manual) Post, filter by price range, and mark sold on a phone on staging.**
@@ -1221,9 +1098,49 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ---
 
-## Phase 17 — Hardening & release
+## Phase 14 — Clef auto-moderation
 
-**Owner:** Dev B (lead), Dev A (bug fixes) · **When:** Week 8 · **Depends on:** Phases 1 to 16 (or their cut fallbacks)
+**Owner:** Dev A (thresholds with D) · **When:** Weeks 6-7 · **Depends on:** Phase 8, D's calibration set. The photo questions wait for Phase 12's post photos kit.
+
+**Goal:** The stub model step is replaced by Clef-flash with thresholds tuned on a labelled set, so clear posts publish or are rejected on their own and only the uncertain band reaches a mod.
+
+> **Note (2026-11-12):** the finder gate that used to live here moved to Phase O2 with the finder. Auto-moderation itself stays in scope.
+
+> **Design decisions (locked in):**
+>
+> - `ClefClient` adapter on the `AI` binding with a timeout and a daily cap. Any failure → `pending_review` (the fail safe from Phase 8). Default model `@cf/cloudflare/clef-flash`. Switch to `@cf/cloudflare/clef` only if calibration shows Clef-flash cannot meet the target.
+> - Two thresholds, both from calibration and never guessed: auto-reject needs a high score on a clear category, auto-approve needs a high score on "fine", and everything in between goes to a human. The target is a very low false-reject rate (the exact number is an Open decision). The review band is kept narrow so the mod queue stays manageable.
+> - Students write English, Bangla and Banglish. The calibration set (about 150 examples: allowed posts, each prohibited category, personal data, spam, Banglish) covers all three, and uncertain results go to humans.
+> - The model sees only post text, never usernames or IDs.
+> - **Photos (added 2026-10-19):** post photos go to Clef-flash in the same call as the text, as image bytes (Clef does not accept URLs), never with filenames or metadata. Extra questions: does a photo show a readable ID or card number, a phone number or other personal data (→ personal data; on "ID or card" lost-and-found posts this goes to review, never auto-reject, since those posts are always reviewed), nudity or violence (→ abuse), or a prohibited item (→ prohibited item). The same two thresholds apply. Cost: about 1,030 input tokens per photo (one token per 32×32 block, capped at 1,024, plus 3), so a 3-photo post is about 11 Neurons.
+> - **Fallback (cut order step 4):** if Clef is not ready, the stub stays and posts publish straight away after the rules. The report flow covers the rest.
+
+### Checklist — Build order
+
+- [ ] **Step 5:** `ClefClient` + fake. Confirm the exact call format on the model page, including how image bytes are passed in `images`. Wire it in as the `ModelStep` behind the existing interface.
+- [ ] **Step 6:** calibration runner script (`vp run moderation:calibrate`): runs the labelled set and reports the false-reject rate, the false-approve rate and the share sent to review at the candidate thresholds. Lock the chosen thresholds in `limits.ts` and record them here: `________`.
+- [ ] **Step 7:** tests with the fake Clef client (Dev A and Dev B).
+
+### Checklist — Docs & QA (C, D)
+
+- [ ] D: finish the calibration set early in Week 7 and run it with Dev A. Banglish samples in the manual test run.
+- [ ] D: about 30 labelled post photos in the calibration set: ordinary items, ID cards, payment cards, screenshots with phone numbers, prohibited items.
+
+### Checklist — Test Scripts & Smoke Tests
+
+- [ ] `src/server/moderation/clef.test.ts`: the score-to-verdict mapping at and around each threshold, timeout, error and cap → review, the audit row has the model name and scores, images reach the fake client, a fake "readable ID number" answer on a photo gives personal data, and review (not reject) on an "ID or card" lost-and-found post.
+- [ ] Run: `vp test clef moderation` and `vp run moderation:calibrate`
+
+### Test Gate 14
+
+- [ ] **Clef tests pass.**
+- [ ] **The calibration run meets the agreed false-reject target, and the result is recorded in this phase.**
+
+---
+
+## Phase 15 — Hardening & release
+
+**Owner:** Dev B (lead), Dev A (bug fixes) · **When:** Week 8 · **Depends on:** Phases 1 to 14 (or their cut fallbacks). Not the optional phases.
 
 **Goal:** Production is live from a tag, a rollback has been rehearsed, and every cross-cutting rule (limits, moderation on every post type, privacy, themes, PWA) is checked against the real app.
 
@@ -1234,17 +1151,17 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist
 
-- [ ] Every write route has a `rateLimit()` (signup, login, every post create, reports, contact reveal, match, gate). List them in `limits.ts` comments.
+- [ ] Every write route has a `rateLimit()` (signup, login, every post create, reports, contact reveal). List them in `limits.ts` comments.
 - [ ] Reports, mod removal and admin reversal confirmed for resource submissions, rides, lost and found, and marketplace listings.
-- [ ] Hard-coded color search is clean. D has checked the key screens (Home, course map, feeds, forms, mod panel, finder chat) in every palette at phone width.
-- [ ] Re-check the Clef-flash price, free allowance and context, the DeepSeek price, the R2 prices, and the Workers and D1 limits. Set the production caps and the DeepSeek prepaid budget. Confirm the R2 billing notification is on.
+- [ ] Hard-coded color search is clean. D has checked the key screens (Home, course map, feeds, forms, mod panel) in every palette at phone width.
+- [ ] Re-check the Clef-flash price, free allowance and context, the R2 prices, and the Workers and D1 limits. Set the production caps. Confirm the R2 billing notification is on.
 - [ ] Re-run the calibration set against production thresholds.
-- [ ] Privacy note in the app (AI providers get only post text and interest text, never usernames or IDs, and finder text is not stored).
+- [ ] Privacy note in the app (the moderation model gets only post text and photos, never usernames or IDs).
 - [ ] Lighthouse PWA audit passes.
 - [ ] Production migration, then `vp run deploy:prod` from a tag. Admin seeded in production and password changed.
 - [ ] Rollback rehearsal: deploy tag N+1 to staging, roll back to N, confirm the app and API both revert and the installed app picks up the change.
 
-### Test Gate 17
+### Test Gate 15
 
 - [ ] **CI is green on the release tag, and production `/api/health` is OK.**
 - [ ] **(Manual) The rollback rehearsal succeeded and was written down.**
@@ -1252,9 +1169,9 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ---
 
-## Phase 18 — Delivery: documents, full test run & demo
+## Phase 16 — Delivery: documents, full test run & demo
 
-**Owner:** C, D, All · **When:** Week 8 · **Depends on:** Phase 17
+**Owner:** C, D, All · **When:** Week 8 · **Depends on:** Phase 15
 
 **Goal:** The final SRS, design report, diagrams and manual test report match what shipped, and the team has done two demo dry runs on an installed phone.
 
@@ -1266,12 +1183,104 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [ ] D: demo script. Final ToS, takedown policy, disclaimer and "unofficial student-run app" wording.
 - [ ] All: two demo dry runs on an installed phone. Final release tag.
 
-**Course outcome mapping:** CO1 Requirements (20%) → SRS + survey. CO2 OO design (30%) → diagrams + design report. CO3 Implementation (30%) → the one-Worker PWA, API, D1 and cron, the shared moderation flow, OpenAlex + DeepSeek + Clef behind adapters, and the live demo on an installed phone. CO4 Testing (20%) → unit, API and manual tests linked to SRS IDs.
+**Course outcome mapping:** CO1 Requirements (20%) → SRS + survey. CO2 OO design (30%) → diagrams + design report. CO3 Implementation (30%) → the one-Worker PWA, API, D1 and cron, the shared moderation flow, Clef behind an adapter (plus OpenAlex and DeepSeek if O1 or O2 ships), and the live demo on an installed phone. CO4 Testing (20%) → unit, API and manual tests linked to SRS IDs.
 
-### Test Gate 18
+### Test Gate 16
 
 - [ ] **(Manual) Every SRS requirement ID has a test case, and the final run's defect report is published.**
 - [ ] **(Manual) Two dry runs were completed, and the release is tagged.**
+
+---
+
+## Optional phases (may never ship)
+
+Faculty research profiles and the AI supervisor finder were moved here on 2026-11-12 (they were Phases 11 and 13). They are not part of the release, nothing in Phases 0 to 16 depends on them, and they may never be built. They keep their locked decisions so they can be picked up later without re-planning. The faculty directory the attempt picker and resource requests use (Phase 6, mod-managed) is already built and is not affected. If either phase is picked up, it runs after Phase 15, with Phase 15's checks repeated for the new routes.
+
+---
+
+## Phase O1 — Faculty profiles & research sync
+
+**Owner:** Dev A · **When:** after the release, if at all · **Depends on:** Phase 6 (faculty table), Phase 7 (report, hide)
+
+**Goal:** Every CSE faculty member in scope has a profile with verified papers, an AI summary built only from fetched JSON, topic tags and a Scholar link, and students can keyword-search them.
+
+> **Justification:** Profiles and keyword search stand on their own, so this phase can ship without Phase O2.
+
+> **Design decisions (locked in):**
+>
+> - **No scraping.** Google Scholar is link-out only. The AI never browses. Our code calls structured JSON APIs: **OpenAlex** (primary, works by ORCID or author ID, abstract rebuilt from its inverted index), **ORCID** `/works` (cross-check and fallback, no abstracts), **Crossref** by DOI (optional, for a missing abstract or venue), and as a last resort a **manual list** D pastes into an admin form.
+> - **Identity check** is done by hand, once per person (D): ORCID and OpenAlex author ID checked against their Scholar and NSU pages. People without an ORCID are matched by name and affiliation and verified by hand.
+> - **Sync script** runs on a developer machine (`vp run faculty:sync`), not in the Worker. For each person: works from the last 5 to 8 years, at most 15, deduped by DOI, each trimmed to title, year, venue, the first 600 characters of the abstract and the top topics. Then one DeepSeek call: a summary of about 120 words + 5 to 8 tags, using **only** the supplied records, returned as JSON and validated with Zod. Saved through an admin-only route. The script logs in as an admin with credentials from local env. The trimmed input is stored next to the summary, so a mod can see what it was based on.
+> - **Thin data:** fewer than 3 usable papers → `limited_data`. The summary uses the manual list or interests entered by D, and the matcher is told the data is thin.
+> - **Profile page:** name, designation, department, photo link, public contact link, tags, AI summary, 5 to 10 recent papers (title, year, venue, link), Scholar link. The label "AI-generated from public publication records, may be incomplete or out of date", and a "Report a problem" button (`target_type` `faculty`).
+> - Mods can hide a profile (logged). Hidden profiles never appear in lists, search or matches. Faculty can ask for correction or removal through the takedown policy.
+> - Keyword search is a plain `LIKE` over name, summary and tags. About 100 rows does not need full-text search.
+> - Refresh once a semester, or when a mod flags a profile.
+
+### Checklist — Build order
+
+- [ ] **Step 1:** extend `faculty` (slug, photo link, Scholar URL, ORCID, OpenAlex ID, tags, summary, summary date, sync input JSON, `limited_data`) and add `faculty_papers`. `department`, optional `initials`, `nsu_page` and `hidden` already exist (faculty directory, 2026-10-20), as does the mod hide/show with its audit row; the profile screens reuse that flag. Seed from D's verified list.
+- [ ] **Step 2:** adapters + fakes: `OpenAlexClient` (check the current access terms and whether a free key or `mailto` is required), `OrcidClient`, `CrossrefClient`. Rebuild abstracts, merge and dedupe by DOI, handle missing abstracts.
+- [ ] **Step 3:** `scripts/faculty-sync.ts` with the `DeepSeekClient` adapter (summary mode) and Zod validation. Admin-only `PUT /api/admin/faculty/:id/summary`. Admin form for the manual paper list.
+- [ ] **Step 4:** faculty list, profile page, keyword search, report button, mod hide.
+
+### Checklist — Docs & QA (C, D)
+
+- [ ] D: finish and verify the faculty list. Faculty screens. AI label wording. Takedown policy including profile corrections. Read a sample of generated summaries against the real papers.
+
+### Checklist — Test Scripts & Smoke Tests
+
+- [ ] `src/server/adapters/openalex.test.ts`: inverted-index abstract rebuild, missing abstract, DOI dedupe across OpenAlex and ORCID, the 15-work and year window, 600-character trim.
+- [ ] `scripts/faculty-sync.test.ts` (fake clients): invalid summary JSON is rejected, fewer than 3 papers sets `limited_data`, the trimmed input is saved.
+- [ ] `src/server/features/faculty/faculty.api.test.ts`: hidden profiles are excluded from the list and search, the summary route is admin only, a report reaches the queue.
+- [ ] Run: `vp test openalex faculty`
+
+### Test Gate O1
+
+- [ ] **Faculty tests pass with fakes, and no test touches the network.**
+- [ ] **(Manual) A real sync has run for the full faculty list on staging. D has checked a sample against Scholar. Keyword search finds people by topic.**
+
+---
+
+## Phase O2 — AI matching & supervisor finder chat
+
+**Owner:** Dev A · **When:** after the release, if at all · **Depends on:** Phase O1, Phase 14 (`ClefClient`, for the gate)
+
+**Goal:** A student describes their interests in a chat and gets up to 5 real faculty suggestions with one-line reasons, from one stateless, validated, rate-limited DeepSeek call per message.
+
+> **Design decisions (locked in):**
+>
+> - Input: interest text (at most 500 characters) and an optional course (CSE299, CSE499, CSE498R). The Worker sends the text and **all visible faculty summaries and tags** in one call: a stable prefix with the faculty block first and the student's text last (for DeepSeek context caching). It asks for JSON: top 5 faculty IDs, a one-line reason each, the matching topics. `limited_data` people are marked as such in the block.
+> - Zod-validate the output, drop unknown or hidden faculty IDs, and retry once on invalid output. The model cannot invent a person.
+> - **Each message is one independent call.** Earlier turns are never sent. The thread lives only in client memory and is lost on reload. Nothing is stored on the server, and no username or ID is sent.
+> - The reply text is **built by the server** from the validated JSON ("Suggested based on published work: 1. …") with result cards (initials, name, designation, tags, "View profile"). No matches → a fixed reply with example keywords.
+> - Limits: 10 matches per user per day and a global daily cap, both checked before the call (`limits.ts`).
+> - UI: a popup on desktop and a full-screen chat on mobile, sharing one in-memory thread. A greeting and quick-prompt chips ("ML for CSE499", "Databases", "Networks & security", "Algorithms"). The footer says "suggested from published work". Results never claim that a faculty member is taking students, and the chat tells students to contact faculty through official channels.
+> - **Fallback if the chat UI slips:** a single interest box with a results list, using the same endpoint.
+> - **Finder gate:** cheap checks first (empty, over 500 characters, symbols only), then one Clef decision (needs Phase 14's `ClefClient`): relevant / too vague / off-topic / abusive or instruction attempt. Only "relevant" goes on to DeepSeek. The others get fixed server-written replies, and "too vague" has its own reply that suggests topics. Chips skip the gate. The gate sees only the message, never the faculty list. Gate limit: 30 per user per day. If Clef is down or capped, the message goes to the match step, where the normal limits apply. Only messages that pass the gate count toward the 10-per-day match limit. `note:` the gate saves money but is not a security boundary. The match call still treats the text as data.
+
+### Checklist — Build order
+
+- [ ] **Step 1:** `POST /api/finder/match`: limits, prompt builder, `DeepSeekClient` (match mode), validation, ID filter, one retry, server-built reply.
+- [ ] **Step 2:** chat UI (greeting, chips, 500-character input, cards, fallback reply, footer note). Popup and full-screen layouts sharing state.
+- [ ] **Step 3:** finder gate in front of `/api/finder/match` (Phase 14's `ClefClient`).
+- [ ] **Step 4:** tests with the fake DeepSeek and Clef clients.
+
+### Checklist — Docs & QA (C, D)
+
+- [ ] C: faculty matching sequence diagram, including the chat message round trip.
+- [ ] D: finder test cases (chips, limits, no-match reply, mobile and desktop).
+
+### Checklist — Test Scripts & Smoke Tests
+
+- [ ] `src/server/features/finder/match.api.test.ts`: malformed JSON → one retry → fixed reply, unknown and hidden IDs are dropped, per-user and global limits are checked before the client is called (spy), empty and over-length input, only the current message is in the prompt, the prompt contains no username or ID, nothing is written to D1 except rate-limit counters.
+- [ ] `src/server/features/finder/gate.api.test.ts`: only "relevant" reaches DeepSeek (spy), each other class returns its fixed reply, chips skip the gate, the gate limit applies, a Clef failure falls through to the match limits.
+- [ ] Run: `vp test finder gate`
+
+### Test Gate O2
+
+- [ ] **Finder and gate tests pass.**
+- [ ] **(Manual) On staging, the chips and a free-text interest give sensible suggestions with working profile links on phone and desktop.**
 
 ---
 
@@ -1289,41 +1298,42 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ```
             Week 0      Weeks 1-2       Weeks 3-4             Weeks 5-6        Week 7             Week 8
-Both/B:   P0 + P1 ──→ P2 → P3 → P4b → P7 → P8 → P9 ───────→ P12 ─────────→ P15 → P16 ──────→ P17 ─┐
-Dev A:    P0 ───────→ P4 ──────────→ P5 → P6 → P9b ───────→ P10 → P11 ───→ P13 → P14 ──────→ bugs ├→ P18
+Both/B:   P0 + P1 ──→ P2 → P3 → P4b → P7 → P8 → P9 ───────→ P11 ─────────→ P12 ─────────────→ P15 ─┐
+Dev A:    P0 ───────→ P4 ──────────→ P5 → P6 → P9b ───────→ P10 → P14 ───→ P13 ─────────────→ bugs ├→ P16
 C / D:    Docs & QA subsections inside each phase ─────────────────────────────────────────────────┘
-                                                                         ▲ core feature freeze (end of Week 6)
+Optional: O1 → O2, only after P15, if ever (see Optional phases)
 ```
 
 **Dependencies that cross tracks:**
 
 - P4b (design language) restyles P4's course screens, so it starts once P4's screens are merged.
 - P8 (held-post notifications) needs P5's `notify()`. P5 is Dev A's first Sprint 2 task. Until it lands, Dev B codes against the signature in `docs/api-contracts.md`.
-- P10 (resources) needs P7 (reports) and P8 (`screen()`). P12 (rides) needs the same.
-- P14 needs D's calibration set (started in Sprint 3, finished early in Week 7) and P13's match endpoint for the gate.
+- P10 (resources) needs P7 (reports) and P8 (`screen()`). P11 (rides) needs the same.
+- P14 needs D's calibration set (started with rides in P11). Its photo questions need P12's post photos kit, so they land last.
 - P9b (grade planner) needs P6's `grading.ts` and attempts. It lands before P10 starts.
-- P15 and P16 need P12's shared post kit. P16 also needs P15's post photos kit.
+- P12 and P13 need P11's shared post kit. P13 also needs P12's post photos kit.
 
 **Parallelism:** the two dev tracks run in parallel throughout. `cron.ts`, `limits.ts` and `src/server/db/schema.ts` are shared files: add your own job, limit or table in its own block, and never edit another phase's block in the same pull request. Rebase often in Weeks 5 to 7.
 
 **Cut order (single, locked).** If time runs short, cut in this order:
 
 1. Stretch phases S1 to S3
-2. Lost-and-found possible-match notification (P15 step 8)
+2. Lost-and-found possible-match notification (P12 step 8)
 3. Recurring-ride renewal (rides keep their default end date)
-4. Post photos (P15 photo setup and photos kit, P16 photos). Posts stay text-only.
+4. Post photos (P12 photo setup and photos kit, P13 photos). Posts stay text-only.
 5. The Clef step (P14). The rules, the stub and the human queue stay, and posts publish after the rules (posts with photos go to review).
-6. Marketplace (P16)
-7. AI matching (P13). Profiles and keyword search stay. If only the chat UI slips, ship the single interest box.
-8. Lost and found (P15)
+6. Marketplace (P13)
+7. Lost and found (P12)
 
-Shrink Phase 17 hardening only as a last resort. **Never cut** moderation, audit or reversal (P7, P8). The class routine (P9) is small and is not expected to be cut.
+The optional phases (O1 faculty profiles, O2 supervisor finder) are not in the cut order: they are outside the release.
+
+Shrink Phase 15 hardening only as a last resort. **Never cut** moderation, audit or reversal (P7, P8). The class routine (P9) is small and is not expected to be cut.
 
 **Still parked (do not schedule without new evidence):**
 
 - Native apps or app stores: the PWA covers every platform.
 - File hosting: links only, which avoids copyright and storage risk.
-- Photos on rides and on profiles: faces and personal data for little gain. (Lost-and-found and marketplace photos were un-parked on 2026-10-19, see Phase 15.)
+- Photos on rides and on profiles: faces and personal data for little gain. (Lost-and-found and marketplace photos were un-parked on 2026-10-19, see Phase 12.)
 - Automatic (OS-driven) dark mode: themes are picked by hand. The Night palette (Phase 4b) is the dark mode.
 - Offline editing or sync: data is always live.
 - Scraping Google Scholar, or letting the AI browse ORCID or Scholar: against the terms and gives messy data.
@@ -1341,28 +1351,28 @@ Each row names the phase that needs the answer. When it is settled, move it into
 | Decision                                                                                                         | Needed by         | Owner    |
 | ---------------------------------------------------------------------------------------------------------------- | ----------------- | -------- |
 | Project deadline, demo date, required SRS format or presentation                                                 | P0                | C        |
-| Clef-flash: re-check price and allowance before launch (findings below)                                          | P14, P17          | Dev A    |
-| DeepSeek prepaid budget and global daily cap (model and price below)                                             | P13               | Dev A    |
+| Clef-flash: re-check price and allowance before launch (findings below)                                          | P14, P15          | Dev A    |
+| DeepSeek prepaid budget and global daily cap (model and price below)                                             | O2                | Dev A    |
 | App name, icon set, theme storage key                                                                            | P1, P3            | All      |
 | Mock `BottomSheet` vs shadcn Drawer: **decided**, shadcn `Sheet` (`side="bottom"`)                               | P1                | Dev B    |
 | Confirm the four launch palettes                                                                                 | P1                | D        |
 | New-account cooldown length, signup and login rate limits                                                        | P2                | Dev B    |
 | NSU term start dates and routine day letters                                                                     | P4, P9            | D        |
 | URL allowlist of sharing hosts                                                                                   | P10               | Dev A, D |
-| Faculty list scope, and whether to tell the department before profiles go live                                   | P11               | All      |
-| How many faculty have an ORCID; name matching vs the manual list for the rest                                    | P11               | D        |
-| OpenAlex access terms (free key?) and rate limits                                                                | P11               | Dev A    |
-| Faculty summary refresh cadence (suggested: once a semester)                                                     | P11               | Dev A    |
-| Recurring ride policy (60-day default end date + renewal)                                                        | P12               | All      |
-| Exact course codes and names for CSE299, CSE499, CSE498R (ask a CSE advisor)                                     | P13               | D        |
+| Faculty list scope, and whether to tell the department before profiles go live                                   | O1                | All      |
+| How many faculty have an ORCID; name matching vs the manual list for the rest                                    | O1                | D        |
+| OpenAlex access terms (free key?) and rate limits                                                                | O1                | Dev A    |
+| Faculty summary refresh cadence (suggested: once a semester)                                                     | O1                | Dev A    |
+| Recurring ride policy (60-day default end date + renewal)                                                        | P11               | All      |
+| Exact course codes and names for CSE299, CSE499, CSE498R (ask a CSE advisor)                                     | O2                | D        |
 | Target false-reject rate, number of mods, target review turnaround                                               | P14               | All      |
-| Campus lost-property office or security desk to link                                                             | P15               | D        |
-| Marketplace prohibited-items list and ToS wording                                                                | P16               | All      |
-| Post photo caps (bytes, max side, per-user and global daily uploads), cache lifetime, author-delete purge window | P12, P15          | Dev B    |
+| Campus lost-property office or security desk to link                                                             | P12               | D        |
+| Marketplace prohibited-items list and ToS wording                                                                | P13               | All      |
+| Post photo caps (bytes, max side, per-user and global daily uploads), cache lifetime, author-delete purge window | P11, P12          | Dev B    |
 | Stretch go/no-go                                                                                                 | Start of Sprint 4 | All      |
-| "Unofficial student-run app" wording; whether NSU name approval can wait until after the demo                    | P18               | All      |
+| "Unofficial student-run app" wording; whether NSU name approval can wait until after the demo                    | P16               | All      |
 
-**Platform facts (checked 2026-10-18, re-check in P17):**
+**Platform facts (checked 2026-10-18, re-check in P15):**
 
 - **Workers Free:** 100,000 requests/day (resets 00:00 UTC), 10 ms CPU per request and per cron run, 50 subrequests per invocation, 5 Cron Triggers per account, 64 MiB uncompressed Worker size, 20,000 static files of at most 25 MiB each. Over the limit, requests fail; nothing is billed.
 - **D1 Free:** 5 million rows read/day, 100,000 rows written/day, 5 GB storage. Over a daily limit, queries fail until 00:00 UTC (06:00 Asia/Dhaka).
@@ -1384,12 +1394,12 @@ Seeded with the platform gotchas already known from `plan_pwa.md`. Add real ones
 | Hand-editing the `vite` alias entries Vite+ writes under pnpm                                | Only `vp create`, `vp migrate` and `vp upgrade` touch them                                     |
 | PBKDF2 above 100,000 iterations throws on Workers                                            | Use 100,000 and store the params with the hash (P2)                                            |
 | D1 queries fail after the daily row-read limit                                               | Index every filtered column, paginate feeds, never scan a full table in a request or in cron   |
-| Seat count goes negative under two quick taps                                                | Single `UPDATE` with a `CHECK` constraint, never read-then-write (P12)                         |
+| Seat count goes negative under two quick taps                                                | Single `UPDATE` with a `CHECK` constraint, never read-then-write (P11)                         |
 | Hard-coded colors break non-default themes                                                   | Token classes only. Run the color search before every release                                  |
 | "Today" or expiry is wrong around midnight because the Worker runs in UTC                    | Compute day boundaries in Asia/Dhaka through the shared helper                                 |
 | A phone number in post text is flagged as a card number                                      | The card rule needs Luhn **and** excludes Bangladeshi phone formats (P8)                       |
-| Safari returns PNG from `canvas.toBlob(..., "image/webp")`                                   | Check `blob.type` and fall back to the WASM encoder (P15)                                      |
-| OpenAlex abstracts look empty                                                                | They come as an inverted index. Rebuild them in the adapter (P11)                              |
+| Safari returns PNG from `canvas.toBlob(..., "image/webp")`                                   | Check `blob.type` and fall back to the WASM encoder (P12)                                      |
+| OpenAlex abstracts look empty                                                                | They come as an inverted index. Rebuild them in the adapter (O1)                               |
 
 ---
 
