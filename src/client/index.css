@@ -675,6 +675,26 @@
 }
 
 /*
+ * The 404 scene's class blocks settle in once: a scale from .88 with a fade, 45ms later per block
+ * (`--k`), the missing slot last. Only exists when motion is allowed, so reduced motion gets the
+ * finished scene at once.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .nf-pop {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: nf-pop 420ms var(--ease-ui-out) backwards;
+    animation-delay: calc(80ms + var(--k, 0) * 45ms);
+  }
+}
+@keyframes nf-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+}
+
+/*
  * Screen swap: the new top-level screen fades in over 120ms (opacity only, no slide). Kept under
  * reduced motion, since opacity is the variant that stays.
  */
