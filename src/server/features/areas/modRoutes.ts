@@ -32,6 +32,8 @@ const toModArea = (a: AreaRow): z.infer<typeof modArea> => ({
   slug: a.slug,
   name: a.name,
   parentId: a.parentId,
+  lat: a.lat,
+  lng: a.lng,
   hidden: a.hidden,
   hiddenReason: a.hiddenReason,
 });

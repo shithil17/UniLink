@@ -2,6 +2,7 @@ import { z } from "zod";
 import { isDepartureTime, WEEKDAYS } from "../rides";
 import { parseDhakaDate } from "../time";
 import { areaRef } from "./areas";
+import { geoPoint } from "./geo";
 import { contacts, id, instant, page, postStatus, reasonCategory } from "./common";
 
 // Weekdays and departure times are Asia/Dhaka local values. A ride is one of two kinds: a one-off with a
@@ -65,6 +66,9 @@ const rideBase = z.object({
   // Blank becomes absent.
   pickupLandmark: landmark.optional().transform((v) => (v === "" ? undefined : v)),
   destinationLandmark: landmark.optional().transform((v) => (v === "" ? undefined : v)),
+  // The exact spots, optional. Only a spot the poster confirmed is sent.
+  pickupPoint: geoPoint.optional(),
+  destinationPoint: geoPoint.optional(),
   vehicle: vehicleType,
   totalSeats: seats,
   pricePerSeatTaka: price,
@@ -101,6 +105,9 @@ export const ridePatch = z
     // Blank or null clears the landmark.
     pickupLandmark: landmark.nullable().optional(),
     destinationLandmark: landmark.nullable().optional(),
+    // A point sets or moves the pin; null removes it.
+    pickupPoint: geoPoint.nullable().optional(),
+    destinationPoint: geoPoint.nullable().optional(),
     vehicle: vehicleType.optional(),
     totalSeats: seats.optional(),
     pricePerSeatTaka: price.optional(),
@@ -179,6 +186,16 @@ export const rideSummary = z.object({
   mine: z.boolean(),
 });
 
+/**
+ * One ride as the detail screen (and the responses to creating and editing it) shows it: the summary
+ * plus the exact pins, each null when the poster set none. The feed and "my rides" use `rideSummary`,
+ * which has no points, so an exact spot only ever goes to someone opening that ride.
+ */
+export const rideDetail = rideSummary.extend({
+  pickupPoint: geoPoint.nullable(),
+  destinationPoint: geoPoint.nullable(),
+});
+
 export const rideFeedPage = page(rideSummary);
 
 export type RideInput = z.output<typeof rideInput>;
@@ -187,4 +204,5 @@ export type RidePatch = z.output<typeof ridePatch>;
 export type RideSeatsInput = z.output<typeof rideSeatsInput>;
 export type RideFeedQuery = z.output<typeof rideFeedQuery>;
 export type RideSummary = z.infer<typeof rideSummary>;
+export type RideDetail = z.infer<typeof rideDetail>;
 export type RideFeedPage = z.infer<typeof rideFeedPage>;

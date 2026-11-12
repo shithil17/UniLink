@@ -3,17 +3,19 @@ import type { AreaOption, ModArea } from "../../shared/schemas/areas";
 import { areaNameOf, areaRows, groupAreas, placeLine } from "./areas";
 
 const options: AreaOption[] = [
-  { id: 1, slug: "bashundhara-r-a", name: "Bashundhara R/A", children: [] },
+  { id: 1, slug: "bashundhara-r-a", name: "Bashundhara R/A", lat: null, lng: null, children: [] },
   {
     id: 2,
     slug: "mirpur",
     name: "Mirpur",
+    lat: null,
+    lng: null,
     children: [
-      { id: 20, slug: "mirpur-mirpur-10", name: "Mirpur 10" },
-      { id: 21, slug: "mirpur-pallabi", name: "Pallabi" },
+      { id: 20, slug: "mirpur-mirpur-10", name: "Mirpur 10", lat: null, lng: null },
+      { id: 21, slug: "mirpur-pallabi", name: "Pallabi", lat: null, lng: null },
     ],
   },
-  { id: 3, slug: "uttara", name: "Uttara", children: [] },
+  { id: 3, slug: "uttara", name: "Uttara", lat: null, lng: null, children: [] },
 ];
 
 describe("areaRows", () => {
@@ -65,6 +67,8 @@ describe("groupAreas", () => {
     slug: name.toLowerCase(),
     name,
     parentId,
+    lat: null,
+    lng: null,
     hidden,
     hiddenReason: hidden ? "gone" : null,
   });

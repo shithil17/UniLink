@@ -34,7 +34,18 @@ export const areaOption = z.object({
   id: z.number().int(),
   slug: z.string(),
   name: z.string(),
-  children: z.array(z.object({ id: z.number().int(), slug: z.string(), name: z.string() })),
+  /** The area's centre, or null when it has none. Public reference data. */
+  lat: z.number().nullable(),
+  lng: z.number().nullable(),
+  children: z.array(
+    z.object({
+      id: z.number().int(),
+      slug: z.string(),
+      name: z.string(),
+      lat: z.number().nullable(),
+      lng: z.number().nullable(),
+    }),
+  ),
 });
 
 export const areaList = z.array(areaOption);
@@ -45,6 +56,8 @@ export const modArea = z.object({
   slug: z.string(),
   name: z.string(),
   parentId: z.number().int().nullable(),
+  lat: z.number().nullable(),
+  lng: z.number().nullable(),
   hidden: z.boolean(),
   hiddenReason: z.string().nullable(),
 });

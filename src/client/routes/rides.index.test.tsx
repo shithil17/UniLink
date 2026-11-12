@@ -88,12 +88,21 @@ function renderAt(
   queryClient.setQueryData(
     ["areas"],
     [
-      { id: 1, slug: "bashundhara-r-a", name: "Bashundhara R/A", children: [] },
+      {
+        id: 1,
+        slug: "bashundhara-r-a",
+        name: "Bashundhara R/A",
+        lat: null,
+        lng: null,
+        children: [],
+      },
       {
         id: 60,
         slug: "mirpur",
         name: "Mirpur",
-        children: [{ id: 61, slug: "mirpur-mirpur-10", name: "Mirpur 10" }],
+        lat: null,
+        lng: null,
+        children: [{ id: 61, slug: "mirpur-mirpur-10", name: "Mirpur 10", lat: null, lng: null }],
       },
     ],
   );

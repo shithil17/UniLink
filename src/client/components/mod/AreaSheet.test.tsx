@@ -17,6 +17,8 @@ const mirpur: ModArea = {
   slug: "mirpur",
   name: "Mirpur",
   parentId: null,
+  lat: null,
+  lng: null,
   hidden: false,
   hiddenReason: null,
 };

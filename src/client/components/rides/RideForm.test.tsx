@@ -21,12 +21,14 @@ afterEach(() => {
 });
 
 const AREAS = [
-  { id: 1, slug: "bashundhara-r-a", name: "Bashundhara R/A", children: [] },
+  { id: 1, slug: "bashundhara-r-a", name: "Bashundhara R/A", lat: null, lng: null, children: [] },
   {
     id: 2,
     slug: "mirpur",
     name: "Mirpur",
-    children: [{ id: 20, slug: "mirpur-mirpur-10", name: "Mirpur 10" }],
+    lat: null,
+    lng: null,
+    children: [{ id: 20, slug: "mirpur-mirpur-10", name: "Mirpur 10", lat: null, lng: null }],
   },
 ];
 

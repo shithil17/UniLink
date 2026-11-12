@@ -12,14 +12,16 @@ afterEach(() => {
 });
 
 const AREAS: AreaOption[] = [
-  { id: 1, slug: "bashundhara-r-a", name: "Bashundhara R/A", children: [] },
+  { id: 1, slug: "bashundhara-r-a", name: "Bashundhara R/A", lat: null, lng: null, children: [] },
   {
     id: 2,
     slug: "mirpur",
     name: "Mirpur",
-    children: [{ id: 20, slug: "mirpur-pallabi", name: "Pallabi" }],
+    lat: null,
+    lng: null,
+    children: [{ id: 20, slug: "mirpur-pallabi", name: "Pallabi", lat: null, lng: null }],
   },
-  { id: 3, slug: "uttara", name: "Uttara", children: [] },
+  { id: 3, slug: "uttara", name: "Uttara", lat: null, lng: null, children: [] },
 ];
 
 function setup(

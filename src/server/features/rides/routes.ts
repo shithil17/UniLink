@@ -7,8 +7,8 @@ import {
   rideInput,
   ridePatch,
   rideSeatsInput,
+  type rideDetail,
   type rideFeedPage,
-  type rideSummary,
 } from "../../../shared/schemas/rides";
 import { dhakaDate, formatDhakaDate, parseDhakaDate } from "../../../shared/time";
 import { getDb } from "../../db/client";
@@ -32,7 +32,13 @@ import { rides } from "../../db/schema";
 import { areasRepo } from "../../repos/areas";
 import { ridesRepo, type RidePatch, type RideRow } from "../../repos/rides";
 import { validateJson, validateQuery } from "../../validate";
-import { decodeRideCursor, encodeRideCursor, rideState, toRideView } from "./view";
+import {
+  decodeRideCursor,
+  encodeRideCursor,
+  rideState,
+  toRideDetailView,
+  toRideView,
+} from "./view";
 
 const user = (c: Context<AppEnv>): SessionUser => c.get("user") as SessionUser;
 
@@ -113,7 +119,8 @@ const updateLimit = (c: Context<AppEnv>, me: SessionUser, now: number) =>
 /**
  * Rides. A ride is a user-written post: screened on create and again on any edit that changes its
  * landmarks, notes or contacts. Contacts are only returned by `GET /:id/contact` (login, rate limited),
- * never by the feed, the detail or "my rides". Reports go through `POST /api/reports` with the `ride`
+ * never by the feed, the detail or "my rides". Exact pins are only on the single-ride responses (the
+ * detail, create, edit, seats, renew), never on the feed or "my rides". Reports go through `POST /api/reports` with the `ride`
  * target type. The platform does not arrange or guarantee rides.
  */
 export const rideRoutes = new Hono<AppEnv>()
@@ -194,6 +201,10 @@ export const rideRoutes = new Hono<AppEnv>()
             pickupLandmark: body.pickupLandmark ?? null,
             destinationAreaId: body.destinationAreaId,
             destinationLandmark: body.destinationLandmark ?? null,
+            pickupLat: body.pickupPoint?.lat ?? null,
+            pickupLng: body.pickupPoint?.lng ?? null,
+            destinationLat: body.destinationPoint?.lat ?? null,
+            destinationLng: body.destinationPoint?.lng ?? null,
             vehicle: body.vehicle,
             totalSeats: body.totalSeats,
             seatsRemaining: body.totalSeats,
@@ -214,7 +225,7 @@ export const rideRoutes = new Hono<AppEnv>()
     if (!result.ok) return postBlocked(c, result);
     const created = await repo.find(result.id);
     return created
-      ? c.json(toRideView(created, me.id, now) satisfies z.infer<typeof rideSummary>, 201)
+      ? c.json(toRideDetailView(created, me.id, now) satisfies z.infer<typeof rideDetail>, 201)
       : notFound(c);
   })
   // The public feed. Registered before "/:id" along with "/mine".
@@ -272,7 +283,7 @@ export const rideRoutes = new Hono<AppEnv>()
     if (!ride) return notFound(c);
     // Someone else's lapsed ride is gone as far as they can tell; its poster can still renew it.
     if (ride.authorId !== me.id && rideState(ride, now) === "expired") return notFound(c);
-    return c.json(toRideView(ride, me.id, now) satisfies z.infer<typeof rideSummary>);
+    return c.json(toRideDetailView(ride, me.id, now) satisfies z.infer<typeof rideDetail>);
   })
   .get("/:id/contact", revealContact(rides))
   .get("/:id/own-contact", ownContacts(rides))
@@ -328,6 +339,16 @@ export const rideRoutes = new Hono<AppEnv>()
     if (body.pickupLandmark !== undefined) patch.pickupLandmark = body.pickupLandmark || null;
     if (body.destinationLandmark !== undefined) {
       patch.destinationLandmark = body.destinationLandmark || null;
+    }
+    // A point sets or moves a pin, null removes it; each end is independent. Both columns of a pin go in
+    // one UPDATE, so the both-or-none check holds.
+    if (body.pickupPoint !== undefined) {
+      patch.pickupLat = body.pickupPoint?.lat ?? null;
+      patch.pickupLng = body.pickupPoint?.lng ?? null;
+    }
+    if (body.destinationPoint !== undefined) {
+      patch.destinationLat = body.destinationPoint?.lat ?? null;
+      patch.destinationLng = body.destinationPoint?.lng ?? null;
     }
     if (body.vehicle !== undefined) patch.vehicle = body.vehicle;
     if (body.totalSeats !== undefined) patch.totalSeats = body.totalSeats;
@@ -403,7 +424,7 @@ export const rideRoutes = new Hono<AppEnv>()
     }
     const updated = await repo.find(id);
     return updated
-      ? c.json(toRideView(updated, me.id, now) satisfies z.infer<typeof rideSummary>)
+      ? c.json(toRideDetailView(updated, me.id, now) satisfies z.infer<typeof rideDetail>)
       : notFound(c);
   })
   .post("/:id/seats", validateJson(rideSeatsInput), (c) =>
@@ -460,7 +481,7 @@ export const rideRoutes = new Hono<AppEnv>()
     }
     const updated = await repo.find(id);
     return updated
-      ? c.json(toRideView(updated, me.id, now) satisfies z.infer<typeof rideSummary>)
+      ? c.json(toRideDetailView(updated, me.id, now) satisfies z.infer<typeof rideDetail>)
       : notFound(c);
   });
 
@@ -490,6 +511,6 @@ async function setSeats(c: Context<AppEnv>, seatsRemaining: number) {
   }
   const updated = await repo.find(id);
   return updated
-    ? c.json(toRideView(updated, me.id, now) satisfies z.infer<typeof rideSummary>)
+    ? c.json(toRideDetailView(updated, me.id, now) satisfies z.infer<typeof rideDetail>)
     : notFound(c);
 }

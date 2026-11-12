@@ -155,6 +155,13 @@
       "when": 1794489730705,
       "tag": "0021_ride_deleted_index",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1794501856190,
+      "tag": "0022_ride_points",
+      "breakpoints": true
     }
   ]
 }

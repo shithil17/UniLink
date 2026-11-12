@@ -1,21 +1,22 @@
 import type { z } from "zod";
 import { maskToDays, minutesToTime } from "../../../shared/rides";
-import type { rideSummary } from "../../../shared/schemas/rides";
-import type { RideCursor, RideRow } from "../../repos/rides";
+import type { rideDetail, rideSummary } from "../../../shared/schemas/rides";
+import type { RideCursor, RideRow, RideSummaryRow } from "../../repos/rides";
 
 type RideView = z.infer<typeof rideSummary>;
+type RideDetailView = z.infer<typeof rideDetail>;
 
 /** Where a ride stands at `now`. Worked out when it is read, so a ride past its expiry never shows as open before the cron purges it. */
 export function rideState(
-  r: Pick<RideRow, "seatsRemaining" | "expiresAt">,
+  r: Pick<RideSummaryRow, "seatsRemaining" | "expiresAt">,
   now: number,
 ): RideView["state"] {
   if (r.expiresAt <= now) return "expired";
   return r.seatsRemaining === 0 ? "full" : "open";
 }
 
-/** A ride as the viewer reads it. Carries no contact and no identity. */
-export function toRideView(r: RideRow, viewerId: number, now: number): RideView {
+/** A ride as the feed and "my rides" list it. Carries no contact, no identity and no exact point. */
+export function toRideView(r: RideSummaryRow, viewerId: number, now: number): RideView {
   const mine = r.authorId === viewerId;
   return {
     id: r.id,
@@ -42,8 +43,20 @@ export function toRideView(r: RideRow, viewerId: number, now: number): RideView 
   };
 }
 
+const point = (lat: number | null, lng: number | null) =>
+  lat === null || lng === null ? null : { lat, lng };
+
+/** A ride as its own screen reads it: the summary plus the exact pins the poster set, each null when unset. No contact, no identity. */
+export function toRideDetailView(r: RideRow, viewerId: number, now: number): RideDetailView {
+  return {
+    ...toRideView(r, viewerId, now),
+    pickupPoint: point(r.pickupLat, r.pickupLng),
+    destinationPoint: point(r.destinationLat, r.destinationLng),
+  };
+}
+
 /** The feed cursor is the last row's `expires_at` and id, "<expiresAt>.<id>". */
-export const encodeRideCursor = (r: Pick<RideRow, "expiresAt" | "id">): string =>
+export const encodeRideCursor = (r: Pick<RideSummaryRow, "expiresAt" | "id">): string =>
   `${r.expiresAt}.${r.id}`;
 
 const CURSOR = /^(\d{1,16})\.(\d{1,16})$/;

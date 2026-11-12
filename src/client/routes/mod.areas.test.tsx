@@ -8,6 +8,8 @@ import { Route } from "./mod.areas";
 const row = (over: Partial<ModArea> & Pick<ModArea, "id" | "name">): ModArea => ({
   slug: over.name.toLowerCase().replace(/\W+/g, "-"),
   parentId: null,
+  lat: null,
+  lng: null,
   hidden: false,
   hiddenReason: null,
   ...over,

@@ -10,12 +10,23 @@ import {
   uniqueIndex,
   type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
+import { MAP_BOUNDS } from "../../shared/geo";
 import type { PrereqRule } from "../../shared/prereq";
 import { RIDE_SEATS_MAX, vehicleType } from "../../shared/schemas/rides";
 import { contactColumns, contactConstraint } from "./contactColumns";
 import { moderationColumns, moderationConstraints } from "./moderationColumns";
 
 type Vehicle = (typeof vehicleType.options)[number];
+
+/**
+ * A map point held in two nullable columns: both set or both null, and a set point inside the
+ * greater-Dhaka box. The numbers come from `MAP_BOUNDS`, so the check and the schemas agree.
+ */
+const pointCheck = (name: string, lat: AnySQLiteColumn, lng: AnySQLiteColumn) =>
+  check(
+    name,
+    sql`(${lat} is null) = (${lng} is null) and (${lat} is null or (${lat} between ${sql.raw(String(MAP_BOUNDS.south))} and ${sql.raw(String(MAP_BOUNDS.north))} and ${lng} between ${sql.raw(String(MAP_BOUNDS.west))} and ${sql.raw(String(MAP_BOUNDS.east))}))`,
+  );
 
 // Key/value facts about the database itself (schema version and similar).
 export const appMeta = sqliteTable("app_meta", {
@@ -473,10 +484,15 @@ export const areas = sqliteTable(
     sortOrder: integer("sort_order").notNull().default(1),
     hidden: integer("hidden", { mode: "boolean" }).notNull().default(false),
     hiddenReason: text("hidden_reason"),
+    // The area's centre (WGS84, 5 decimals), or null when it has none ("Outside Dhaka"). Centres the pin
+    // picker and stands in on a ride map for an end with no exact pin.
+    lat: real("lat"),
+    lng: real("lng"),
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },
   (t) => [
+    pointCheck("areas_point_check", t.lat, t.lng),
     uniqueIndex("areas_slug_idx").on(t.slug),
     // A name is unique among siblings, ignoring case: one index for the top level, one under each parent
     // (NULLs never collide in a unique index, so the top level needs its own).
@@ -507,10 +523,15 @@ export const rides = sqliteTable(
       .notNull()
       .references(() => areas.id),
     pickupLandmark: text("pickup_landmark"),
+    // The exact spot the poster pinned (WGS84, 5 decimals), optional. Only the ride detail returns it.
+    pickupLat: real("pickup_lat"),
+    pickupLng: real("pickup_lng"),
     destinationAreaId: integer("destination_area_id")
       .notNull()
       .references(() => areas.id),
     destinationLandmark: text("destination_landmark"),
+    destinationLat: real("destination_lat"),
+    destinationLng: real("destination_lng"),
     vehicle: text("vehicle", {
       enum: vehicleType.options as [Vehicle, ...Vehicle[]],
     }).notNull(),
@@ -549,6 +570,8 @@ export const rides = sqliteTable(
       sql`${t.totalSeats} between 1 and ${sql.raw(String(RIDE_SEATS_MAX))} and ${t.seatsRemaining} between 0 and ${t.totalSeats}`,
     ),
     check("rides_price_check", sql`${t.pricePerSeatTaka} >= 0`),
+    pointCheck("rides_pickup_point_check", t.pickupLat, t.pickupLng),
+    pointCheck("rides_destination_point_check", t.destinationLat, t.destinationLng),
     // Each kind has exactly its own fields.
     check(
       "rides_kind_check",

@@ -17,11 +17,22 @@ export const areaRoutes = new Hono<AppEnv>().use(requireUser).get("/", async (c)
   const rows = await areasRepo(getDb(c.env.DB)).listVisible();
   const tops = new Map<number, Option>();
   for (const r of rows) {
-    if (r.parentId === null) tops.set(r.id, { id: r.id, slug: r.slug, name: r.name, children: [] });
+    if (r.parentId === null) {
+      tops.set(r.id, {
+        id: r.id,
+        slug: r.slug,
+        name: r.name,
+        lat: r.lat,
+        lng: r.lng,
+        children: [],
+      });
+    }
   }
   for (const r of rows) {
     if (r.parentId !== null) {
-      tops.get(r.parentId)?.children.push({ id: r.id, slug: r.slug, name: r.name });
+      tops
+        .get(r.parentId)
+        ?.children.push({ id: r.id, slug: r.slug, name: r.name, lat: r.lat, lng: r.lng });
     }
   }
   c.header("Cache-Control", "private, max-age=60");

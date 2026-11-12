@@ -32,10 +32,37 @@ export type RideRow = typeof rides.$inferSelect & {
   destinationAreaName: string;
 };
 
+/** A ride as the feed and "my rides" read it: everything but the exact points, which only the detail selects. */
+export type RideSummaryRow = Omit<
+  RideRow,
+  "pickupLat" | "pickupLng" | "destinationLat" | "destinationLng"
+>;
+
+const {
+  pickupLat: _pickupLat,
+  pickupLng: _pickupLng,
+  destinationLat: _destinationLat,
+  destinationLng: _destinationLng,
+  ...summaryColumns
+} = getTableColumns(rides);
+
+/** The whole ride, exact points included: for the detail, the author's edit and the responses to them. */
 const selectRides = (db: Db) =>
   db
     .select({
       ...getTableColumns(rides),
+      pickupAreaName: pickupArea.name,
+      destinationAreaName: destinationArea.name,
+    })
+    .from(rides)
+    .innerJoin(pickupArea, eq(pickupArea.id, rides.pickupAreaId))
+    .innerJoin(destinationArea, eq(destinationArea.id, rides.destinationAreaId));
+
+/** The same without the four point columns, so a list query never reads them. */
+const selectRideSummaries = (db: Db) =>
+  db
+    .select({
+      ...summaryColumns,
       pickupAreaName: pickupArea.name,
       destinationAreaName: destinationArea.name,
     })
@@ -165,8 +192,12 @@ export function ridesRepo(db: Db) {
      * One page of a user's own rides, newest first, whatever their status and including lapsed ones (so
      * a lapsed recurring ride can be renewed). `beforeId` is the last id of the previous page.
      */
-    async listMine(authorId: number, limit: number, beforeId: number | null): Promise<RideRow[]> {
-      return selectRides(db)
+    async listMine(
+      authorId: number,
+      limit: number,
+      beforeId: number | null,
+    ): Promise<RideSummaryRow[]> {
+      return selectRideSummaries(db)
         .where(
           and(
             eq(rides.authorId, authorId),
@@ -207,8 +238,8 @@ export function ridesRepo(db: Db) {
       filter: RideFeedFilter,
       limit: number,
       cursor: RideCursor | null,
-    ): Promise<RideRow[]> {
-      return selectRides(db)
+    ): Promise<RideSummaryRow[]> {
+      return selectRideSummaries(db)
         .where(
           and(
             // The feed is the public list: a viewer's own held ride is in "my rides", not here.
@@ -307,7 +338,7 @@ export function ridesRepo(db: Db) {
       const labels = new Map<number, string>();
       const unique = [...new Set(ids)];
       for (let i = 0; i < unique.length; i += limits.d1MaxBoundParams) {
-        const rows = await selectRides(db)
+        const rows = await selectRideSummaries(db)
           .where(inArray(rides.id, unique.slice(i, i + limits.d1MaxBoundParams)))
           .all();
         for (const r of rows) {

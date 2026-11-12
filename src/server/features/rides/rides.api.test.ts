@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 import { daysToMask } from "../../../shared/rides";
-import type { RideFeedPage, RideSummary } from "../../../shared/schemas/rides";
+import type { RideDetail, RideFeedPage, RideSummary } from "../../../shared/schemas/rides";
 import { dhakaDate, endOfDhakaDay, formatDhakaDate, startOfDhakaDay } from "../../../shared/time";
 import { app } from "../../app";
 import { runCronJobs } from "../../cron";
@@ -75,7 +75,7 @@ const recurring = (extra: Record<string, unknown> = {}) => ({
 async function post(who: Person, body: unknown) {
   const res = await call("POST", "/api/rides", who.token, body);
   expect(res.status).toBe(201);
-  return res.json<RideSummary>();
+  return res.json<RideDetail>();
 }
 
 type Insert = {
@@ -96,6 +96,10 @@ type Insert = {
   deletedAt?: number | null;
   deletedBy?: number | null;
   notes?: string | null;
+  pickupLat?: number | null;
+  pickupLng?: number | null;
+  destinationLat?: number | null;
+  destinationLng?: number | null;
 };
 
 /** Inserts a ride directly, so a test can set its status, expiry and removal. */
@@ -108,8 +112,9 @@ async function insertRide(f: Insert): Promise<number> {
     `INSERT INTO rides (author_id, pickup_area_id, destination_area_id, pickup_landmark,
        destination_landmark, vehicle, total_seats, seats_remaining,
        price_per_seat_taka, notes, contact_phone, kind, departs_at, days, departure_minutes, ends_on,
-       status, expires_at, created_at, updated_at, deleted_at, deleted_by)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 100, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+       status, expires_at, created_at, updated_at, deleted_at, deleted_by,
+       pickup_lat, pickup_lng, destination_lat, destination_lng)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 100, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
   )
     .bind(
       f.authorId,
@@ -133,6 +138,10 @@ async function insertRide(f: Insert): Promise<number> {
       now,
       f.deletedAt ?? null,
       f.deletedBy ?? null,
+      f.pickupLat ?? null,
+      f.pickupLng ?? null,
+      f.destinationLat ?? null,
+      f.destinationLng ?? null,
     )
     .first<{ id: number }>();
   return row!.id;
@@ -1431,5 +1440,205 @@ describe("ride areas", () => {
       items: { targetLabel: string }[];
     }>();
     expect(queue.items[0]?.targetLabel).toBe("Bashundhara R/A → Mirpur (Mirpur 10)");
+  });
+});
+
+describe("ride points", () => {
+  // Inside the greater-Dhaka box: near NSU and near Uttara.
+  const NSU = { lat: 23.81512, lng: 90.42534 };
+  const UTTARA = { lat: 23.8759, lng: 90.3795 };
+
+  const detail = async (who: Person, id: number) => {
+    const res = await call("GET", `/api/rides/${id}`, who.token);
+    expect(res.status).toBe(200);
+    return res.json<RideDetail>();
+  };
+
+  it("saves with no point, one point or both, and returns them on the detail", async () => {
+    const who = await person();
+    const none = await post(who, oneOff());
+    expect(none).toMatchObject({ pickupPoint: null, destinationPoint: null });
+
+    const one = await post(who, oneOff({ pickupPoint: NSU }));
+    expect(one).toMatchObject({ pickupPoint: NSU, destinationPoint: null });
+
+    const both = await post(who, oneOff({ pickupPoint: NSU, destinationPoint: UTTARA }));
+    expect(both).toMatchObject({ pickupPoint: NSU, destinationPoint: UTTARA });
+
+    // Any signed-in student sees the exact points on the detail.
+    const viewer = await person();
+    expect(await detail(viewer, both.id)).toMatchObject({
+      pickupPoint: NSU,
+      destinationPoint: UTTARA,
+      mine: false,
+    });
+    expect(await detail(viewer, none.id)).toMatchObject({
+      pickupPoint: null,
+      destinationPoint: null,
+    });
+  });
+
+  it("rounds a point to 5 decimals", async () => {
+    const who = await person();
+    const ride = await post(who, oneOff({ pickupPoint: { lat: 23.8151234, lng: 90.4253449 } }));
+    expect(ride.pickupPoint).toEqual({ lat: 23.81512, lng: 90.42534 });
+  });
+
+  it("refuses half a point and a point outside the bounds, on create and on edit", async () => {
+    const who = await person();
+    const bad = [
+      { lat: NSU.lat },
+      { lng: NSU.lng },
+      { lat: 22, lng: NSU.lng },
+      { lat: NSU.lat, lng: 91 },
+      { lat: 25.5, lng: 92.2 },
+      { lat: "23.8", lng: "90.4" },
+      { lat: null, lng: null },
+    ];
+    for (const point of bad) {
+      const res = await call("POST", "/api/rides", who.token, oneOff({ destinationPoint: point }));
+      expect(res.status, JSON.stringify(point)).toBe(400);
+    }
+    const ride = await post(who, oneOff());
+    for (const point of bad.slice(0, 6)) {
+      const res = await call("PATCH", `/api/rides/${ride.id}`, who.token, { pickupPoint: point });
+      expect(res.status, JSON.stringify(point)).toBe(400);
+    }
+    expect(await detail(who, ride.id)).toMatchObject({ pickupPoint: null });
+  });
+
+  it("is held by the database too: half a point and a point outside the bounds are refused", async () => {
+    const who = await person();
+    await expect(insertRide({ authorId: who.id, pickupLat: NSU.lat })).rejects.toThrow(/CHECK/);
+    await expect(insertRide({ authorId: who.id, destinationLng: NSU.lng })).rejects.toThrow(
+      /CHECK/,
+    );
+    await expect(
+      insertRide({ authorId: who.id, pickupLat: 22, pickupLng: NSU.lng }),
+    ).rejects.toThrow(/CHECK/);
+    await expect(
+      insertRide({ authorId: who.id, destinationLat: NSU.lat, destinationLng: 91 }),
+    ).rejects.toThrow(/CHECK/);
+    const id = await insertRide({
+      authorId: who.id,
+      pickupLat: NSU.lat,
+      pickupLng: NSU.lng,
+    });
+    // An UPDATE cannot leave half a point either.
+    await expect(
+      env.DB.prepare("UPDATE rides SET destination_lat = ? WHERE id = ?").bind(NSU.lat, id).run(),
+    ).rejects.toThrow(/CHECK/);
+    await expect(
+      env.DB.prepare("UPDATE rides SET pickup_lng = NULL WHERE id = ?").bind(id).run(),
+    ).rejects.toThrow(/CHECK/);
+  });
+
+  it("sets, moves and clears each point on its own through an edit", async () => {
+    const who = await person();
+    const ride = await post(who, oneOff({ pickupPoint: NSU }));
+    const auditCount = async () =>
+      (await env.DB.prepare("SELECT count(*) AS n FROM audit_log").first<{ n: number }>())?.n;
+    const audits = await auditCount();
+
+    const patch = async (body: Record<string, unknown>) => {
+      const res = await call("PATCH", `/api/rides/${ride.id}`, who.token, body);
+      expect(res.status).toBe(200);
+      return res.json<RideDetail>();
+    };
+
+    // Setting the destination leaves the pickup alone.
+    expect(await patch({ destinationPoint: UTTARA })).toMatchObject({
+      pickupPoint: NSU,
+      destinationPoint: UTTARA,
+    });
+    // Moving the pickup leaves the destination alone.
+    const moved = { lat: 23.8, lng: 90.4 };
+    expect(await patch({ pickupPoint: moved })).toMatchObject({
+      pickupPoint: moved,
+      destinationPoint: UTTARA,
+    });
+    // null clears one end only.
+    expect(await patch({ pickupPoint: null })).toMatchObject({
+      pickupPoint: null,
+      destinationPoint: UTTARA,
+    });
+    expect(await patch({ destinationPoint: null })).toMatchObject({
+      pickupPoint: null,
+      destinationPoint: null,
+    });
+    // A pin is not screened text: no new audit rows.
+    expect(await auditCount()).toBe(audits);
+    // The stored columns agree.
+    const row = await env.DB.prepare(
+      "SELECT pickup_lat, pickup_lng, destination_lat, destination_lng FROM rides WHERE id = ?",
+    )
+      .bind(ride.id)
+      .first();
+    expect(row).toEqual({
+      pickup_lat: null,
+      pickup_lng: null,
+      destination_lat: null,
+      destination_lng: null,
+    });
+  });
+
+  it("only the poster edits a point", async () => {
+    const who = await person();
+    const other = await person();
+    const ride = await post(who, oneOff());
+    const res = await call("PATCH", `/api/rides/${ride.id}`, other.token, { pickupPoint: NSU });
+    expect(res.status).toBe(404);
+  });
+
+  it("keeps points off the feed and off my rides", async () => {
+    const who = await person();
+    const viewer = await person();
+    const ride = await post(who, oneOff({ pickupPoint: NSU, destinationPoint: UTTARA }));
+
+    const feed = await call("GET", "/api/rides", viewer.token);
+    const feedText = await feed.text();
+    const items = JSON.parse(feedText).items as Record<string, unknown>[];
+    expect(items.map((r) => r.id)).toEqual([ride.id]);
+    for (const key of ["pickupPoint", "destinationPoint", "lat", "lng", "pickupLat"]) {
+      expect(items[0], key).not.toHaveProperty(key);
+    }
+    expect(feedText).not.toContain(String(NSU.lat));
+    expect(feedText).not.toContain(String(UTTARA.lng));
+
+    const mine = await (await call("GET", "/api/rides/mine", who.token)).text();
+    expect(mine).not.toContain(String(NSU.lat));
+    expect(JSON.parse(mine).items[0]).not.toHaveProperty("pickupPoint");
+  });
+
+  it("hides a held, removed or lapsed ride's points with the ride", async () => {
+    const who = await person();
+    const viewer = await person();
+    const points = {
+      pickupLat: NSU.lat,
+      pickupLng: NSU.lng,
+      destinationLat: UTTARA.lat,
+      destinationLng: UTTARA.lng,
+    };
+    const live = await insertRide({ authorId: who.id, ...points });
+    const held = await insertRide({ authorId: who.id, status: "pending_review", ...points });
+    const removed = await insertRide({
+      authorId: who.id,
+      deletedAt: Date.now(),
+      deletedBy: who.id,
+      ...points,
+    });
+    const lapsed = await insertRide({
+      authorId: who.id,
+      expiresAt: Date.now() - 1000,
+      departsAt: Date.now() - 1000,
+      ...points,
+    });
+
+    expect(await detail(viewer, live)).toMatchObject({ pickupPoint: NSU });
+    for (const id of [held, removed, lapsed]) {
+      const res = await call("GET", `/api/rides/${id}`, viewer.token);
+      expect(res.status, String(id)).toBe(404);
+      expect(await res.text()).not.toContain(String(NSU.lat));
+    }
   });
 });

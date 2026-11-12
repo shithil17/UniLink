@@ -93,6 +93,31 @@ describe("the area list", () => {
     expect((await call("GET", "/api/areas", null)).status).toBe(401);
   });
 
+  it("carries each area's point, null for Outside Dhaka and for a new area", async () => {
+    const mod = await person("mod");
+    const who = await person();
+    await addOk(mod, { name: "Brand new place" });
+    const areas = await list(who);
+    const bySlug = new Map(areas.map((a) => [a.slug, a]));
+    // Bashundhara is by NSU, Uttara is north of it, Jatrabari south-east of the centre.
+    const nsu = bySlug.get("bashundhara-r-a")!;
+    const uttara = bySlug.get("uttara")!;
+    const jatrabari = bySlug.get("jatrabari")!;
+    expect(Math.abs(nsu.lat! - 23.8151)).toBeLessThan(0.02);
+    expect(Math.abs(nsu.lng! - 90.4253)).toBeLessThan(0.02);
+    expect(uttara.lat!).toBeGreaterThan(nsu.lat!);
+    expect(jatrabari.lat!).toBeLessThan(nsu.lat! - 0.05);
+    expect(bySlug.get("outside-dhaka")).toMatchObject({ lat: null, lng: null });
+    expect(areas.find((a) => a.name === "Brand new place")).toMatchObject({ lat: null, lng: null });
+    // Every point is a pair.
+    expect(areas.every((a) => (a.lat === null) === (a.lng === null))).toBe(true);
+    // The mod list carries them too.
+    expect((await modList(mod)).find((a) => a.slug === "uttara")).toMatchObject({
+      lat: uttara.lat,
+      lng: uttara.lng,
+    });
+  });
+
   it("lists sub-areas under their parent and leaves hidden areas out for students but not for mods", async () => {
     const mod = await person("mod");
     const student = await person();
@@ -101,7 +126,7 @@ describe("the area list", () => {
     const hidden = await addOk(mod, { name: "Ghost Town" });
 
     expect((await list(student)).find((a) => a.id === mirpur)?.children).toEqual([
-      { id: sub.id, slug: "mirpur-mirpur-10", name: "Mirpur 10" },
+      { id: sub.id, slug: "mirpur-mirpur-10", name: "Mirpur 10", lat: null, lng: null },
     ]);
 
     const res = await call("POST", `/api/mod/areas/${hidden.id}/hide`, mod.token, {
