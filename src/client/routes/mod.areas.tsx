@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { MapPinIcon, PlusIcon } from "lucide-react";
-import { useState } from "react";
-import { AreaSheet, type AreaSheetTarget } from "@/components/mod/AreaSheet";
+import { useEffect, useState } from "react";
+import { AREA_POINT_MAP, AreaSheet, type AreaSheetTarget } from "@/components/mod/AreaSheet";
 import { modPanel as panel, modRowLine, modRowMin, modTitle } from "@/components/mod/modStyles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,9 +13,12 @@ import { press } from "@/components/ui/press";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { errorMessage } from "@/lib/api";
 import { groupAreas, modAreasQuery } from "@/lib/areas";
+import { parseMapParam, useMapParam } from "@/lib/map/useMapParam";
 import type { ModArea } from "../../shared/schemas/areas";
 
 export const Route = createFileRoute("/mod/areas")({
+  // The point picker is a full-screen map, opened through `?map=`.
+  validateSearch: (search: Record<string, unknown>) => ({ map: parseMapParam(search.map) }),
   component: AreasPage,
 });
 
@@ -29,6 +32,19 @@ function AreasPage() {
   const list = useQuery(modAreasQuery);
   const [target, setTarget] = useState<AreaSheetTarget>(null);
   const groups = groupAreas(list.data ?? []);
+  // The sheet shows the freshest row, so a point just saved shows without reopening it.
+  const shown: AreaSheetTarget =
+    target?.mode === "edit"
+      ? { ...target, area: list.data?.find((a) => a.id === target.area.id) ?? target.area }
+      : target;
+
+  // A reload or a shared link on `?map=area-point` has no area to place: drop the param.
+  const pointMap = useMapParam(AREA_POINT_MAP);
+  useEffect(() => {
+    if (pointMap.isOpen) pointMap.close();
+    // Only on arrival: later the picker opens from the sheet and owns the param.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <section className="space-y-5">
@@ -86,7 +102,7 @@ function AreasPage() {
         </ul>
       )}
 
-      <AreaSheet target={target} parents={groups.map((g) => g.area)} onTarget={setTarget} />
+      <AreaSheet target={shown} parents={groups.map((g) => g.area)} onTarget={setTarget} />
     </section>
   );
 }

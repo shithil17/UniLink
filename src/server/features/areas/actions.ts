@@ -1,5 +1,5 @@
 import { auditActions } from "../../../shared/auditActions";
-import type { AreaInput } from "../../../shared/schemas/areas";
+import { NO_POINT_AREA_SLUG, type AreaInput } from "../../../shared/schemas/areas";
 import { audit } from "../../audit";
 import type { Db } from "../../db/client";
 import { areasRepo, type AreaRow, type AreaState } from "../../repos/areas";
@@ -14,7 +14,8 @@ export type AreaFailure =
   | "invalid_parent"
   | "already_hidden"
   | "not_hidden"
-  | "name_taken";
+  | "name_taken"
+  | "no_point_area";
 export type AreaResult = { ok: true; row: AreaRow } | { ok: false; reason: AreaFailure };
 
 /** Lowercase kebab-case ASCII, "Old Dhaka / Sadarghat" becomes "old-dhaka-sadarghat". Empty for a name with no ASCII letter or digit. */
@@ -84,6 +85,36 @@ export async function renameArea(
     now,
   );
   return { ok: true, row: written.row };
+}
+
+/**
+ * Sets, moves or clears an area's map point. "Outside Dhaka" has no place on the map and is refused.
+ * The audit row holds the old point (both coordinates, null for none) so a reversal puts it back.
+ * Setting the point it already has writes nothing.
+ */
+export async function setAreaPoint(
+  db: Db,
+  actor: Actor,
+  id: number,
+  point: { lat: number; lng: number } | null,
+  now: number = Date.now(),
+): Promise<AreaResult> {
+  const repo = areasRepo(db);
+  const current = await repo.findById(id);
+  if (!current) return { ok: false, reason: "not_found" };
+  if (current.slug === NO_POINT_AREA_SLUG) return { ok: false, reason: "no_point_area" };
+  if (current.lat === (point?.lat ?? null) && current.lng === (point?.lng ?? null)) {
+    return { ok: true, row: current };
+  }
+  const row = await repo.setPoint(id, point, now);
+  if (!row) return { ok: false, reason: "not_found" };
+  const before: Partial<AreaState> = { lat: current.lat, lng: current.lng };
+  await audit(
+    db,
+    { actor: actor.id, action: auditActions.areaPoint, targetType: "area", targetId: id, before },
+    now,
+  );
+  return { ok: true, row };
 }
 
 /** Hides or shows an area again. Rides that already use it keep it; new rides can't pick a hidden one. */

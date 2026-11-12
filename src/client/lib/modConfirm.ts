@@ -294,6 +294,8 @@ const REVERSAL_EFFECT: Record<string, string> = {
   [auditActions.courseUnhide]: "The course is hidden again.",
   [auditActions.areaRename]:
     "The area gets its old name back. It's refused if another area here has taken the name since.",
+  [auditActions.areaPoint]:
+    "The area's map point goes back to where it was, or to none if it had none.",
   [auditActions.areaHide]: "The area shows in the ride pickers again.",
   [auditActions.areaUnhide]: "The area is hidden again.",
 };

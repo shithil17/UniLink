@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, describe, expect, it } from "vite-plus/test";
 import type { AreaOption, ModArea } from "../../../shared/schemas/areas";
+import { MAP_BOUNDS } from "../../../shared/geo";
 import { app } from "../../app";
 import { getDb } from "../../db/client";
 import { limits } from "../../limits";
@@ -161,6 +162,7 @@ describe("mod area management", () => {
       ["GET", "/api/mod/areas", undefined],
       ["POST", "/api/mod/areas", { name: "New place" }],
       ["PATCH", `/api/mod/areas/${bashundhara}`, { name: "Renamed" }],
+      ["PUT", `/api/mod/areas/${bashundhara}/point`, { point: { lat: 23.8, lng: 90.4 } }],
       ["POST", `/api/mod/areas/${bashundhara}/hide`, { reason: REASON }],
       ["POST", `/api/mod/areas/${bashundhara}/unhide`, { reason: REASON }],
     ] as const) {
@@ -256,6 +258,108 @@ describe("mod area management", () => {
     );
   });
 
+  it("moves an area's point with an audit row holding the old point, and rounds it to 5 decimals", async () => {
+    const mod = await person("mod");
+    const uttara = await areaIdBySlug(env.DB, "uttara");
+    const before = (await modList(mod)).find((a) => a.id === uttara)!;
+    expect(before.lat).not.toBeNull();
+
+    const res = await call("PUT", `/api/mod/areas/${uttara}/point`, mod.token, {
+      point: { lat: 23.8765432, lng: 90.3987654 },
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json<ModArea>()).toMatchObject({ lat: 23.87654, lng: 90.39877 });
+    expect((await modList(mod)).find((a) => a.id === uttara)).toMatchObject({
+      lat: 23.87654,
+      lng: 90.39877,
+    });
+    // The students' list carries the new point too.
+    expect((await list(await person())).find((a) => a.id === uttara)).toMatchObject({
+      lat: 23.87654,
+      lng: 90.39877,
+    });
+
+    const rows = await auditRows("area_point");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      actor: String(mod.id),
+      target_type: "area",
+      target_id: String(uttara),
+    });
+    expect(JSON.parse(rows[0]!.before!)).toEqual({ lat: before.lat, lng: before.lng });
+
+    // Setting the same point again changes nothing and writes no second row.
+    const again = await call("PUT", `/api/mod/areas/${uttara}/point`, mod.token, {
+      point: { lat: 23.87654, lng: 90.39877 },
+    });
+    expect(again.status).toBe(200);
+    expect(await auditRows("area_point")).toHaveLength(1);
+  });
+
+  it("sets a point on an area that has none, and clears one with null", async () => {
+    const mod = await person("mod");
+    const area = await addOk(mod, { name: "Rampura Bridge" });
+    const path = `/api/mod/areas/${area.id}/point`;
+    expect(area).toMatchObject({ lat: null, lng: null });
+
+    expect(
+      await (await call("PUT", path, mod.token, { point: { lat: 23.76, lng: 90.43 } })).json(),
+    ).toMatchObject({ lat: 23.76, lng: 90.43 });
+    const cleared = await call("PUT", path, mod.token, { point: null });
+    expect(cleared.status).toBe(200);
+    expect(await cleared.json<ModArea>()).toMatchObject({ lat: null, lng: null });
+
+    const rows = await auditRows("area_point");
+    expect(rows.map((r) => JSON.parse(r.before!))).toEqual([
+      { lat: null, lng: null },
+      { lat: 23.76, lng: 90.43 },
+    ]);
+  });
+
+  it("refuses a point outside the map bounds, a half point and a missing area, and writes nothing", async () => {
+    const mod = await person("mod");
+    const uttara = await areaIdBySlug(env.DB, "uttara");
+    const path = `/api/mod/areas/${uttara}/point`;
+    const put = (body: unknown) => call("PUT", path, mod.token, body);
+    const start = (await modList(mod)).find((a) => a.id === uttara)!;
+
+    for (const point of [
+      { lat: MAP_BOUNDS.south - 0.01, lng: 90.4 },
+      { lat: MAP_BOUNDS.north + 0.01, lng: 90.4 },
+      { lat: 23.8, lng: MAP_BOUNDS.west - 0.01 },
+      { lat: 23.8, lng: MAP_BOUNDS.east + 0.01 },
+      { lat: 0, lng: 0 },
+    ]) {
+      expect((await put({ point })).status).toBe(400);
+    }
+    expect((await put({ point: { lat: 23.8 } })).status).toBe(400);
+    expect((await put({})).status).toBe(400);
+    expect(
+      (await call("PUT", "/api/mod/areas/999999/point", mod.token, { point: null })).status,
+    ).toBe(404);
+
+    expect((await modList(mod)).find((a) => a.id === uttara)).toMatchObject({
+      lat: start.lat,
+      lng: start.lng,
+    });
+    expect(await auditRows("area_point")).toHaveLength(0);
+  });
+
+  it("gives Outside Dhaka no point, set or clear", async () => {
+    const mod = await person("mod");
+    const outside = await areaIdBySlug(env.DB, "outside-dhaka");
+    for (const point of [{ lat: 23.8, lng: 90.4 }, null]) {
+      const res = await call("PUT", `/api/mod/areas/${outside}/point`, mod.token, { point });
+      expect(res.status).toBe(400);
+      expect((await res.json<{ error: string }>()).error).toBe("no_point_area");
+    }
+    expect((await modList(mod)).find((a) => a.id === outside)).toMatchObject({
+      lat: null,
+      lng: null,
+    });
+    expect(await auditRows("area_point")).toHaveLength(0);
+  });
+
   it("names the area on its audit log rows, hidden or not", async () => {
     const mod = await person("mod");
     const admin = await person("admin");
@@ -331,6 +435,60 @@ describe("mod area management", () => {
 });
 
 describe("reversing area actions", () => {
+  it("puts a moved or cleared point back, with a reversal row, and refuses a second reversal", async () => {
+    const mod = await person("mod");
+    const admin = await person("admin");
+    const uttara = await areaIdBySlug(env.DB, "uttara");
+    const original = (await modList(mod)).find((a) => a.id === uttara)!;
+    const path = `/api/mod/areas/${uttara}/point`;
+    await call("PUT", path, mod.token, { point: { lat: 23.9, lng: 90.3 } });
+    await call("PUT", path, mod.token, { point: null });
+    const moves = await env.DB.prepare(
+      "SELECT id FROM audit_log WHERE action = 'area_point' ORDER BY id",
+    ).all<{ id: number }>();
+    const [moved, cleared] = moves.results.map((r) => r.id) as [number, number];
+    const undo = (auditId: number) =>
+      reverse(db(), { auditId, actor: admin.id, reason: "Mistake" });
+    const point = async () => {
+      const a = (await modList(mod)).find((x) => x.id === uttara)!;
+      return { lat: a.lat, lng: a.lng };
+    };
+
+    // The clear is undone first: the moved point comes back.
+    expect((await undo(cleared)).ok).toBe(true);
+    expect(await point()).toEqual({ lat: 23.9, lng: 90.3 });
+    expect(await undo(cleared)).toEqual({ ok: false, reason: "already_reversed" });
+
+    // Then the move: the seeded point comes back.
+    expect((await undo(moved)).ok).toBe(true);
+    expect(await point()).toEqual({ lat: original.lat, lng: original.lng });
+
+    const reversals = await auditRows("reverse");
+    expect(reversals).toHaveLength(2);
+    expect(reversals[0]).toMatchObject({ target_type: "area", target_id: String(uttara) });
+    expect(JSON.parse(reversals[0]!.before!)).toEqual({ lat: null, lng: null });
+    expect(JSON.parse(reversals[1]!.before!)).toEqual({ lat: 23.9, lng: 90.3 });
+  });
+
+  it("restores a cleared point to a point that had none", async () => {
+    const mod = await person("mod");
+    const admin = await person("admin");
+    const area = await addOk(mod, { name: "Rampura Bridge" });
+    await call("PUT", `/api/mod/areas/${area.id}/point`, mod.token, {
+      point: { lat: 23.76, lng: 90.43 },
+    });
+    const row = await env.DB.prepare("SELECT id FROM audit_log WHERE action = 'area_point'").first<{
+      id: number;
+    }>();
+    expect((await reverse(db(), { auditId: row!.id, actor: admin.id, reason: "Mistake" })).ok).toBe(
+      true,
+    );
+    expect((await modList(mod)).find((a) => a.id === area.id)).toMatchObject({
+      lat: null,
+      lng: null,
+    });
+  });
+
   it("puts a hidden area back and a renamed area's name back, and refuses when the name is taken", async () => {
     const mod = await person("mod");
     const admin = await person("admin");
@@ -365,5 +523,22 @@ describe("reversing area actions", () => {
     const now = (await modList(mod)).find((a) => a.id === area.id);
     expect(now).toMatchObject({ hidden: false, hiddenReason: null, name: "Rampura Flyover" });
     expect(await undo(hideId!.id)).toEqual({ ok: false, reason: "already_reversed" });
+  });
+});
+
+describe("the test reset", () => {
+  it("puts moved and cleared seeded points back, and leaves Outside Dhaka without one", async () => {
+    const uttara = await areaIdBySlug(env.DB, "uttara");
+    const read = () =>
+      env.DB.prepare("SELECT lat, lng FROM areas WHERE id = ?").bind(uttara).first();
+    const seeded = await read();
+    await env.DB.prepare("UPDATE areas SET lat = 23.9, lng = 90.3 WHERE id = ?").bind(uttara).run();
+    await env.DB.prepare(
+      "UPDATE areas SET lat = 23.9, lng = 90.3 WHERE slug = 'outside-dhaka'",
+    ).run();
+    await resetAreas(env.DB);
+    expect(await read()).toEqual(seeded);
+    const nulls = await env.DB.prepare("SELECT slug FROM areas WHERE lat IS NULL").all();
+    expect(nulls.results).toEqual([{ slug: "outside-dhaka" }]);
   });
 });

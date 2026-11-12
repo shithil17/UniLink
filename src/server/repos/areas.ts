@@ -6,7 +6,7 @@ import { limits } from "../limits";
 
 export type AreaRow = typeof areas.$inferSelect;
 /** The columns an edit or a hide changes: what a before-snapshot holds and a reversal puts back. */
-export type AreaState = Pick<AreaRow, "name" | "hidden" | "hiddenReason">;
+export type AreaState = Pick<AreaRow, "name" | "hidden" | "hiddenReason" | "lat" | "lng">;
 
 export type AreaConflict = "name_taken" | "slug_taken";
 export type AreaWrite = { ok: true; row: AreaRow } | { ok: false; conflict: AreaConflict };
@@ -117,6 +117,21 @@ export function areasRepo(db: Db) {
     async rename(id: number, name: string, now: number): Promise<AreaWrite | null> {
       return guarded(() =>
         db.update(areas).set({ name, updatedAt: now }).where(eq(areas.id, id)).returning().get(),
+      );
+    },
+    /** Sets the point, or clears it with null. Null when the row does not exist. */
+    async setPoint(
+      id: number,
+      point: { lat: number; lng: number } | null,
+      now: number,
+    ): Promise<AreaRow | null> {
+      return (
+        (await db
+          .update(areas)
+          .set({ lat: point?.lat ?? null, lng: point?.lng ?? null, updatedAt: now })
+          .where(eq(areas.id, id))
+          .returning()
+          .get()) ?? null
       );
     },
     /** Flips the flag and keeps or clears the reason. Null when the row is missing or already in that state. */

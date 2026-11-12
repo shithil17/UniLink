@@ -24,6 +24,7 @@ export const auditActions = {
   courseUnhide: "course_unhide",
   areaAdd: "area_add",
   areaRename: "area_rename",
+  areaPoint: "area_point",
   areaHide: "area_hide",
   areaUnhide: "area_unhide",
   modApprovePost: "mod_approve_post",
@@ -57,6 +58,7 @@ export const reversibleActions: readonly string[] = [
   auditActions.courseHide,
   auditActions.courseUnhide,
   auditActions.areaRename,
+  auditActions.areaPoint,
   auditActions.areaHide,
   auditActions.areaUnhide,
 ];
@@ -82,6 +84,7 @@ const LABELS: Record<AuditAction, string> = {
   course_unhide: "Showed a course again",
   area_add: "Added an area",
   area_rename: "Renamed an area",
+  area_point: "Moved an area on the map",
   area_hide: "Hid an area",
   area_unhide: "Showed an area again",
   mod_approve_post: "Approved a held post",

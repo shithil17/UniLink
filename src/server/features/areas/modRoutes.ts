@@ -4,6 +4,7 @@ import {
   areaHideRequest,
   areaInput,
   areaPatch,
+  areaPointPatch,
   type modArea,
   type modAreaList,
 } from "../../../shared/schemas/areas";
@@ -14,9 +15,17 @@ import type { AppEnv } from "../../middleware/types";
 import { areasRepo, type AreaRow } from "../../repos/areas";
 import { validateJson } from "../../validate";
 import { actorOf, paramId } from "../mod/respond";
-import { addArea, renameArea, setAreaHidden, type AreaFailure, type AreaResult } from "./actions";
+import {
+  addArea,
+  renameArea,
+  setAreaHidden,
+  setAreaPoint,
+  type AreaFailure,
+  type AreaResult,
+} from "./actions";
 
 const FAILURES: Record<AreaFailure, { status: 400 | 404 | 409; message: string }> = {
+  no_point_area: { status: 400, message: "Outside Dhaka has no place on the map." },
   not_found: { status: 404, message: "That area does not exist." },
   invalid_parent: {
     status: 400,
@@ -72,6 +81,16 @@ export const areaModRoutes = new Hono<AppEnv>()
     const limited = await writeAllowed(c);
     if (limited) return limited;
     return respond(c, await renameArea(getDb(c.env.DB), actorOf(c), id, c.req.valid("json").name));
+  })
+  .put("/:id/point", validateJson(areaPointPatch), async (c) => {
+    const id = paramId(c);
+    if (id === null) return c.json({ error: "not_found" }, 404);
+    const limited = await writeAllowed(c);
+    if (limited) return limited;
+    return respond(
+      c,
+      await setAreaPoint(getDb(c.env.DB), actorOf(c), id, c.req.valid("json").point),
+    );
   })
   .post("/:id/hide", validateJson(areaHideRequest), async (c) => {
     const id = paramId(c);

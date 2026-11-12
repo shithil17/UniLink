@@ -7,7 +7,8 @@ import {
   type AreaOption,
   type ModArea,
 } from "../../shared/schemas/areas";
-import { apiGet, apiPatch, apiPost } from "./api";
+import type { GeoPoint } from "../../shared/geo";
+import { apiGet, apiPatch, apiPost, apiPut } from "./api";
 
 // ceiling: the list is about 100 rows that change when a mod edits them, and a stale list only costs a
 // student an area that was just hidden (the server refuses it) or misses one just added. Ten minutes keeps
@@ -169,6 +170,16 @@ export function useRenameArea(id: number) {
   const refresh = useRefreshAreas();
   return useMutation({
     mutationFn: (name: string) => apiPatch(`/api/mod/areas/${id}`, modArea, { name }),
+    onSuccess: refresh,
+  });
+}
+
+/** Sets or moves an area's map point, or clears it with null. */
+export function useSetAreaPoint(id: number) {
+  const refresh = useRefreshAreas();
+  return useMutation({
+    mutationFn: (point: GeoPoint | null) =>
+      apiPut(`/api/mod/areas/${id}/point`, modArea, { point }),
     onSuccess: refresh,
   });
 }

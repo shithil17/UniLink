@@ -43,6 +43,7 @@ import { softDeleteTargets, type SoftDeleteTargets } from "./softDelete";
  * | course_hide, course_unhide | { hidden }    | puts `hidden` back (shown or hidden again)            |
  *
  * | area_rename | { name }                     | puts the name back; refused if a sibling has taken it since (`value_in_use`) |
+ * | area_point  | { lat, lng }                  | puts the old point back (null for none, "Not on the map") |
  * | area_hide, area_unhide | { hidden, hiddenReason } | puts both back (shown or hidden again, with the old reason) |
  *
  * Not reversible: adding a faculty member, a course or an area, a password reset (the old hash is never stored), a report resolution, an ID lookup,
@@ -108,9 +109,15 @@ const areaSnapshot = z
     name: z.string().min(1),
     hidden: z.boolean(),
     hiddenReason: z.string().nullable(),
+    lat: z.number().nullable(),
+    lng: z.number().nullable(),
   })
   .partial()
-  .refine((v) => Object.keys(v).length > 0);
+  .refine((v) => Object.keys(v).length > 0)
+  // A point is both coordinates or neither (the table's CHECK says the same).
+  .refine(
+    (v) => (v.lat === undefined) === (v.lng === undefined) && (v.lat === null) === (v.lng === null),
+  );
 
 export type ReverseFailure =
   | "not_found"

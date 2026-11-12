@@ -1,6 +1,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm } from "react-hook-form";
 import { OptionSelect } from "@/components/courses/OptionSelect";
+import { PinPicker } from "@/components/map/PinPicker";
+import { PlaceSearch } from "@/components/map/PlaceSearch";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -13,7 +15,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ApiError, errorMessage } from "@/lib/api";
-import { useAddArea, useRenameArea, useSetAreaHidden } from "@/lib/areas";
+import { useAddArea, useRenameArea, useSetAreaHidden, useSetAreaPoint } from "@/lib/areas";
+import { useMapParam } from "@/lib/map/useMapParam";
 import {
   areaAddConfirm,
   areaHiddenConfirm,
@@ -27,6 +30,7 @@ import {
   AREA_NAME_MAX_LENGTH,
   areaInput,
   areaPatch,
+  NO_POINT_AREA_SLUG,
   type AreaInput,
   type AreaPatch,
   type ModArea,
@@ -37,6 +41,12 @@ import { ReasonForm } from "./ReasonForm";
  * What the sheet is showing: a new area (under `parent`, or top level when null), an existing one
  * to rename, hide or show, or nothing (closed). `parents` are the top-level areas a new area can sit under.
  */
+/** The map name in the URL while the point picker is open. */
+export const AREA_POINT_MAP = "area-point";
+
+export const AREA_POINT_HINT =
+  "Place the pin at the centre of the area, where students would expect it.";
+
 export type AreaSheetTarget =
   | { mode: "add"; parent: ModArea | null }
   | { mode: "edit"; area: ModArea; parent: ModArea | null }
@@ -182,6 +192,15 @@ function EditArea({
 }) {
   const rename = useRenameArea(area.id);
   const setHidden = useSetAreaHidden(area.id);
+  const setPoint = useSetAreaPoint(area.id);
+  const pointMap = useMapParam(AREA_POINT_MAP);
+  const point = area.lat !== null && area.lng !== null ? { lat: area.lat, lng: area.lng } : null;
+  const hasPoint = area.slug !== NO_POINT_AREA_SLUG;
+  const savePoint = (next: { lat: number; lng: number } | null) =>
+    setPoint.mutateAsync(next).then(
+      () => toast.success(next ? "Map point saved" : "Map point removed"),
+      (err: unknown) => toast.error(errorMessage(err)),
+    );
   const form = useForm<AreaPatch>({
     resolver: zodResolver(areaPatch),
     defaultValues: { name: area.name },
@@ -248,6 +267,29 @@ function EditArea({
         <Separator />
         <div className="space-y-3">
           <h3 className="text-lg leading-[1.3] font-semibold text-ink">
+            {point ? "On the map" : "Not on the map"}
+          </h3>
+          <p className="text-[15px] text-soft">
+            {hasPoint
+              ? "Rides in this area show at its map point. A sub-area with no point stands where its parent does."
+              : "Outside Dhaka never has a map point."}
+          </p>
+          {hasPoint ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="w-full"
+              onClick={pointMap.open}
+            >
+              {point ? "Move the map point" : "Set the map point"}
+            </Button>
+          ) : null}
+        </div>
+
+        <Separator />
+        <div className="space-y-3">
+          <h3 className="text-lg leading-[1.3] font-semibold text-ink">
             {area.hidden ? "Hidden from students" : "Visibility"}
           </h3>
           <p className="text-[15px] text-soft">
@@ -273,6 +315,23 @@ function EditArea({
         </div>
       </div>
       {confirm.element}
+      {hasPoint ? (
+        <PinPicker
+          open={pointMap.isOpen}
+          onClose={pointMap.close}
+          label={`Place ${area.name} on the map`}
+          hint={AREA_POINT_HINT}
+          point={point}
+          fallback={
+            parent && parent.lat !== null && parent.lng !== null
+              ? { lat: parent.lat, lng: parent.lng }
+              : null
+          }
+          onConfirm={(next) => void savePoint(next)}
+          onRemove={() => void savePoint(null)}
+          search={(controls) => <PlaceSearch controls={controls} />}
+        />
+      ) : null}
     </>
   );
 }

@@ -12,6 +12,9 @@ vi.mock("@/lib/toast", () => {
   return { toast };
 });
 
+// No router here: the open map lives in a variable instead of the URL.
+vi.mock("@/lib/map/useMapParam", () => import("@/test/fakeMapParam"));
+
 const mirpur: ModArea = {
   id: 7,
   slug: "mirpur",
