@@ -27,22 +27,22 @@ const typeLink = (value: string) =>
 
 describe("SubmitForm", () => {
   it.each([
-    ["http://drive.google.com/file/d/1", "plain http"],
-    ["https://drive.google.com.evil.io/file/d/1", "a look-alike host"],
-    ["https://example.com/notes.pdf", "a host that is not allowed"],
-  ])("refuses %s (%s) without sending anything", async (value) => {
+    ["http://drive.google.com/file/d/1", "plain http", "Use a full https link to a public website"],
+    ["https://192.168.0.1/notes.pdf", "an IP address", "Use a full https link to a public website"],
+    [
+      "https://bit.ly/abc123",
+      "a link shortener",
+      "Link shorteners aren't allowed. Paste the full link instead",
+    ],
+  ])("refuses %s (%s) without sending anything", async (value, _why, message) => {
     const fetchMock = setup();
     typeLink(value);
     fireEvent.click(screen.getByRole("button", { name: "Send link" }));
-    expect(
-      await screen.findByText(
-        "Use an https link from Google Drive, Dropbox, OneDrive, MEGA or GitHub",
-      ),
-    ).toBeTruthy();
+    expect(await screen.findByText(message)).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("posts an allowlisted link to this request", async () => {
+  it("posts a link to this request", async () => {
     const fetchMock = setup();
     fetchMock.mockResolvedValue(
       Response.json(

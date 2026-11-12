@@ -20,11 +20,7 @@ import {
   type ResourceRequestInput,
   type ResourceSubmissionInput,
 } from "../../shared/schemas/resources";
-import {
-  isAllowedResourceUrl,
-  parseResourceUrl,
-  RESOURCE_URL_SERVICES,
-} from "../../shared/urlAllowlist";
+import { isShareableResourceUrl, parseResourceUrl } from "../../shared/resourceUrl";
 import { ApiError, apiGet, apiPost, errorMessage } from "./api";
 import type { ConfirmRequest } from "./modConfirm";
 import { toast } from "./toast";
@@ -63,12 +59,6 @@ export const expiresAtFor = (ms: number, now: number = Date.now()) => now + ms;
 
 /** What a new request starts with: a week, the choice in the middle. */
 export const DEFAULT_EXPIRY_MS = 7 * DAY;
-
-/** The hosts a link can point at, in words, for the form's help text. The allowlist itself is shared. */
-export const LINK_HOSTS_WORDS = (() => {
-  const names = RESOURCE_URL_SERVICES.map((s) => s.name);
-  return names.length > 1 ? `${names.slice(0, -1).join(", ")} or ${names.at(-1)}` : names.join("");
-})();
 
 /** The two sentences that say when a request is deleted. Built from the same limits the server runs on. */
 export function purgeNotice(): { open: string; fulfilled: string } {
@@ -137,12 +127,12 @@ export function requestHeading(r: Pick<ResourceRequest, "courseCode" | "faculty"
   return { course: r.courseCode, faculty: r.faculty ? facultyTitle(r.faculty) : null };
 }
 
-/** The link as the page can safely open it, or null for anything that is not an allowlisted https link. */
+/** The link as the page can safely open it, or null for anything that is not a safe https link. */
 export function safeLink(url: string): string | null {
-  return isAllowedResourceUrl(url) ? url : null;
+  return isShareableResourceUrl(url) ? url : null;
 }
 
-/** The host of an allowlisted link, for a row that should not print a whole share URL. */
+/** The host of a shareable link, for a row that should not print a whole share URL. */
 export function linkHost(url: string): string {
   return parseResourceUrl(url)?.hostname.replace(/^www\./, "") ?? "";
 }

@@ -95,17 +95,24 @@ describe("expiryLine", () => {
 });
 
 describe("safeLink", () => {
-  it("passes an allowlisted https link and names its host", () => {
+  it("passes a safe https link and names its host", () => {
     const url = "https://www.dropbox.com/s/abc/notes.pdf";
     expect(safeLink(url)).toBe(url);
     expect(linkHost(url)).toBe("dropbox.com");
   });
 
+  it("passes a link from any public site", () => {
+    const url = "https://www.youtube.com/playlist?list=PLabc";
+    expect(safeLink(url)).toBe(url);
+    expect(linkHost(url)).toBe("youtube.com");
+  });
+
   it("refuses http, look-alike hosts and script links, so they never become an href", () => {
     expect(safeLink("http://drive.google.com/x")).toBeNull();
-    expect(safeLink("https://drive.google.com.evil.io/x")).toBeNull();
+    expect(safeLink("https://bit.ly/x")).toBeNull();
+    expect(safeLink("https://192.168.0.1/x")).toBeNull();
     expect(safeLink("javascript:alert(1)")).toBeNull();
-    expect(linkHost("https://evil.io/x")).toBe("");
+    expect(linkHost("https://bit.ly/x")).toBe("");
   });
 });
 
@@ -133,14 +140,5 @@ describe("acceptLinkConfirm", () => {
     expect(c.facts).toEqual([{ label: "Sent by", value: "sam" }]);
     expect(c.lead).toMatch(/closes your request/);
     expect(c.effects.join(" ")).toContain("3 months");
-  });
-});
-
-describe("LINK_HOSTS_WORDS", () => {
-  it("names every allowlisted service", async () => {
-    const { LINK_HOSTS_WORDS } = await import("./resources");
-    const { RESOURCE_URL_SERVICES } = await import("../../shared/urlAllowlist");
-    for (const s of RESOURCE_URL_SERVICES) expect(LINK_HOSTS_WORDS).toContain(s.name);
-    expect(LINK_HOSTS_WORDS).toBe("Google Drive, Dropbox, OneDrive, MEGA or GitHub");
   });
 });

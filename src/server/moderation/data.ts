@@ -8,7 +8,7 @@ type Category = z.infer<typeof reasonCategory>;
 
 /**
  * Hosts a post may link to. A host matches itself and any subdomain of it. Everything else is held back
- * as a possible scam or tracking link. The resource-sharing allowlist (Drive and similar) is separate.
+ * as a possible scam or tracking link. The resource-sharing link rule (any safe https link) is separate.
  */
 export const URL_ALLOWLIST: readonly string[] = [
   "northsouth.edu",

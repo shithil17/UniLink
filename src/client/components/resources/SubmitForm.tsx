@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { LINK_HOSTS_WORDS, toastPostFailure, useSubmitLink } from "@/lib/resources";
+import { toastPostFailure, useSubmitLink } from "@/lib/resources";
 import { toast } from "@/lib/toast";
 import {
   resourceSubmissionInput,
@@ -13,7 +13,7 @@ import {
 } from "../../../shared/schemas/resources";
 
 /**
- * Sends a link to someone's request: an https link on the allowlist and an optional note, both
+ * Sends a link to someone's request: an https link from any public site and an optional note, both
  * checked by the shared schema. Only the student who asked sees it, with the sender's username.
  */
 export function SubmitForm({ requestId }: { requestId: number }) {
@@ -57,7 +57,8 @@ export function SubmitForm({ requestId }: { requestId: number }) {
             {...form.register("url")}
           />
           <FieldDescription>
-            An https link from {LINK_HOSTS_WORDS}. Make sure anyone with the link can open it.
+            Any https link: Google Drive, YouTube, Samsung Cloud, transfer.it and so on. Make sure
+            anyone with the link can open it.
           </FieldDescription>
           <FieldError errors={[errors.url]} />
         </Field>

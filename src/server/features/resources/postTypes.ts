@@ -2,7 +2,7 @@ import { resourceRequests, resourceSubmissions } from "../../db/schema";
 import type { ModeratedPostType } from "../../moderation/postTypes";
 import { announceRequest, announceSubmission } from "./announce";
 
-/** The text the screen read, for the mod queue. A link is checked by the allowlist, not screened as text. */
+/** The text the screen read, for the mod queue. A link is checked by the shared URL rule, not screened as text. */
 const noteOnly = (row: Record<string, unknown>): string[] =>
   typeof row.note === "string" && row.note !== "" ? [row.note] : [];
 

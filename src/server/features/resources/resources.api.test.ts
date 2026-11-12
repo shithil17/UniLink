@@ -302,18 +302,28 @@ describe("sending a link", () => {
     expect(await count("resource_submissions")).toBe(0);
   });
 
-  it("is refused for a link off the allowlist or on http", async () => {
+  it("is refused for http, a bare IP or a link shortener", async () => {
     const requester = await person();
     const helper = await person();
     const request = await makeRequest(requester);
     for (const url of [
-      "https://drive.google.com.evil.io/file/d/abc",
       "http://drive.google.com/file/d/abc",
-      "https://example.com/notes.pdf",
+      "https://192.168.0.1/notes.pdf",
+      "https://bit.ly/abc123",
     ]) {
       expect((await sendLink(helper, request.id, url)).status).toBe(400);
     }
     expect(await count("resource_submissions")).toBe(0);
+  });
+
+  it("accepts a link from any public site, such as a YouTube playlist", async () => {
+    const requester = await person();
+    const helper = await person();
+    const request = await makeRequest(requester);
+    const url = "https://www.youtube.com/playlist?list=PLabc123";
+    const res = await sendLink(helper, request.id, url);
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({ url, status: "published" });
   });
 
   it("is refused for the requester's own request", async () => {

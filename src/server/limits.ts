@@ -35,7 +35,7 @@ import {
   RESOURCE_NOTE_MAX_LENGTH,
 } from "../shared/schemas/resources.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
-import { RESOURCE_URL_MAX_LENGTH } from "../shared/urlAllowlist.ts";
+import { RESOURCE_URL_MAX_LENGTH } from "../shared/resourceUrl.ts";
 
 // Every limit, cap, cooldown, expiry and threshold lives here. Feature code imports these, never inlines numbers.
 

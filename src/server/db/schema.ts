@@ -433,7 +433,7 @@ export const resourceSubmissions = sqliteTable(
     authorId: integer("author_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    // An https URL on the allowlist in src/shared/urlAllowlist.ts.
+    // A safe https URL by the rule in src/shared/resourceUrl.ts.
     url: text("url").notNull(),
     note: text("note"),
     ...moderationColumns,

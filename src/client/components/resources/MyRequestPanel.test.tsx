@@ -90,7 +90,7 @@ describe("MyRequestPanel", () => {
     expect(screen.getByText(/Deleted on 8 Feb/)).toBeTruthy();
   });
 
-  it("does not make a non-allowlisted URL into a link", () => {
+  it("does not make a non-https URL into a link", () => {
     const r = request({
       submissions: [{ ...request().submissions[0], url: "javascript:alert(1)" }],
     });

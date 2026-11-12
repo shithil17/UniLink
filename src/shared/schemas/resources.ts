@@ -2,7 +2,7 @@ import { z } from "zod";
 import { instant, page, postStatus } from "./common";
 import { courseCodeInput } from "./courses";
 import { facultyLabel } from "./faculty";
-import { RESOURCE_URL_MAX_LENGTH, isAllowedResourceUrl } from "../urlAllowlist";
+import { RESOURCE_URL_MAX_LENGTH, resourceUrlProblem } from "../resourceUrl";
 
 /** A request or submission note: a sentence or two, screened like any post. */
 export const RESOURCE_NOTE_MAX_LENGTH = 300;
@@ -38,15 +38,22 @@ export const resourceRequestInput = z
     message: "A request needs a course, a faculty, or both",
   });
 
-/** A link on the allowlist in `src/shared/urlAllowlist.ts`: https only. */
+/** A safe https link from any public site, by the rule in `src/shared/resourceUrl.ts`. */
 export const resourceUrl = z
   .string()
   .trim()
   .max(RESOURCE_URL_MAX_LENGTH, "That link is too long")
-  .refine(
-    isAllowedResourceUrl,
-    "Use an https link from Google Drive, Dropbox, OneDrive, MEGA or GitHub",
-  );
+  .superRefine((value, ctx) => {
+    const problem = resourceUrlProblem(value);
+    if (problem === "shortener") {
+      ctx.addIssue({
+        code: "custom",
+        message: "Link shorteners aren't allowed. Paste the full link instead",
+      });
+    } else if (problem === "invalid") {
+      ctx.addIssue({ code: "custom", message: "Use a full https link to a public website" });
+    }
+  });
 
 export const resourceSubmissionInput = z.object({ url: resourceUrl, note: note.optional() });
 
