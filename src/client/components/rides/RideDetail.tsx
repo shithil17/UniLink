@@ -1,5 +1,5 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { CarIcon } from "lucide-react";
+import { CarIcon, ChevronLeftIcon } from "lucide-react";
 import { ReportButton } from "@/components/posts/ReportButton";
 import { StatusNote } from "@/components/posts/StatusNote";
 import { RideContact } from "@/components/rides/RideContact";
@@ -51,6 +51,10 @@ function RideSkeleton() {
  * ride, so a revealed contact or a half-written report never carries over to the next one.
  * `onClose` leaves a ride that is gone; `onDeleted` runs after the poster deletes theirs.
  *
+ * `back` is for a detail stacked over another layer (an area's rides): a 44px arrow left of the title
+ * that returns to that layer. The layer then has no close button of its own (the arrow does the same
+ * thing), so the title gives up the room it kept for one.
+ *
  * `noMap` leaves out the map preview, for a screen that already has a live map behind the detail (one
  * screen never holds two); "Open in Maps" then sits with the facts, where the preview's full-screen
  * card would have had it.
@@ -59,12 +63,14 @@ export function RideDetail({
   rideId,
   inSheet = false,
   noMap = false,
+  back,
   onClose,
   onDeleted,
 }: {
   rideId: string;
   inSheet?: boolean;
   noMap?: boolean;
+  back?: { label: string; onBack: () => void };
   onClose: () => void;
   onDeleted: () => void;
 }) {
@@ -84,7 +90,24 @@ export function RideDetail({
 
   return (
     <div className={`grid gap-5 ${inSheet ? "px-5" : ""}`}>
-      <Title className={inSheet ? sheetTitle : panelTitle}>{heading}</Title>
+      {back ? (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={back.label}
+            className="-ml-2 shrink-0"
+            onClick={back.onBack}
+          >
+            <ChevronLeftIcon />
+          </Button>
+          <Title className={`min-w-0 ${inSheet ? "text-balance break-words" : panelTitle}`}>
+            {heading}
+          </Title>
+        </div>
+      ) : (
+        <Title className={inSheet ? sheetTitle : panelTitle}>{heading}</Title>
+      )}
       {gone ? (
         <div className={panel}>
           <EmptyState

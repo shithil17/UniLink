@@ -10,6 +10,8 @@ export type MapOverlayProps = Omit<MapStageProps, "corner" | "controlsClassName"
   open: boolean;
   /** Called for every way out: the close button, Escape, the scrim. Wire it to `useMapParam().close`. */
   onClose: () => void;
+  /** Called once the close transition has finished and the overlay (and its map) is gone. */
+  onExited?: () => void;
 };
 
 /**
@@ -25,6 +27,7 @@ export type MapOverlayProps = Omit<MapStageProps, "corner" | "controlsClassName"
 export function MapOverlay({
   open,
   onClose,
+  onExited,
   label,
   fitPoints,
   onMap,
@@ -33,7 +36,11 @@ export function MapOverlay({
   children,
 }: MapOverlayProps) {
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => !next && onClose()}
+      onOpenChangeComplete={(next) => !next && onExited?.()}
+    >
       <DialogPortal>
         <DialogOverlay className="z-60 max-md:hidden" />
         <DialogPrimitive.Popup

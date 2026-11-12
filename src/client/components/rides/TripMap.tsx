@@ -98,7 +98,8 @@ export function TripMap({
   previewClassName,
 }: TripMapProps) {
   const points = tripPoints(trip);
-  // The live map and what is drawn on it, so a changed trip can be redrawn in place.
+  // The newest live map and what is drawn on it, so a changed trip can be redrawn in place. Each
+  // map's cleanup clears only its own entry, so a closing map never wipes the one that replaced it.
   const live = useRef<{
     map: MapLibreMap;
     lib: MapLibreModule;
@@ -107,23 +108,22 @@ export function TripMap({
   const latest = useRef(trip);
   const tripKey = JSON.stringify(trip);
 
-  const paint = (map: MapLibreMap, lib: MapLibreModule) => {
-    live.current?.clear();
-    live.current = { map, lib, clear: drawTrip(map, lib, latest.current) };
-  };
-
   useEffect(() => {
     latest.current = trip;
-    if (live.current) paint(live.current.map, live.current.lib);
+    const entry = live.current;
+    if (!entry) return;
+    entry.clear();
+    entry.clear = drawTrip(entry.map, entry.lib, trip);
     // Redraw when the trip's content changes, not on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tripKey]);
 
   const onMap = (map: MapLibreMap, lib: MapLibreModule) => {
-    paint(map, lib);
+    const entry = { map, lib, clear: drawTrip(map, lib, latest.current) };
+    live.current = entry;
     return () => {
-      live.current?.clear();
-      live.current = null;
+      entry.clear();
+      if (live.current === entry) live.current = null;
     };
   };
 

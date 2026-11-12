@@ -109,12 +109,15 @@ function DockedPanel({
   closeLabel,
   onClose,
   covered = false,
+  backArrow = false,
   children,
 }: {
   label: string;
   closeLabel: string;
   onClose: () => void;
   covered?: boolean;
+  /** The content carries a back arrow that does what the close button would, so there is no close button. */
+  backArrow?: boolean;
   children: ReactNode;
 }) {
   const ref = useRef<HTMLElement>(null);
@@ -136,17 +139,19 @@ function DockedPanel({
         }
       }}
       data-slot="docked-panel"
-      className="pointer-events-auto absolute inset-0 overflow-y-auto overscroll-contain rounded-[24px] bg-app p-4 shadow-float outline-none [&_h2]:pr-10"
+      className={`pointer-events-auto absolute inset-0 overflow-y-auto overscroll-contain rounded-[24px] bg-app p-4 shadow-float outline-none ${backArrow ? "" : "[&_h2]:pr-10"}`}
     >
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label={closeLabel}
-        className="absolute top-3 right-3 z-10"
-        onClick={onClose}
-      >
-        <XIcon />
-      </Button>
+      {backArrow ? null : (
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={closeLabel}
+          className="absolute top-3 right-3 z-10"
+          onClick={onClose}
+        >
+          <XIcon />
+        </Button>
+      )}
       {children}
     </section>
   );
@@ -187,6 +192,12 @@ export function RideAreaLayers({
   if (detailId !== null && detailId !== lastDetail) setLastDetail(detailId);
   const shownArea = area ?? lastArea;
   const shownDetail = detailId ?? lastDetail;
+  // A detail opened over an area's rides gets a back arrow to them, held while it slides away so its
+  // header never changes shape on the way out. A detail on its own (a reload) has nothing to go back to.
+  const [backTo, setBackTo] = useState<string | null>(null);
+  const wantBack = detailId === null ? backTo : (area?.name ?? null);
+  if (wantBack !== backTo) setBackTo(wantBack);
+  const back = backTo ? { label: `Back to ${backTo} rides`, onBack: onCloseDetail } : undefined;
 
   if (wide) {
     return (
@@ -211,8 +222,14 @@ export function RideAreaLayers({
           </DockedPanel>
         ) : null}
         {detailId !== null ? (
-          <DockedPanel label="Ride details" closeLabel="Close the ride" onClose={onCloseDetail}>
+          <DockedPanel
+            label="Ride details"
+            closeLabel="Close the ride"
+            onClose={onCloseDetail}
+            backArrow={back !== undefined}
+          >
             <RideDetail
+              back={back}
               noMap
               rideId={String(detailId)}
               onClose={onCloseDetail}
@@ -228,9 +245,15 @@ export function RideAreaLayers({
   // own when only a ride's detail is open (a reload on a ride).
   const detailSheet = (
     <Sheet open={detailId !== null} onOpenChange={(open) => !open && onCloseDetail()}>
-      <SheetContent side="bottom" raised className={SHEET_CLASS}>
+      <SheetContent
+        side="bottom"
+        raised
+        showCloseButton={back === undefined}
+        className={SHEET_CLASS}
+      >
         {shownDetail !== null ? (
           <RideDetail
+            back={back}
             inSheet
             noMap
             rideId={String(shownDetail)}

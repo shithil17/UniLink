@@ -222,6 +222,45 @@ describe("Rides Map view", () => {
     expect(screen.getByRole("tab", { name: "List" }).getAttribute("aria-selected")).toBe("true");
   });
 
+  it("below lg a filter picked in the map's sheet stays when the map closes", async () => {
+    const router = renderAt("/rides", { phone: true });
+    fireEvent.click(await screen.findByRole("tab", { name: "Map" }));
+    await screen.findByRole("dialog", { name: "Map of rides by area" });
+    await pill("Jatrabari, 6 rides");
+    await waitFor(() => expect(router.state.location.search).toEqual({ view: "map" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Bike" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show rides" }));
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ view: "map", vehicle: "bike" }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Close the map" }));
+    // Going back would restore the entry from before the filter; the map closes in place instead.
+    await waitFor(() => expect(router.state.location.search).toEqual({ vehicle: "bike" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(screen.getByRole("button", { name: "Remove filter: Bike" })).toBeTruthy();
+  });
+
+  it("below lg leaving for the list over open layers closes them for good: Back does not reopen them", async () => {
+    const router = renderAt("/rides", { phone: true });
+    fireEvent.click(await screen.findByRole("tab", { name: "Map" }));
+    fireEvent.click(await pill("Jatrabari, 6 rides"));
+    fireEvent.click(await screen.findByRole("button", { name: "Show these rides" }));
+    fireEvent.click(await screen.findByRole("button", { name: /Jatrabari bridge/ }));
+    await screen.findByRole("dialog", { name: "Jatrabari to Bashundhara R/A" });
+
+    // The tab sits behind the sheets, so a test reaches it directly.
+    fireEvent.click(screen.getByRole("tab", { name: "List", hidden: true }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
+    await back(router);
+    expect(router.state.location.search).toEqual({});
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("does not ask for counts while the list is showing", async () => {
     renderAt("/rides");
     await screen.findByRole("link", { name: /Jatrabari/ });
@@ -381,6 +420,75 @@ describe("Rides Map view", () => {
     expect(liveMaps()).toHaveLength(1);
   });
 
+  it("from lg a filter picked while an area's rides are open stays when the panel closes", async () => {
+    const router = renderAt("/rides");
+    fireEvent.click(await screen.findByRole("tab", { name: "Map" }));
+    fireEvent.click(await pill("Jatrabari, 6 rides"));
+    fireEvent.click(await screen.findByRole("button", { name: "Show these rides" }));
+    await screen.findByRole("region", { name: "Rides in this area" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Bike" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show rides" }));
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({
+        view: "map",
+        area: "pickup-70",
+        vehicle: "bike",
+      }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Close the rides" }));
+    // Going back would restore the entry from before the filter; the panel closes in place instead.
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ view: "map", vehicle: "bike" }),
+    );
+    expect(screen.queryByRole("region", { name: "Rides in this area" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Remove filter: Bike" })).toBeTruthy();
+  });
+
+  it("from lg leaving for the list closes the layers for good: Back does not reopen the ride panel", async () => {
+    const router = renderAt("/rides");
+    fireEvent.click(await screen.findByRole("tab", { name: "Map" }));
+    fireEvent.click(await pill("Jatrabari, 6 rides"));
+    fireEvent.click(await screen.findByRole("button", { name: "Show these rides" }));
+    const rides = await screen.findByRole("region", { name: "Rides in this area" });
+    fireEvent.click(within(rides).getByRole("button", { name: /Jatrabari bridge/ }));
+    await screen.findByRole("region", { name: "Ride details" });
+
+    fireEvent.click(screen.getByRole("tab", { name: "List" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    expect(await screen.findByRole("link", { name: /Jatrabari/ })).toBeTruthy();
+
+    await back(router);
+    expect(router.state.location.search).toEqual({});
+    expect(screen.queryByRole("region", { name: "Ride details" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Rides in this area" })).toBeNull();
+  });
+
+  it("from lg a ride over an area's rides has a back arrow in place of a close button, and it returns to the rides", async () => {
+    const router = renderAt("/rides?view=map");
+    fireEvent.click(await pill("Jatrabari, 6 rides"));
+    fireEvent.click(await screen.findByRole("button", { name: "Show these rides" }));
+    const rides = await screen.findByRole("region", { name: "Rides in this area" });
+    fireEvent.click(within(rides).getByRole("button", { name: /Jatrabari bridge/ }));
+    const detail = await screen.findByRole("region", { name: "Ride details" });
+    await waitFor(() => expect(shown().trip).toHaveLength(2));
+    expect(screen.queryByRole("button", { name: "Close the ride" })).toBeNull();
+    // The rides panel under it keeps its own close button.
+    expect(rides.hasAttribute("inert")).toBe(true);
+
+    fireEvent.click(within(detail).getByRole("button", { name: "Back to Jatrabari rides" }));
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ view: "map", area: "pickup-70" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Ride details" })).toBeNull());
+    expect(rides.hasAttribute("inert")).toBe(false);
+    expect(within(rides).getByRole("button", { name: "Close the rides" })).toBeTruthy();
+    await waitFor(() => expect(shown().pills).toContain("Jatrabari, 6 rides"));
+    expect(shown().trip).toEqual([]);
+  });
+
   it("from lg Escape closes only the top docked panel", async () => {
     const router = renderAt("/rides?view=map");
     fireEvent.click(await pill("Jatrabari, 6 rides"));
@@ -460,6 +568,37 @@ describe("Rides Map view layers below lg", () => {
     await back(router);
     await waitFor(() => expect(router.state.location.search).toEqual({}));
     await waitFor(() => expect(liveMaps()).toHaveLength(0));
+  });
+
+  it("a ride over an area's rides has a back arrow in place of a close button, and it returns to the rides", async () => {
+    const router = renderAt("/rides?view=map", { phone: true });
+    fireEvent.click(await pill("Jatrabari, 6 rides"));
+    fireEvent.click(await screen.findByRole("button", { name: "Show these rides" }));
+    const row = await screen.findByRole("button", { name: /Jatrabari bridge/ });
+    fireEvent.click(row);
+    const detail = await screen.findByRole("dialog", { name: "Jatrabari to Bashundhara R/A" });
+    await waitFor(() => expect(shown().trip).toHaveLength(2));
+    expect(within(detail).queryByRole("button", { name: "Close" })).toBeNull();
+
+    fireEvent.click(within(detail).getByRole("button", { name: "Back to Jatrabari rides" }));
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ view: "map", area: "pickup-70" }),
+    );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Jatrabari to Bashundhara R/A" })).toBeNull(),
+    );
+    expect(await screen.findByRole("dialog", { name: "Leaving Jatrabari · 6 rides" })).toBeTruthy();
+    // The same row, so the list kept its scroll.
+    expect(row.isConnected).toBe(true);
+    await waitFor(() => expect(shown().pills).toContain("Jatrabari, 6 rides"));
+    expect(shown().trip).toEqual([]);
+  });
+
+  it("a reload on a ride has nothing to go back to, so its detail keeps the close button", async () => {
+    renderAt(`/rides?view=map&ride=${JATRABARI_RIDE.id}`, { phone: true });
+    const detail = await screen.findByRole("dialog", { name: "Jatrabari to Bashundhara R/A" });
+    expect(within(detail).getByRole("button", { name: "Close" })).toBeTruthy();
+    expect(within(detail).queryByRole("button", { name: /^Back to/ })).toBeNull();
   });
 
   it("Escape closes only the top sheet", async () => {

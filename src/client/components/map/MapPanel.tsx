@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useMapParam } from "@/lib/map/useMapParam";
 import { MapOverlay, type MapOverlayProps } from "./MapOverlay";
 import { MapPreview, type MapPreviewProps } from "./MapPreview";
@@ -21,8 +21,8 @@ export type MapPanelProps = Pick<MapOverlayProps, "fitPoints" | "onMap" | "actio
 /**
  * A preview and the full-screen map it opens, wired together: the preview opens the overlay by
  * pushing `?map=<id>`, and every way out of the overlay closes it through the same history step.
- * While the overlay is open the preview keeps no map of its own, so one screen never holds two live
- * maps. `onMap` and `fitPoints` apply to both.
+ * While the overlay is open, and until its close transition has finished, the preview keeps no map
+ * of its own, so one screen never holds two live maps. `onMap` and `fitPoints` apply to both.
  *
  * The route must keep the param: its `validateSearch` returns `map: parseMapParam(raw.map)`.
  */
@@ -39,6 +39,9 @@ export function MapPanel({
   children,
 }: MapPanelProps) {
   const map = useMapParam(id);
+  // The overlay outlives `map.isOpen` by its fade-out; the preview waits for it to be gone.
+  const [overlayShown, setOverlayShown] = useState(map.isOpen);
+  if (map.isOpen && !overlayShown) setOverlayShown(true);
   return (
     <>
       <MapPreview
@@ -46,12 +49,13 @@ export function MapPanel({
         onOpen={map.open}
         fitPoints={fitPoints}
         onMap={onMap}
-        active={!map.isOpen && !pause}
+        active={!overlayShown && !pause}
         className={previewClassName}
       />
       <MapOverlay
         open={map.isOpen}
         onClose={map.close}
+        onExited={() => setOverlayShown(false)}
         label={label}
         fitPoints={fitPoints}
         onMap={onMap}

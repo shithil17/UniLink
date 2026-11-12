@@ -6,6 +6,7 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
+import type { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { parseMapParam } from "@/lib/map/useMapParam";
 import { Map as FakeMap, liveMaps, resetFakeMaps } from "@/test/fakeMapLibre";
@@ -24,12 +25,21 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-async function renderPanel(entries = ["/"], waitForPreview = true) {
+async function renderPanel(
+  entries = ["/"],
+  waitForPreview = true,
+  onMap?: ComponentProps<typeof MapPanel>["onMap"],
+) {
   const root = createRootRoute({
     validateSearch: (raw: Record<string, unknown>) => ({ map: parseMapParam(raw.map) }),
     component: () => (
       <main>
-        <MapPanel id="ride" label="Map of this ride" openLabel="Open the map of this ride" />
+        <MapPanel
+          id="ride"
+          label="Map of this ride"
+          openLabel="Open the map of this ride"
+          onMap={onMap}
+        />
       </main>
     ),
   });
@@ -88,6 +98,27 @@ describe("MapPanel", () => {
     // Back, not a second push: the entry the open added is the one that went away.
     expect(router.history.location.search).toBe("");
     expect(router.history.length).toBe(length);
+  });
+
+  it("never holds two live maps while the overlay fades out, and the preview map returns after", async () => {
+    // Each map reports how many are alive when it loads: a preview that remounted during the
+    // overlay's exit would see two.
+    let mostAlive = 0;
+    await renderPanel(["/"], true, () => {
+      mostAlive = Math.max(mostAlive, liveMaps().length);
+    });
+    await waitFor(() => expect(liveMaps()).toHaveLength(1));
+    act(() => screen.getByRole("button", { name: "Open the map of this ride" }).click());
+    await screen.findByRole("dialog");
+    await waitFor(() => expect(liveMaps()[0]!.options.interactive).toBe(true));
+
+    act(() => screen.getByRole("button", { name: "Close the map" }).click());
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    await waitFor(() => {
+      expect(liveMaps()).toHaveLength(1);
+      expect(liveMaps()[0]!.options.interactive).toBe(false);
+    });
+    expect(mostAlive).toBe(1);
   });
 
   it("closes when the browser goes back", async () => {

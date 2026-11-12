@@ -21,7 +21,7 @@ import { ErrorBlock } from "@/components/ui/error-block";
 import { SkeletonRows } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { errorMessage } from "@/lib/api";
-import { useSearchLayer } from "@/lib/map/useSearchLayer";
+import { useSearchLayer, without } from "@/lib/map/useSearchLayer";
 import { meQuery } from "@/lib/queries";
 import { useRideAreaMap } from "@/lib/rideAreaMap";
 import { useMediaQuery } from "@/lib/useMediaQuery";
@@ -47,6 +47,13 @@ export const Route = createFileRoute("/rides")({
   },
   component: Rides,
 });
+
+/**
+ * How long leaving the Map view waits for the history to settle after going back over its layers
+ * before it lands anyway. A UI timing, so it is not in `limits.ts`: a back step resolves in a few
+ * milliseconds, and this only bounds the case where the resolve never comes.
+ */
+const UNWIND_TIMEOUT_MS = 1000;
 
 const panel = "overflow-hidden rounded-panel bg-surface md:rounded-[24px]";
 
@@ -80,11 +87,12 @@ function Rides() {
   const areaCtl = useSearchLayer("area");
   const detailCtl = useSearchLayer("ride");
   const areaMap = useRideAreaMap(filters, view === "map", areaLayer?.by);
-  // Whether the Map view's entry on top of the history was pushed by this screen (below `lg`, where
-  // the map is full screen), so closing goes back to the list entry instead of stacking another.
-  const viewPushed = useRef(false);
+  // Set when the Map view's entry on top of the history was pushed by this screen (below `lg`, where
+  // the map is full screen): the rest of the search then, so closing goes back to the list entry
+  // instead of stacking another, unless a filter was picked since (going back would undo it).
+  const viewPushedFrom = useRef<string | null>(null);
   useEffect(() => {
-    if (view !== "map") viewPushed.current = false;
+    if (view !== "map") viewPushedFrom.current = null;
   }, [view]);
   // From `lg` the map fills the content area under the filter bar and the list is not shown.
   const inlineMap = view === "map" && wide;
@@ -97,10 +105,44 @@ function Rides() {
     });
   const setFilters = (patch: Partial<RideFilters>) =>
     void navigate({ to: ".", search: (previous) => ({ ...previous, ...patch }), replace: true });
+  // Leaving the Map view while its layers are open: Back must not reopen them (or a ride that is
+  // gone), so first go back over the entries this screen pushed (the layers, and the map's own entry
+  // below `lg`), then run `land`, which replaces the entry it arrives on. Nothing pushed (a reload, or
+  // no layer open) returns false and the caller replaces in place.
+  const unwindLayers = (land: () => void) => {
+    const layers = (areaCtl.pushed() ? 1 : 0) + (detailCtl.pushed() ? 1 : 0);
+    if (layers === 0) return false;
+    // Lands on the first resolve whatever the location (Back pressed meanwhile must not leave the
+    // leave half done), or after a timeout if none comes, and only once.
+    let landed = false;
+    const finish = () => {
+      if (landed) return;
+      landed = true;
+      off();
+      clearTimeout(timer);
+      land();
+    };
+    const off = router.subscribe("onResolved", finish);
+    const timer = setTimeout(finish, UNWIND_TIMEOUT_MS);
+    router.history.go(-(layers + (viewPushedFrom.current !== null ? 1 : 0)));
+    return true;
+  };
+  // The search to land with: what is in the URL now (filters picked on the way included), without the Map view.
+  const leaveMapSearch = () => ({
+    ...router.state.location.search,
+    view: undefined,
+    area: undefined,
+    ride: undefined,
+  });
   const setView = (next: RideView) => {
     if (next === view) return;
+    if (next === "list") {
+      const search = leaveMapSearch();
+      const land = () => void navigate({ to: ".", search, replace: true, resetScroll: false });
+      if (unwindLayers(land)) return;
+    }
     const push = next === "map" && !wide;
-    viewPushed.current = push;
+    viewPushedFrom.current = push ? without(router.state.location.search, "view") : null;
     void navigate({
       // The map has no open ride beside it, so it starts from the list route.
       to: next === "map" ? "/rides" : ".",
@@ -110,15 +152,16 @@ function Rides() {
     });
   };
   const closeView = () => {
-    if (viewPushed.current) {
+    const search = leaveMapSearch();
+    const land = () => void navigate({ to: ".", search, replace: true, resetScroll: false });
+    if (unwindLayers(land)) return;
+    if (
+      viewPushedFrom.current !== null &&
+      viewPushedFrom.current === without(router.state.location.search, "view")
+    ) {
       router.history.back();
     } else {
-      void navigate({
-        to: ".",
-        search: (previous) => ({ ...previous, view: undefined }),
-        replace: true,
-        resetScroll: false,
-      });
+      land();
     }
   };
   // The count card's button: open that area's rides over the map, in the direction being counted.
@@ -134,7 +177,8 @@ function Rides() {
   };
   // The ride is gone, so land on the list's "mine" tab, where it no longer is.
   const rideDeleted = () => {
-    void navigate({ to: "/rides", search: { tab: "mine" }, replace: true });
+    const land = () => void navigate({ to: "/rides", search: { tab: "mine" }, replace: true });
+    if (!unwindLayers(land)) land();
   };
   // Remounts the filter bar (not the list), so its search box empties along with the URL.
   const [cleared, setCleared] = useState(0);
