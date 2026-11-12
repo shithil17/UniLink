@@ -34,6 +34,7 @@ import {
   RESOURCE_EXPIRY_MIN_MS,
   RESOURCE_NOTE_MAX_LENGTH,
 } from "../shared/schemas/resources.ts";
+import { AUTHOR_DELETE_PURGE_MS } from "../shared/posts.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
 import { RESOURCE_URL_MAX_LENGTH } from "../shared/resourceUrl.ts";
 
@@ -183,6 +184,22 @@ export const limits = {
   /** "Ask a moderator to look": an author sends a rejected post to the queue. */
   // ceiling: an honest author appeals the odd post; this stops a loop from flooding the queue. Revisit if mods say honest authors are blocked.
   appeal: { limit: 5, windowMs: HOUR },
+  /** Revealing a post's contacts (`GET /api/<type>/:id/contact`), counted per user across every post type. */
+  // ceiling: a student opens a handful of posts while looking for a ride or an item; this stops a loop from harvesting every contact. Revisit if students report hitting it.
+  contactReveal: { limit: 30, windowMs: HOUR },
+  /** When a post type's `expires_at` falls and how far a renewal can push it (see `src/server/posts/expiry.ts`). */
+  postExpiry: {
+    // ceiling: a post with no date of its own (a recurring ride's end date) lives about a term's half. Revisit if posters keep renewing early.
+    defaultMs: 60 * DAY,
+    // ceiling: stops a date years away from pinning a row in the feed. Revisit if a type needs longer plans.
+    maxMs: 180 * DAY,
+    // ceiling: one renewal adds as much as the default, so renewing twice never outruns the maximum by much. Revisit with the default.
+    renewExtendMs: 60 * DAY,
+    // ceiling: gives the poster a week to renew a lapsed post before the cron deletes it. Revisit if posters miss the window.
+    expiredPurgeMs: 7 * DAY,
+  },
+  // ceiling: long enough for a report to arrive on a deleted scam, short enough that an author's deleted post does not linger. Revisit if mods need longer to act. Defined in shared code for the confirm dialog.
+  authorDeletePurgeMs: AUTHOR_DELETE_PURGE_MS,
   /** Probing: someone resubmitting a post until the screen lets it through. */
   probing: {
     // ceiling: three rejections in an hour is more than an honest mistake or two. Revisit if mods see honest students flagged.

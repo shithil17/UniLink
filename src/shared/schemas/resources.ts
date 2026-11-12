@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { instant, page, postStatus } from "./common";
+import { instant, page, postStatus, reasonCategory } from "./common";
 import { courseCodeInput } from "./courses";
 import { facultyLabel } from "./faculty";
 import { RESOURCE_URL_MAX_LENGTH, resourceUrlProblem } from "../resourceUrl";
@@ -69,6 +69,8 @@ export const resourceRequest = z.object({
   note: z.string().nullable(),
   /** The moderation status of the request itself. */
   status: postStatus,
+  /** Why the screen or a mod turned the request down. Set only on a rejected request, which only its author sees. */
+  rejectionCategory: reasonCategory.nullable().optional(),
   /** Worked out when it is read: a request past `expiresAt` is `expired`, never `open`. */
   state: resourceRequestState,
   expiresAt: instant,
@@ -100,6 +102,8 @@ export const resourceSubmissionOwn = z.object({
   url: z.string(),
   note: z.string().nullable(),
   status: postStatus,
+  /** Why the screen or a mod turned the link down. Set only on a rejected link. */
+  rejectionCategory: reasonCategory.nullable().optional(),
   decision: resourceDecision,
   createdAt: instant,
 });

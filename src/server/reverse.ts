@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { auditActions, reversibleActions } from "../shared/auditActions";
+import { AUTHOR_DELETE_REASON } from "../shared/posts";
 import { departmentCode } from "../shared/departments";
 import { role } from "../shared/schemas/auth";
 import { instant } from "../shared/schemas/common";
@@ -27,7 +28,8 @@ import { softDeleteTargets, type SoftDeleteTargets } from "./softDelete";
  * | role_change  | { role }                    | puts `role` back                                      |
  * | release_key  | { studentKey, bannedAt }    | puts the key and `banned_at` back; refused if someone |
  * |              |                             | has taken the key since (`key_in_use`)                |
- * | soft_delete  | { deletedAt, deletedBy }    | puts both columns back (restored to how it was; a held item stays held) |
+ * | soft_delete  | { deletedAt, deletedBy }    | puts both columns back (restored to how it was; a held item stays held); |
+ * |              |                             | refused when the author deleted their own post (reason "author", actor the author) |
  * | clear_probing_flag | { postingBlockedUntil, probingFlaggedAt } | puts both back (flagged again, cooldown as it was) |
  *
  * | faculty_edit | the edited columns         | puts them back; refused if the old initials or name+department |
@@ -172,6 +174,12 @@ async function planSoftDeleteReversal(
   const repo = softDeleteRepo(db, table);
   const state = await repo.state(targetId);
   if (!state) return "target_missing";
+  // An author deleting their own post is final: the post is gone for the author's own reasons, and
+  // the cron will purge it. Only a delete the author made themself counts, so a mod's removal that
+  // happens to give the reason "author" can still be reversed.
+  if (row.reason === AUTHOR_DELETE_REASON && row.actor === String(await repo.authorOf(targetId))) {
+    return "not_reversible";
+  }
   return { current: state, restore: repo.restoreStatement(targetId, parsed.data) };
 }
 

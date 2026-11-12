@@ -9,6 +9,7 @@ import { inboxRoutes } from "./features/inbox/routes";
 import { adminRoutes } from "./features/mod/adminRoutes";
 import { modRoutes } from "./features/mod/routes";
 import { reportRoutes } from "./features/mod/reportRoutes";
+import { postRoutes } from "./features/posts/routes";
 import { pushRoutes } from "./features/push/routes";
 import { resourceRoutes } from "./features/resources/routes";
 import { sessionLoader } from "./middleware/session";
@@ -26,6 +27,7 @@ export const app = new Hono<AppEnv>()
   .route("/faculty", facultyRoutes)
   .route("/inbox", inboxRoutes)
   .route("/push", pushRoutes)
+  .route("/posts", postRoutes)
   .route("/reports", reportRoutes)
   .route("/resources", resourceRoutes)
   .route("/mod", modRoutes)

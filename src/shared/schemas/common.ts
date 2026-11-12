@@ -1,4 +1,13 @@
 import { z } from "zod";
+import {
+  CONTACT_MAX_LENGTH,
+  CONTACT_MESSAGES,
+  CONTACT_REQUIRED_MESSAGE,
+  CONTACT_TOO_LONG_MESSAGE,
+  hasContact,
+  isValidContact,
+  type ContactKind,
+} from "../contact";
 
 // Shapes reused across modules. Stubs: each owning phase tightens its own schemas.
 
@@ -42,12 +51,35 @@ export const removableReportTargets: readonly z.infer<typeof reportTargetType>[]
   "resource_submission",
 ];
 
-/** Contact details; only ever returned by the per-post contact endpoint, never in feeds. */
-export const contacts = z.object({
-  phone: z.string().optional(),
-  whatsapp: z.string().optional(),
-  messenger: z.string().optional(),
-});
+/** One contact field: trimmed, blank becomes absent, anything left must match its kind's format. */
+const contactField = (kind: ContactKind) =>
+  z
+    .string()
+    .trim()
+    .max(CONTACT_MAX_LENGTH, CONTACT_TOO_LONG_MESSAGE)
+    .optional()
+    .transform((v) => (v === "" ? undefined : v))
+    .refine((v) => v === undefined || isValidContact(kind, v), CONTACT_MESSAGES[kind]);
+
+/**
+ * Contact details for a post: at least one of phone, WhatsApp link and Messenger or Facebook link, each
+ * in its own format (see `src/shared/contact.ts`). Only ever returned by the per-post contact endpoint,
+ * never in feeds. "At least one" is reported against `phone`, the first field, so a form can show it.
+ */
+export const contacts = z
+  .object({
+    phone: contactField("phone"),
+    whatsapp: contactField("whatsapp"),
+    messenger: contactField("messenger"),
+  })
+  .refine(hasContact, { message: CONTACT_REQUIRED_MESSAGE, path: ["phone"] });
+
+export type Contacts = z.output<typeof contacts>;
+/** What a contact form holds while it is being filled in: the strings as typed. */
+export type ContactsFormValues = z.input<typeof contacts>;
+
+/** The answer of `GET /api/<type>/:id/contact`: the contacts and nothing else. */
+export const contactReveal = z.object({ contacts });
 
 /** `error` is a stable code; `message` is safe to show the user when present. */
 export const apiError = z.object({ error: z.string(), message: z.string().optional() });

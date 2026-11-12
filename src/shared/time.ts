@@ -24,3 +24,8 @@ export function dhakaMinutes(now: number = Date.now()): number {
   const d = new Date(now + DHAKA_OFFSET_MS);
   return d.getUTCHours() * 60 + d.getUTCMinutes();
 }
+
+/** The first instant (UTC epoch ms) of the Asia/Dhaka day after the given calendar date, so a post "until 20 Nov" is live through all of 20 Nov in Dhaka. */
+export function endOfDhakaDay(date: { year: number; month: number; day: number }): number {
+  return Date.UTC(date.year, date.month - 1, date.day + 1) - DHAKA_OFFSET_MS;
+}

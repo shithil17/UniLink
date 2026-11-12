@@ -1,6 +1,7 @@
 import { Hono, type Context } from "hono";
 import type { z } from "zod";
-import { reversibleActions } from "../../../shared/auditActions";
+import { auditActions, reversibleActions } from "../../../shared/auditActions";
+import { AUTHOR_DELETE_REASON } from "../../../shared/posts";
 import {
   auditQuery,
   reasonBody,
@@ -125,8 +126,12 @@ export const adminRoutes = new Hono<AppEnv>()
           createdAt: r.createdAt,
           reverses: r.reversesId,
           reversedBy,
+          // An author deleting their own post (reason "author") is never reversible, so the screen does not offer it.
           reversible:
-            reversibleActions.includes(r.action) && r.reversesId === null && reversedBy === null,
+            reversibleActions.includes(r.action) &&
+            r.reversesId === null &&
+            reversedBy === null &&
+            !(r.action === auditActions.softDelete && r.reason === AUTHOR_DELETE_REASON),
         };
       }),
       nextCursor: page.nextCursor,

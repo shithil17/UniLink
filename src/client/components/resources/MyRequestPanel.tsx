@@ -7,8 +7,8 @@ import type {
   MyResourceRequest,
   ResourceSubmissionForRequester,
 } from "../../../shared/schemas/resources";
+import { StatusNote } from "@/components/posts/StatusNote";
 import { RequestHeading } from "./RequestHeading";
-import { StatusNote } from "./StatusNote";
 
 const STATE_BADGE: Record<
   MyResourceRequest["state"],
@@ -55,7 +55,12 @@ export function MyRequestPanel({
           <p className="text-[15px] leading-[1.4] break-words text-ink">{request.note}</p>
         ) : null}
         <p className="text-[13px] leading-[1.4] text-soft">{expiryLine(request, now)}</p>
-        <StatusNote status={request.status} what="request" />
+        <StatusNote
+          status={request.status}
+          what="request"
+          category={request.rejectionCategory}
+          appeal={{ targetType: "resource_request", id: request.id }}
+        />
       </div>
       {request.submissions.length === 0 ? (
         <p className="border-t border-line px-4 py-3.5 text-[13px] leading-[1.4] text-soft">
