@@ -117,6 +117,16 @@ export function useResolveReport() {
   });
 }
 
+/** Removes what a report points at (a soft delete) and closes the open reports on it. */
+export function useRemoveReported() {
+  const refresh = useRefreshMod();
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: number; reason: string }) =>
+      apiPost(`/api/mod/reports/${id}/remove`, ok, { reason }),
+    onSuccess: refresh,
+  });
+}
+
 export type PostDecisionInput =
   | { decision: "approve"; reason?: string }
   | { decision: "reject"; reason: string; category: z.infer<typeof rejectCategory> };

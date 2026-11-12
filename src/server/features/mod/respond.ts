@@ -12,6 +12,11 @@ const FAILURES: Record<ActionFailure, { status: 403 | 404 | 409; message: string
   conflict: { status: 409, message: "That changed while you were working. Reload and try again." },
   already_resolved: { status: 409, message: "That report was already closed." },
   not_flagged: { status: 409, message: "That account has no probing flag." },
+  not_removable: { status: 409, message: "That kind of report has nothing to remove here." },
+  already_removed: {
+    status: 409,
+    message: "That was already removed. Mark the report handled to close it.",
+  },
 };
 
 /** The HTTP answer for a refused moderation action. */

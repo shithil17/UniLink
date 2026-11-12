@@ -1,13 +1,15 @@
 import { Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { timeAgo } from "@/lib/inbox";
 import { confidenceLabel, categoryLabel, postTypeLabel, ruleLabel } from "@/lib/modQueue";
 import { useDecidePost, useResolveReport } from "@/lib/mod";
-import { approvePostConfirm, resolveReportConfirm } from "@/lib/modConfirm";
+import { approvePostConfirm, removableName, resolveReportConfirm } from "@/lib/modConfirm";
 import { toast } from "@/lib/toast";
 import { useConfirm } from "@/lib/useConfirm";
 import { modRowMin } from "./modStyles";
+import { RemoveReportedSheet } from "./RemoveReportedSheet";
 import type { ModQueuePost, ModReport } from "../../../shared/schemas/moderation";
 
 /** A held post: what was written, who wrote it, what the screen made of it, and approve or reject. */
@@ -89,6 +91,8 @@ export function PostRow({
 export function ReportRow({ report, now }: { report: ModReport; now: number }) {
   const resolve = useResolveReport();
   const confirm = useConfirm();
+  const [removing, setRemoving] = useState(false);
+  const removable = removableName(report.targetType);
   const act = (outcome: "resolved" | "dismissed", done: string) =>
     confirm.ask({
       ...resolveReportConfirm(report, outcome),
@@ -127,6 +131,11 @@ export function ReportRow({ report, now }: { report: ModReport; now: number }) {
               Review user
             </Link>
           ) : null}
+          {removable ? (
+            <Button variant="outline" size="sm" onClick={() => setRemoving(true)}>
+              Remove
+            </Button>
+          ) : null}
           <Button variant="outline" size="sm" onClick={() => act("dismissed", "Report dismissed")}>
             Dismiss
           </Button>
@@ -134,6 +143,9 @@ export function ReportRow({ report, now }: { report: ModReport; now: number }) {
             Mark handled
           </Button>
         </div>
+      ) : null}
+      {removable && report.status === "open" ? (
+        <RemoveReportedSheet report={report} open={removing} onClose={() => setRemoving(false)} />
       ) : null}
       {confirm.element}
     </div>

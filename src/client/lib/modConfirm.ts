@@ -191,6 +191,38 @@ export function resolveReportConfirm(
   };
 }
 
+/** What a mod can remove from a report row, in the words the screens use. */
+const REMOVED_NAME = { resource_request: "request", resource_submission: "link" } as const;
+
+/** "request" or "link" for a report target a mod can remove, or null when Remove isn't offered. */
+export function removableName(targetType: ModReport["targetType"]): "request" | "link" | null {
+  return targetType === "resource_request" || targetType === "resource_submission"
+    ? REMOVED_NAME[targetType]
+    : null;
+}
+
+export function removeReportedConfirm(
+  report: Pick<ModReport, "targetType" | "targetLabel" | "reporter">,
+  reason: string,
+): ConfirmContent {
+  const name = removableName(report.targetType) ?? "post";
+  return {
+    title: `Remove ${name}`,
+    confirmLabel: `Remove ${name}`,
+    destructive: true,
+    lead: `This ${name} will be removed for everyone.`,
+    facts: [
+      { label: "Removing", value: report.targetLabel ?? `A removed ${name}` },
+      { label: "Reported by", value: report.reporter ?? "A removed account" },
+      reasonFact(reason),
+    ],
+    effects: [
+      "Every open report on it closes as handled.",
+      "Your reason stays in the audit log. An admin can reverse the removal from there.",
+    ],
+  };
+}
+
 const postFacts = (post: ModQueuePost): Fact[] => [
   { label: "Author", value: post.author ?? "Removed account" },
   { label: "Post", value: `${postTypeLabel(post.targetType)} post` },

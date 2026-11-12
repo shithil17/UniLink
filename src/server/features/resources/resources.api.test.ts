@@ -776,6 +776,212 @@ describe("reports and moderation", () => {
     const mine = await call("GET", "/api/resources/requests/mine", requester.token);
     expect((await mine.json<{ items: MyResourceRequest[] }>()).items[0].submissions).toEqual([]);
   });
+
+  describe("Remove on a report", () => {
+    const reasonText = "Not course material";
+
+    async function reportedLink() {
+      const requester = await person();
+      const helper = await person();
+      const mod = await person({ role: "mod" });
+      const request = await makeRequest(requester);
+      const link = await (await sendLink(helper, request.id)).json<{ id: number }>();
+      const reported = await call("POST", "/api/reports", requester.token, {
+        targetType: "resource_submission",
+        targetId: link.id,
+        reason: "This is not what I asked for",
+      });
+      const { id: reportId } = await reported.json<{ id: number }>();
+      return { requester, helper, mod, request, link, reportId };
+    }
+
+    const myLinks = async (requester: Person) =>
+      (
+        await (
+          await call("GET", "/api/resources/requests/mine", requester.token)
+        ).json<{ items: MyResourceRequest[] }>()
+      ).items[0].submissions;
+
+    const reportRow = (id: number) =>
+      env.DB.prepare("SELECT status, resolved_by, resolve_note FROM reports WHERE id = ?")
+        .bind(id)
+        .first<{ status: string; resolved_by: number | null; resolve_note: string | null }>();
+
+    it("removes a reported link, closes the report and writes both audit rows", async () => {
+      const { requester, mod, link, reportId } = await reportedLink();
+      expect(await myLinks(requester)).toHaveLength(1);
+
+      const res = await call("POST", `/api/mod/reports/${reportId}/remove`, mod.token, {
+        reason: reasonText,
+      });
+      expect(res.status).toBe(200);
+
+      // Gone from the requester's view; the row stays for a reversal.
+      expect(await myLinks(requester)).toEqual([]);
+      expect(await count("resource_submissions")).toBe(1);
+      expect(await reportRow(reportId)).toEqual({
+        status: "resolved",
+        resolved_by: mod.id,
+        resolve_note: `Removed: ${reasonText}`,
+      });
+
+      const audit = (
+        await env.DB.prepare(
+          "SELECT action, target_type, target_id, reason FROM audit_log WHERE actor = ? ORDER BY id",
+        )
+          .bind(String(mod.id))
+          .all<{ action: string; target_type: string; target_id: string; reason: string }>()
+      ).results;
+      expect(audit).toEqual([
+        {
+          action: "soft_delete",
+          target_type: "resource_submission",
+          target_id: String(link.id),
+          reason: reasonText,
+        },
+        {
+          action: "resolve_report",
+          target_type: "report",
+          target_id: String(reportId),
+          reason: `Removed: ${reasonText}`,
+        },
+      ]);
+
+      // It left the open queue.
+      const queue = await call("GET", "/api/mod/queue", mod.token);
+      expect((await queue.json<{ items: unknown[] }>()).items).toEqual([]);
+    });
+
+    it("closes every open report on the same target", async () => {
+      const { mod, request, reportId } = await reportedLink();
+      const stranger = await person();
+      const second = await call("POST", "/api/reports", stranger.token, {
+        targetType: "resource_request",
+        targetId: request.id,
+        reason: "Looks like spam to me",
+      });
+      const { id: requestReportId } = await second.json<{ id: number }>();
+      // A second report on the link, from another reporter, is filed directly: only the requester
+      // can see a link, so only they can report it through the API.
+      const link = (await env.DB.prepare("SELECT id FROM resource_submissions").first<{
+        id: number;
+      }>())!;
+      await env.DB.prepare(
+        "INSERT INTO reports (target_type, target_id, reporter_id, reason, created_at) VALUES ('resource_submission', ?, ?, 'also bad', ?)",
+      )
+        .bind(String(link.id), stranger.id, Date.now())
+        .run();
+
+      const res = await call("POST", `/api/mod/reports/${reportId}/remove`, mod.token, {
+        reason: reasonText,
+      });
+      expect(res.status).toBe(200);
+      const open = await env.DB.prepare("SELECT id FROM reports WHERE status = 'open'").all<{
+        id: number;
+      }>();
+      // Only the report on the request is still open: it is a different target.
+      expect(open.results.map((r) => r.id)).toEqual([requestReportId]);
+    });
+
+    it("removes a reported request so it leaves the requester's list", async () => {
+      const requester = await person();
+      const stranger = await person();
+      const mod = await person({ role: "mod" });
+      const request = await makeRequest(requester);
+      const reported = await call("POST", "/api/reports", stranger.token, {
+        targetType: "resource_request",
+        targetId: request.id,
+        reason: "Looks like spam to me",
+      });
+      const { id: reportId } = await reported.json<{ id: number }>();
+
+      const res = await call("POST", `/api/mod/reports/${reportId}/remove`, mod.token, {
+        reason: reasonText,
+      });
+      expect(res.status).toBe(200);
+      const mine = await call("GET", "/api/resources/requests/mine", requester.token);
+      expect((await mine.json<{ items: unknown[] }>()).items).toEqual([]);
+      const detail = await call("GET", `/api/resources/requests/${request.id}`, stranger.token);
+      expect(detail.status).toBe(404);
+    });
+
+    it("refuses a student, a missing or short reason, a closed report and a user report", async () => {
+      const { requester, helper, mod, reportId } = await reportedLink();
+      for (const who of [requester, helper]) {
+        const res = await call("POST", `/api/mod/reports/${reportId}/remove`, who.token, {
+          reason: reasonText,
+        });
+        expect(res.status).toBe(403);
+      }
+      expect((await call("POST", `/api/mod/reports/${reportId}/remove`, null, {})).status).toBe(
+        401,
+      );
+      for (const body of [{}, { reason: "no" }]) {
+        const res = await call("POST", `/api/mod/reports/${reportId}/remove`, mod.token, body);
+        expect(res.status).toBe(400);
+      }
+      expect(
+        (await call("POST", "/api/mod/reports/9999/remove", mod.token, { reason: reasonText }))
+          .status,
+      ).toBe(404);
+      // Nothing was removed by any of that.
+      expect(await myLinks(requester)).toHaveLength(1);
+      expect((await reportRow(reportId))?.status).toBe("open");
+
+      // A report on a user has no content to remove.
+      const userReport = await call("POST", "/api/reports", requester.token, {
+        targetType: "user",
+        targetId: helper.id,
+        reason: "Sent me something odd",
+      });
+      const { id: userReportId } = await userReport.json<{ id: number }>();
+      const refused = await call("POST", `/api/mod/reports/${userReportId}/remove`, mod.token, {
+        reason: reasonText,
+      });
+      expect(refused.status).toBe(409);
+      expect((await refused.json<{ error: string }>()).error).toBe("not_removable");
+
+      // Removing twice: the report is closed by the first.
+      expect(
+        (
+          await call("POST", `/api/mod/reports/${reportId}/remove`, mod.token, {
+            reason: reasonText,
+          })
+        ).status,
+      ).toBe(200);
+      const again = await call("POST", `/api/mod/reports/${reportId}/remove`, mod.token, {
+        reason: reasonText,
+      });
+      expect(again.status).toBe(409);
+      expect((await again.json<{ error: string }>()).error).toBe("already_resolved");
+    });
+
+    it("lets an admin reverse the removal, and the link shows again", async () => {
+      const { requester, mod, link, reportId } = await reportedLink();
+      const admin = await person({ role: "admin" });
+      await call("POST", `/api/mod/reports/${reportId}/remove`, mod.token, { reason: reasonText });
+      expect(await myLinks(requester)).toEqual([]);
+
+      const removal = (await env.DB.prepare(
+        "SELECT id FROM audit_log WHERE action = 'soft_delete' AND target_id = ?",
+      )
+        .bind(String(link.id))
+        .first<{ id: number }>())!;
+      // A mod cannot reverse it.
+      expect(
+        (
+          await call("POST", `/api/admin/audit/${removal.id}/reverse`, mod.token, {
+            reason: "oops",
+          })
+        ).status,
+      ).toBe(403);
+      const res = await call("POST", `/api/admin/audit/${removal.id}/reverse`, admin.token, {
+        reason: "It was fine",
+      });
+      expect(res.status).toBe(201);
+      expect(await myLinks(requester)).toHaveLength(1);
+    });
+  });
 });
 
 describe("my requests", () => {

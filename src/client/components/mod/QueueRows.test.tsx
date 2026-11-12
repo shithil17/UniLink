@@ -129,9 +129,9 @@ const report: ModReport = {
 
 describe("ReportRow", () => {
   // The row links to the user's screen, so it needs a router around it.
-  const renderReport = async () => {
+  const renderReport = async (row: ModReport = report) => {
     const router = createRouter({
-      routeTree: createRootRoute({ component: () => <ReportRow report={report} now={1000} /> }),
+      routeTree: createRootRoute({ component: () => <ReportRow report={row} now={1000} /> }),
       history: createMemoryHistory({ initialEntries: ["/"] }),
     });
     render(
@@ -139,7 +139,16 @@ describe("ReportRow", () => {
         <RouterProvider router={router} />
       </QueryClientProvider>,
     );
-    await screen.findByText("keeps spamming the board");
+    await screen.findByText(row.reason);
+  };
+
+  const linkReport: ModReport = {
+    ...report,
+    id: 9,
+    targetType: "resource_submission",
+    targetId: "4",
+    targetLabel: "https://example-site.com/notes",
+    reason: "not what I asked for",
   };
 
   it("resolves a report only after the summary is confirmed", async () => {
@@ -173,5 +182,47 @@ describe("ReportRow", () => {
       expect(screen.queryByRole("heading", { name: "Mark report handled" })).toBeNull(),
     );
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("offers Remove only on a request or a link, and only while the report is open", async () => {
+    await renderReport();
+    expect(screen.queryByRole("button", { name: "Remove" })).toBeNull();
+    cleanup();
+    await renderReport({ ...linkReport, status: "resolved" });
+    expect(screen.queryByRole("button", { name: "Remove" })).toBeNull();
+    cleanup();
+    await renderReport(linkReport);
+    expect(screen.getByRole("button", { name: "Remove" })).toBeTruthy();
+  });
+
+  it("removes a link only after a reason and a confirmation", async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      Response.json({ ok: true }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await renderReport(linkReport);
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    const form = await sheetTitled("Remove this link");
+
+    // An empty reason is refused in the form and nothing is sent.
+    fireEvent.click(within(form).getByRole("button", { name: "Remove link" }));
+    await waitFor(() => expect(screen.getByText(/at least 3 characters/)).toBeTruthy());
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent.change(within(form).getByLabelText("Reason"), {
+      target: { value: "not course material" },
+    });
+    fireEvent.click(within(form).getByRole("button", { name: "Remove link" }));
+    const confirm = await sheetTitled("Remove link");
+    expect(within(confirm).getByText("https://example-site.com/notes")).toBeTruthy();
+    expect(within(confirm).getByText("not course material")).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent.click(within(confirm).getByRole("button", { name: "Remove link" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/mod/reports/9/remove");
+    expect(JSON.parse(fetchMock.mock.calls[0][1]?.body as string)).toEqual({
+      reason: "not course material",
+    });
   });
 });

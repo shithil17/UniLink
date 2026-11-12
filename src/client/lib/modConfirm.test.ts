@@ -9,6 +9,8 @@ import {
   facultyEditConfirm,
   facultyHiddenConfirm,
   rejectPostConfirm,
+  removableName,
+  removeReportedConfirm,
   releaseKeyConfirm,
   resolveReportConfirm,
   reverseConfirm,
@@ -176,5 +178,32 @@ describe("excerpt", () => {
     expect(excerpt("a\n  b")).toBe("a b");
     expect(excerpt("x".repeat(200), 20)).toHaveLength(20);
     expect(excerpt("x".repeat(200), 20).endsWith("…")).toBe(true);
+  });
+});
+
+describe("removeReportedConfirm", () => {
+  it("names what is removed, the reporter and the reason, and says it can be reversed", () => {
+    const c = removeReportedConfirm(
+      {
+        targetType: "resource_submission",
+        targetLabel: "https://example-site.com/x",
+        reporter: "sam_1",
+      },
+      "not course material",
+    );
+    expect(c.title).toBe("Remove link");
+    expect(c.destructive).toBe(true);
+    expect(c.facts).toEqual([
+      { label: "Removing", value: "https://example-site.com/x" },
+      { label: "Reported by", value: "sam_1" },
+      { label: "Reason", value: "not course material" },
+    ]);
+    expect(c.effects.join(" ")).toMatch(/reverse/);
+  });
+
+  it("is offered for requests and links, not users", () => {
+    expect(removableName("resource_request")).toBe("request");
+    expect(removableName("resource_submission")).toBe("link");
+    expect(removableName("user")).toBeNull();
   });
 });

@@ -30,6 +30,7 @@ import {
   clearProbingFlag,
   logIdLookup,
   releaseKey,
+  removeReported,
   resetPassword,
   resolveReport,
   unbanUser,
@@ -179,6 +180,17 @@ export const modRoutes = new Hono<AppEnv>()
     if (result.ok) return c.json({ ok: true });
     const { status, message } = POST_FAILURES[result.reason];
     return c.json({ error: result.reason, message }, status);
+  })
+  .post("/reports/:id/remove", validateJson(reasonBody), async (c) => {
+    const id = paramId(c);
+    if (id === null) return c.json(notFound, 404);
+    const result = await removeReported(
+      getDb(c.env.DB),
+      actorOf(c),
+      id,
+      c.req.valid("json").reason,
+    );
+    return result.ok ? c.json({ ok: true }) : actionFailure(c, result.reason);
   })
   .post("/reports/:id/resolve", validateJson(resolveReportRequest), async (c) => {
     const id = paramId(c);

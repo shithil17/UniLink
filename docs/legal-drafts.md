@@ -58,17 +58,18 @@ Students can also use the Report button in the app. UniLink does not host files,
 - If the content should go, a moderator removes it with a soft delete: it stops showing to anyone, and the removal is recorded in the audit log with who did it, when and why. An admin can reverse a removal that turns out to be a mistake.
 - The student who sent it may be warned or restricted if it is repeated or deliberate.
 - Moderators only soft-delete. Rows are hard-deleted only by the automatic daily cleanup (expired requests, and accepted ones after 90 days).
-- We reply to the address you gave within `<response time>`.
+- We reply to the address you gave within 7 days.
 
-**Counter notice.** If a student thinks a removal was wrong, they can write to `<contact email>` and a moderator other than the first one will look again.
+**Counter notice.** If a student thinks a removal was wrong, they can write to `<contact email>` and an admin will look at it again and can reverse the removal.
 
 **Repeat cases.** Accounts that repeatedly send content that is removed may be banned.
 
 ## 5. To finalise (D)
 
-- Fill in `<Operator name>`, `<contact email>` and `<response time>`.
+- Fill in `<Operator name>` and `<contact email>`.
+- Confirm the team can reply within 7 days.
 - Confirm the 90 days (`limits.resourceFulfilledKeepMs`) and the daily cleanup time (03:00 in Asia/Dhaka) still match the app.
 - Confirm with a faculty member or advisor how exam papers should be described, and whether NSU needs to approve the unofficial-app wording before launch (Open decisions in the build plan).
-- Check how a moderator removes content today. A report can be resolved or dismissed in the queue, and removal uses `softDelete()`, but the queue has no remove button yet, so section 4 describes the intended process.
+- Check how a moderator removes content today. A report row in the review queue has a Remove button for a request or a link: it asks for a short reason, soft-deletes the content with `softDelete()`, writes the audit row and closes the reports on it. Check that section 4 matches this.
 - Decide where the policy is shown: a page in the app, linked from sign-up, Materials and Settings.
 - Have someone who knows the local rules on copyright read section 4 before it goes live.

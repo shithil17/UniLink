@@ -80,11 +80,11 @@ sequenceDiagram
   else Report
     Req->>API: Report a link or a request, with a reason
     API->>Q: Open report (one open report per reporter and target, 10 reports an hour)
-    Mod->>Q: Resolve or dismiss with a note, audited
+    Mod->>Q: Remove the content, resolve or dismiss, audited
   end
 ```
 
-Taking content down is a soft delete with an audit row (`softDelete()` in `src/server/softDelete.ts`); an admin can reverse it, and the row is never hard-deleted by a mod. The report row in the queue offers only Mark handled and Dismiss so far: there is no button that calls `softDelete()` yet.
+Taking content down is a soft delete with an audit row (`softDelete()` in `src/server/softDelete.ts`); an admin can reverse it, and the row is never hard-deleted by a mod. A report row on a request or a link in the queue has three actions: Remove, Dismiss and Mark handled. Remove asks for a short reason (3 to 300 characters) and a confirmation, then calls `softDelete()` through `POST /api/mod/reports/:id/remove`: the content stops showing to everyone, the audit log gets a `soft_delete` row with the reason, and every open report on that target closes as handled (one `resolve_report` row each, note "Removed: <reason>"). Dismiss and Mark handled leave the content as it is. If the content was already removed, Remove answers 409 and the mod closes the report with Mark handled.
 
 The uploader is not told when a link is turned down. A helper who has opened a request can also report it from the request screen. Only the requester can report a link, and only once it is published; a request is reportable by anyone who can see it.
 

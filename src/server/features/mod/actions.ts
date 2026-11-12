@@ -9,6 +9,7 @@ import { reportsRepo, type ReportRow, type ReportStatus } from "../../repos/repo
 import { rateLimitsRepo } from "../../repos/rateLimits";
 import { sessionsRepo } from "../../repos/sessions";
 import { RELEASED_KEY_PREFIX, usersRepo, type ModUserRow } from "../../repos/users";
+import { softDelete, softDeleteTargets } from "../../softDelete";
 import { generateTemporaryPassword } from "../../tempPassword";
 
 // Each action changes state, then writes its audit row with the before-snapshot a reversal needs.
@@ -25,7 +26,9 @@ export type ActionFailure =
   | "role_unchanged"
   | "conflict"
   | "already_resolved"
-  | "not_flagged";
+  | "not_flagged"
+  | "not_removable"
+  | "already_removed";
 
 export type ActionResult<T = Record<never, never>> =
   | ({ ok: true } & T)
@@ -269,4 +272,63 @@ export async function resolveReport(
     now,
   );
   return { ok: true, report };
+}
+
+/**
+ * Removes the content a report points at (a soft delete, so an admin can reverse it) and closes every
+ * open report on it as handled. `softDelete()` writes the removal's audit row with the reason; each
+ * closed report gets its own row like any other resolution. A target that was already removed leaves
+ * the reports as they are: the mod closes them with Mark handled.
+ */
+export async function removeReported(
+  db: Db,
+  actor: Actor,
+  reportId: number,
+  reason: string,
+  now: number = Date.now(),
+): Promise<ActionResult<{ resolved: number }>> {
+  const reports = reportsRepo(db);
+  const report = await reports.findById(reportId);
+  if (!report) return { ok: false, reason: "not_found" };
+  if (report.status !== "open") return { ok: false, reason: "already_resolved" };
+
+  const targetId = Number(report.targetId);
+  if (!Object.hasOwn(softDeleteTargets, report.targetType) || !Number.isSafeInteger(targetId)) {
+    return { ok: false, reason: "not_removable" };
+  }
+  const removed = await softDelete(
+    db,
+    { actor: actor.id, targetType: report.targetType, targetId, reason },
+    { now },
+  );
+  if (!removed.ok) {
+    return {
+      ok: false,
+      reason: removed.reason === "already_deleted" ? "already_removed" : "not_found",
+    };
+  }
+
+  const note = `Removed: ${reason}`;
+  const closed = await reports.resolveOpenForTarget(
+    report.targetType,
+    report.targetId,
+    actor.id,
+    note,
+    now,
+  );
+  for (const row of closed) {
+    await audit(
+      db,
+      {
+        actor: actor.id,
+        action: auditActions.resolveReport,
+        targetType: "report",
+        targetId: row.id,
+        before: { status: "open" },
+        reason: note,
+      },
+      now,
+    );
+  }
+  return { ok: true, resolved: closed.length };
 }
