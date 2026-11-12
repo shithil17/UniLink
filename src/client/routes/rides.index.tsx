@@ -47,7 +47,7 @@ function Rides() {
     });
   const setFilters = (patch: Partial<RideFilters>) =>
     void navigate({ search: (previous) => ({ ...previous, ...patch }), replace: true });
-  // Remounts the filter bar, so its search box empties along with the URL.
+  // Remounts the filter bar (not the list), so its search box empties along with the URL.
   const [cleared, setCleared] = useState(0);
   const clear = () => {
     setCleared((n) => n + 1);
@@ -88,17 +88,19 @@ function Rides() {
       {tab === "mine" ? (
         <MyRides />
       ) : (
-        <Feed key={cleared} filters={filters} onChange={setFilters} onClear={clear} />
+        <Feed barKey={cleared} filters={filters} onChange={setFilters} onClear={clear} />
       )}
     </div>
   );
 }
 
 function Feed({
+  barKey,
   filters,
   onChange,
   onClear,
 }: {
+  barKey: number;
   filters: RideFilters;
   onChange: (patch: Partial<RideFilters>) => void;
   onClear: () => void;
@@ -109,8 +111,8 @@ function Feed({
 
   return (
     <div className="space-y-5">
-      <RideFiltersBar filters={filters} onChange={onChange} onClear={onClear} />
-      {list.isPending ? (
+      <RideFiltersBar key={barKey} filters={filters} onChange={onChange} />
+      {list.isPending || (list.isPlaceholderData && rides.length === 0) ? (
         <SkeletonRows rows={3} label="Loading rides" />
       ) : list.isError ? (
         <ErrorBlock
@@ -145,9 +147,13 @@ function Feed({
           />
         </div>
       ) : (
-        <>
+        // While the next filter loads, the last rides stay up, dimmed a little.
+        <div
+          aria-busy={list.isPlaceholderData}
+          className={`space-y-5 transition-opacity duration-150 ${list.isPlaceholderData ? "opacity-60" : ""}`}
+        >
           <RideList items={rides} />
-          {list.hasNextPage ? (
+          {list.hasNextPage && !list.isPlaceholderData ? (
             <Button
               variant="outline"
               className="w-full"
@@ -157,7 +163,7 @@ function Feed({
               Show more
             </Button>
           ) : null}
-        </>
+        </div>
       )}
     </div>
   );

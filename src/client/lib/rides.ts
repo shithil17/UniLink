@@ -1,5 +1,6 @@
 import {
   infiniteQueryOptions,
+  keepPreviousData,
   queryOptions,
   useMutation,
   useQueryClient,
@@ -426,6 +427,8 @@ export const rideFeedInfinite = (filters: RideFilters) =>
       ),
     initialPageParam: "",
     getNextPageParam: (last) => last.nextCursor ?? undefined,
+    // A changed filter keeps the last list on screen until the new one arrives, so the page doesn't jump.
+    placeholderData: keepPreviousData,
   });
 
 /** The signed-in student's own rides, in any status, lapsed ones included. */

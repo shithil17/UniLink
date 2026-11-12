@@ -6,10 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Chip, chipClass } from "@/components/ui/chip";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { areaNameOf, areasQuery } from "@/lib/areas";
 import { SEARCH_DEBOUNCE_MS } from "@/lib/useDebouncedValue";
 import {
-  activeFilterCount,
   dayLabel,
   VEHICLE_LABELS,
   VEHICLES,
@@ -20,25 +27,47 @@ import {
 import { WEEKDAYS } from "../../../shared/rides";
 import { RIDE_SEARCH_MAX_LENGTH } from "../../../shared/schemas/rides";
 
+/** The sheet's fields: everything the Filters button holds. A weekday and a date are alternatives. */
+type SheetFilters = Pick<RideFilters, "from" | "to" | "vehicle" | "day" | "date">;
+const NO_SHEET_FILTERS: SheetFilters = {
+  from: undefined,
+  to: undefined,
+  vehicle: undefined,
+  day: undefined,
+  date: undefined,
+};
+const sheetFiltersOf = (f: RideFilters): SheetFilters => ({
+  from: f.from,
+  to: f.to,
+  vehicle: f.vehicle,
+  day: f.day,
+  date: f.date,
+});
+const sheetCount = (f: SheetFilters): number => Object.values(f).filter(Boolean).length;
+
+const SHEET_ID = "ride-filter-sheet";
+
 /**
  * The feed's filters, kept in the URL by the route: a text search over landmarks and area names, always
- * in view, and a Filters panel for the From and To areas, vehicle, weekday and date. While the panel is
- * closed, each active filter shows as a chip that removes it. A weekday and a date are alternatives
- * (a date already has a weekday), so picking one clears the other. The text box keeps what is typed
- * and sends it after a short pause; the route remounts the bar (new `key`) when filters are cleared.
+ * in view, and a Filters button that opens a bottom sheet for the From and To areas, vehicle, weekday
+ * and date. The sheet is an overlay, so opening it never moves the page. Its choices are a draft that
+ * "Show rides" applies. Each active filter shows as a chip that removes it, whether the sheet is open
+ * or not. A weekday and a date are alternatives (a date already has a weekday), so picking one clears
+ * the other. The text box keeps what is typed and sends it after a short pause; the route remounts the
+ * bar (new `key`) when filters are cleared.
  */
 export function RideFiltersBar({
   filters,
   onChange,
-  onClear,
 }: {
   filters: RideFilters;
   /** Merges these into the filters in the URL. */
   onChange: (patch: Partial<RideFilters>) => void;
-  onClear: () => void;
 }) {
-  const count = activeFilterCount(filters);
-  const [open, setOpen] = useState(() => count - (filters.q ? 1 : 0) > 0);
+  // The button counts what its sheet holds; the search box is always in view and is not counted.
+  const count = sheetCount(sheetFiltersOf(filters));
+  const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -93,19 +122,25 @@ export function RideFiltersBar({
           />
         </div>
         <Button
+          ref={button}
           type="button"
           variant="outline"
+          className="shrink-0"
+          aria-haspopup="dialog"
           aria-expanded={open}
-          aria-controls="ride-filter-panel"
-          onClick={() => setOpen(!open)}
+          aria-controls={open ? SHEET_ID : undefined}
+          onClick={() => setOpen(true)}
         >
           <SlidersHorizontalIcon aria-hidden strokeWidth={1.75} />
           Filters
-          {count > 0 ? <span className="tabular-nums">{count}</span> : null}
+          {/* Always there, one digit wide, so the first filter never widens the button. */}
+          <span className="inline-block w-[1ch] text-center tabular-nums">
+            {count > 0 ? count : ""}
+          </span>
         </Button>
       </div>
 
-      {!open && chips.length > 0 ? (
+      {chips.length > 0 ? (
         <ul aria-label="Active filters" className="flex flex-wrap gap-2">
           {chips.map((c) => (
             <li key={c.key}>
@@ -123,84 +158,120 @@ export function RideFiltersBar({
         </ul>
       ) : null}
 
-      {open ? (
-        <div id="ride-filter-panel" className="grid gap-4 rounded-panel bg-surface p-4">
-          <Field>
-            <FieldLabel htmlFor="ride-filter-from">From</FieldLabel>
-            <AreaPicker
-              id="ride-filter-from"
-              title="Rides from"
-              anyLabel="Any area"
-              value={filters.from ?? null}
-              onChange={(next) => onChange({ from: next ?? undefined })}
-            />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="ride-filter-to">To</FieldLabel>
-            <AreaPicker
-              id="ride-filter-to"
-              title="Rides to"
-              anyLabel="Any area"
-              value={filters.to ?? null}
-              onChange={(next) => onChange({ to: next ?? undefined })}
-            />
-            <FieldDescription>Pick a whole area to include its sub-areas too.</FieldDescription>
-          </Field>
-          <Field>
-            <FieldLabel id="ride-filter-vehicle">Vehicle</FieldLabel>
-            <div
-              role="group"
-              aria-labelledby="ride-filter-vehicle"
-              className="flex flex-wrap gap-2"
-            >
-              {VEHICLES.map((v) => (
-                <Chip
-                  key={v}
-                  pressed={filters.vehicle === v}
-                  onPressedChange={(on) => onChange({ vehicle: on ? v : undefined })}
-                >
-                  {VEHICLE_LABELS[v]}
-                </Chip>
-              ))}
-            </div>
-          </Field>
-          <Field>
-            <FieldLabel id="ride-filter-day">Weekday</FieldLabel>
-            <div role="group" aria-labelledby="ride-filter-day" className="flex flex-wrap gap-2">
-              {WEEKDAYS.map((d) => (
-                <Chip
-                  key={d}
-                  pressed={filters.day === d}
-                  aria-label={WEEKDAY_LONG[d]}
-                  onPressedChange={(on) => onChange({ day: on ? d : undefined, date: undefined })}
-                >
-                  {WEEKDAY_SHORT[d]}
-                </Chip>
-              ))}
-            </div>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="ride-filter-date">Or a date</FieldLabel>
-            <Input
-              id="ride-filter-date"
-              type="date"
-              value={filters.date ?? ""}
-              onChange={(e) => onChange({ date: e.target.value || undefined, day: undefined })}
-            />
-          </Field>
-          {count > 0 ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="justify-self-start"
-              onClick={onClear}
-            >
-              Clear filters
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          side="bottom"
+          id={SHEET_ID}
+          finalFocus={button}
+          className="data-[side=bottom]:gap-3 data-[side=bottom]:overflow-hidden data-[side=bottom]:pb-0"
+        >
+          <FilterSheetBody
+            filters={filters}
+            onApply={(next) => {
+              onChange(next);
+              setOpen(false);
+            }}
+          />
+        </SheetContent>
+      </Sheet>
     </div>
+  );
+}
+
+/** The sheet's contents. Mounted when the sheet opens, so the draft starts from the URL's filters. */
+function FilterSheetBody({
+  filters,
+  onApply,
+}: {
+  filters: RideFilters;
+  onApply: (next: SheetFilters) => void;
+}) {
+  const [draft, setDraft] = useState<SheetFilters>(() => sheetFiltersOf(filters));
+  const change = (patch: Partial<SheetFilters>) => setDraft((d) => ({ ...d, ...patch }));
+
+  return (
+    <>
+      <SheetHeader className="pb-0">
+        <SheetTitle>Filters</SheetTitle>
+        <SheetDescription className="sr-only">
+          Narrow the rides by area, vehicle and day, then show the rides.
+        </SheetDescription>
+      </SheetHeader>
+      <div className="grid min-h-0 flex-1 content-start gap-4 overflow-y-auto overscroll-contain px-5 pb-2">
+        <Field>
+          <FieldLabel htmlFor="ride-filter-from">From</FieldLabel>
+          <AreaPicker
+            id="ride-filter-from"
+            title="Rides from"
+            anyLabel="Any area"
+            value={draft.from ?? null}
+            onChange={(next) => change({ from: next ?? undefined })}
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="ride-filter-to">To</FieldLabel>
+          <AreaPicker
+            id="ride-filter-to"
+            title="Rides to"
+            anyLabel="Any area"
+            value={draft.to ?? null}
+            onChange={(next) => change({ to: next ?? undefined })}
+          />
+          <FieldDescription>Pick a whole area to include its sub-areas too.</FieldDescription>
+        </Field>
+        <Field>
+          <FieldLabel id="ride-filter-vehicle">Vehicle</FieldLabel>
+          <div role="group" aria-labelledby="ride-filter-vehicle" className="flex flex-wrap gap-2">
+            {VEHICLES.map((v) => (
+              <Chip
+                key={v}
+                pressed={draft.vehicle === v}
+                onPressedChange={(on) => change({ vehicle: on ? v : undefined })}
+              >
+                {VEHICLE_LABELS[v]}
+              </Chip>
+            ))}
+          </div>
+        </Field>
+        <Field>
+          <FieldLabel id="ride-filter-day">Weekday</FieldLabel>
+          <div role="group" aria-labelledby="ride-filter-day" className="flex flex-wrap gap-2">
+            {WEEKDAYS.map((d) => (
+              <Chip
+                key={d}
+                pressed={draft.day === d}
+                aria-label={WEEKDAY_LONG[d]}
+                onPressedChange={(on) => change({ day: on ? d : undefined, date: undefined })}
+              >
+                {WEEKDAY_SHORT[d]}
+              </Chip>
+            ))}
+          </div>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="ride-filter-date">Or a date</FieldLabel>
+          <Input
+            id="ride-filter-date"
+            type="date"
+            value={draft.date ?? ""}
+            onChange={(e) => change({ date: e.target.value || undefined, day: undefined })}
+          />
+        </Field>
+      </div>
+      <SheetFooter className="mt-0 shrink-0 flex-row gap-2 pb-[max(1.375rem,env(safe-area-inset-bottom))]">
+        <Button
+          type="button"
+          variant="outline"
+          className="flex-1"
+          disabled={sheetCount(draft) === 0}
+          onClick={() => setDraft(NO_SHEET_FILTERS)}
+        >
+          Clear
+        </Button>
+        <Button type="button" className="flex-1" onClick={() => onApply(draft)}>
+          Show rides
+        </Button>
+      </SheetFooter>
+    </>
   );
 }

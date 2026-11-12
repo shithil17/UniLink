@@ -161,19 +161,21 @@ describe("Rides screen", () => {
     expect(await screen.findByRole("link", { name: /Bashundhara R\/A/ })).toBeTruthy();
   });
 
-  it("filters by area from the URL: names them, suggests a broader area when empty, and clears one at a time", async () => {
+  it("filters by area from the URL: names them in the sheet, suggests a broader area when empty, and clears one chip at a time", async () => {
     const router = renderAt("/rides?from=1&to=61", [
       { filters: { from: 1, to: 61 }, page: { items: [], nextCursor: null } },
       { filters: { to: 61 }, page: { items: [ride()], nextCursor: null } },
     ]);
     expect(await screen.findByText("No rides match.")).toBeTruthy();
     expect(screen.getByText(/Try a broader area/)).toBeTruthy();
-    // The open panel names both areas in their pickers.
-    expect(screen.getByLabelText("From").textContent).toContain("Bashundhara R/A");
-    expect(screen.getByLabelText("To").textContent).toContain("Mirpur 10");
-
-    // Closed, the panel's filters show as chips that remove one filter each.
+    // The chips are there without opening anything.
     fireEvent.click(screen.getByRole("button", { name: /Filters\s*2/ }));
+    // The sheet names both areas in their pickers.
+    expect((await screen.findByLabelText("From")).textContent).toContain("Bashundhara R/A");
+    expect(screen.getByLabelText("To").textContent).toContain("Mirpur 10");
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+
     fireEvent.click(
       await screen.findByRole("button", { name: "Remove filter: From Bashundhara R/A" }),
     );
@@ -182,13 +184,99 @@ describe("Rides screen", () => {
     expect(screen.getByRole("button", { name: "Remove filter: To Mirpur 10" })).toBeTruthy();
   });
 
-  it("picks an area in the filter panel and keeps it in the URL", async () => {
+  it("opens the filters as a sheet over the page: chips and list stay, nothing applies until Show rides", async () => {
+    const router = renderAt("/rides?vehicle=bike", [
+      { filters: { vehicle: "bike" }, page: { items: [ride()], nextCursor: null } },
+      { filters: { vehicle: "bike", day: "mon" }, page: { items: [], nextCursor: null } },
+    ]);
+    const button = await screen.findByRole("button", { name: /Filters/ });
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(button.getAttribute("aria-controls")).toBeNull();
+
+    fireEvent.click(button);
+    const sheet = await screen.findByRole("dialog", { name: "Filters" });
+    expect(button.getAttribute("aria-expanded")).toBe("true");
+    expect(button.getAttribute("aria-controls")).toBe(sheet.id);
+    // The page behind keeps its chip row and its list: no inline panel pushed them around.
+    // (The modal hides them from the accessibility tree, so look them up with `hidden`.)
+    expect(screen.getByRole("list", { name: "Active filters", hidden: true })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Bashundhara R\/A/, hidden: true })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Monday" }));
+    // A draft: the URL has not changed yet.
+    expect(router.state.location.search).toEqual({ vehicle: "bike" });
+    fireEvent.click(screen.getByRole("button", { name: "Show rides" }));
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({ vehicle: "bike", day: "mon" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(button);
+    expect(screen.getByRole("button", { name: "Remove filter: Monday" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Remove filter: Bike" })).toBeTruthy();
+  });
+
+  it("Clear in the sheet empties the draft and Show rides drops every sheet filter", async () => {
+    const router = renderAt("/rides?vehicle=bike&day=mon&q=gate", [
+      {
+        filters: { vehicle: "bike", day: "mon", q: "gate" },
+        page: { items: [], nextCursor: null },
+      },
+      { filters: { q: "gate" }, page: { items: [ride()], nextCursor: null } },
+    ]);
+    fireEvent.click(await screen.findByRole("button", { name: /Filters\s*2/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Clear" }));
+    expect(screen.getByRole("button", { name: "Bike" }).getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: "Show rides" }));
+    // The search text stays: it lives outside the sheet.
+    await waitFor(() => expect(router.state.location.search).toEqual({ q: "gate" }));
+    expect(screen.queryByRole("list", { name: "Active filters" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Filters" })).toBeTruthy();
+  });
+
+  it("keeps the previous rides on screen, dimmed, while the next filter loads", async () => {
+    renderAt("/rides", [{ filters: {}, page: { items: [ride()], nextCursor: null } }]);
+    expect(await screen.findByRole("link", { name: /Bashundhara R\/A/ })).toBeTruthy();
+
+    let resolve!: (r: Response) => void;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise<Response>((r) => (resolve = r))),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Bike" }));
+    fireEvent.click(screen.getByRole("button", { name: "Show rides" }));
+
+    // The request is out; the old row is still there and no spinner replaced it.
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Remove filter: Bike" })).toBeTruthy(),
+    );
+    const row = screen.getByRole("link", { name: /Bashundhara R\/A/ });
+    expect(row.closest("[aria-busy]")?.getAttribute("aria-busy")).toBe("true");
+    expect(screen.queryByRole("status", { name: "Loading rides" })).toBeNull();
+
+    resolve(
+      Response.json({
+        items: [ride({ id: 9, pickupArea: { id: 60, name: "Mirpur" }, vehicle: "bike" })],
+        nextCursor: null,
+      }),
+    );
+    expect(await screen.findByRole("link", { name: /^Mirpur/ })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: /^Bashundhara R\/A/ })).toBeNull();
+  });
+
+  it("picks an area in the filter sheet and applies it with Show rides", async () => {
     const router = renderAt("/rides?vehicle=bike", [
       { filters: { vehicle: "bike" }, page: { items: [], nextCursor: null } },
       { filters: { vehicle: "bike", to: 60 }, page: { items: [], nextCursor: null } },
     ]);
+    fireEvent.click(await screen.findByRole("button", { name: /Filters/ }));
     fireEvent.click(await screen.findByLabelText("To"));
     fireEvent.click(await screen.findByRole("option", { name: "Mirpur" }));
+    // The area sheet closes; the filter sheet stays, with the pick in the draft.
+    expect((await screen.findByLabelText("To")).textContent).toContain("Mirpur");
+    expect(router.state.location.search).toEqual({ vehicle: "bike" });
+    fireEvent.click(screen.getByRole("button", { name: "Show rides" }));
     await waitFor(() => expect(router.state.location.search).toEqual({ vehicle: "bike", to: 60 }));
   });
 
