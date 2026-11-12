@@ -30,6 +30,7 @@ import {
 } from "../shared/planner.ts";
 import {
   RESOURCE_EXPIRY_MAX_MS,
+  RESOURCE_FULFILLED_KEEP_MS,
   RESOURCE_EXPIRY_MIN_MS,
   RESOURCE_NOTE_MAX_LENGTH,
 } from "../shared/schemas/resources.ts";
@@ -155,8 +156,8 @@ export const limits = {
   resourceFanoutMax: 1000,
   // ceiling: a phone screen shows about this many rows; more arrive through the cursor. Revisit if the list feels short.
   resourcePage: { defaultSize: 20, maxSize: 50 },
-  // ceiling: three months: long enough to find the link again after the exam, short enough to keep shared links from piling up. The UI states it. Revisit if students ask for longer.
-  resourceFulfilledKeepMs: 90 * DAY,
+  // ceiling: three months: long enough to find the link again after the exam, short enough to keep shared links from piling up. The UI states it. Defined in shared code so the screens can state it. Revisit if students ask for longer.
+  resourceFulfilledKeepMs: RESOURCE_FULFILLED_KEEP_MS,
   /** The screening pipeline: what the rules accept and how long the model step may take. */
   screen: {
     // ceiling: the longest screened field (a description or note) is a few paragraphs; a wall of text is spam. Per-post-type schemas set tighter caps. Revisit if honest posts are rejected for length.

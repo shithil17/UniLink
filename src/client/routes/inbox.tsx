@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { InboxIcon } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { InboxRow } from "@/components/inbox/InboxRow";
@@ -8,9 +8,10 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBlock } from "@/components/ui/error-block";
 import { Skeleton, SkeletonRows } from "@/components/ui/skeleton";
 import { apiPost, errorMessage } from "@/lib/api";
+import { notificationTarget } from "@/lib/inbox";
 import { inboxQuery, meQuery, unreadCountQuery } from "@/lib/queries";
 import { staggerRow, useStagger } from "@/lib/useStagger";
-import { notification, readAllResult } from "../../shared/schemas/inbox";
+import { notification, readAllResult, type Notification } from "../../shared/schemas/inbox";
 
 export const Route = createFileRoute("/inbox")({
   beforeLoad: async ({ context }) => {
@@ -38,6 +39,7 @@ const skeletonRow = (
 
 function Inbox() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const list = useInfiniteQuery(inboxQuery);
   const unread = useQuery(unreadCountQuery);
   const animate = useStagger("inbox");
@@ -48,6 +50,12 @@ function Inbox() {
     onSuccess: refresh,
     onError: (err) => toast.error(errorMessage(err)),
   });
+  // Opening a row marks it read (when it is unread) and goes to the screen it points at, if any.
+  const open = (n: Notification) => {
+    if (n.readAt === null) markRead.mutate(n.id);
+    const target = notificationTarget(n.type, n.payload);
+    if (target) void navigate(target);
+  };
   const markAll = useMutation({
     mutationFn: () => apiPost("/api/inbox/read-all", readAllResult),
     onSuccess: refresh,
@@ -108,7 +116,7 @@ function Inbox() {
                 style={animate ? staggerRow(index) : undefined}
                 className="border-t border-line first:border-t-0"
               >
-                <InboxRow n={n} now={now} onOpen={() => markRead.mutate(n.id)} />
+                <InboxRow n={n} now={now} onOpen={() => open(n)} />
               </li>
             ))}
           </ul>

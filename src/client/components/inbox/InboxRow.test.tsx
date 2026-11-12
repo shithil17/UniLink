@@ -31,4 +31,13 @@ describe("InboxRow", () => {
     expect(screen.queryByText("(unread)")).toBeNull();
     expect(screen.getByText("5 min ago")).toBeTruthy();
   });
+
+  it("keeps a read row a control when it opens a screen, so it can be opened again", () => {
+    const onOpen = vi.fn();
+    const row = make({ type: "resource_requested", payload: { requestId: 3 }, readAt: NOW });
+    render(<InboxRow n={row} now={NOW} onOpen={onOpen} />);
+    fireEvent.click(screen.getByRole("button"));
+    expect(onOpen).toHaveBeenCalledOnce();
+    expect(screen.queryByText("(unread)")).toBeNull();
+  });
 });

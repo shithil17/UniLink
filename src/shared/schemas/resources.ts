@@ -11,6 +11,9 @@ export const RESOURCE_EXPIRY_MIN_MS = 60 * 60 * 1000;
 /** A request can stay open at most this many days. */
 export const RESOURCE_EXPIRY_MAX_DAYS = 60;
 export const RESOURCE_EXPIRY_MAX_MS = RESOURCE_EXPIRY_MAX_DAYS * 24 * 60 * 60 * 1000;
+/** A fulfilled request (and its links) is deleted this many days after the requester accepted a link. The screens say so. */
+export const RESOURCE_FULFILLED_KEEP_DAYS = 90;
+export const RESOURCE_FULFILLED_KEEP_MS = RESOURCE_FULFILLED_KEEP_DAYS * 24 * 60 * 60 * 1000;
 
 // Not `id` from common.ts: that one coerces, which would give the form fields an unknown input type.
 const facultyId = z.number().int().positive();

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { NotificationType } from "../../shared/schemas/inbox";
 import type { Hue } from "./courseHue";
 
@@ -57,4 +58,32 @@ export function timeAgo(at: number, now: number): string {
   if (diff < DAY) return `${Math.floor(diff / HOUR)} h ago`;
   if (diff < 7 * DAY) return `${Math.floor(diff / DAY)} d ago`;
   return dateFormat.format(at);
+}
+
+const requestPayload = z.object({ requestId: z.number().int().positive() });
+
+/** Where tapping a notification goes: a route and its params, ready for the router's `navigate`. */
+export type NotificationTarget =
+  | { to: "/resources" }
+  | { to: "/resources/$requestId"; params: { requestId: string } };
+
+/**
+ * The screen a notification opens, or null when it has none (it is only marked read). A request
+ * that matches you opens its submit screen. A link sent to your request opens your requests, where
+ * the link is. An accepted link has no screen: the request is closed to everyone but its owner by
+ * then, so there is nothing left to open. Anything with a payload that does not parse goes nowhere
+ * rather than to a broken page.
+ */
+export function notificationTarget(
+  type: NotificationType,
+  payload: Record<string, unknown> | undefined,
+): NotificationTarget | null {
+  if (type === "resource_submitted") return { to: "/resources" };
+  if (type === "resource_requested") {
+    const parsed = requestPayload.safeParse(payload);
+    if (parsed.success) {
+      return { to: "/resources/$requestId", params: { requestId: String(parsed.data.requestId) } };
+    }
+  }
+  return null;
 }

@@ -6,15 +6,15 @@
  * ceiling: links only, no file hosting. Revisit if students keep sharing from a service that is not
  * listed here; adding a host is one line.
  */
-export const RESOURCE_URL_HOSTS: readonly string[] = [
-  "drive.google.com",
-  "docs.google.com",
-  "dropbox.com",
-  "onedrive.live.com",
-  "1drv.ms",
-  "mega.nz",
-  "github.com",
+export const RESOURCE_URL_SERVICES: readonly { name: string; hosts: readonly string[] }[] = [
+  { name: "Google Drive", hosts: ["drive.google.com", "docs.google.com"] },
+  { name: "Dropbox", hosts: ["dropbox.com"] },
+  { name: "OneDrive", hosts: ["onedrive.live.com", "1drv.ms"] },
+  { name: "MEGA", hosts: ["mega.nz"] },
+  { name: "GitHub", hosts: ["github.com"] },
 ];
+
+export const RESOURCE_URL_HOSTS: readonly string[] = RESOURCE_URL_SERVICES.flatMap((s) => s.hosts);
 
 /** Longest link accepted. A share link is a host and an id; anything longer is not one. */
 export const RESOURCE_URL_MAX_LENGTH = 500;

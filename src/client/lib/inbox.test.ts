@@ -6,6 +6,7 @@ import {
   NOTIFICATION_HUE,
   notificationCopy,
   notificationHue,
+  notificationTarget,
   timeAgo,
 } from "./inbox";
 
@@ -54,5 +55,36 @@ describe("timeAgo", () => {
   });
   it("falls back to a date after a week", () => {
     expect(timeAgo(Date.UTC(2026, 9, 1, 12), now)).toBe("1 Oct");
+  });
+});
+
+describe("notificationTarget", () => {
+  it("opens the submit screen for a request that matches you", () => {
+    expect(notificationTarget("resource_requested", { requestId: 7 })).toEqual({
+      to: "/resources/$requestId",
+      params: { requestId: "7" },
+    });
+  });
+
+  it("opens my requests for a link sent to my request", () => {
+    expect(notificationTarget("resource_submitted", { requestId: 7 })).toEqual({
+      to: "/resources",
+    });
+  });
+
+  it("goes nowhere for an accepted link, where the request is closed to everyone else", () => {
+    expect(notificationTarget("resource_accepted", { requestId: 7 })).toBeNull();
+  });
+
+  it("goes nowhere when the request id is missing or not a positive whole number", () => {
+    expect(notificationTarget("resource_requested", {})).toBeNull();
+    expect(notificationTarget("resource_requested", { requestId: "7" })).toBeNull();
+    expect(notificationTarget("resource_requested", { requestId: -1 })).toBeNull();
+    expect(notificationTarget("resource_requested", undefined)).toBeNull();
+  });
+
+  it("has no screen for the kinds that are only read", () => {
+    expect(notificationTarget("post_approved", {})).toBeNull();
+    expect(notificationTarget("push_test", {})).toBeNull();
   });
 });

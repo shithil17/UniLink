@@ -911,7 +911,7 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 - [x] `resource_requests` and `resource_submissions` tables with moderation status, expiry and `fulfilled_at`. Indexes for the fan-out query (attempts by course and faculty).
 - [x] Create request (screened, fan-out notify), list my requests, submit link (allowlist, cooldown, screened), accept, reject, report.
 - [x] `cron.ts` with the two resource jobs. A cron trigger added in `wrangler.jsonc` for both environments.
-- [ ] Screens: new request, my requests with their submissions, submit to a request (reached from the notification), clear expiry and purge wording.
+- [x] Screens: new request, my requests with their submissions, submit to a request (reached from the notification), clear expiry and purge wording.
 
 ### Checklist — Docs & QA (C, D)
 

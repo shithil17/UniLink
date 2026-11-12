@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { focusRingInset } from "@/components/ui/focus";
-import { notificationCopy, notificationHue, timeAgo } from "@/lib/inbox";
+import { notificationCopy, notificationHue, notificationTarget, timeAgo } from "@/lib/inbox";
 import type { Notification, NotificationType } from "../../../shared/schemas/inbox";
 
 /** One drawn icon per kind; the hue behind it comes from `notificationHue`. */
@@ -28,8 +28,9 @@ const rowBase = "flex w-full items-start gap-3 px-4 py-3.5 text-left";
 /**
  * A notification row: a 40px circle tinted by kind, a 15px title (500, 700 while unread), a body
  * clamped to two lines in `soft`, and the time at the right. Unread also shows a "New" badge so
- * the state is a word as well as a weight. Only an unread row is a control (opening it marks it
- * read). `now` is the instant ages are measured from, so rendering stays pure.
+ * the state is a word as well as a weight. An unread row is a control (opening it marks it
+ * read). A row that opens a screen (see `notificationTarget`) stays a control once read, so it can
+ * be opened again. `now` is the instant ages are measured from, so rendering stays pure.
  */
 export function InboxRow({ n, now, onOpen }: { n: Notification; now: number; onOpen: () => void }) {
   const { title, detail } = notificationCopy(n.type, n.payload);
@@ -71,7 +72,9 @@ export function InboxRow({ n, now, onOpen }: { n: Notification; now: number; onO
     </>
   );
 
-  return unread ? (
+  const interactive = unread || notificationTarget(n.type, n.payload) !== null;
+
+  return interactive ? (
     <button
       type="button"
       onClick={onOpen}
