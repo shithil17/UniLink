@@ -7,6 +7,7 @@ import {
   forceReviewFromEnv,
   moderationValues,
   screen,
+  type PostStatus,
   type ScreenInput,
   type ScreenOutcome,
 } from "./screen";
@@ -16,6 +17,13 @@ export type SubmitArgs = {
   /** The post type, as keyed in the moderated post registry. It is the audit row's target type. */
   targetType: string;
   input: ScreenInput;
+  /**
+   * On an edit: the status the post had before it. A post that was not published (held, or rejected by
+   * a moderator or the screen) never goes live because an edit passed the screen: a passing result is
+   * saved as `pending_review`, so it stays in the moderators' queue. A rejection stays a rejection.
+   * Leave it out on create.
+   */
+  previousStatus?: PostStatus;
   /**
    * Writes the post: an insert on create, an update on an edit that changes screened text. It must
    * spread `values` into the row, and return the post's id. It runs only when posting is allowed.
@@ -51,10 +59,15 @@ export async function submitPost(
   const allowed = await mayPost(db, args.user, now);
   if (!allowed.ok) return allowed;
 
-  const outcome = await screen(args.input, {
+  const screened = await screen(args.input, {
     model: opts.model ?? new StubModelStep(),
     forceReview: forceReviewFromEnv(env),
   });
+  // The saved row and the audit row both carry the held outcome, so they agree.
+  const outcome: ScreenOutcome =
+    screened.verdict === "approve" && args.previousStatus && args.previousStatus !== "published"
+      ? { ...screened, verdict: "review", status: "pending_review", source: "unpublished_edit" }
+      : screened;
   const id = await args.save(moderationValues(outcome));
   await recordScreening(db, outcome, { type: args.targetType, id }, now);
   const cooldownStarted =

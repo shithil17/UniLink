@@ -25,7 +25,8 @@ export const notExpired = (table: { expiresAt: SQLiteColumn }, now: number) =>
  *
  * and in both cases only if no report on it is still open. Deleting at once would let a reported scam
  * wipe its own evidence; the row goes on the first run after the report is closed. A post a mod removed
- * is never purged here. The rows must not be left holding files: a type with photos deletes them from
+ * goes only once it has expired and the window has passed (the expired branch above); after that it can
+ * no longer be reversed. The rows must not be left holding files: a type with photos deletes them from
  * the returned ids. `targetType` is the report target type of the table.
  */
 export function postLifecycleRepo(db: Db, table: PurgeablePostTable, targetType: string) {

@@ -44,3 +44,21 @@ export function revealContact(table: ContactPostTable) {
     return c.json({ contacts } satisfies z.infer<typeof contactReveal>);
   };
 }
+
+/**
+ * The handler of `GET /api/<type>/:id/own-contact`: the author's own contacts for the edit form. Author
+ * only (anyone else, a deleted post and a missing one are all a 404), whatever the post's status and
+ * expiry, and not counted against the reveal limit: it is the author's own data, and an ended
+ * recurring post must still be editable. Other views never carry contacts.
+ */
+export function ownContacts(table: ContactPostTable) {
+  return async (c: Context<AppEnv>) => {
+    const user = c.get("user");
+    if (!user) return c.json({ error: "unauthorized" }, 401);
+    const id = Number(c.req.param("id"));
+    if (!Number.isSafeInteger(id) || id <= 0) return c.json({ error: "not_found" }, 404);
+    const contacts = await postContactsRepo(getDb(c.env.DB), table).findOwn(id, user.id);
+    if (!contacts) return c.json({ error: "not_found" }, 404);
+    return c.json({ contacts } satisfies z.infer<typeof contactReveal>);
+  };
+}

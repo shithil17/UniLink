@@ -64,7 +64,7 @@ export function deletePostConfirm(what: string, run: () => Promise<unknown>): Co
     facts: [],
     effects: [
       "You can't bring it back.",
-      `It is removed for good after ${durationWords(AUTHOR_DELETE_PURGE_MS)}, or once a report on it is closed.`,
+      `It is removed for good after ${durationWords(AUTHOR_DELETE_PURGE_MS)}, or later if a report on it is still open.`,
     ],
     run,
   };

@@ -416,14 +416,14 @@ export const rideDetailQuery = (id: number) =>
   });
 
 /**
- * The poster's own contacts, for the edit form. Counts against the contact limit like any reveal, so it
- * is never refetched on focus and is dropped as soon as the form closes.
+ * The poster's own contacts, for the edit form. Owner only, not counted against the reveal limit and
+ * available after the ride ends. Still dropped as soon as the form closes, so contacts are not kept around.
  */
 export const ownContactsQuery = (id: number) =>
   queryOptions({
-    // Outside the `rides` prefix, so saving the edit does not refetch it (another counted reveal).
+    // Outside the `rides` prefix, so saving the edit does not refetch it.
     queryKey: ["ride-contacts", id],
-    queryFn: () => apiGet(`/api/rides/${id}/contact`, contactReveal),
+    queryFn: () => apiGet(`/api/rides/${id}/own-contact`, contactReveal),
     gcTime: 0,
     staleTime: Infinity,
     refetchOnWindowFocus: false,

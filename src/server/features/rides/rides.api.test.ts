@@ -430,9 +430,55 @@ describe("editing a ride", () => {
       .all<{ action: string }>();
     expect(audit.results.map((r) => r.action)).toContain("automod_reject");
 
-    // A clean edit publishes it again.
+    // A clean edit doesn't publish it again: it goes to a moderator.
     const fixed = await call("PATCH", `/api/rides/${ride.id}`, who.token, { notes: null });
-    expect((await fixed.json<RideSummary>()).status).toBe("published");
+    expect((await fixed.json<RideSummary>()).status).toBe("pending_review");
+  });
+
+  it("keeps a moderator-rejected ride in the queue after a clean edit, not published", async () => {
+    const who = await person();
+    const mod = await person({ role: "mod" });
+    const ride = { id: await insertRide({ authorId: who.id, status: "pending_review" }) };
+    const rejected = await call("POST", `/api/mod/posts/ride/${ride.id}/reject`, mod.token, {
+      reason: "Not a ride share",
+      category: "off_topic",
+    });
+    expect(rejected.status).toBe(200);
+    expect((await rideRow(ride.id))?.status).toBe("rejected");
+
+    const res = await call("PATCH", `/api/rides/${ride.id}`, who.token, {
+      notes: "Back seat free",
+    });
+    expect(res.status).toBe(200);
+    expect((await res.json<RideSummary>()).status).toBe("pending_review");
+    expect((await rideRow(ride.id))?.status).toBe("pending_review");
+    expect(await feedIds(who)).toEqual([]);
+
+    // The held audit row matches what was saved, and the queue lists the ride again.
+    const audit = await env.DB.prepare(
+      "SELECT action FROM audit_log WHERE target_type = 'ride' AND target_id = ? ORDER BY id DESC LIMIT 1",
+    )
+      .bind(String(ride.id))
+      .first<{ action: string }>();
+    expect(audit?.action).toBe("automod_hold");
+    const queue = await (
+      await call("GET", "/api/mod/queue", mod.token)
+    ).json<{ items: { targetType: string; id: number }[] }>();
+    expect(queue.items.some((i) => i.targetType === "ride" && i.id === ride.id)).toBe(true);
+  });
+
+  it("keeps a held ride held after a clean edit, and a published one published", async () => {
+    const who = await person();
+    const held = await insertRide({ authorId: who.id, status: "pending_review" });
+    const live = await post(who, oneOff());
+    const edit = async (id: number) =>
+      (
+        await (
+          await call("PATCH", `/api/rides/${id}`, who.token, { notes: "Back seat free" })
+        ).json<RideSummary>()
+      ).status;
+    expect(await edit(held)).toBe("pending_review");
+    expect(await edit(live.id)).toBe("published");
   });
 
   it("screens the contacts again, and refuses a badly formed or empty set", async () => {
@@ -495,6 +541,20 @@ describe("editing a ride", () => {
     expect(
       (await call("PATCH", `/api/rides/${gone}`, who.token, { pricePerSeatTaka: 1 })).status,
     ).toBe(404);
+  });
+});
+
+describe("editing a ride that has ended", () => {
+  it("refuses a new departure for a one-off ride that has already left", async () => {
+    const who = await person();
+    const id = await insertRide({
+      authorId: who.id,
+      departsAt: Date.now() - HOUR,
+      expiresAt: Date.now() - HOUR,
+    });
+    const res = await call("PATCH", `/api/rides/${id}`, who.token, { departsAt: Date.now() + DAY });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ error: "ride_left" });
   });
 });
 
@@ -852,6 +912,48 @@ describe("contact reveal", () => {
     const blocked = await call("GET", `/api/rides/${id}/contact`, viewer.token);
     expect(blocked.status).toBe(429);
     expect(blocked.headers.get("Retry-After")).toBeTruthy();
+  });
+});
+
+describe("own contacts for the edit form", () => {
+  const ended = (authorId: number) =>
+    insertRide({
+      authorId,
+      kind: "recurring",
+      endsOn: dhakaDay(Date.now() - 3 * DAY),
+      expiresAt: Date.now() - 2 * DAY,
+    });
+
+  it("gives the poster an ended recurring ride's contacts, and they can set a new end date", async () => {
+    const who = await person();
+    const id = await ended(who.id);
+    const res = await call("GET", `/api/rides/${id}/own-contact`, who.token);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ contacts: { phone: PHONE } });
+
+    const endsOn = dhakaDay(Date.now() + 20 * DAY);
+    const patched = await call("PATCH", `/api/rides/${id}`, who.token, { endsOn });
+    expect(patched.status).toBe(200);
+    expect((await patched.json<RideSummary>()).endsOn).toBe(endsOn);
+  });
+
+  it("is a 404 for anyone else and for a removed ride, and needs a login", async () => {
+    const who = await person();
+    const other = await person();
+    const id = await insertRide({ authorId: who.id });
+    const gone = await insertRide({ authorId: who.id, deletedAt: Date.now(), deletedBy: who.id });
+    expect((await call("GET", `/api/rides/${id}/own-contact`, other.token)).status).toBe(404);
+    expect((await call("GET", `/api/rides/${gone}/own-contact`, who.token)).status).toBe(404);
+    expect((await call("GET", `/api/rides/${id}/own-contact`, null)).status).toBe(401);
+  });
+
+  it("does not use up the reveal limit", async () => {
+    const who = await person();
+    const id = await insertRide({ authorId: who.id });
+    for (let i = 0; i < limits.contactReveal.limit + 2; i++) {
+      expect((await call("GET", `/api/rides/${id}/own-contact`, who.token)).status).toBe(200);
+    }
+    expect((await call("GET", `/api/rides/${id}/contact`, who.token)).status).toBe(200);
   });
 });
 

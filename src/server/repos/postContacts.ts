@@ -19,8 +19,29 @@ export type ContactPostTable = SQLiteTable & {
   expiresAt?: SQLiteColumn;
 };
 
+// A column left empty is undefined, so it is absent from the JSON answer.
+const value = (v: unknown) => (typeof v === "string" && v !== "" ? v : undefined);
+
 export function postContactsRepo(db: Db, table: ContactPostTable) {
   return {
+    /**
+     * The contacts of the author's own post, for its edit form: whatever its status, expired or not.
+     * Null when the post is not theirs or is deleted, so someone else's post looks missing.
+     */
+    async findOwn(id: number, authorId: number): Promise<Contacts | null> {
+      const row = await db
+        .select({ phone: table.phone, whatsapp: table.whatsapp, messenger: table.messenger })
+        .from(table)
+        .where(and(eq(table.id, id), eq(table.authorId, authorId), isNull(table.deletedAt)))
+        .get();
+      if (!row) return null;
+      return {
+        phone: value(row.phone),
+        whatsapp: value(row.whatsapp),
+        messenger: value(row.messenger),
+      };
+    },
+
     /**
      * The contacts of a post the viewer may see: published (or their own, or any for a mod), not
      * deleted, not expired. Null when there is no such post, so a hidden post and a missing one look the same.
@@ -39,8 +60,6 @@ export function postContactsRepo(db: Db, table: ContactPostTable) {
         )
         .get();
       if (!row) return null;
-      // A column left empty is undefined, so it is absent from the JSON answer.
-      const value = (v: unknown) => (typeof v === "string" && v !== "" ? v : undefined);
       return {
         phone: value(row.phone),
         whatsapp: value(row.whatsapp),

@@ -8,6 +8,7 @@ import {
   modUsersQuery,
   reasonBody,
   rejectPostRequest,
+  removalBody,
   releaseKeyRequest,
   resolveReportRequest,
   type idConflictResult,
@@ -181,7 +182,7 @@ export const modRoutes = new Hono<AppEnv>()
     const { status, message } = POST_FAILURES[result.reason];
     return c.json({ error: result.reason, message }, status);
   })
-  .post("/reports/:id/remove", validateJson(reasonBody), async (c) => {
+  .post("/reports/:id/remove", validateJson(removalBody), async (c) => {
     const id = paramId(c);
     if (id === null) return c.json(notFound, 404);
     const result = await removeReported(

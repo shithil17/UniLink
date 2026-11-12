@@ -18,7 +18,7 @@ import { rateLimit, rateLimitedResponse } from "../../middleware/rateLimit";
 import type { AppEnv, SessionUser } from "../../middleware/types";
 import { submitPost } from "../../moderation/submit";
 import { pageParams, toPage } from "../../paging";
-import { revealContact } from "../../posts/contactReveal";
+import { ownContacts, revealContact } from "../../posts/contactReveal";
 import { deleteOwnPost } from "../../posts/authorDelete";
 import { postBlocked } from "../../posts/postBlocked";
 import {
@@ -251,6 +251,7 @@ export const rideRoutes = new Hono<AppEnv>()
     return c.json(toRideView(ride, me.id, now) satisfies z.infer<typeof rideSummary>);
   })
   .get("/:id/contact", revealContact(rides))
+  .get("/:id/own-contact", ownContacts(rides))
   .delete("/:id", deleteOwnPost("ride"))
   .patch("/:id", validateJson(ridePatch), async (c) => {
     const id = paramId(c);
@@ -299,6 +300,13 @@ export const rideRoutes = new Hono<AppEnv>()
       patch.messenger = body.contacts.messenger ?? null;
     }
     if (body.departsAt !== undefined) {
+      // One-off rides aren't renewable: once it has left, a new departure is a new post.
+      if (ride.expiresAt <= now) {
+        return c.json(
+          { error: "ride_left", message: "This ride has left. Post a new one instead." },
+          409,
+        );
+      }
       const expiry = computeExpiresAt({ at: body.departsAt }, now);
       if (!expiry.ok) return badDate(c, "departure", expiry.reason);
       patch.departsAt = body.departsAt;
@@ -334,6 +342,7 @@ export const rideRoutes = new Hono<AppEnv>()
           user: me,
           targetType: "ride",
           input: { texts: [pickup, destination, ...(notes ? [notes] : [])], contacts },
+          previousStatus: ride.status,
           save: async (moderation) => {
             await repo.update(id, { ...patch, ...moderation }, now);
             return id;
