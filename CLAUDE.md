@@ -38,7 +38,7 @@ Before calling a checklist done: `vp check && vp test && vp build`.
 - UI language: Pocket Planner (`DESIGN.md` records the built system, reference in `design/pocket-planner/`). Neutral grounds, flat borderless surfaces with hairline-separated rows, one accent per palette plus six course hues used only for course data, floating tab bar, soft rounded shapes, Figtree with Noto Sans Bengali for Bangla, course states use the shared state marks, shadow only on floating layers, no gradients or glass.
 - Messages users need to see (action results, errors, form validation) are always toasts, never inline HTML blocks or error lines. Forms pass `toastFirstFieldError` to `handleSubmit`; server field errors toast too.
 - No layout shifts: follow DESIGN.md "Layout stability and messages" (reserve status lines, width-stable controls, `keepPreviousData` on changing query keys, skeletons sized like the content, overlay instead of inserting).
-- Dates are always day, month, year ("21 Oct 2026", dd/mm/yyyy), never month first. Never build a date string with the `en-US` locale.
+- Dates are always day, month, year ("21 Oct 2026", dd/mm/yyyy), never month first. Never build a date string with the `en-US` locale, and never use native `type="date"`/`datetime-local` inputs (the browser shows them mm/dd/yyyy); use the shared day-first date field.
 - UI: mobile-first. Theme token classes only (`bg-app`, `text-ink`, `border-line`, `bg-surface`, ...). No hex values, `bg-white`/`text-white`/`bg-black` or Tailwind palette colors outside `src/client/index.css`.
 - Forms: shadcn form + React Hook Form + the shared Zod schema.
 - Tests sit next to code: `*.test.ts` (unit), `*.api.test.ts` (API against local D1). Leave at least one test that fails if the logic breaks.
