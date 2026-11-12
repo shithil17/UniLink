@@ -1,15 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { apiPost, errorMessage } from "@/lib/api";
 import { disablePush, enablePush, type PushState } from "@/lib/push";
 import { meQuery, pushStateQuery } from "@/lib/queries";
 import { pushOk } from "../../../shared/schemas/push";
 
+// `on` and `off` share one sentence so flipping the switch never rewraps the row.
+const ENABLED_HINT = "Get an alert on this device when something new arrives in your inbox.";
 const HINT: Record<PushState, string> = {
-  on: "You'll get an alert on this device when something new arrives in your inbox.",
-  off: "Get an alert on this device when something new arrives in your inbox.",
+  on: ENABLED_HINT,
+  off: ENABLED_HINT,
   denied:
     "Notifications are blocked for UniLink in your browser settings. Allow them there, then come back.",
   "needs-install":
@@ -32,7 +35,7 @@ export function PushSwitch() {
     onSettled: refresh,
   });
 
-  if (!state) return null;
+  if (!state) return <PushSwitchSkeleton />;
   const changeable = state === "on" || state === "off";
 
   return (
@@ -59,6 +62,19 @@ export function PushSwitch() {
   );
 }
 
+/** The row's shape while the device's push state is read, so the group does not jump. */
+function PushSwitchSkeleton() {
+  return (
+    <div data-slot="push-switch-skeleton" className="flex min-h-15 items-center gap-3 px-4 py-2.5">
+      <div className="grid min-w-0 flex-1 gap-1.5">
+        <Skeleton className="h-4 w-3/5" />
+        <Skeleton className="h-3 w-4/5" />
+      </div>
+      <Skeleton className="h-8 w-23 shrink-0 rounded-full" />
+    </div>
+  );
+}
+
 /** Admins only: send one test notification to their own devices to check push end to end. */
 function PushTestRow() {
   const queryClient = useQueryClient();
@@ -81,8 +97,8 @@ function PushTestRow() {
           Sends one to you on every device where notifications are on.
         </p>
       </div>
-      <Button variant="outline" size="sm" disabled={send.isPending} onClick={() => send.mutate()}>
-        {send.isPending ? "Sending" : "Send test"}
+      <Button variant="outline" size="sm" loading={send.isPending} onClick={() => send.mutate()}>
+        Send test
       </Button>
     </div>
   );

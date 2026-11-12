@@ -380,6 +380,8 @@
   }
   html {
     @apply font-sans;
+    /* Reserve the scrollbar's width so one appearing never shifts the page sideways. */
+    scrollbar-gutter: stable;
     -webkit-text-size-adjust: 100%;
   }
   body {

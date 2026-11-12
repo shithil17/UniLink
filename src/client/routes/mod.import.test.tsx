@@ -5,6 +5,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import type { ModCourse, ModCurriculum } from "../../shared/schemas/modCourses";
 import { Route } from "./mod.import";
 
+const toastSuccess = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/toast", () => ({
+  toast: Object.assign(vi.fn(), { success: toastSuccess, error: vi.fn() }),
+}));
+
 const curriculum: ModCurriculum = {
   id: 1,
   programCode: "42",
@@ -119,7 +124,9 @@ describe("curriculum import confirmation", () => {
 
     fireEvent.click(within(sheet).getByRole("button", { name: "Replace courses" }));
     await waitFor(() => expect(importCalls()).toHaveLength(1));
-    expect(await screen.findByText(/Imported 2 courses/)).toBeTruthy();
+    await waitFor(() => expect(toastSuccess).toHaveBeenCalledWith("Imported 2 courses."));
+    // The summary is a toast, not a block on the page.
+    expect(screen.queryByText(/Imported 2 courses/)).toBeNull();
   });
 
   it("imports nothing when the confirmation is cancelled", async () => {

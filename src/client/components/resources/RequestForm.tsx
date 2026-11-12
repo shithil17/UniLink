@@ -17,6 +17,7 @@ import {
   toastPostFailure,
   useCreateRequest,
 } from "@/lib/resources";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { toast } from "@/lib/toast";
 import {
   resourceRequestInput,
@@ -68,7 +69,7 @@ export function RequestForm({
       },
       onError: toastPostFailure,
     });
-  });
+  }, toastFirstFieldError);
 
   return (
     <form onSubmit={submit} noValidate>

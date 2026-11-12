@@ -57,7 +57,11 @@ function Button({
   ...props
 }: ButtonPrimitive.Props &
   VariantProps<typeof buttonVariants> & {
-    /** Marks the button busy and shows a spinner. Clicks (and form submits) are ignored meanwhile. */
+    /**
+     * Marks the button busy and shows a spinner. Clicks (and form submits) are ignored meanwhile.
+     * The label stays in place (transparent, still readable by assistive tech) and the spinner sits
+     * centered on top, so the button never changes width.
+     */
     loading?: boolean;
   }) {
   return (
@@ -74,13 +78,19 @@ function Button({
       }
       {...props}
     >
+      <span
+        data-slot="button-content"
+        className={
+          loading ? "inline-flex items-center justify-center gap-[inherit] opacity-0" : "contents"
+        }
+      >
+        {children}
+      </span>
       {loading ? (
-        <LoaderCircleIcon
-          aria-hidden
-          className="animate-[spin_900ms_linear_infinite] motion-reduce:animate-none"
-        />
+        <span aria-hidden className="absolute inset-0 flex items-center justify-center">
+          <LoaderCircleIcon className="size-5 animate-[spin_900ms_linear_infinite] motion-reduce:animate-none" />
+        </span>
       ) : null}
-      {children}
     </ButtonPrimitive>
   );
 }

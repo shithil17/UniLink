@@ -292,8 +292,8 @@ function StudentCourseDetails({
                 Delete {course.code}? Its grades are deleted too.
               </p>
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Button variant="destructive" disabled={remove.isPending} onClick={onDelete}>
-                  {remove.isPending ? "Deleting..." : "Delete course"}
+                <Button variant="destructive" loading={remove.isPending} onClick={onDelete}>
+                  Delete course
                 </Button>
                 <Button variant="outline" onClick={() => setConfirmingDelete(false)}>
                   Keep it

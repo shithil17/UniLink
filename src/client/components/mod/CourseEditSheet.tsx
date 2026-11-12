@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, errorMessage } from "@/lib/api";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import {
   categoriesOf,
   changedFields,
@@ -120,7 +121,7 @@ function CourseEditor({
   const confirm = useConfirm();
 
   // A refusal that belongs to a field is marked on it too, where the mod can fix it once the confirm
-  // sheet is closed. The error is thrown on, so the sheet shows it as well.
+  // sheet is closed. The error is thrown on, so the confirm sheet toasts it.
   const fail = (err: unknown): never => {
     const code = err instanceof ApiError ? err.code : undefined;
     if (code === "code_taken" || code === "code_referenced") {
@@ -136,9 +137,9 @@ function CourseEditor({
     const known = prereqCodesFor(courses, course?.id ?? null);
     const unknown = [...new Set(prereqCourseCodes(values.prereq))].filter((c) => !known.has(c));
     if (unknown.length > 0) {
-      form.setError("prereq", {
-        message: `${unknown.join(", ")} ${unknown.length === 1 ? "isn't" : "aren't"} another course in this curriculum. Check the spelling, or add that course first.`,
-      });
+      const message = `${unknown.join(", ")} ${unknown.length === 1 ? "isn't" : "aren't"} another course in this curriculum. Check the spelling, or add that course first.`;
+      form.setError("prereq", { message });
+      toast.error(message);
       return;
     }
     if (!course) {
@@ -165,7 +166,7 @@ function CourseEditor({
         onClose();
       },
     });
-  });
+  }, toastFirstFieldError);
 
   const altError = errors.alternatives?.message ?? errors.alternatives?.root?.message;
 

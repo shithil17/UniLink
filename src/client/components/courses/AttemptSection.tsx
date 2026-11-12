@@ -102,8 +102,8 @@ function AttemptRow({
             Delete this attempt? Your CGPA and credits are worked out again without it.
           </p>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button variant="destructive" disabled={remove.isPending} onClick={onDelete}>
-              {remove.isPending ? "Deleting..." : "Delete attempt"}
+            <Button variant="destructive" loading={remove.isPending} onClick={onDelete}>
+              Delete attempt
             </Button>
             <Button variant="outline" onClick={() => setConfirming(false)}>
               Keep it

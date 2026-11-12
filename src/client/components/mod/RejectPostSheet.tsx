@@ -11,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { rejectPostConfirm } from "@/lib/modConfirm";
 import { categoryLabel } from "@/lib/modQueue";
 import {
@@ -83,8 +84,10 @@ function RejectForm({
       </SheetHeader>
       <form
         noValidate
-        onSubmit={form.handleSubmit((values) =>
-          confirm.ask({ ...rejectPostConfirm(post, values), run: () => onReject(values) }),
+        onSubmit={form.handleSubmit(
+          (values) =>
+            confirm.ask({ ...rejectPostConfirm(post, values), run: () => onReject(values) }),
+          toastFirstFieldError,
         )}
         className="space-y-4 px-5 pb-4"
       >

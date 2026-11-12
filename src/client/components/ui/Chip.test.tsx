@@ -46,4 +46,11 @@ describe("Chip", () => {
     expect(chip.getAttribute("aria-pressed")).toBe("true");
     expect(check(container)).not.toBeNull();
   });
+
+  it("is as wide pressed as unpressed: the unpressed chip pads for the check", () => {
+    render(<Chip>Maths</Chip>);
+    const chip = screen.getByRole("button", { name: "Maths" });
+    expect(chip.className).toContain("px-[27px]");
+    expect(chip.className).toContain("aria-pressed:px-4");
+  });
 });

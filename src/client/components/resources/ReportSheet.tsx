@@ -12,6 +12,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { errorMessage } from "@/lib/api";
 import { useReport } from "@/lib/resources";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { toast } from "@/lib/toast";
 import { reasonBody } from "../../../shared/schemas/moderation";
 
@@ -48,7 +49,7 @@ export function ReportSheet({
         onError: (err) => toast.error(errorMessage(err)),
       },
     );
-  });
+  }, toastFirstFieldError);
 
   return (
     <Sheet open={target !== null} onOpenChange={(open) => !open && close()}>

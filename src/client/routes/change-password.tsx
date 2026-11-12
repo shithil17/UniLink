@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "@/lib/toast";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { errorMessage } from "@/lib/api";
 import { useChangePassword } from "@/lib/auth";
 import { meQuery } from "@/lib/queries";
@@ -48,10 +49,12 @@ function ChangePasswordPage() {
       footer={<LogoutButton />}
     >
       <form
-        onSubmit={form.handleSubmit((values) =>
-          change.mutate(changePasswordRequest.parse(values), {
-            onError: (err) => toast.error(errorMessage(err)),
-          }),
+        onSubmit={form.handleSubmit(
+          (values) =>
+            change.mutate(changePasswordRequest.parse(values), {
+              onError: (err) => toast.error(errorMessage(err)),
+            }),
+          toastFirstFieldError,
         )}
         noValidate
       >
@@ -87,8 +90,8 @@ function ChangePasswordPage() {
             />
             <FieldError errors={[errors.confirmPassword]} />
           </Field>
-          <Button type="submit" size="lg" className="w-full" disabled={change.isPending}>
-            {change.isPending ? "Saving..." : "Change password"}
+          <Button type="submit" size="lg" className="w-full" loading={change.isPending}>
+            Change password
           </Button>
         </FieldGroup>
       </form>

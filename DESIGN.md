@@ -123,6 +123,19 @@ Reduced-motion variants checked in code:
 - Now marker, skeleton pulse, spinner and credit bar do not animate.
 - Drag dismisses without following the transform.
 
+## Layout stability and messages
+
+Nothing on screen jumps because of a tap, a load or a refetch.
+
+- **Messages are toasts.** Action results, errors and form validation go to a toast. Never insert a message, error line or status box into the page; it shifts the layout and is easy to miss off screen. An invalid submit toasts the first error (`toastFirstFieldError`) and focuses its field; `FieldError` is screen-reader only. Exceptions: a block that failed to load shows `ErrorBlock` in its own place, and moderation states use `StatusNote`.
+- **Taps never move what's above or beside the control.** Filters, menus and extra detail open as a sheet or popover, or below the control.
+- **Controls keep their width.** Button `loading` overlays the spinner on a hidden label; don't swap labels ("Saving..."). Chips are the same width pressed and unpressed. Counters use tabular figures.
+- **Reserve status lines.** A line that appears with data or state (a count, a hint, "Found: ...") is always rendered, holding a placeholder or skeleton bar of the same height.
+- **Refetches keep data.** Queries with changing keys (search, filters, a picked item) use `placeholderData: keepPreviousData` and mark the list `aria-busy`; they never empty to a skeleton.
+- **Skeletons match the loaded layout**, including side columns at `xl` and row heights.
+- **Fixed-size grids.** The month grid always has six weeks; one-line headings `truncate` instead of wrapping.
+- `html` has `scrollbar-gutter: stable`, so a scrollbar appearing never shifts the page.
+
 ## Do and Don't
 
 **Do** use semantic theme tokens, keep one accent for actions, use hues only with course or notification data, preserve shape-coded course states, keep touch targets at least 44px, and check layouts on phone and desktop.

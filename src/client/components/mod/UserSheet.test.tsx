@@ -5,6 +5,11 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import type { ModUser } from "../../../shared/schemas/moderation";
 import { UserSheet } from "./UserSheet";
 
+const toastError = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/toast", () => ({
+  toast: Object.assign(vi.fn(), { success: vi.fn(), error: toastError }),
+}));
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -151,7 +156,9 @@ describe("UserSheet", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ban" }));
     const sheet = await sheetTitled("Ban user");
     fireEvent.click(within(sheet).getByRole("button", { name: "Ban user" }));
-    expect((await within(sheet).findByRole("alert")).textContent).toContain("already banned");
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith("That user is already banned."));
+    // The error is a toast, not a block inside the sheet.
+    expect(within(sheet).queryByRole("alert")).toBeNull();
     // Still open, and the button works again for a retry.
     expect(within(sheet).getByRole("button", { name: "Ban user" })).toBeTruthy();
   });
