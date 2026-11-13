@@ -1,5 +1,5 @@
-import { ArrowRightIcon, CircleAlertIcon } from "lucide-react";
-import { useState } from "react";
+import { ArrowRightIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -9,11 +9,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import type { ConfirmRequest } from "@/lib/modConfirm";
+import { toast } from "@/lib/toast";
 
 /**
  * The step between "Submit" and the request for every mod and admin action. It says what is about to
  * happen (who or what is affected, the reason, a before and after for each edited field, what
- * follows), and only its confirm button sends anything. Cancel, Escape and a drag down send nothing.
+ * follows), and only its confirm button sends anything. A failed request is toasted. Cancel, Escape and a drag down send nothing.
  * `useConfirm` (in `lib/useConfirm`) drives it.
  */
 const panel = "overflow-hidden rounded-row bg-tint";
@@ -36,6 +37,12 @@ export function ConfirmSheet({
   // Keep the last request on screen while the sheet slides out, so its words don't vanish first.
   const [shown, setShown] = useState(request);
   if (request && request !== shown) setShown(request);
+
+  // A failed request keeps the sheet open so the mod can retry; the reason is a toast, not a block
+  // that would grow the sheet.
+  useEffect(() => {
+    if (error) toast.error(error);
+  }, [error]);
 
   return (
     <Sheet open={request !== null} onOpenChange={(open) => !open && onCancel()}>
@@ -103,19 +110,6 @@ export function ConfirmSheet({
                     ))}
                   </ul>
                 </div>
-              ) : null}
-              {error ? (
-                <p
-                  role="alert"
-                  className="flex items-start gap-3 rounded-row bg-danger-soft px-3.5 py-3 text-[15px] text-ink"
-                >
-                  <CircleAlertIcon
-                    aria-hidden
-                    strokeWidth={1.75}
-                    className="mt-0.5 size-5 shrink-0 text-danger"
-                  />
-                  {error}
-                </p>
               ) : null}
             </div>
             <div className="flex flex-col-reverse gap-2 px-5 pt-1 pb-1 sm:flex-row sm:justify-end">

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { RadioChip, RadioGroup } from "@/components/ui/radio-group";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { errorMessage } from "@/lib/api";
+import { toastFieldErrors } from "@/lib/formErrors";
 import { termLabel, termOptions, termValue } from "@/lib/courseMap";
 import { useRecordAttempt, useUpdateAttempt } from "@/lib/courses";
 import { ATTEMPT_GRADES, gradeLabel, gradePoints, WAIVED } from "../../../shared/grading";
@@ -48,6 +49,9 @@ const gradeTiles = ATTEMPT_GRADES.map((g) => {
           : `${g}, ${points.toFixed(1)} points`,
   };
 });
+
+const TERM_REQUIRED = "Pick the term you took it in.";
+const GRADE_REQUIRED = "Pick a grade.";
 
 /**
  * One attempt form in three shapes:
@@ -102,30 +106,33 @@ export function AttemptForm({
   const { errors } = form.formState;
   const grade = useWatch({ control: form.control, name: "grade" });
 
-  const submit = form.handleSubmit((values) => {
-    const done = {
-      onSuccess: () => {
-        if (!attempt && confirmAfterSheetCloses) {
+  const submit = form.handleSubmit(
+    (values) => {
+      const done = {
+        onSuccess: () => {
+          if (!attempt && confirmAfterSheetCloses) {
+            onSaved();
+            confirmAfterClose("Grade saved");
+            return;
+          }
+          toast.success(attempt ? "Attempt updated" : "Grade saved");
           onSaved();
-          confirmAfterClose("Grade saved");
-          return;
-        }
-        toast.success(attempt ? "Attempt updated" : "Grade saved");
-        onSaved();
-      },
-      onError: (err: unknown) => toast.error(errorMessage(err)),
-    };
-    if (attempt) {
-      update.mutate(
-        { grade: values.grade, term: values.term ?? null, facultyId: values.facultyId ?? null },
-        done,
-      );
-    } else {
-      // The faculty picker is hidden in the quick form, so a faculty picked in the full form (and
-      // kept in form state for the toggle back) is not sent from here.
-      record.mutate(mode === "quick" ? { ...values, facultyId: null } : values, done);
-    }
-  });
+        },
+        onError: (err: unknown) => toast.error(errorMessage(err)),
+      };
+      if (attempt) {
+        update.mutate(
+          { grade: values.grade, term: values.term ?? null, facultyId: values.facultyId ?? null },
+          done,
+        );
+      } else {
+        // The faculty picker is hidden in the quick form, so a faculty picked in the full form (and
+        // kept in form state for the toggle back) is not sent from here.
+        record.mutate(mode === "quick" ? { ...values, facultyId: null } : values, done);
+      }
+    },
+    toastFieldErrors({ term: TERM_REQUIRED, grade: GRADE_REQUIRED }),
+  );
 
   return (
     <form onSubmit={submit} noValidate>
@@ -186,7 +193,7 @@ export function AttemptForm({
               A waived course counts toward your credits, not your CGPA.
             </FieldDescription>
           ) : null}
-          <FieldError errors={[errors.grade]} />
+          <FieldError errors={[errors.grade && { message: GRADE_REQUIRED }]} />
         </Field>
         <Field data-invalid={Boolean(errors.term)}>
           <FieldLabel htmlFor="attempt-term">
@@ -207,7 +214,7 @@ export function AttemptForm({
               />
             )}
           />
-          <FieldError errors={[errors.term && { message: "Pick the term you took it in." }]} />
+          <FieldError errors={[errors.term && { message: TERM_REQUIRED }]} />
         </Field>
         {showFaculty ? (
           <Field>
@@ -233,14 +240,8 @@ export function AttemptForm({
           </p>
         ) : null}
         <div className="flex flex-col gap-2">
-          <Button type="submit" className="w-full" disabled={pending || locked}>
-            {pending
-              ? "Saving..."
-              : attempt
-                ? "Save changes"
-                : mode === "full"
-                  ? "Save attempt"
-                  : "Record a grade"}
+          <Button type="submit" className="w-full" loading={pending} disabled={locked}>
+            {attempt ? "Save changes" : mode === "full" ? "Save attempt" : "Record a grade"}
           </Button>
           {onCancel ? (
             <Button type="button" variant="outline" className="w-full" onClick={onCancel}>

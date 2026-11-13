@@ -8,7 +8,7 @@ type Asked = { request: ConfirmRequest; pending: boolean; error: string | null }
 /**
  * Drives the confirm sheet. `ask(request)` opens it; render `element` once, inside the action's own
  * sheet so the two nest. While the request runs the confirm button shows progress and ignores taps,
- * and the sheet can't be dismissed. If the request fails the sheet stays open with the error inline,
+ * and the sheet can't be dismissed. If the request fails the sheet stays open and the error is toasted,
  * so the mod can try again or cancel.
  */
 export function useConfirm() {

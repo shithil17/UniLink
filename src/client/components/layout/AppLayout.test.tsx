@@ -87,7 +87,7 @@ describe("AppLayout navigation", () => {
   it("links every student tab, including Materials, and marks the current one", async () => {
     await renderShell(user("student"), "/courses");
     const nav = screen.getByRole("navigation", { name: "Main" });
-    expect(nav.querySelectorAll("a")).toHaveLength(6);
+    expect(nav.querySelectorAll("a")).toHaveLength(7);
     expect(within(nav).getByRole("link", { name: "Materials" })).toBeTruthy();
     expect(nav.querySelector("[aria-current=page]")?.textContent).toContain("Courses");
   });
@@ -95,14 +95,14 @@ describe("AppLayout navigation", () => {
   it("gives a mod a Mod tab that stays current inside the panel", async () => {
     await renderShell(user("mod"), "/mod/queue");
     const nav = screen.getByRole("navigation", { name: "Main" });
-    expect(nav.querySelectorAll("a")).toHaveLength(7);
+    expect(nav.querySelectorAll("a")).toHaveLength(8);
     expect(nav.querySelector("[aria-current=page]")?.textContent).toContain("Mod");
   });
 
   it("hides the More tabs from the phone bar, where the More button stands in for them", async () => {
     await renderShell(user("student"));
     const nav = screen.getByRole("navigation", { name: "Main" });
-    for (const label of ["Routine", "Settings"]) {
+    for (const label of ["Rides", "Routine", "Settings"]) {
       expect(within(nav).getByRole("link", { name: label }).classList).toContain("max-md:hidden");
     }
     expect(within(nav).getByRole("link", { name: "Materials" }).classList).not.toContain(
@@ -120,6 +120,7 @@ describe("AppLayout navigation", () => {
         .getAllByRole("link")
         .map((a) => a.textContent),
     ).toEqual([
+      "RidesShare a ride or find one",
       "RoutineYour classes for the week",
       "ModHeld posts, users and curriculum",
       "SettingsTheme, password and account",
@@ -222,7 +223,7 @@ describe("AppLayout rail", () => {
     await renderShell(user("student"));
     fireEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
 
-    for (const label of ["Home", "Courses", "Materials", "Routine", "Inbox", "Settings"]) {
+    for (const label of ["Home", "Courses", "Materials", "Rides", "Routine", "Inbox", "Settings"]) {
       expect(screen.getByRole("link", { name: label })).toBeTruthy();
     }
   });

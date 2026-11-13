@@ -1,20 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Navigate, redirect } from "@tanstack/react-router";
-import { CircleCheckIcon, ClockIcon, FlagIcon, LockKeyholeIcon } from "lucide-react";
-import { useState } from "react";
+import { CircleCheckIcon, ClockIcon, LockKeyholeIcon } from "lucide-react";
 import { RequestHeading } from "@/components/resources/RequestHeading";
-import { ReportSheet } from "@/components/resources/ReportSheet";
-import { StatusNote } from "@/components/resources/StatusNote";
+import { ReportButton } from "@/components/posts/ReportButton";
+import { StatusNote } from "@/components/posts/StatusNote";
 import { SubmitForm } from "@/components/resources/SubmitForm";
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBlock } from "@/components/ui/error-block";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, errorMessage } from "@/lib/api";
 import { timeAgo } from "@/lib/inbox";
 import { meQuery } from "@/lib/queries";
-import { expiryLine, linkHost, requestDetailQuery } from "@/lib/resources";
+import {
+  expiryLine,
+  linkHost,
+  requestDetailQuery,
+  REQUEST_REPORT_DESCRIPTION,
+} from "@/lib/resources";
 import type { ResourceRequestDetail } from "../../shared/schemas/resources";
 
 export const Route = createFileRoute("/resources/$requestId")({
@@ -32,7 +36,6 @@ function SubmitScreen() {
   const raw = Route.useParams().requestId;
   const id = /^\d+$/.test(raw) ? Number(raw) : 0;
   const detail = useQuery({ ...requestDetailQuery(id), enabled: id > 0 });
-  const [reporting, setReporting] = useState(false);
 
   const gone = id === 0 || (detail.error instanceof ApiError && detail.error.status === 404);
 
@@ -85,13 +88,11 @@ function SubmitScreen() {
             <SubmitForm requestId={id} />
           </div>
           <MySubmissions links={detail.data.mySubmissions} now={detail.dataUpdatedAt} />
-          <Button variant="ghost" size="sm" onClick={() => setReporting(true)}>
-            <FlagIcon aria-hidden strokeWidth={1.75} />
-            Report this request
-          </Button>
-          <ReportSheet
-            target={reporting ? { type: "resource_request", id } : null}
-            onClose={() => setReporting(false)}
+          <ReportButton
+            type="resource_request"
+            id={id}
+            label="Report this request"
+            description={REQUEST_REPORT_DESCRIPTION}
           />
         </>
       )}
@@ -163,7 +164,12 @@ function MySubmissions({
                   </Badge>
                 </div>
               ) : null}
-              <StatusNote status={link.status} what="link" />
+              <StatusNote
+                status={link.status}
+                what="link"
+                category={link.rejectionCategory}
+                appeal={{ targetType: "resource_submission", id: link.id }}
+              />
             </li>
           );
         })}

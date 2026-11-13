@@ -43,6 +43,12 @@ describe("notificationCopy for a removal", () => {
     ).toBe("A moderator removed your request for materials");
   });
 
+  it("names a removed ride", () => {
+    const copy = notificationCopy("content_removed", { kind: "ride", reason: "Looks like a scam" });
+    expect(copy.title).toBe("A moderator removed your ride");
+    expect(copy.detail).toBe("Reason: Looks like a scam");
+  });
+
   it("falls back to fixed words for a payload that does not parse", () => {
     const copy = notificationCopy("content_removed", { kind: "nope", reason: "x" });
     expect(copy.title).toBe("A moderator removed something you posted");
@@ -120,6 +126,10 @@ describe("notificationTarget", () => {
     expect(notificationTarget("content_removed", { kind: "resource_request" })).toEqual({
       to: "/resources",
     });
+    expect(notificationTarget("content_removed", { kind: "ride" })).toEqual({
+      to: "/rides",
+      search: { tab: "mine" },
+    });
     expect(notificationTarget("content_removed", { kind: "nope" })).toBeNull();
     expect(notificationTarget("content_removed", undefined)).toBeNull();
   });
@@ -132,6 +142,11 @@ describe("notificationTarget", () => {
       expect(notificationTarget(type, { targetType: "resource_submission", targetId: 9 })).toEqual({
         to: "/resources",
         search: { tab: "help" },
+      });
+      // A held ride that is approved or turned down opens My rides, where its status shows.
+      expect(notificationTarget(type, { targetType: "ride", targetId: 9 })).toEqual({
+        to: "/rides",
+        search: { tab: "mine" },
       });
       expect(notificationTarget(type, { targetType: "nope", targetId: 9 })).toBeNull();
       expect(notificationTarget(type, {})).toBeNull();

@@ -11,21 +11,30 @@ import {
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { errorMessage } from "@/lib/api";
-import { useReport } from "@/lib/resources";
+import { toastFirstFieldError } from "@/lib/formErrors";
+import { useReport, type PostTargetType } from "@/lib/posts";
 import { toast } from "@/lib/toast";
 import { reasonBody } from "../../../shared/schemas/moderation";
 
-export type ReportTarget = { type: "resource_request" | "resource_submission"; id: number };
+export type ReportTarget = { type: PostTargetType; id: number };
+
+const DEFAULT_DESCRIPTION =
+  "Say what is wrong, such as something that breaks the rules or isn't what it claims. Moderators read every report.";
 
 /**
- * Tells the moderators about a request or a link. The reason uses the shared reason rules, and the
- * moderators see the report in their queue. Sending shows a toast and closes the sheet.
+ * Tells the moderators about a post of any type. The reason uses the shared reason rules, and the
+ * moderators see the report in their queue. Sending shows a toast and closes the sheet. `title` names
+ * what is being reported ("Report this ride"); `description` can say what counts for that type.
  */
 export function ReportSheet({
   target,
+  title,
+  description = DEFAULT_DESCRIPTION,
   onClose,
 }: {
   target: ReportTarget | null;
+  title: string;
+  description?: string;
   onClose: () => void;
 }) {
   const report = useReport();
@@ -48,19 +57,14 @@ export function ReportSheet({
         onError: (err) => toast.error(errorMessage(err)),
       },
     );
-  });
+  }, toastFirstFieldError);
 
   return (
     <Sheet open={target !== null} onOpenChange={(open) => !open && close()}>
       <SheetContent side="bottom">
         <SheetHeader>
-          <SheetTitle>
-            {target?.type === "resource_submission" ? "Report this link" : "Report this request"}
-          </SheetTitle>
-          <SheetDescription>
-            Say what is wrong, such as a link that isn't what it claims or a request that breaks the
-            rules. Moderators read every report.
-          </SheetDescription>
+          <SheetTitle>{title}</SheetTitle>
+          <SheetDescription>{description}</SheetDescription>
         </SheetHeader>
         <form onSubmit={submit} noValidate className="px-5 pb-1">
           <FieldGroup>

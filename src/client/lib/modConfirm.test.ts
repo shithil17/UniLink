@@ -2,6 +2,9 @@ import { describe, expect, it } from "vite-plus/test";
 import type { AuditEntry, ModQueuePost } from "../../shared/schemas/moderation";
 import type { ModFaculty } from "../../shared/schemas/faculty";
 import {
+  areaAddConfirm,
+  areaHiddenConfirm,
+  areaRenameConfirm,
   approvePostConfirm,
   excerpt,
   facultyAddConfirm,
@@ -168,6 +171,50 @@ describe("reversing a removal", () => {
     expect(request.lead).toContain("Removed a request");
     expect(request.effects[0]).toMatch(/^The request is restored/);
     expect(request.effects[0]).not.toMatch(/live/);
+  });
+});
+
+describe("area summaries", () => {
+  it("says where a new area goes and that adding can't be reversed", () => {
+    const sub = areaAddConfirm("Mirpur 10", "Mirpur");
+    expect(sub.lead).toContain("sub-area of Mirpur");
+    expect(sub.facts).toContainEqual({ label: "Under", value: "Mirpur" });
+    expect(areaAddConfirm("Uttara", null).lead).toContain("top-level");
+    expect(sub.effects.join(" ")).toMatch(/can't be reversed/);
+  });
+
+  it("shows a rename as before and after", () => {
+    expect(areaRenameConfirm("Mirpur", "Mirpur DOHS").changes).toEqual([
+      { label: "Name", before: "Mirpur", after: "Mirpur DOHS" },
+    ]);
+  });
+
+  it("hides with the reason and a destructive style, and shows again without one", () => {
+    const hide = areaHiddenConfirm("Mirpur", true, "not a pickup point");
+    expect(hide.destructive).toBe(true);
+    expect(hide.facts).toContainEqual({ label: "Reason", value: "not a pickup point" });
+    expect(hide.effects.join(" ")).toMatch(/already use it keep it/);
+    expect(areaHiddenConfirm("Mirpur", false, "back").destructive).toBeUndefined();
+  });
+
+  it("explains reversing each area action in the audit log", () => {
+    const entry = (action: string): AuditEntry => ({
+      id: 3,
+      actor: "mod_1",
+      action,
+      targetType: "area",
+      targetId: "7",
+      targetLabel: "Mirpur",
+      reason: "r",
+      createdAt: 1,
+      reverses: null,
+      reversedBy: null,
+      reversible: true,
+    });
+    expect(reverseConfirm(entry("area_hide"), "oops").effects[0]).toMatch(/shows in the ride/);
+    expect(reverseConfirm(entry("area_unhide"), "oops").effects[0]).toMatch(/hidden again/);
+    expect(reverseConfirm(entry("area_rename"), "oops").effects[0]).toMatch(/old name/);
+    expect(reverseConfirm(entry("area_hide"), "oops").lead).toContain("Hid an area");
   });
 });
 

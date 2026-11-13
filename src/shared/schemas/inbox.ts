@@ -21,7 +21,7 @@ export type NotificationType = z.infer<typeof notificationType>;
  * The content a moderator can remove, by the audit target type `softDelete()` writes. A test keeps
  * this in step with `softDeleteTargets`.
  */
-export const removedContentKind = z.enum(["resource_request", "resource_submission"]);
+export const removedContentKind = z.enum(["resource_request", "resource_submission", "ride"]);
 
 export type RemovedContentKind = z.infer<typeof removedContentKind>;
 

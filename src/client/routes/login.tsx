@@ -1,27 +1,21 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { AuthScreen, textLink, UnofficialNote } from "@/components/auth/AuthForm";
-import { BannedDetails } from "@/components/auth/BannedNotice";
 import { showBannedToast } from "@/components/auth/showBannedToast";
 import { SampleWeek } from "@/components/auth/SampleWeek";
 import { Button } from "@/components/ui/button";
-import { focusRing } from "@/components/ui/focus";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "@/lib/toast";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { errorMessage } from "@/lib/api";
 import { bannedAccount, useLogin } from "@/lib/auth";
 import { greeting } from "@/lib/home";
 import { meQuery } from "@/lib/queries";
 import { useNow } from "@/lib/useNow";
-import {
-  loginRequest,
-  type AccountBannedResponse,
-  type LoginRequest,
-} from "../../shared/schemas/auth";
+import { loginRequest, type LoginRequest } from "../../shared/schemas/auth";
 
 export const Route = createFileRoute("/login")({
   beforeLoad: async ({ context }) => {
@@ -40,12 +34,9 @@ function LoginPage() {
     defaultValues: { username: "", password: "" },
   });
   const { errors } = form.formState;
-  // Kept beside the toast so a suspended account is never told by the toast alone.
-  const [banned, setBanned] = useState<AccountBannedResponse | null>(null);
 
   function onLoginError(err: unknown) {
     const ban = bannedAccount(err);
-    setBanned(ban);
     if (ban) showBannedToast(ban);
     else toast.error(errorMessage(err));
   }
@@ -69,10 +60,10 @@ function LoginPage() {
       }
     >
       <form
-        onSubmit={form.handleSubmit((values) => {
-          setBanned(null);
-          login.mutate(values, { onError: onLoginError });
-        })}
+        onSubmit={form.handleSubmit(
+          (values) => login.mutate(values, { onError: onLoginError }),
+          toastFirstFieldError,
+        )}
         noValidate
       >
         <FieldGroup>
@@ -97,16 +88,8 @@ function LoginPage() {
             />
             <FieldError errors={[errors.password]} />
           </Field>
-          {banned ? (
-            <FieldError>
-              <span>
-                <span className="block">{banned.message}</span>
-                <BannedDetails ban={banned} linkClassName={`rounded-control ${focusRing}`} />
-              </span>
-            </FieldError>
-          ) : null}
-          <Button type="submit" size="lg" className="w-full" disabled={login.isPending}>
-            {login.isPending ? "Logging in..." : "Log in"}
+          <Button type="submit" size="lg" className="w-full" loading={login.isPending}>
+            Log in
           </Button>
         </FieldGroup>
       </form>

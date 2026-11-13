@@ -6,7 +6,6 @@ import {
 } from "@tanstack/react-query";
 import { z } from "zod";
 import { facultyTitle } from "../../shared/facultySearch";
-import { reportCreated } from "../../shared/schemas/moderation";
 import {
   helpableResourceRequestList,
   myResourceRequestPage,
@@ -228,15 +227,13 @@ export function useDecideLink(decision: "accept" | "reject") {
   });
 }
 
-export function useReport() {
-  return useMutation({
-    mutationFn: (input: {
-      targetType: "resource_request" | "resource_submission";
-      targetId: number;
-      reason: string;
-    }) => apiPost("/api/reports", reportCreated, input),
-  });
-}
+// ---- Reports -------------------------------------------------------------------------------------
+
+/** What the report sheet says counts, for a request and for a link. */
+export const REQUEST_REPORT_DESCRIPTION =
+  "Say what is wrong, such as a request that breaks the rules. Moderators read every report.";
+export const LINK_REPORT_DESCRIPTION =
+  "Say what is wrong, such as a link that isn't what it claims. Moderators read every report.";
 
 // ---- Confirm -------------------------------------------------------------------------------------
 

@@ -7,6 +7,11 @@ import type { Attempt } from "../../../shared/schemas/attempts";
 import { AttemptForm } from "./AttemptForm";
 import { AttemptSection } from "./AttemptSection";
 
+const toastError = vi.hoisted(() => vi.fn());
+vi.mock("@/lib/toast", () => ({
+  toast: Object.assign(vi.fn(), { success: vi.fn(), error: toastError }),
+}));
+
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -137,12 +142,16 @@ describe("AttemptForm modes", () => {
   it("full form requires a term, the quick form does not", async () => {
     const full = renderWith(<AttemptForm mode="full" choices={choices} onSaved={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: "Save attempt" }));
-    expect(await screen.findByText("Pick the term you took it in.")).toBeTruthy();
+    // The field's message stays for screen readers, and the toast is what a sighted user sees.
+    expect((await screen.findByText("Pick the term you took it in.")).className).toContain(
+      "sr-only",
+    );
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Pick a grade."));
     full.unmount();
 
     renderWith(<AttemptForm choices={choices} onSaved={() => {}} />);
     fireEvent.click(screen.getByRole("button", { name: "Record a grade" }));
-    expect(await screen.findByText(/^Invalid option: expected one of/)).toBeTruthy();
+    expect(await screen.findByText("Pick a grade.")).toBeTruthy();
     expect(screen.queryByText("Pick the term you took it in.")).toBeNull();
   });
 });

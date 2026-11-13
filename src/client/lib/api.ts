@@ -53,6 +53,7 @@ async function request<T extends z.ZodType>(
   path: `/api/${string}`,
   schema: T,
   body?: unknown,
+  signal?: AbortSignal,
 ): Promise<z.infer<T>> {
   let res: Response;
   try {
@@ -63,6 +64,7 @@ async function request<T extends z.ZodType>(
         ...(body === undefined ? {} : { "content-type": "application/json" }),
       },
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal,
     });
   } catch (err) {
     // fetch rejects with a TypeError only when no response arrived at all.
@@ -75,11 +77,13 @@ async function request<T extends z.ZodType>(
 }
 
 // Fetches a same-origin /api path and validates the response against its shared schema.
+// An optional `signal` cancels the request (a search that a newer one replaces).
 export function apiGet<T extends z.ZodType>(
   path: `/api/${string}`,
   schema: T,
+  signal?: AbortSignal,
 ): Promise<z.infer<T>> {
-  return request("GET", path, schema);
+  return request("GET", path, schema, undefined, signal);
 }
 
 export function apiPost<T extends z.ZodType>(

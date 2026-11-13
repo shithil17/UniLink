@@ -13,6 +13,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ApiError, errorMessage } from "@/lib/api";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { changedFields, useAddFaculty, useEditFaculty, useSetFacultyHidden } from "@/lib/faculty";
 import {
   facultyAddConfirm,
@@ -80,7 +81,7 @@ function FacultyEditor({ faculty, onClose }: { faculty: ModFaculty | null; onClo
   const confirm = useConfirm();
 
   // A taken name or initials is also marked on its own field, where the mod can fix it once the
-  // confirm sheet is closed. The error is thrown on, so the sheet shows it too.
+  // confirm sheet is closed. The error is thrown on, so the confirm sheet toasts it.
   const fail = (err: unknown): never => {
     const code = err instanceof ApiError ? err.code : undefined;
     if (code === "initials_taken" || code === "name_taken") {
@@ -117,7 +118,7 @@ function FacultyEditor({ faculty, onClose }: { faculty: ModFaculty | null; onClo
         onClose();
       },
     });
-  });
+  }, toastFirstFieldError);
 
   return (
     <>

@@ -80,6 +80,11 @@ function ImportPage() {
         try {
           const r = await importCurriculum.mutateAsync(body);
           setResult({ imported: r.imported, rejected: r.rejected });
+          toast.success(
+            `Imported ${r.imported} ${r.imported === 1 ? "course" : "courses"}${
+              r.rejected.length > 0 ? `, rejected ${r.rejected.length}` : ""
+            }.`,
+          );
         } catch (err) {
           // The rows the server refused go in the table under the form; the sheet shows the message.
           setFailure(rejectedRows(err));
@@ -141,15 +146,7 @@ function ImportPage() {
         </Button>
       </FieldGroup>
 
-      {result ? (
-        <div className="space-y-3" role="status">
-          <p className="text-lg leading-[1.3] font-semibold text-ink tabular-nums">
-            Imported {result.imported} {result.imported === 1 ? "course" : "courses"}
-            {result.rejected.length > 0 ? `, rejected ${result.rejected.length}` : ""}.
-          </p>
-          <RejectedTable rows={result.rejected} />
-        </div>
-      ) : null}
+      {result ? <RejectedTable rows={result.rejected} /> : null}
       {failure ? <RejectedTable rows={failure} /> : null}
       {confirm.element}
     </section>

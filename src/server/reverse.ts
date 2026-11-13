@@ -1,11 +1,13 @@
 import { z } from "zod";
 import { auditActions, reversibleActions } from "../shared/auditActions";
+import { AUTHOR_DELETE_REASON } from "../shared/posts";
 import { departmentCode } from "../shared/departments";
 import { role } from "../shared/schemas/auth";
 import { instant } from "../shared/schemas/common";
 import { courseKind, prereqRule } from "../shared/schemas/courses";
 import type { Db } from "./db/client";
 import { checkCourseChange, type RuleRow } from "./features/courses/courseRules";
+import { areaConflictOf, areasRepo, type AreaState } from "./repos/areas";
 import { auditLogRepo, type AuditRow } from "./repos/auditLog";
 import { courseCodeConflictOf, curriculaRepo, type CourseState } from "./repos/curricula";
 import { facultyConflictOf, facultyRepo, type FacultyState } from "./repos/faculty";
@@ -27,7 +29,8 @@ import { softDeleteTargets, type SoftDeleteTargets } from "./softDelete";
  * | role_change  | { role }                    | puts `role` back                                      |
  * | release_key  | { studentKey, bannedAt }    | puts the key and `banned_at` back; refused if someone |
  * |              |                             | has taken the key since (`key_in_use`)                |
- * | soft_delete  | { deletedAt, deletedBy }    | puts both columns back (restored to how it was; a held item stays held) |
+ * | soft_delete  | { deletedAt, deletedBy }    | puts both columns back (restored to how it was; a held item stays held); |
+ * |              |                             | refused when the author deleted their own post (reason "author", actor the author) |
  * | clear_probing_flag | { postingBlockedUntil, probingFlaggedAt } | puts both back (flagged again, cooldown as it was) |
  *
  * | faculty_edit | the edited columns         | puts them back; refused if the old initials or name+department |
@@ -39,7 +42,11 @@ import { softDeleteTargets, type SoftDeleteTargets } from "./softDelete";
  * |              |                             | prerequisite needs a code the old values would remove (`value_in_use`) |
  * | course_hide, course_unhide | { hidden }    | puts `hidden` back (shown or hidden again)            |
  *
- * Not reversible: adding a faculty member or a course, a password reset (the old hash is never stored), a report resolution, an ID lookup,
+ * | area_rename | { name }                     | puts the name back; refused if a sibling has taken it since (`value_in_use`) |
+ * | area_point  | { lat, lng }                  | puts the old point back (null for none, "Not on the map") |
+ * | area_hide, area_unhide | { hidden, hiddenReason } | puts both back (shown or hidden again, with the old reason) |
+ *
+ * Not reversible: adding a faculty member, a course or an area, a password reset (the old hash is never stored), a report resolution, an ID lookup,
  * automatic actions and a reversal itself. To undo a reversal, repeat the original action. Each row
  * is reversed at most once. A user who has become an admin since is never touched.
  */
@@ -95,6 +102,22 @@ const courseSnapshot = z
   })
   .partial()
   .refine((v) => Object.keys(v).length > 0);
+
+/** Only the columns the action changed are in the snapshot, so every key is optional. */
+const areaSnapshot = z
+  .strictObject({
+    name: z.string().min(1),
+    hidden: z.boolean(),
+    hiddenReason: z.string().nullable(),
+    lat: z.number().nullable(),
+    lng: z.number().nullable(),
+  })
+  .partial()
+  .refine((v) => Object.keys(v).length > 0)
+  // A point is both coordinates or neither (the table's CHECK says the same).
+  .refine(
+    (v) => (v.lat === undefined) === (v.lng === undefined) && (v.lat === null) === (v.lng === null),
+  );
 
 export type ReverseFailure =
   | "not_found"
@@ -172,6 +195,12 @@ async function planSoftDeleteReversal(
   const repo = softDeleteRepo(db, table);
   const state = await repo.state(targetId);
   if (!state) return "target_missing";
+  // An author deleting their own post is final: the post is gone for the author's own reasons, and
+  // the cron will purge it. Only a delete the author made themself counts, so a mod's removal that
+  // happens to give the reason "author" can still be reversed.
+  if (row.reason === AUTHOR_DELETE_REASON && row.actor === String(await repo.authorOf(targetId))) {
+    return "not_reversible";
+  }
   return { current: state, restore: repo.restoreStatement(targetId, parsed.data) };
 }
 
@@ -234,6 +263,26 @@ async function planCourseReversal(
   return { current, restore: repo.restoreCourseStatement(id, restore) };
 }
 
+async function planAreaReversal(
+  db: Db,
+  row: AuditRow,
+  snapshot: unknown,
+): Promise<Plan | ReverseFailure> {
+  const parsed = areaSnapshot.safeParse(snapshot);
+  const id = Number(row.targetId);
+  if (!parsed.success || !Number.isSafeInteger(id)) return "not_reversible";
+
+  const repo = areasRepo(db);
+  const state = await repo.findById(id);
+  if (!state) return "target_missing";
+
+  const restore: Partial<AreaState> = parsed.data;
+  const current = Object.fromEntries(
+    Object.keys(restore).map((k) => [k, state[k as keyof typeof state]]),
+  );
+  return { current, restore: repo.restoreStatement(id, restore) };
+}
+
 function planFor(
   db: Db,
   row: AuditRow,
@@ -245,6 +294,7 @@ function planFor(
   }
   if (row.targetType === "faculty") return planFacultyReversal(db, row, snapshot);
   if (row.targetType === "course") return planCourseReversal(db, row, snapshot);
+  if (row.targetType === "area") return planAreaReversal(db, row, snapshot);
   return planUserReversal(db, row, snapshot);
 }
 
@@ -292,7 +342,7 @@ export async function reverse(
     if (failedUnique(err, "audit_log.reverses_id"))
       return { ok: false, reason: "already_reversed" };
     if (failedUnique(err, "users.student_key")) return { ok: false, reason: "key_in_use" };
-    if (facultyConflictOf(err) || courseCodeConflictOf(err))
+    if (facultyConflictOf(err) || courseCodeConflictOf(err) || areaConflictOf(err))
       return { ok: false, reason: "value_in_use" };
     throw err;
   }

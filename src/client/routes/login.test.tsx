@@ -53,17 +53,32 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe("login validation", () => {
+  it("toasts the first field error instead of showing it inline", async () => {
+    const Page = Route.options.component!;
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <Page />
+      </QueryClientProvider>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Log in" }));
+
+    await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
+    const message = (toastError.mock.calls[0] as unknown as [string])[0];
+    // The field's own copy stays for screen readers, hidden visually.
+    const alert = screen.getAllByRole("alert")[0]!;
+    expect(alert.className).toContain("sr-only");
+    expect(alert.textContent).toBe(message);
+  });
+});
+
 describe("login for a suspended account", () => {
-  it("shows the reason and a mailto contact in a toast that stays and in the form", async () => {
+  it("shows the reason and a mailto contact in a toast that stays, and nothing inline", async () => {
     respondWith(403, banned());
     await submit();
 
-    const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("This account is suspended.");
-    expect(alert.textContent).toContain("Reason: Selling answers in the feed");
-    expect(alert.querySelector("a")?.getAttribute("href")).toBe("mailto:admins@unilink.example");
-
-    expect(toastError).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole("alert")).toBeNull();
     const [title, options] = toastError.mock.calls[0] as unknown as [
       string,
       { duration: number; description: ReactNode },
@@ -83,10 +98,13 @@ describe("login for a suspended account", () => {
     respondWith(403, banned({ reason: null, contact: null }));
     await submit();
 
-    const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("Contact the admins.");
-    expect(alert.textContent).not.toContain("Reason:");
-    expect(alert.querySelector("a")).toBeNull();
+    await waitFor(() => expect(toastError).toHaveBeenCalledTimes(1));
+    const [, options] = toastError.mock.calls[0] as unknown as [string, { description: ReactNode }];
+    cleanup();
+    const { container } = render(<>{options.description}</>);
+    expect(container.textContent).toContain("Contact the admins.");
+    expect(container.textContent).not.toContain("Reason:");
+    expect(container.querySelector("a")).toBeNull();
   });
 
   it("keeps the plain error toast for a wrong password", async () => {

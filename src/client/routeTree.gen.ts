@@ -15,10 +15,12 @@ import { Route as CoursesRouteImport } from './routes/courses'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ModRouteImport } from './routes/mod'
+import { Route as RidesRouteImport } from './routes/rides'
 import { Route as RoutineRouteImport } from './routes/routine'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ModIndexRouteImport } from './routes/mod.index'
+import { Route as ModAreasRouteImport } from './routes/mod.areas'
 import { Route as ModAuditRouteImport } from './routes/mod.audit'
 import { Route as ModCoursesRouteImport } from './routes/mod.courses'
 import { Route as ModFacultyRouteImport } from './routes/mod.faculty'
@@ -29,6 +31,9 @@ import { Route as ModUsersRouteImport } from './routes/mod.users'
 import { Route as ResourcesIndexRouteImport } from './routes/resources.index'
 import { Route as ResourcesRequestIdRouteImport } from './routes/resources.$requestId'
 import { Route as ResourcesNewRouteImport } from './routes/resources.new'
+import { Route as RidesNewRouteImport } from './routes/rides_.new'
+import { Route as RidesRideIdIndexRouteImport } from './routes/rides.$rideId.index'
+import { Route as RidesRideIdEditRouteImport } from './routes/rides_.$rideId.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -60,6 +65,11 @@ const ModRoute = ModRouteImport.update({
   path: '/mod',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RidesRoute = RidesRouteImport.update({
+  id: '/rides',
+  path: '/rides',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RoutineRoute = RoutineRouteImport.update({
   id: '/routine',
   path: '/routine',
@@ -78,6 +88,11 @@ const SignupRoute = SignupRouteImport.update({
 const ModIndexRoute = ModIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => ModRoute,
+} as any)
+const ModAreasRoute = ModAreasRouteImport.update({
+  id: '/areas',
+  path: '/areas',
   getParentRoute: () => ModRoute,
 } as any)
 const ModAuditRoute = ModAuditRouteImport.update({
@@ -130,6 +145,21 @@ const ResourcesNewRoute = ResourcesNewRouteImport.update({
   path: '/resources/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RidesNewRoute = RidesNewRouteImport.update({
+  id: '/rides_/new',
+  path: '/rides/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RidesRideIdIndexRoute = RidesRideIdIndexRouteImport.update({
+  id: '/$rideId/',
+  path: '/$rideId/',
+  getParentRoute: () => RidesRoute,
+} as any)
+const RidesRideIdEditRoute = RidesRideIdEditRouteImport.update({
+  id: '/rides_/$rideId/edit',
+  path: '/rides/$rideId/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -138,9 +168,11 @@ export interface FileRoutesByFullPath {
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/mod': typeof ModRouteWithChildren
+  '/rides': typeof RidesRouteWithChildren
   '/routine': typeof RoutineRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/mod/areas': typeof ModAreasRoute
   '/mod/audit': typeof ModAuditRoute
   '/mod/courses': typeof ModCoursesRoute
   '/mod/faculty': typeof ModFacultyRoute
@@ -150,8 +182,11 @@ export interface FileRoutesByFullPath {
   '/mod/users': typeof ModUsersRoute
   '/resources/$requestId': typeof ResourcesRequestIdRoute
   '/resources/new': typeof ResourcesNewRoute
+  '/rides/new': typeof RidesNewRoute
   '/mod/': typeof ModIndexRoute
   '/resources/': typeof ResourcesIndexRoute
+  '/rides/$rideId/edit': typeof RidesRideIdEditRoute
+  '/rides/$rideId/': typeof RidesRideIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -159,9 +194,11 @@ export interface FileRoutesByTo {
   '/courses': typeof CoursesRoute
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
+  '/rides': typeof RidesRouteWithChildren
   '/routine': typeof RoutineRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/mod/areas': typeof ModAreasRoute
   '/mod/audit': typeof ModAuditRoute
   '/mod/courses': typeof ModCoursesRoute
   '/mod/faculty': typeof ModFacultyRoute
@@ -171,8 +208,11 @@ export interface FileRoutesByTo {
   '/mod/users': typeof ModUsersRoute
   '/resources/$requestId': typeof ResourcesRequestIdRoute
   '/resources/new': typeof ResourcesNewRoute
+  '/rides/new': typeof RidesNewRoute
   '/mod': typeof ModIndexRoute
   '/resources': typeof ResourcesIndexRoute
+  '/rides/$rideId/edit': typeof RidesRideIdEditRoute
+  '/rides/$rideId': typeof RidesRideIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -182,9 +222,11 @@ export interface FileRoutesById {
   '/inbox': typeof InboxRoute
   '/login': typeof LoginRoute
   '/mod': typeof ModRouteWithChildren
+  '/rides': typeof RidesRouteWithChildren
   '/routine': typeof RoutineRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
+  '/mod/areas': typeof ModAreasRoute
   '/mod/audit': typeof ModAuditRoute
   '/mod/courses': typeof ModCoursesRoute
   '/mod/faculty': typeof ModFacultyRoute
@@ -194,8 +236,11 @@ export interface FileRoutesById {
   '/mod/users': typeof ModUsersRoute
   '/resources/$requestId': typeof ResourcesRequestIdRoute
   '/resources/new': typeof ResourcesNewRoute
+  '/rides_/new': typeof RidesNewRoute
   '/mod/': typeof ModIndexRoute
   '/resources/': typeof ResourcesIndexRoute
+  '/rides_/$rideId/edit': typeof RidesRideIdEditRoute
+  '/rides/$rideId/': typeof RidesRideIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -206,9 +251,11 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/login'
     | '/mod'
+    | '/rides'
     | '/routine'
     | '/settings'
     | '/signup'
+    | '/mod/areas'
     | '/mod/audit'
     | '/mod/courses'
     | '/mod/faculty'
@@ -218,8 +265,11 @@ export interface FileRouteTypes {
     | '/mod/users'
     | '/resources/$requestId'
     | '/resources/new'
+    | '/rides/new'
     | '/mod/'
     | '/resources/'
+    | '/rides/$rideId/edit'
+    | '/rides/$rideId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -227,9 +277,11 @@ export interface FileRouteTypes {
     | '/courses'
     | '/inbox'
     | '/login'
+    | '/rides'
     | '/routine'
     | '/settings'
     | '/signup'
+    | '/mod/areas'
     | '/mod/audit'
     | '/mod/courses'
     | '/mod/faculty'
@@ -239,8 +291,11 @@ export interface FileRouteTypes {
     | '/mod/users'
     | '/resources/$requestId'
     | '/resources/new'
+    | '/rides/new'
     | '/mod'
     | '/resources'
+    | '/rides/$rideId/edit'
+    | '/rides/$rideId'
   id:
     | '__root__'
     | '/'
@@ -249,9 +304,11 @@ export interface FileRouteTypes {
     | '/inbox'
     | '/login'
     | '/mod'
+    | '/rides'
     | '/routine'
     | '/settings'
     | '/signup'
+    | '/mod/areas'
     | '/mod/audit'
     | '/mod/courses'
     | '/mod/faculty'
@@ -261,8 +318,11 @@ export interface FileRouteTypes {
     | '/mod/users'
     | '/resources/$requestId'
     | '/resources/new'
+    | '/rides_/new'
     | '/mod/'
     | '/resources/'
+    | '/rides_/$rideId/edit'
+    | '/rides/$rideId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -272,12 +332,15 @@ export interface RootRouteChildren {
   InboxRoute: typeof InboxRoute
   LoginRoute: typeof LoginRoute
   ModRoute: typeof ModRouteWithChildren
+  RidesRoute: typeof RidesRouteWithChildren
   RoutineRoute: typeof RoutineRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   ResourcesRequestIdRoute: typeof ResourcesRequestIdRoute
   ResourcesNewRoute: typeof ResourcesNewRoute
+  RidesNewRoute: typeof RidesNewRoute
   ResourcesIndexRoute: typeof ResourcesIndexRoute
+  RidesRideIdEditRoute: typeof RidesRideIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -324,6 +387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ModRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rides': {
+      id: '/rides'
+      path: '/rides'
+      fullPath: '/rides'
+      preLoaderRoute: typeof RidesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/routine': {
       id: '/routine'
       path: '/routine'
@@ -350,6 +420,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/mod/'
       preLoaderRoute: typeof ModIndexRouteImport
+      parentRoute: typeof ModRoute
+    }
+    '/mod/areas': {
+      id: '/mod/areas'
+      path: '/areas'
+      fullPath: '/mod/areas'
+      preLoaderRoute: typeof ModAreasRouteImport
       parentRoute: typeof ModRoute
     }
     '/mod/audit': {
@@ -422,10 +499,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResourcesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rides_/new': {
+      id: '/rides_/new'
+      path: '/rides/new'
+      fullPath: '/rides/new'
+      preLoaderRoute: typeof RidesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rides/$rideId/': {
+      id: '/rides/$rideId/'
+      path: '/$rideId'
+      fullPath: '/rides/$rideId/'
+      preLoaderRoute: typeof RidesRideIdIndexRouteImport
+      parentRoute: typeof RidesRoute
+    }
+    '/rides_/$rideId/edit': {
+      id: '/rides_/$rideId/edit'
+      path: '/rides/$rideId/edit'
+      fullPath: '/rides/$rideId/edit'
+      preLoaderRoute: typeof RidesRideIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface ModRouteChildren {
+  ModAreasRoute: typeof ModAreasRoute
   ModAuditRoute: typeof ModAuditRoute
   ModCoursesRoute: typeof ModCoursesRoute
   ModFacultyRoute: typeof ModFacultyRoute
@@ -437,6 +536,7 @@ interface ModRouteChildren {
 }
 
 const ModRouteChildren: ModRouteChildren = {
+  ModAreasRoute: ModAreasRoute,
   ModAuditRoute: ModAuditRoute,
   ModCoursesRoute: ModCoursesRoute,
   ModFacultyRoute: ModFacultyRoute,
@@ -449,6 +549,16 @@ const ModRouteChildren: ModRouteChildren = {
 
 const ModRouteWithChildren = ModRoute._addFileChildren(ModRouteChildren)
 
+interface RidesRouteChildren {
+  RidesRideIdIndexRoute: typeof RidesRideIdIndexRoute
+}
+
+const RidesRouteChildren: RidesRouteChildren = {
+  RidesRideIdIndexRoute: RidesRideIdIndexRoute,
+}
+
+const RidesRouteWithChildren = RidesRoute._addFileChildren(RidesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ChangePasswordRoute: ChangePasswordRoute,
@@ -456,12 +566,15 @@ const rootRouteChildren: RootRouteChildren = {
   InboxRoute: InboxRoute,
   LoginRoute: LoginRoute,
   ModRoute: ModRouteWithChildren,
+  RidesRoute: RidesRouteWithChildren,
   RoutineRoute: RoutineRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   ResourcesRequestIdRoute: ResourcesRequestIdRoute,
   ResourcesNewRoute: ResourcesNewRoute,
+  RidesNewRoute: RidesNewRoute,
   ResourcesIndexRoute: ResourcesIndexRoute,
+  RidesRideIdEditRoute: RidesRideIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

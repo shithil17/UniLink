@@ -38,6 +38,7 @@ export function toRequestView(r: ResourceRequestWithFaculty, now: number): Reque
         : null,
     note: r.note,
     status: r.status,
+    rejectionCategory: r.status === "rejected" ? r.moderationCategory : null,
     state: requestState(r, now),
     expiresAt: r.expiresAt,
     fulfilledAt: r.fulfilledAt,
@@ -80,6 +81,7 @@ export function toOwnSubmission(
     url: s.url,
     note: s.note,
     status: s.status,
+    rejectionCategory: s.status === "rejected" ? s.moderationCategory : null,
     decision: submissionDecision(s, acceptedSubmissionId),
     createdAt: s.createdAt,
   };

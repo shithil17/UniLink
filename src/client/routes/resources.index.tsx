@@ -5,7 +5,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { HelpableList } from "@/components/resources/HelpableList";
 import { MyRequestPanel } from "@/components/resources/MyRequestPanel";
-import { ReportSheet, type ReportTarget } from "@/components/resources/ReportSheet";
+import { ReportSheet, type ReportTarget } from "@/components/posts/ReportSheet";
 import { buttonVariants } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorBlock } from "@/components/ui/error-block";
@@ -18,8 +18,10 @@ import { meQuery } from "@/lib/queries";
 import {
   acceptLinkConfirm,
   helpableRequestsQuery,
+  LINK_REPORT_DESCRIPTION,
   myRequestsQuery,
   purgeNotice,
+  REQUEST_REPORT_DESCRIPTION,
   useDecideLink,
 } from "@/lib/resources";
 import { toast } from "@/lib/toast";
@@ -206,7 +208,16 @@ function MyRequests() {
         </>
       )}
       {element}
-      <ReportSheet target={report} onClose={() => setReport(null)} />
+      <ReportSheet
+        target={report}
+        title={report?.type === "resource_submission" ? "Report this link" : "Report this request"}
+        description={
+          report?.type === "resource_submission"
+            ? LINK_REPORT_DESCRIPTION
+            : REQUEST_REPORT_DESCRIPTION
+        }
+        onClose={() => setReport(null)}
+      />
     </div>
   );
 }

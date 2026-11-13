@@ -54,11 +54,16 @@ const APPROVED: Record<RemovedContentKind, NotificationCopy> = {
     title: "Your link was approved",
     detail: "A moderator approved it, so the student who asked can see it now.",
   },
+  ride: {
+    title: "Your ride is live",
+    detail: "A moderator approved it, so other students can see it now.",
+  },
 };
 
 const REMOVED_TITLE: Record<RemovedContentKind, string> = {
   resource_request: "A moderator removed your request for materials",
   resource_submission: "A moderator removed a link you sent to a request",
+  ride: "A moderator removed your ride",
 };
 
 /**

@@ -2,8 +2,11 @@ import { describe, expect, it } from "vite-plus/test";
 import type { RoutineEntry } from "../../shared/schemas/routine";
 import {
   classesOn,
+  dateLong,
+  dateShort,
   gridHours,
   hourLabel,
+  monthGridWeeks,
   periodLabel,
   placeDay,
   statusOn,
@@ -119,6 +122,24 @@ describe("placeDay", () => {
   });
 });
 
+describe("monthGridWeeks", () => {
+  it("always returns six weeks of seven days", () => {
+    for (const key of ["2026-02-10", "2026-10-21", "2026-11-12", "2026-05-01", "2027-02-01"]) {
+      const weeks = monthGridWeeks(key);
+      expect(weeks).toHaveLength(6);
+      for (const w of weeks) expect(w).toHaveLength(7);
+    }
+  });
+
+  it("pads a four-week month with the following weeks, in order", () => {
+    // February 2026 starts on a Sunday and has 28 days: four weeks on its own.
+    const weeks = monthGridWeeks("2026-02-10");
+    expect(weeks[3][6]).toBe("2026-02-28");
+    expect(weeks[4][0]).toBe("2026-03-01");
+    expect(weeks[5][6]).toBe("2026-03-14");
+  });
+});
+
 describe("navigation and labels", () => {
   it("steps by a month, a week or a day", () => {
     expect(stepDate("month", "2026-10-21", 1)).toBe("2026-11-21");
@@ -128,12 +149,20 @@ describe("navigation and labels", () => {
 
   it("names the period on screen", () => {
     expect(periodLabel("month", "2026-10-21")).toBe("October 2026");
-    expect(periodLabel("week", "2026-10-21")).toBe("Oct 18 - 24");
-    expect(periodLabel("week", "2026-10-28")).toBe("Oct 25 - 31");
-    expect(periodLabel("week", "2026-09-29")).toBe("Sep 27 - Oct 3");
-    expect(periodLabel("week", "2026-11-01")).toBe("Nov 1 - 7");
-    expect(periodLabel("week", "2026-12-30")).toBe("Dec 27 - Jan 2");
-    expect(periodLabel("day", "2026-10-21")).toBe("Wednesday, Oct 21");
+    expect(periodLabel("week", "2026-10-21")).toBe("18 - 24 Oct");
+    expect(periodLabel("week", "2026-10-28")).toBe("25 - 31 Oct");
+    expect(periodLabel("week", "2026-09-29")).toBe("27 Sep - 3 Oct");
+    expect(periodLabel("week", "2026-11-01")).toBe("1 - 7 Nov");
+    expect(periodLabel("week", "2026-12-30")).toBe("27 Dec - 2 Jan");
+    expect(periodLabel("day", "2026-10-21")).toBe("Wed, 21 Oct");
+  });
+
+  it("writes dates day first, never month first", () => {
+    expect(dateLong("2026-10-21")).toBe("Wednesday, 21 October 2026");
+    expect(dateLong("2026-09-01")).toBe("Tuesday, 1 September 2026");
+    expect(periodLabel("day", "2026-09-01")).toBe("Tue, 1 Sep");
+    expect(dateShort("2026-10-21")).toBe("Wed, 21 Oct 2026");
+    expect(dateShort("2026-09-01")).toBe("Tue, 1 Sep 2026");
   });
 
   it("labels hours the way the routine prints times", () => {

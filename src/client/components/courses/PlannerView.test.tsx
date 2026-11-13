@@ -72,6 +72,15 @@ describe("PlannerView", () => {
     expect(screen.getByText("Title CSE102")).toBeTruthy();
   });
 
+  it("always shows Clear mock grades, disabled while there are no mocks", async () => {
+    renderPlanner(map([taken]));
+    fireEvent.click(screen.getByRole("tab", { name: "Retakes 1" }));
+    const clear = (await screen.findByRole("button", {
+      name: "Clear mock grades",
+    })) as HTMLButtonElement;
+    expect(clear.disabled).toBe(true);
+  });
+
   it("leaves out the tab of an empty list", () => {
     renderPlanner(map([taken]));
     expect(screen.getByRole("tab", { name: "Retakes 1" })).toBeTruthy();

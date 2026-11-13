@@ -2,6 +2,7 @@ import type { z } from "zod";
 import type { reportTargetType } from "../../../shared/schemas/common";
 import type { Db } from "../../db/client";
 import { resourceRequestsRepo, resourceSubmissionsRepo } from "../../repos/resources";
+import { ridesRepo } from "../../repos/rides";
 import { usersRepo } from "../../repos/users";
 
 type ReportTargetType = z.infer<typeof reportTargetType>;
@@ -55,5 +56,17 @@ export const reportTargets: Record<ReportTargetType, ReportTarget> = {
     // Mods judge a reported link by where it points, so its label is the link itself.
     labels: (db, ids) => resourceSubmissionsRepo(db).urlsByIds(ids),
     owners: (db, ids) => resourceSubmissionsRepo(db).authorIdsByIds(ids),
+  },
+  ride: {
+    async find(db, id, viewerId) {
+      const ride = await ridesRepo(db).find(id);
+      if (!ride || ride.deletedAt !== null) return null;
+      // A ride is public once it is published; before that only its poster can see it.
+      if (ride.status !== "published" && ride.authorId !== viewerId) return null;
+      return { ownerId: ride.authorId };
+    },
+    // "Pickup → Destination", never a contact.
+    labels: (db, ids) => ridesRepo(db).labelsByIds(ids),
+    owners: (db, ids) => ridesRepo(db).authorIdsByIds(ids),
   },
 };

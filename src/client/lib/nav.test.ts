@@ -14,10 +14,10 @@ const modUser = { role: "mod", mustChangePassword: false } as const;
 const labels = (tabs: { label: string }[]) => tabs.map((t) => t.label);
 
 describe("mainTabs", () => {
-  it("puts Materials in the phone bar and Routine and Settings in More for a student", () => {
+  it("puts Materials in the phone bar and Rides, Routine and Settings in More for a student", () => {
     const tabs = mainTabs(student);
     expect(labels(tabs.filter((t) => t.inBar))).toEqual(["Home", "Courses", "Materials", "Inbox"]);
-    expect(labels(tabs.filter((t) => !t.inBar))).toEqual(["Routine", "Settings"]);
+    expect(labels(tabs.filter((t) => !t.inBar))).toEqual(["Rides", "Routine", "Settings"]);
   });
 
   it("gives mods and admins a Mod tab in More, and keeps their Routine", () => {
@@ -29,7 +29,7 @@ describe("mainTabs", () => {
         "Materials",
         "Inbox",
       ]);
-      expect(labels(tabs.filter((t) => !t.inBar))).toEqual(["Routine", "Mod", "Settings"]);
+      expect(labels(tabs.filter((t) => !t.inBar))).toEqual(["Rides", "Routine", "Mod", "Settings"]);
     }
   });
 
@@ -45,6 +45,12 @@ describe("mainTabs", () => {
 });
 
 describe("modSectionsFor", () => {
+  it("gives mods and admins the Areas section", () => {
+    for (const role of ["mod", "admin"] as const) {
+      expect(modSectionsFor(role).map((s) => s.to)).toContain("/mod/areas");
+    }
+  });
+
   it("hides the audit log from mods but not admins", () => {
     expect(modSectionsFor("mod").map((s) => s.to)).not.toContain("/mod/audit");
     expect(modSectionsFor("admin").map((s) => s.to)).toContain("/mod/audit");
@@ -69,6 +75,7 @@ describe("activeTab", () => {
   it("keeps a tab active below its path, and never lets Home match everything", () => {
     expect(activeTab(mainTabs(student), "/courses/CSE115")?.label).toBe("Courses");
     expect(activeTab(mainTabs(student), "/resources/12")?.label).toBe("Materials");
+    expect(activeTab(mainTabs(student), "/rides/12/edit")?.label).toBe("Rides");
     expect(activeTab(mainTabs(student), "/coursesx")).toBeUndefined();
     expect(activeTab(mainTabs(student), "/change-password")).toBeUndefined();
   });
@@ -82,6 +89,7 @@ describe("barPillIndex", () => {
   });
 
   it("sits on the More slot, after the bar tabs, for a tab in More", () => {
+    expect(barPillIndex(mainTabs(student), "/rides")).toBe(4);
     expect(barPillIndex(mainTabs(student), "/routine")).toBe(4);
     expect(barPillIndex(mainTabs(student), "/settings")).toBe(4);
     expect(barPillIndex(mainTabs(modUser), "/mod/queue")).toBe(4);

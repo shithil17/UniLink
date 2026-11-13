@@ -1,3 +1,5 @@
+import type { Geocoder } from "../adapters/geocoder";
+
 export type Role = "student" | "mod" | "admin";
 
 /** The signed-in user as route handlers see them. Never carries the student ID. */
@@ -13,5 +15,9 @@ export type SessionUser = {
 
 export type AppEnv = {
   Bindings: Env;
-  Variables: { user: SessionUser | null };
+  Variables: {
+    user: SessionUser | null;
+    /** Set only by tests to swap in a fake; routes fall back to the real geocoder. */
+    geocoder?: Geocoder;
+  };
 };

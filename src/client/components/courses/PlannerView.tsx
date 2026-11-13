@@ -124,15 +124,14 @@ function PlannerBody({
     />
   );
   const mockBar = (
-    <div className="flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-2">
+    <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-2">
       <p className="min-w-0 flex-1 basis-48 text-sm text-soft">
         Try a grade on any course. Mocks stay on this device.
       </p>
-      {mocks.length > 0 ? (
-        <Button variant="outline" size="sm" onClick={clear}>
-          Clear mock grades
-        </Button>
-      ) : null}
+      {/* Always present, so the row's height and wrapping never depend on the mock count. */}
+      <Button variant="outline" size="sm" disabled={mocks.length === 0} onClick={clear}>
+        Clear mock grades
+      </Button>
     </div>
   );
   // A list that has emptied since the tab was picked falls back to the advice.

@@ -4,6 +4,7 @@ import {
   resourceRequestPostType,
   resourceSubmissionPostType,
 } from "../features/resources/postTypes";
+import { ridePostType } from "../features/rides/postTypes";
 import type { ModeratedPostTable } from "../repos/moderatedPosts";
 
 /** One kind of user-written post, as the review queue and the mod decisions see it. */
@@ -32,6 +33,7 @@ export type ModeratedPostTypes = Readonly<Record<string, ModeratedPostType>>;
 export const moderatedPostTypes: ModeratedPostTypes = {
   resource_request: resourceRequestPostType,
   resource_submission: resourceSubmissionPostType,
+  ride: ridePostType,
 };
 
 /** The registered type for a key from a request. Own keys only, so "constructor" is not a post type. */

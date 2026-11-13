@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { ApiError, errorMessage } from "@/lib/api";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { formatCredits } from "@/lib/courseMap";
 import { useAddStudentCourse, useCourseLookup, useUpdateStudentCourse } from "@/lib/courses";
 import {
@@ -25,10 +26,13 @@ const LOOKUP_DELAY_MS = 350;
 
 const hintOutsideTrail =
   "Any course from any discipline. A course like one you already took won't count.";
+const hintTrail = "Courses in this category count toward your elective trails.";
+const hintCode = "Type a code and we'll fill in the title and credits if we know it.";
 
 /**
- * Add a student course, or edit one (the code is then read-only). Server errors stay inline:
- * code_taken on the code, unknown_category on the category, anything else above the button.
+ * Add a student course, or edit one (the code is then read-only). Every server error is a toast;
+ * code_taken and unknown_category also mark their field. The two hint lines under the code and
+ * category fields are always present, so the form never changes height while typing.
  */
 export function StudentCourseForm({
   categories,
@@ -109,10 +113,11 @@ export function StudentCourseForm({
         if (code === "code_taken") form.setError("code", { message: errorMessage(err) });
         else if (code === "unknown_category") {
           form.setError("category", { message: errorMessage(err) });
-        } else toast.error(errorMessage(err));
+        }
+        toast.error(errorMessage(err));
       },
     });
-  });
+  }, toastFirstFieldError);
 
   return (
     <form onSubmit={submit} noValidate>
@@ -131,11 +136,13 @@ export function StudentCourseForm({
           />
           {existing ? (
             <FieldDescription>The code cannot change once the course is added.</FieldDescription>
-          ) : foundNow ? (
+          ) : (
             <FieldDescription>
-              Found: {foundNow.title}, {formatCredits(foundNow.credits)} cr
+              {foundNow
+                ? `Found: ${foundNow.title}, ${formatCredits(foundNow.credits)} cr`
+                : hintCode}
             </FieldDescription>
-          ) : null}
+          )}
           <FieldError errors={[errors.code]} />
         </Field>
         <Field data-invalid={Boolean(errors.title)}>
@@ -176,9 +183,9 @@ export function StudentCourseForm({
               />
             )}
           />
-          {category !== trailCategory ? (
-            <FieldDescription>{hintOutsideTrail}</FieldDescription>
-          ) : null}
+          <FieldDescription>
+            {category !== trailCategory ? hintOutsideTrail : hintTrail}
+          </FieldDescription>
           <FieldError errors={[errors.category]} />
         </Field>
         <Controller
@@ -201,8 +208,8 @@ export function StudentCourseForm({
           )}
         />
         <div className="flex flex-col gap-2 sm:flex-row-reverse">
-          <Button type="submit" className="sm:flex-1" disabled={mutation.isPending}>
-            {mutation.isPending ? "Saving..." : existing ? "Save changes" : "Add course"}
+          <Button type="submit" className="sm:flex-1" loading={mutation.isPending}>
+            {existing ? "Save changes" : "Add course"}
           </Button>
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel

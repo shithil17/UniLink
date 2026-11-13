@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { toast } from "@/lib/toast";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { errorMessage } from "@/lib/api";
 import { useSignup } from "@/lib/auth";
 import { meQuery } from "@/lib/queries";
@@ -73,10 +74,12 @@ function SignupPage() {
       }
     >
       <form
-        onSubmit={form.handleSubmit((values) =>
-          signup.mutate(signupRequest.parse(values), {
-            onError: (err) => toast.error(errorMessage(err)),
-          }),
+        onSubmit={form.handleSubmit(
+          (values) =>
+            signup.mutate(signupRequest.parse(values), {
+              onError: (err) => toast.error(errorMessage(err)),
+            }),
+          toastFirstFieldError,
         )}
         noValidate
       >
@@ -177,9 +180,9 @@ function SignupPage() {
             type="submit"
             size="lg"
             className={`w-full ${pairedButton}`}
-            disabled={signup.isPending}
+            loading={signup.isPending}
           >
-            {signup.isPending ? "Creating account..." : "Create account"}
+            Create account
           </Button>
         </FieldGroup>
       </form>

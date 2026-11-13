@@ -8,7 +8,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 
 **Restyle note (2026-10-24):** The Pocket Planner restyle is done; it supersedes the visual locks of Phase 4b. The non-visual locks stay.
 
-**Status (2026-11-12):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. The Pocket Planner restyle replaced the Phase 4b visual language on 2026-10-24, and `DESIGN.md` now records the built system. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty/` holds the ECE faculty from the public department listing plus partial lists for eight other departments (see `docs/faculty-sources.md`). Phase 7 automated gate passed (2026-10-20): mod tests pass; the staging check (an admin reverses a ban and a soft delete and both reversals appear in the audit log) is pending, and needs a content type with `deleted_at` registered in `softDeleteTargets` before a soft delete can happen on staging. Report reasons are not screened until `screen()` lands (Phase 8). Phase 8 automated gate passed (2026-10-20): moderation tests pass; the staging check (forced-review post reaches the mod queue, a mod approves it, the author gets an inbox message) waits for the first post type to register in `moderatedPostTypes` and call `submitPost()`. Phase 9 automated gate passed (2026-10-20): routine tests pass; the manual check (entries show on Home on the right weekday and in time order, on a phone) is pending, and D still confirms the NSU day letters (S M T W R F A). Phase 9b automated gate passed (2026-11-05): planner and target tests pass; the manual check (D's two hand-calculated scenarios match the planner on a phone) is pending. C's and D's planner docs are written. Phase 10 automated gate passed (2026-11-12): resource and link rule tests pass, `cron.ts` runs the two resource purges daily at 03:00 Dhaka, and resource requests and links are the first registered moderated post types. The staging check (request → notification → submit → accept between two seeded students, with the link hidden from the second one's view) is pending. C's and D's resource docs and the legal drafts are written. Changes from `plan_pwa.md`:
+**Status (2026-11-12):** Phase 0 gate passed (iOS install pending). Phase 1 automated gate passed; its manual checks (installed-app theme persistence, D contrast check) are pending. Phase 2 auth tests pass locally (2026-10-18); the CI run and the staging phone check (sign up, log in, log out, seeded admin forced to change password) are pending. Phase 3 automated checks pass (2026-10-19); the manual gate (airplane-mode offline screen on Android and iOS, update prompt after a staging deploy, no `/api` response from the service worker cache in DevTools) is pending. Phase 4b automated gate passed (2026-10-20); the manual checks (every screen at 390px and 1440px on all five palettes, D contrast check) are pending; `DESIGN.md` is written. The Pocket Planner restyle replaced the Phase 4b visual language on 2026-10-24, and `DESIGN.md` now records the built system. Phase 5 gate passed (2026-10-20): inbox tests pass and `notify()` takes `db` first, like `audit()`. Web push is in; its staging phone check is pending. Phase 6 automated gate passed (2026-10-20): grading and attempt tests pass; the manual check (a seeded student's CGPA on staging matches D's hand calculation) is pending, and `data/faculty/` holds the ECE faculty from the public department listing plus partial lists for eight other departments (see `docs/faculty-sources.md`). Phase 7 automated gate passed (2026-10-20): mod tests pass; the staging check (an admin reverses a ban and a soft delete and both reversals appear in the audit log) is pending, and needs a content type with `deleted_at` registered in `softDeleteTargets` before a soft delete can happen on staging. Report reasons are not screened until `screen()` lands (Phase 8). Phase 8 automated gate passed (2026-10-20): moderation tests pass; the staging check (forced-review post reaches the mod queue, a mod approves it, the author gets an inbox message) waits for the first post type to register in `moderatedPostTypes` and call `submitPost()`. Phase 9 automated gate passed (2026-10-20): routine tests pass; the manual check (entries show on Home on the right weekday and in time order, on a phone) is pending, and D still confirms the NSU day letters (S M T W R F A). Phase 9b automated gate passed (2026-11-05): planner and target tests pass; the manual check (D's two hand-calculated scenarios match the planner on a phone) is pending. C's and D's planner docs are written. Phase 10 automated gate passed (2026-11-12): resource and link rule tests pass, `cron.ts` runs the two resource purges daily at 03:00 Dhaka, and resource requests and links are the first registered moderated post types. The staging check (request → notification → submit → accept between two seeded students, with the link hidden from the second one's view) is pending. C's and D's resource docs and the legal drafts are written. Phase 11 automated gate passed (2026-11-12): contact and ride tests pass, and the shared post kit (contacts, contact reveal, expiry, report, status note, author delete, purge rule) is ready for lost and found and marketplace. The manual phone check (post a recurring ride, filter by weekday, reveal the contact, WhatsApp and dialer links open the right app) is pending, and migrations `0019_rides` and `0020_ride_areas` must be applied on staging and production before deploy. Phase 11b automated gate passed (2026-11-12): Steps 1 to 6 are in (exact pins, place search through Photon, the Map view with area counts and mod area points; Steps 7 and 8 are not built). Map, point and search tests pass; the manual phone and desktop checks are pending, and migrations `0022_ride_points` and `0023_ride_status_expires_index` must be applied on staging and production before deploy. Changes from `plan_pwa.md`:
 
 - The two cut orders that disagreed are now one locked order (see Suggested Build Order).
 - Course "ticks" are graded attempts, so attempts are the only source of truth for done courses, credits and CGPA (Phase 4).
@@ -32,6 +32,9 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - (2026-11-12) When a mod removes content, `softDelete()` tells its author through `notify()` (type `content_removed`, payload `{ kind, reason }`; inbox plus web push, the push generic). The inbox row names the kind and shows the mod's reason, and opens Materials. No notice when the author removed it themself, on a reversal or for the cron purges (Phases 5, 7 and 10).
 - (2026-11-12) A banned user who logs in with the right password is told why. `users` gets a nullable `ban_reason` (migration `0018_ban_reason`), set by `banUser()` from the mod's reason, cleared by `unbanUser()` and by an admin reversing a ban, and put back when an admin reverses an unban. The 403 `account_banned` body becomes `{ error, message, reason, contact }` (shared `accountBannedResponse`), still sent only after the password check. `contact` is the new Worker var `ADMIN_CONTACT_EMAIL` (empty in `wrangler.jsonc`, set per environment). The login screen shows a toast that stays until dismissed, with the reason and a mailto link, and the same text inline. The migration must be applied on staging and production (`vp run db:migrate:staging`, `vp run db:migrate:prod`) and `ADMIN_CONTACT_EMAIL` set in each env's `vars` before deploy (Phases 2 and 7).
 - (2026-11-12) New Phase 13b: a Help screen and a Contact admins flow. Signed-in students leave their own email and an issue, every admin gets it in the inbox, and admins reply in an in-app thread, optionally with their own email. No outbound email, and no public form (logged-out and banned users keep the `ADMIN_CONTACT_EMAIL` mailto). It runs after Phase 12 on Dev A's track.
+- (2026-11-12) New Phase 11b: ride maps. It uses MapLibre GL JS with our own style built from the theme tokens and OpenFreeMap tiles, with no paid service. (Revised the same day.) A ride can carry an optional exact pickup and destination pin, placed by moving the map or by searching for a place (Photon behind a Worker adapter; our own areas match first). The ride detail shows both pins and the line between them to signed-in students, and every map opens full screen. The areas stay required, so the feed filters are unchanged. A Map view with ride counts per area follows if time allows. A road-following route and self-hosted tiles are optional steps.
+- (2026-11-12) Phase 11b layout and look revised: in the Map view, "Show these rides" opens the area's rides in a sheet (phones) or a docked panel (from `lg`) over the map, and a ride's detail stacks on top while the map shows that ride; from `lg` the map fills the whole content area. Each palette gets its own tonal map theme (Terraink-inspired, map-only tokens in `index.css`), and place and road names stay at every zoom.
+- (2026-11-12) Rides are filtered by area, not free text: each ride has a required pickup and destination area from a seeded Dhaka list (`areas`, migration `0020_ride_areas`) plus optional screened landmarks; mods add, rename, nest and hide areas, with audit rows (Phase 11).
 - (2026-11-12) Resource requests also reach students who did not get the publish-time notification. The Materials screen has a Help others tab listing open requests for any course the student has recorded (any faculty) and faculty-only requests for a faculty member they had, with same-faculty ones first and tagged. The requester sees whether each link's sender took the same faculty. Notifications and the purge rules are unchanged.
 
 ---
@@ -43,7 +46,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - One repo, one Cloudflare Worker, one D1 database and one private R2 bucket (post photos) per environment. The Worker serves both `/api/*` (Hono) and the built PWA (Workers Static Assets), so everything is on one origin: no CORS and no second host.
 - Request and response shapes are Zod schemas in `src/shared/schemas/`. The client forms (React Hook Form) and the Hono validators import the same schema, so nobody writes a shape twice.
 - Data access goes through the repository layer (`src/server/repos/`). Route handlers never build SQL.
-- Every external service (OpenAlex, ORCID, Crossref, DeepSeek, Clef) sits behind a small interface in `src/server/adapters/` with a fake next to it. Tests use the fakes and never touch the network.
+- Every external service (OpenAlex, ORCID, Crossref, DeepSeek, Clef, the Photon geocoder, the routing service) sits behind a small interface in `src/server/adapters/` with a fake next to it. Tests use the fakes and never touch the network.
 - All limits, caps, cooldowns, expiry periods and thresholds live in one place, `src/server/limits.ts`. Feature code never contains a literal like `10` or `60 days`.
 - Time: instants are stored as UTC epoch milliseconds. Weekdays and times of day (routine entries, recurring rides) are stored as Asia/Dhaka local values. "Today", "expired" and cron windows are worked out in Asia/Dhaka. Cron Triggers fire in UTC, so convert.
 - Data is always fetched live. The service worker caches only the app shell. `ceiling:` there is no offline editing and no sync. Revisit only if the survey shows a real need.
@@ -57,6 +60,7 @@ This is the build plan for the unofficial, student-run NSU CSE companion PWA (CS
 - AI output is never shown as free text. Model JSON is validated with Zod, faculty IDs are checked against the database, and the reply text is built by the server. The model never browses web pages.
 - Rate limits and caps are checked on the server **before** the expensive or sensitive action, using one `rateLimit()` helper backed by D1.
 - Contact details (phone, WhatsApp, Messenger) are never part of feed responses. They come only from a separate reveal endpoint that needs a login and is rate-limited.
+- A ride's exact pickup and destination points are never part of feed responses, area counts or notifications. Only the ride detail returns them, to signed-in students. Nothing about a student goes to the geocoder or the routing service (Phase 11b).
 
 **UI**
 
@@ -151,13 +155,15 @@ unilink/                         # repo name until the app name is chosen
 ├── .impeccable/surfaces/        # design direction contract for the app shell          [P4b]
 ├── drizzle/                     # generated migrations (committed)
 ├── data/
-│   └── curricula/               # one JSON curriculum per program (import format)     [P4]
+│   ├── curricula/               # one JSON curriculum per program (import format)     [P4]
+│   └── areas/points.json        # one map point per seeded area, from OSM              [P11b]
 ├── docs/
 │   ├── api-contracts.md         # agreed endpoint list; shapes live in src/shared       [P0]
 │   └── *.md                     # SRS, diagrams, survey, test cases, data formats (see docs/README.md)
 ├── scripts/
 │   ├── seed.ts                  # curricula + fake students for dev/tests             [P0→P4]
 │   ├── seed-admin.ts            # first admin from env vars                            [P2]
+│   ├── area-points.ts           # one-off: OSM place centers → data/areas/points.json  [P11b]
 │   └── faculty-sync.ts          # OpenAlex/ORCID → trim → DeepSeek → admin route       [O1]
 └── src/
     ├── shared/                  # imported by both client and server
@@ -170,6 +176,7 @@ unilink/                         # repo name until the app name is chosen
     │   ├── routine.ts           # overlap check                                         [P9]
     │   ├── resourceUrl.ts       # safe https link rule, shortener list                  [P10]
     │   ├── contact.ts           # phone / wa.me / m.me / facebook.com rules            [P11]
+    │   ├── geo.ts               # MAP_BOUNDS, point rounding, nearest area, arcLine    [P11b]
     │   └── webp.ts              # WebP header parser: magic, size, chunks              [P12]
     ├── server/
     │   ├── index.ts             # Hono app, /api router, scheduled() handler           [P0]
@@ -183,6 +190,7 @@ unilink/                         # repo name until the app name is chosen
     │   │   ├── screen.ts        # Chain of Responsibility: rules → model → verdict     [P8]
     │   │   └── rules.ts         # deterministic rules                                   [P8]
     │   ├── adapters/            # openalex, orcid, crossref, deepseek, clef + fakes    [O1, O2, O3]
+    │   │                        # geocoder (Photon), router (optional) + fakes         [P11b]
     │   ├── cron.ts              # list of cleanup jobs, one function per table         [P10]
     │   └── features/<module>/   # routes + services: auth, courses, attempts, inbox,
     │                            # mod, routine, resources, faculty, rides, lostfound,
@@ -194,7 +202,9 @@ unilink/                         # repo name until the app name is chosen
         ├── components/ui/       # shadcn components
         ├── components/theme/    # ThemeProvider, ThemePicker, ThemePickerTrigger       [P1]
         ├── components/post/     # ContactInput, ExpiryBadge, ReportButton, StatusNote  [P11]
+        ├── components/map/      # lazy map, preview, MapOverlay, pin picker, markers   [P11b]
         └── lib/                 # query client, api fetcher, imageEncode.ts (WebP) [P12]
+                                 # map/source.ts (tiles), map/style.ts (token style)    [P11b]
 ```
 
 Tests sit next to the code: `*.test.ts` for unit tests and `*.api.test.ts` for API tests that run against a local D1.
@@ -203,7 +213,7 @@ Tests sit next to the code: `*.test.ts` for unit tests and `*.api.test.ts` for A
 
 ## Phase numbering
 
-Phases are numbered 0 to 15 in **build order, not strict sequence**. Two developer tracks run in parallel (see Suggested Build Order). Within a track, do one phase at a time and pass its gate before moving on. A phase may start once its **Depends on** phases have passed their gates. Stretch work uses the `S` prefix (S1 to S3) and stays parked until the go/no-go at the start of Sprint 4. Phase 4b (design language) was inserted on 2026-10-20 and keeps the letter so later numbers stay stable. Phase 9b (grade planner) was inserted the same way on 2026-11-02. On 2026-11-12 the phases after 10 were renumbered so rides, lost and found and marketplace come first (old 12, 15, 16 are now 11, 12, 13; Clef stays 14; hardening and delivery are 15 and 16), and faculty profiles and the finder (old 11 and 13) became optional phases O1 and O2 at the bottom. Later the same day Clef auto-moderation (14) became optional phase O3, and hardening and delivery became 14 and 15. Phase 13b (help and contact admins) was inserted the same day, after marketplace.
+Phases are numbered 0 to 15 in **build order, not strict sequence**. Two developer tracks run in parallel (see Suggested Build Order). Within a track, do one phase at a time and pass its gate before moving on. A phase may start once its **Depends on** phases have passed their gates. Stretch work uses the `S` prefix (S1 to S3) and stays parked until the go/no-go at the start of Sprint 4. Phase 4b (design language) was inserted on 2026-10-20 and keeps the letter so later numbers stay stable. Phase 9b (grade planner) was inserted the same way on 2026-11-02. On 2026-11-12 the phases after 10 were renumbered so rides, lost and found and marketplace come first (old 12, 15, 16 are now 11, 12, 13; Clef stays 14; hardening and delivery are 15 and 16), and faculty profiles and the finder (old 11 and 13) became optional phases O1 and O2 at the bottom. Later the same day Clef auto-moderation (14) became optional phase O3, and hardening and delivery became 14 and 15. Phase 13b (help and contact admins) was inserted the same day, after marketplace. Phase 11b (ride map) was inserted the same day, after rides and before lost and found.
 
 Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" checklists inside a phase are the non-developer work tied to that feature. They do not block the dev's gate unless the gate says so.
 
@@ -959,22 +969,25 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 >
 > **Design decisions (locked in) — rides:**
 >
-> - Own `rides` table. Fields: pickup and destination (free text), vehicle type (bike, car, SUV, bus), total seats, seats remaining, price per seat in taka, contacts, optional notes.
+> - Own `rides` table. Fields: a required pickup area and destination area (picked from the Dhaka areas list; an optional landmark for each, free text such as "north gate", screened) (changed 2026-11-12: areas replace free-text places; Phase 11b adds an optional exact map point for each), vehicle type (bike, car, SUV, bus), total seats, seats remaining, price per seat in taka, contacts, optional notes.
 > - **One-off:** a departure date and time, and it expires at departure. **Recurring:** days of the week, a departure time and an end date (default 60 days out). The poster can renew. Check constraints enforce which fields each kind needs.
 > - The poster can edit, change or reduce seats, or mark the ride fully booked. Seats remaining = 0 → status `full` automatically. `CHECK (seats_remaining BETWEEN 0 AND total_seats)`, and seat changes are one `UPDATE` statement, so there are no race conditions and the count never goes out of range.
-> - Feed filters (Zod search params in the URL): pickup or destination text, vehicle type, date or weekday. Paginated, with the filtered columns indexed.
+> - Feed filters (Zod search params in the URL): pickup area (`from`), destination area (`to`; picking a broad area also matches its sub-areas), a text fallback over landmarks and area names, vehicle type, date or weekday. Paginated, with the filtered columns indexed.
+> - **Areas (changed 2026-11-12):** a generic `areas` table (lost and found may reuse it) seeded with a list of Dhaka areas, Bashundhara R/A first (NSU is there) and "Outside Dhaka" last. No postal codes. Mods and admins add areas, rename them, add one level of sub-areas under a top-level area, and hide or show them with a reason (`hidden`, never deleted). A ride keeps an area that is hidden later; a new or edited ride can only pick visible areas (400 `invalid_area`). Every area action writes an audit row; rename, hide and show can be reversed from the audit log, adding cannot.
 > - The platform does not arrange or guarantee rides. The ToS and an in-app notice say that students arrange rides and payment themselves.
 
 ### Checklist — Build order
 
-- [ ] **Shared kit:** `contact.ts`, `ContactInput`, the contact reveal endpoint pattern, the expiry helper, `ReportButton`, `StatusNote` ("Waiting for a moderator" and rejection reason with "Ask a moderator to look"), the author-delete endpoint pattern and `DeletePostButton`, the purge rule (window passed and no open report) used by every cron job.
-- [ ] **Step 1:** `rides` table, check constraints and indexes.
-- [ ] **Step 2:** create and edit API with contact validation and `screen()`. One-off rides first, then recurring.
-- [ ] **Step 3:** seat logic (single-statement update, auto `full` at 0).
-- [ ] **Step 4:** feed and filters, paginated, excluding expired rides in the query.
-- [ ] **Step 5:** expiry and renewal, and the ride cleanup job in `cron.ts`.
-- [ ] **Step 6:** screens: post a ride, edit, my rides, feed, detail with contact buttons (`tel:`, `wa.me`, `m.me`), safety notice.
-- [ ] **Step 7:** report a ride, mod removal, admin reversal (`target_type` `ride`).
+- [x] **Shared kit:** `contact.ts`, `ContactInput`, the contact reveal endpoint pattern, the expiry helper, `ReportButton`, `StatusNote` ("Waiting for a moderator" and rejection reason with "Ask a moderator to look"), the author-delete endpoint pattern and `DeletePostButton`, the purge rule (window passed and no open report) used by every cron job.
+- [x] **Step 1:** `rides` table, check constraints and indexes.
+- [x] **Step 2:** create and edit API with contact validation and `screen()`. One-off rides first, then recurring.
+- [x] **Step 3:** seat logic (single-statement update, auto `full` at 0).
+- [x] **Step 4:** feed and filters, paginated, excluding expired rides in the query.
+- [x] **Step 5:** expiry and renewal, and the ride cleanup job in `cron.ts`.
+- [x] **Step 6:** screens: post a ride, edit, my rides, feed, detail with contact buttons (`tel:`, `wa.me`, `m.me`), safety notice.
+- [x] **Step 7:** report a ride, mod removal, admin reversal (`target_type` `ride`).
+- [x] **Areas (changed 2026-11-12):** `areas` table seeded with the Dhaka list (migration `0020_ride_areas`), rides take `pickup_area_id` and `destination_area_id` with optional landmarks, the feed filters by `from` and `to` (sub-areas included), `GET /api/areas`, mod area API (list, add, rename, hide, show) with audit rows and reversal.
+- [x] **Areas screens:** ride form and feed filter area pickers, landmark fields, and the mod Areas screen (add, rename, sub-areas, hide and show).
 
 ### Checklist — Docs & QA (C, D)
 
@@ -983,16 +996,174 @@ Each phase header carries **Owner · When · Depends on**. "Docs & QA (C, D)" ch
 
 ### Checklist — Test Scripts & Smoke Tests
 
-- [ ] `src/shared/contact.test.ts`: valid and invalid phone numbers, wa.me, m.me and facebook.com links, at least one required.
-- [ ] `src/server/features/rides/rides.api.test.ts`: seats never go below 0 or above the total, auto `full` at 0, one-off vs recurring validation, the default end date, renewal, the feed hides expired and pending rides, the contact reveal needs a login and hits its rate limit, the feed response has no contact fields, report + removal + reversal, edits are screened again, an author delete hides the ride at once, another user cannot delete it, the cron purges it after the window but not while a report is open.
-- [ ] Run: `vp test contact rides`
+- [x] `src/shared/contact.test.ts`: valid and invalid phone numbers, wa.me, m.me and facebook.com links, at least one required.
+- [x] `src/server/features/rides/rides.api.test.ts`: seats never go below 0 or above the total, auto `full` at 0, one-off vs recurring validation, the default end date, renewal, the feed hides expired and pending rides, the contact reveal needs a login and hits its rate limit, the feed response has no contact fields, report + removal + reversal, edits are screened again, an author delete hides the ride at once, another user cannot delete it, the cron purges it after the window but not while a report is open.
+- [x] `src/server/features/areas/areas.api.test.ts`: the seeded list (Bashundhara first, Outside Dhaka last), hidden areas listed to mods but not students, add, rename, hide and show by a mod with audit rows, students refused, a sub-area under a sub-area refused, a duplicate name refused, reversal of rename and hide. The ride tests also cover areas: both required, unknown or hidden refused, landmarks optional and screened, `from` and `to` filters with sub-areas, a ride keeping a later-hidden area, and the report label.
+- [x] Run: `vp test contact rides`
 
 ### Test Gate 11
 
-- [ ] **Ride tests pass.**
+- [x] **Ride tests pass.**
 - [ ] **(Manual) On a phone, post a recurring ride, filter by weekday, reveal the contact, and the WhatsApp and dialer links open the right app.**
 
 **Sprint 3 milestone (end of Week 6):** resources and rides work on staging, and the shared post kit is ready for lost and found (12) and marketplace (13).
+
+---
+
+## Phase 11b — Ride map
+
+**Owner:** Dev B · **When:** Weeks 6-7, after Phase 11 and before Phase 13 on Dev B's track · **Depends on:** Phase 3 (PWA shell), Phase 11 (rides and areas)
+
+**Goal:** A student posting a ride can pin the exact pickup and destination on a calm, app-styled map, by moving the map or by searching for a place. The ride detail shows both pins and the line between them, and the map opens full screen. A Map view in Rides shows how many live rides leave from (or go to) each Dhaka area.
+
+> **Justification:** Rides come from all over the city, and an area name ("Uttara") does not say where to stand. An exact meeting point answers "is this pickup near me" before the student asks for the contact. The area list from Phase 11 stays the base: every ride still has a pickup and a destination area, and the exact pin is an optional refinement inside it. So a ride with no pin, a failed search service or a cut step all leave a working feature.
+
+> **Design decisions (locked in, 2026-11-12; revised the same day for exact pins, search and layout):**
+>
+> **Map foundation**
+>
+> - **Renderer:** MapLibre GL JS (open source, BSD-3). It is loaded with a dynamic `import()` when the first map mounts, in its own chunk, and the screen around it renders first. The chunk is left out of the service worker precache (`globIgnores`) and is cached on first use, so students who never open a map never download it. `ceiling:` about 300 KB gzipped for the map chunk; measure it in Step 1 and record the real number. Revisit if it grows by more than a quarter.
+> - **Tiles:** OpenFreeMap vector tiles (OpenStreetMap data in the OpenMapTiles schema), for the prototype and for the release. They are free, need no API key and state no request limit. The tile source is one config value (`src/client/lib/map/source.ts`). Glyphs (label fonts) and the sprite come from the same source. Labels use Noto Sans glyphs: MapLibre needs prebuilt glyph files, and Figtree has none.
+>   - Self-hosting the tiles is the optional Step 8. It is no longer part of the release, because maps now sit on more screens and every self-hosted tile would be a Worker request.
+>   - Tiles are not cached by the service worker while they come from OpenFreeMap; the browser's HTTP cache is enough. With no network, a map panel says so and the text facts stay.
+> - **Our own style, built from theme tokens.** The style JSON is generated at runtime by `buildMapStyle(tokens)` in `src/client/lib/map/style.ts`. It reads map-only CSS custom properties that each palette sets (`--map-ground`, `--map-water`, `--map-park`, `--map-road-major/mid/minor`, `--map-road-street`, `--map-casing`, `--map-building`) plus the palette's `--ink`, `--soft`, `--faint` and accent, so the map follows all five palettes and the Night palette with no hex values outside `src/client/index.css`. When the theme changes, the map restyles. (Revised 2026-11-12: per-palette map tokens, so each palette gets its own tonal theme.)
+>   - **Look (revised 2026-11-12):** a tonal map-poster look at city zoom in the spirit of the Terraink themes (inspiration only): Coral a Carrara marble, Bordeaux Rustic, Cherry Blossom Sage, Cherry Red Ruby, Night Midnight Blue. One ground per palette, water a cool blue in every palette, roads in three tones with a strong weight hierarchy, no casings or buildings. By street zoom it eases into a calmer street map: pale road fills with casings, buildings and a few landmark labels, so the spot can be recognised. The accent markers keep at least 3:1 against every ground.
+
+- **Labels stay at every zoom:** place names (city, town, suburb, neighbourhood) and road names (minor roads from street zoom) never drop out as the map zooms in.
+
+> - **Labels:** major roads and area or neighbourhood names. Labels prefer `name:en`, then `name:latin`, then `name`.
+> - Visual references such as Terraink posters are inspiration only. **No code or styles are copied from AGPL-3.0 projects.** A permissively licensed base (the OpenFreeMap base styles) may be the starting point, with its license kept in `THIRD_PARTY_NOTICES`.
+> - **Attribution is required and always visible:** "© OpenStreetMap contributors" and "OpenMapTiles", as a compact control in a corner of every map, previews included. It must stay readable in every palette.
+> - **Bounds:** every map is held to `MAP_BOUNDS`, the greater-Dhaka box (about Savar to Gazipur to Narayanganj), defined in `src/shared/geo.ts` and re-exported from `limits.ts` with a `ceiling:` comment. Maps open centred on Bashundhara R/A (NSU) at city zoom unless they have points to fit. Rotation and tilt are off, so north is always up.
+>
+> **Points and privacy**
+>
+> - **Exact ride points:** `rides` gets four nullable columns, `pickup_lat`, `pickup_lng`, `destination_lat` and `destination_lng` (WGS84, rounded to 5 decimals, about 1 m), in a new migration. Check constraints: a latitude and its longitude are both set or both null, and a set point is inside `MAP_BOUNDS`.
+>   - Points are optional. The areas stay required, and the feed filters and the area counts keep working on areas alone.
+>   - The shape is one shared `geoPoint` schema (`src/shared/schemas/geo.ts`), used by `rideInput`, `ridePatch` and the ride detail response. A patch can set a point or clear it with `null`.
+>   - A pin the student never moved off the area's centre is not saved. Only a spot the student confirmed is stored, so a stored point always means "here".
+>   - The pin and the area are not checked against each other (areas are points, not outlines). When a pin is confirmed and the area field is still empty, the form fills in the nearest area; it never replaces an area the student picked. `ceiling:` no outline check. Revisit if rides turn up filed under the wrong area.
+> - **Who sees exact points:** any signed-in student, on the ride detail only (`GET /api/rides/:id`). Feed rows, the area counts and notifications never carry them. Hiding the pin behind "Show contact" would defeat its purpose, which is to judge a pickup before asking for the contact.
+>   - The picker says: "Pick a spot where riders can meet you, such as a gate or a bus stand, not your home."
+>   - A removed, expired or held ride hides its points with the rest of the ride (`visibleTo(user)`), and the purge deletes them with the row.
+> - **Area points:** `areas` gets nullable `lat` and `lng` in the same migration.
+>   - **Seeding:** the shipped list is seeded from OpenStreetMap place centers. A one-off offline script (`scripts/area-points.ts`) looks each area up and writes `data/areas/points.json` with the source noted. The script respects Nominatim's limit of one request a second. The app itself never calls Nominatim.
+>   - **Use:** an area point centres the pin picker, stands in on a ride map for an end with no exact pin, and carries the count on the Map view.
+>   - **Mod edits:** mods set or move an area's point on the Areas screen with the same pin picker. That writes an audit row and is reversible like a rename.
+>   - **Validation:** a point must fall inside `MAP_BOUNDS`. "Outside Dhaka" has no point.
+> - **Device location ("near me") is parked.** The app never asks for the location permission.
+>
+> **Place search**
+>
+> - **Two sources, one list.** Our own areas match first, in the browser, with no request. Under them come places from a geocoder: roads, markets, stations, campuses and other named places.
+> - **Geocoder:** Photon (the public `photon.komoot.io` server; OpenStreetMap data, free, no key, built for search-as-you-type). It sits behind an interface in `src/server/adapters/geocoder.ts` with a fake, like every external service. The public Nominatim server is not used for search: its usage policy forbids search-as-you-type.
+>   - **Endpoint:** `GET /api/places/search?q=` returns up to `placeSearch.maxResults` places as `{ name, detail, lat, lng }`. The adapter's output is validated with Zod, and anything outside `MAP_BOUNDS` is dropped.
+>   - **Limits:** login required, a minimum query length, and a `rateLimit()` per user, all in `limits.ts`. The client waits for a pause in typing (`placeSearch.debounceMs`) and cancels the request it replaces. `ceiling:` no server-side result cache; students search only while posting a ride. Revisit if Photon throttles us.
+>   - **Privacy:** the Worker makes the request, so Photon never sees a student's IP address. It receives the typed text, the Dhaka bounds and a generic client name, and nothing about the user.
+>   - **Failure:** when Photon is down, slow (`placeSearch.timeoutMs`) or throttling, the endpoint answers 502 `search_unavailable`. The list then shows the area matches alone, a toast says place search is unavailable, and the student can still move the map by hand.
+> - **Picking a result** moves the map there at street zoom and leaves the pin under the student's control. If the landmark field is empty, the place name is offered as the landmark (screened on save like any landmark).
+> - There is no reverse geocoding (a pin does not look up its own address). The landmark text is the label. `ceiling:` revisit if students ask what a pin is called.
+>
+> **The line between the pins**
+>
+> - **Release:** a gently curved, dashed line in the accent color from pickup to destination, computed in the browser (`arcLine()` in `src/shared/geo.ts`). The dashes say it is not the road route. It needs no service.
+> - **Road-following route (optional Step 7):** when a ride is created, or an edit changes a pin, and both ends have an exact pin, the server asks a routing service once and stores a simplified encoded polyline and the distance on the ride (`route_polyline`, `route_distance_m`, with the size cap in `limits.ts`). The detail then draws a solid line and shows the distance.
+>   - The call runs after the response (`waitUntil`), behind an adapter with a fake. A failure, a timeout or a missing key never fails the post: the dashed curve stays.
+>   - Viewing a ride never calls the routing service.
+>   - The service is an open decision (see Open decisions). The public OSRM demo server is not allowed for this.
+> - **Open in Maps:** the full-screen ride map has an "Open in Maps" link that hands both points to Google Maps (`https://www.google.com/maps/dir/?api=1&origin=…&destination=…`), opened in a new tab or the installed app. It gives real directions and traffic with no service on our side. Nothing is sent until the student taps it.
+>
+> **Placement and layout**
+>
+> - **Two kinds of map, and they never mix.**
+>   - A **preview** is a fixed-height panel inside a screen. It is not interactive: no pan, no zoom, no scroll capture. The whole panel is one button that opens the full-screen map, with an expand icon in its top right corner. A preview can therefore sit inside a scrolling page or a drag-to-dismiss sheet without stealing gestures.
+>   - A **full-screen map** (`MapOverlay`) is interactive. On phones it covers the whole viewport, the floating tab bar included, and respects the safe-area insets. From `md` it is a centred dialog over a scrim, inset 32px from the viewport edges, with the 24px panel radius.
+>   - Opening a full-screen map pushes a history entry (a `map` search param), so Back on Android, Escape, the scrim and the close button all close it the same way, and the screen underneath keeps its scroll and state. It is an in-app overlay, not the browser Fullscreen API, which iPhones do not support for a page.
+> - **Controls on a full-screen map** are floating layers on `bg-surface` with the floating-layer shadow, never glass or blur: a 44px close button top left, zoom in and out buttons bottom right (hidden on touch devices, where pinch works), and a "Fit the ride" or "Back to NSU" button above them. The attribution sits bottom left.
+> - **Ride detail** (the bottom sheet on phones, the side panel from `lg`): the preview is the first panel under the title, above the facts, because "where" is the first question. It is about 180px tall on phones and 240px in the side panel, full width, with the panel radius.
+>   - It fits both ends with padding and draws the line between them.
+>   - It shows whenever at least one end has a point (an exact pin or its area's point). A ride with no point at all has no map panel.
+>   - Tapping it opens the full-screen ride map: both pins, the line, and a floating card at the bottom with the pickup and destination names and landmarks, the distance when known, and "Open in Maps".
+> - **Markers:** shape carries the meaning, not color alone.
+>   - Pickup is a filled accent pin. Destination is an outlined pin with a flag.
+>   - An end with no exact pin is drawn at its area's point as a soft accent circle labelled "Around Uttara", so an approximate place is never mistaken for an exact one.
+>   - Area counts on the Map view are accent pills carrying the number.
+>   - All markers have a soft shadow like the app's other floating layers. No gradients and no glass.
+> - **Ride form** (new and edit, full pages): each of the Pickup and Destination groups gets a 60px row under its landmark field: "Pin the exact spot (optional)", or "Pinned" with Change and Remove once set. One preview shows the trip as riders will see it.
+>   - On phones the preview (about 160px tall) sits under the Destination group.
+>   - From `lg` the form becomes two columns: the fields on the left, and the preview in a sticky column on the right that fills the viewport height, so the map stays in view while the student fills the long form.
+>   - The preview is always rendered, so nothing shifts: before any area is picked it shows the city view.
+> - **Pin picker** (a full-screen map, opened from a form row or from the preview):
+>   - The pin is fixed at the centre and the student moves the map under it. This is easier on a phone than dragging a small marker under a finger.
+>   - It opens on the saved pin, or else on the chosen area's point, or else on NSU.
+>   - A search field floats at the top beside the close button. Results open as a list over the map, never pushing it.
+>   - A bar at the bottom holds the meeting-spot hint, a status line that is always rendered ("Move the map to place the pin"), a primary "Use this spot" button and, when a pin exists, "Remove pin".
+>   - With a keyboard, the arrow keys move the map and Enter confirms.
+> - **Map view of the feed** (`/rides?view=map`): a List / Map control in the filter bar of the Find a ride tab. The filters apply to both views.
+>   - **Phones and tablets (below `lg`):** Map opens a full-screen map. On a 390px phone the header, tabs, notice and filters would leave less than half the screen for an inline map. A floating Filters button opens the existing filter sheet, and a Leaving from / Going to switch floats at the top centre. Tapping a count opens a small card at the bottom ("Jatrabari: 6 rides leaving"). Its "Show these rides" button keeps the map open and opens that area's rides in a sheet over it; tapping a ride opens its detail in a sheet stacked on top (revised 2026-11-12).
+>   - **From `lg` (revised 2026-11-12):** the map fills the whole content area beside the nav rail, under the header and the filter bar (the List / Map control stays there). It is not a dialog. A count opens the same card, and "Show these rides" opens the area's rides in a panel docked on the right over the map; a ride opens its detail in that panel position.
+
+- **Layers over the map (both layouts):** the area's rides (`area` search param) and the ride's detail (`ride`) are each one history step, so Back and Escape close the top layer first. While a detail is open the detail omits its own preview (one live map only) and the background map draws that ride's pins and line, fitted clear of the sheet or panel, with the count pills hidden until it closes; "Open in Maps" moves into the detail's facts.
+
+> - **Not on the map:** rides in areas with no point are counted in a "Not on the map: N rides" chip floating at the bottom of the map. It opens the list.
+> - **Layout stability:** every preview has a reserved fixed height and a skeleton of the same size, and the map fades in with opacity only. At most one preview and one full-screen map exist at a time, which stays well inside the browser's limit on WebGL contexts.
+> - `DESIGN.md` records the map components, sizes and markers when they are built.
+>
+> **Area counts**
+>
+> - **Counts endpoint:** `GET /api/rides/areas` returns `{ by: "pickup" | "destination", areas: [{ areaId, count }] }` for the live rides matching the current feed filters (vehicle, date, weekday; `q` is ignored).
+>   - **Query:** one grouped query on the area and expiry indexes, applying the same visibility, expiry and deletion rules as the feed.
+>   - **Response:** counts only. It never carries ride details, exact points, contacts or authors.
+>   - **Sub-areas:** a sub-area with no point of its own is counted under its parent.
+>   - **Limits:** login required, and rate-limited like the feed.
+> - The Map view shows areas, not single rides. `ceiling:` no per-ride pins on the feed map, which would send every exact point to every viewer. Revisit if students ask to browse by exact pickup.
+>
+> **Accessibility and tests**
+>
+> - The list and the text facts stay the primary view, and everything a map does can also be done without it: areas come from the picker, the landmark names the spot, and a pin is optional.
+>   - Counts are real buttons labelled "Jatrabari, 6 rides", reachable by keyboard.
+>   - Each map has an accessible name, and a preview's button says what it opens ("Open the map of this ride").
+>   - Reduced motion turns off fly-to animations; the map jumps instead.
+>   - Markers and the attribution meet the contrast checks in every palette.
+> - **Tests never hit the network:** MapLibre is mocked in component tests, and the geocoder and the routing service are fakes in API tests.
+
+### Checklist — Build order
+
+Steps 1 to 4 are the core. Steps 5 and 6 follow if time allows. Steps 7 and 8 are optional and may never ship.
+
+- [x] **Step 1 (foundation):** `MAP_BOUNDS` and the point helpers in `src/shared/geo.ts`, `buildMapStyle(tokens)` with light and Night output, the OpenFreeMap source config, attribution, the lazy-loaded map component with its preview and `MapOverlay` forms, and the map chunk left out of the precache.
+- [x] **Step 2 (points):** one migration adding the four ride point columns with their checks and `areas.lat` and `areas.lng`; `data/areas/points.json` seeded from OSM by the offline script, with a check that every seeded point is inside the bounds; `geoPoint` in the ride schemas; create, edit and detail carry the points, the feed does not.
+- [x] **Step 3 (pins on screen):** the pin picker, the form rows and the form preview (sticky column from `lg`), the detail preview with markers and the dashed curve, the full-screen ride map with its bottom card and "Open in Maps", offline and error states.
+- [x] **Step 4 (search):** the geocoder adapter (Photon) and its fake, `GET /api/places/search` with its limits, and the search field in the pin picker (areas first, then places, the area-only fallback).
+- [x] **Step 5 (area counts):** `GET /api/rides/areas` (grouped counts with the feed filters, pickup or destination, sub-areas rolled up, rate-limited), SQL in `src/server/repos/rides.ts`; the Map view (List / Map control, full screen below `lg`, right column from `lg`, Leaving from / Going to, count pills, the "Not on the map" chip).
+- [x] **Step 6 (mod points):** the mod Areas screen sets or moves an area's point with the pin picker, with an audit row and reversal.
+- [ ] **Step 7 (optional, road route):** the routing adapter and its fake, the route stored on create and on a pin change, the solid line and the distance on the detail.
+- [ ] **Step 8 (optional, self-hosted tiles):** `vp run map:extract` builds a greater-Dhaka `.pmtiles` extract **in the OpenMapTiles schema** (Planetiler), so the style does not change. It lives in R2 and is served at `/tiles/*` with HTTP range requests, the source config switches to it, the service worker caches the style, glyphs and tiles CacheFirst within a cap (`mapTileCacheMax` in `limits.ts`, `ceiling:` about 30 MB), and `THIRD_PARTY_NOTICES` is updated. A Protomaps extract is not a drop-in: its tiles use different layer names. Count the Worker requests first: one map open is about 20 to 60 tiles, against 100,000 requests a day on the free plan.
+
+### Checklist — Docs & QA (C, D)
+
+- [ ] C: SRS requirements and sequence diagrams for the ride map (place search through the Worker, saving a pin, the counts endpoint and count tap to filtered list).
+- [ ] D: map screens in every palette at 390px and 1440px, test cases (pin by moving the map, pin by search, a ride with one pin or none, full screen and Back, filters carried over, offline, keyboard and screen reader), and an attribution check.
+- [ ] D: the privacy note says that a pinned spot is shown to signed-in students, and that place search text goes to a geocoding service with nothing about the student.
+
+### Checklist — Test Scripts & Smoke Tests
+
+- [x] `src/shared/geo.test.ts`: the bounds check, rounding to 5 decimals, the nearest area to a point, and the curve starting and ending on its two points.
+- [x] `src/client/lib/map/style.test.ts`: the style is built from the given tokens, the Night tokens give the dark variant, labels prefer `name:en`, and the attribution text is present.
+- [x] `src/server/features/rides/rides.api.test.ts` (extended): a ride saves with no points, one or both; half a point and a point outside the bounds are refused; an edit sets and clears a point; the detail returns the points and the feed response has no point fields.
+- [x] `src/server/features/places/places.api.test.ts` with the fake geocoder: needs a login, refuses a short query, is rate-limited, drops results outside the bounds, sends the geocoder only the query and the bounds, and answers 502 `search_unavailable` when the geocoder fails.
+- [x] `src/server/adapters/geocoder.test.ts`: a recorded Photon response maps to the shared shape, and a malformed one gives an empty list.
+- [x] Component tests with MapLibre mocked: the pin picker returns the map centre on "Use this spot", removes a pin, and a search result moves the map and offers the landmark; the detail preview opens the full-screen map and Back closes it; a ride with one pin draws the other end as "Around …".
+- [x] `src/server/features/rides/rideAreas.api.test.ts` (Step 5): counts respect the vehicle, date and weekday filters, exclude expired, held, rejected and deleted rides, roll sub-areas up into a parent, switch between pickup and destination, need a login, are rate-limited, and carry no ride details, points or contacts.
+- [x] `src/server/features/areas/areas.api.test.ts` (extended, Step 6): points must be inside `MAP_BOUNDS`, a mod moves a point with an audit row, and the move can be reversed.
+- [x] Run: `vp test geo map places rides rideAreas areas`
+
+### Test Gate 11b
+
+- [x] **Map, point and search tests pass.**
+- [ ] **(Manual) On a phone, post a ride with both pins, one placed by search and one by moving the map. The detail shows both pins and the line, a tap opens it full screen, Back returns to the ride, and "Open in Maps" opens directions. Checked in a light palette and in Night, with the attribution readable.**
+- [ ] **(Manual) On a desktop, the form preview stays in view while the form scrolls, and a ride with no pins shows its two areas as "Around …".**
+- [ ] **(Manual, after Step 5) The counts match a date filter, and a far-area count (Jatrabari or Uttara) opens the filtered list on a phone and filters the list in place on a desktop.**
 
 ---
 
@@ -1352,7 +1523,7 @@ Faculty research profiles and the AI supervisor finder were moved here on 2026-1
 
 ```
             Week 0      Weeks 1-2       Weeks 3-4             Weeks 5-6        Week 7             Week 8
-Both/B:   P0 + P1 ──→ P2 → P3 → P4b → P7 → P8 → P9 ───────→ P11 ─────────→ P13 ─────────────→ P14 ─┐
+Both/B:   P0 + P1 ──→ P2 → P3 → P4b → P7 → P8 → P9 ───────→ P11 → P11b ──→ P13 ─────────────→ P14 ─┐
 Dev A:    P0 ───────→ P4 ──────────→ P5 → P6 → P9b ───────→ P10 → P12 ───────→ P13b ──────────→ bugs ├→ P15
 C / D:    Docs & QA subsections inside each phase ─────────────────────────────────────────────────┘
 Optional: O1 → O2 and O3, only after P14, if ever (see Optional phases)
@@ -1364,6 +1535,7 @@ Optional: O1 → O2 and O3, only after P14, if ever (see Optional phases)
 - P8 (held-post notifications) needs P5's `notify()`. P5 is Dev A's first Sprint 2 task. Until it lands, Dev B codes against the signature in `docs/api-contracts.md`.
 - P10 (resources) needs P7 (reports) and P8 (`screen()`). P11 (rides) needs the same.
 - P9b (grade planner) needs P6's `grading.ts` and attempts. It lands before P10 starts.
+- P11b (ride map) needs P11's rides and areas and P3's service worker config. Nothing else depends on it.
 - P12 and P13 need P11's shared post kit. P13 also needs P12's post photos kit.
 - P13b (help and contact) needs only P5's `notify()` and P7's admin role and audit, so it can move earlier if Dev A has room.
 
@@ -1372,12 +1544,13 @@ Optional: O1 → O2 and O3, only after P14, if ever (see Optional phases)
 **Cut order (single, locked).** If time runs short, cut in this order:
 
 1. Stretch phases S1 to S3
-2. Lost-and-found possible-match notification (P12 step 8)
-3. Recurring-ride renewal (rides keep their default end date)
-4. Contact admins thread (P13b steps 1 to 4). The Help screen stays and points to the `ADMIN_CONTACT_EMAIL` mailto.
-5. Post photos (P12 photo setup and photos kit, P13 photos). Posts stay text-only.
-6. Marketplace (P13)
-7. Lost and found (P12)
+2. Ride map (P11b), from its last step backwards: the optional steps 8 and 7 first, then mod points (6), the area counts Map view (5), place search (4, the pin is then placed by moving the map only), and last the pins themselves (1 to 3). The area filters from P11 stay.
+3. Lost-and-found possible-match notification (P12 step 8)
+4. Recurring-ride renewal (rides keep their default end date)
+5. Contact admins thread (P13b steps 1 to 4). The Help screen stays and points to the `ADMIN_CONTACT_EMAIL` mailto.
+6. Post photos (P12 photo setup and photos kit, P13 photos). Posts stay text-only.
+7. Marketplace (P13)
+8. Lost and found (P12)
 
 The optional phases (O1 faculty profiles, O2 supervisor finder, O3 Clef auto-moderation) are not in the cut order: they are outside the release.
 
@@ -1395,6 +1568,7 @@ Shrink Phase 14 hardening only as a last resort. **Never cut** moderation, audit
 - Storing finder chats, or sending earlier turns to the model: cost, drift and privacy.
 - In-app payments, delivery or dispute handling.
 - Email verification in the MVP: the schema is ready, so it can be added after the course.
+- On ride maps: device location ("near me"), a pin for every ride on the feed map, matching rides that pass near a student, and in-app navigation. "Open in Maps" covers directions (Phase 11b).
 
 ---
 
@@ -1424,6 +1598,9 @@ Each row names the phase that needs the answer. When it is settled, move it into
 | Marketplace prohibited-items list and ToS wording                                                                | P13               | All   |
 | Post photo caps (bytes, max side, per-user and global daily uploads), cache lifetime, author-delete purge window | P11, P12          | Dev B |
 | Support limits: open tickets per student, messages per hour, closed-ticket purge window                          | P13b              | Dev A |
+| `MAP_BOUNDS` corner values, and the place search limits (minimum length, results, debounce, timeout, per user)   | P11b              | Dev B |
+| Photon public server: re-check the fair-use terms before release, and who to email if we get throttled           | P11b              | Dev B |
+| Routing service for the road-following route (free key, daily quota, terms), only if Step 7 is picked up         | P11b step 7       | Dev B |
 | Stretch go/no-go                                                                                                 | Start of Sprint 4 | All   |
 | "Unofficial student-run app" wording; whether NSU name approval can wait until after the demo                    | P15               | All   |
 
@@ -1434,6 +1611,7 @@ Each row names the phase that needs the answer. When it is settled, move it into
 - **Workers AI:** 10,000 Neurons/day free, then $0.011 per 1,000 Neurons (Workers Paid only; on Free, calls fail past the allowance). Resets 00:00 UTC.
 - **Clef-flash** `@cf/cloudflare/clef-flash`: $0.038 per million input tokens (3,455 Neurons/M), output free, 24,576-token context. Call: `env.AI.run("@cf/cloudflare/clef-flash", { model: "clef-flash", state, questions })`, where each question is `noul`, `choice` (with `criteria`) or `score`; the answer is a probability per option. Clef `@cf/cloudflare/clef`: $0.240/M input (21,818 Neurons/M). So the free allowance covers about 2.9M Clef-flash input tokens a day. **Images (checked 2026-10-19):** PNG, JPEG or WebP in `images`, at most 4 per call, 4 MiB and 16 MP each, 8 MiB in total, no remote URLs. One token per 32×32 block plus 3 per image, capped at 1,024 per image; images under about 65,000 pixels are scaled up and over about 1 MP scaled down.
 - **R2 (checked 2026-10-19):** free each month: 10 GB storage, 1M Class A operations (writes, lists), 10M Class B operations (reads). Then $0.015 per GB-month, $4.50 per million Class A, $0.36 per million Class B, no egress fees. Needs a payment method, and **overages are billed**, unlike Workers and D1 Free.
+- **Map services (checked 2026-11-12, re-check in P14):** OpenFreeMap tiles: free, no key, no stated request limit, attribution required, no uptime promise. Photon public server (`photon.komoot.io`): free, no key, search-as-you-type allowed, fair use only (heavy use is throttled), no uptime promise. Nominatim public server: at most one request a second and no search-as-you-type, so only the offline seeding script uses it. The public OSRM demo server is not for production use. MapLibre GL JS is BSD-3; map data is © OpenStreetMap contributors (ODbL).
 - **DeepSeek:** model id `deepseek-flash` (DeepSeek-V4.1-Flash-1017, 1M context). Per million tokens, off-peak/peak: input cache hit $0.003/$0.006, cache miss $0.15/$0.30, output $0.60/$1.20. Peak is 01:00–04:00 and 06:00–10:00 UTC on weekdays. The old `deepseek-v4-flash` name is retired but still accepted.
 
 ---
@@ -1455,6 +1633,10 @@ Seeded with the platform gotchas already known from `plan_pwa.md`. Add real ones
 | A phone number in post text is flagged as a card number                                      | The card rule needs Luhn **and** excludes Bangladeshi phone formats (P8)                       |
 | Safari returns PNG from `canvas.toBlob(..., "image/webp")`                                   | Check `blob.type` and fall back to the WASM encoder (P12)                                      |
 | OpenAlex abstracts look empty                                                                | They come as an inverted index. Rebuild them in the adapter (O1)                               |
+| An inline map steals the page scroll or a sheet's drag-to-dismiss                            | Inline maps are non-interactive previews; pan and zoom only in the full-screen map (P11b)      |
+| The map library is precached for every student                                               | Keep the map chunk out of the precache `globPatterns` and load it with `import()` (P11b)       |
+| Bangla place names draw as broken glyphs on the map                                          | Labels prefer `name:en`, then `name:latin`; check a Bangla-only label before release (P11b)    |
+| A Protomaps tile extract shows a blank map under our style                                   | Its layer names differ from OpenMapTiles. Build the extract in the OpenMapTiles schema (P11b)  |
 
 ---
 

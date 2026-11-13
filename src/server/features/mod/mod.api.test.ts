@@ -615,7 +615,7 @@ describe("reports", () => {
     ],
     [
       "an unknown target type",
-      { targetType: "ride", targetId: 1, reason: "Something is wrong" },
+      { targetType: "lost_found", targetId: 1, reason: "Something is wrong" },
       true,
       400,
     ],

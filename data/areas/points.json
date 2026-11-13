@@ -1,0 +1,490 @@
+{
+  "source": {
+    "name": "OpenStreetMap contributors via Nominatim",
+    "license": "ODbL 1.0",
+    "url": "https://www.openstreetmap.org/copyright",
+    "date": "2026-11-12"
+  },
+  "points": [
+    {
+      "slug": "bashundhara-r-a",
+      "lat": 23.81667,
+      "lng": 90.42943
+    },
+    {
+      "slug": "adabor",
+      "lat": 23.77376,
+      "lng": 90.35743
+    },
+    {
+      "slug": "aftabnagar",
+      "lat": 23.76575,
+      "lng": 90.4452
+    },
+    {
+      "slug": "agargaon",
+      "lat": 23.77843,
+      "lng": 90.38005
+    },
+    {
+      "slug": "airport-kawla",
+      "lat": 23.84681,
+      "lng": 90.4145,
+      "note": "looked up as \"Kawla, Dhaka\""
+    },
+    {
+      "slug": "aminbazar",
+      "lat": 23.78649,
+      "lng": 90.33018
+    },
+    {
+      "slug": "ashulia",
+      "lat": 23.89699,
+      "lng": 90.32896
+    },
+    {
+      "slug": "azimpur",
+      "lat": 23.72529,
+      "lng": 90.38346
+    },
+    {
+      "slug": "badda",
+      "lat": 23.77654,
+      "lng": 90.4463
+    },
+    {
+      "slug": "banani",
+      "lat": 23.79032,
+      "lng": 90.4077
+    },
+    {
+      "slug": "banasree",
+      "lat": 23.76571,
+      "lng": 90.42301
+    },
+    {
+      "slug": "baridhara",
+      "lat": 23.80336,
+      "lng": 90.42026
+    },
+    {
+      "slug": "basabo",
+      "lat": 23.73933,
+      "lng": 90.43752
+    },
+    {
+      "slug": "beraid",
+      "lat": 23.79998,
+      "lng": 90.47573
+    },
+    {
+      "slug": "cantonment",
+      "lat": 23.81975,
+      "lng": 90.39758
+    },
+    {
+      "slug": "chawkbazar",
+      "lat": 23.71532,
+      "lng": 90.39544
+    },
+    {
+      "slug": "dakshinkhan",
+      "lat": 23.86059,
+      "lng": 90.42733
+    },
+    {
+      "slug": "demra",
+      "lat": 23.72849,
+      "lng": 90.4974
+    },
+    {
+      "slug": "dhanmondi",
+      "lat": 23.75354,
+      "lng": 90.37031
+    },
+    {
+      "slug": "diabari",
+      "lat": 23.87385,
+      "lng": 90.36742
+    },
+    {
+      "slug": "dohs-baridhara",
+      "lat": 23.81388,
+      "lng": 90.41083
+    },
+    {
+      "slug": "dohs-banani",
+      "lat": 23.7935,
+      "lng": 90.3975,
+      "note": "hand-placed: Nominatim has no usable match (same school as DOHS Mohakhali)"
+    },
+    {
+      "slug": "dohs-mirpur",
+      "lat": 23.83581,
+      "lng": 90.35973
+    },
+    {
+      "slug": "dohs-mohakhali",
+      "lat": 23.78356,
+      "lng": 90.39184
+    },
+    {
+      "slug": "elephant-road",
+      "lat": 23.73899,
+      "lng": 90.38724
+    },
+    {
+      "slug": "farmgate",
+      "lat": 23.75904,
+      "lng": 90.38711
+    },
+    {
+      "slug": "fatullah",
+      "lat": 23.65035,
+      "lng": 90.47579
+    },
+    {
+      "slug": "gabtoli",
+      "lat": 23.78337,
+      "lng": 90.34021,
+      "note": "looked up as \"Gabtoli, Mirpur\""
+    },
+    {
+      "slug": "gazipur",
+      "lat": 23.99972,
+      "lng": 90.4184
+    },
+    {
+      "slug": "gendaria",
+      "lat": 23.70291,
+      "lng": 90.42408
+    },
+    {
+      "slug": "gulshan",
+      "lat": 23.79218,
+      "lng": 90.41555
+    },
+    {
+      "slug": "hazaribagh",
+      "lat": 23.73198,
+      "lng": 90.36841
+    },
+    {
+      "slug": "hemayetpur",
+      "lat": 23.79353,
+      "lng": 90.27087
+    },
+    {
+      "slug": "jatrabari",
+      "lat": 23.7094,
+      "lng": 90.43381
+    },
+    {
+      "slug": "jigatola",
+      "lat": 23.74032,
+      "lng": 90.37205
+    },
+    {
+      "slug": "jurain",
+      "lat": 23.69625,
+      "lng": 90.43431
+    },
+    {
+      "slug": "kadamtali",
+      "lat": 23.68518,
+      "lng": 90.44896,
+      "note": "looked up as \"কদমতলী\""
+    },
+    {
+      "slug": "kafrul",
+      "lat": 23.78916,
+      "lng": 90.38562
+    },
+    {
+      "slug": "kakrail",
+      "lat": 23.73854,
+      "lng": 90.40715
+    },
+    {
+      "slug": "kalabagan",
+      "lat": 23.74795,
+      "lng": 90.38139
+    },
+    {
+      "slug": "kallyanpur",
+      "lat": 23.78068,
+      "lng": 90.36133
+    },
+    {
+      "slug": "kanchpur",
+      "lat": 23.70621,
+      "lng": 90.52116
+    },
+    {
+      "slug": "kawran-bazar",
+      "lat": 23.75143,
+      "lng": 90.39486
+    },
+    {
+      "slug": "kazipara",
+      "lat": 23.7978,
+      "lng": 90.3728,
+      "note": "hand-placed: Nominatim has no usable match (finds Kazipara in Gazipur)"
+    },
+    {
+      "slug": "keraniganj",
+      "lat": 23.7005,
+      "lng": 90.38264
+    },
+    {
+      "slug": "khilgaon",
+      "lat": 23.75065,
+      "lng": 90.42328
+    },
+    {
+      "slug": "khilkhet",
+      "lat": 23.83513,
+      "lng": 90.43511
+    },
+    {
+      "slug": "konapara",
+      "lat": 23.71582,
+      "lng": 90.46729
+    },
+    {
+      "slug": "kotwali",
+      "lat": 23.709,
+      "lng": 90.406,
+      "note": "hand-placed: Nominatim has no usable match (finds Gopibagh, 2 km off)"
+    },
+    {
+      "slug": "kuril",
+      "lat": 23.81814,
+      "lng": 90.42213
+    },
+    {
+      "slug": "lalbagh",
+      "lat": 23.71884,
+      "lng": 90.38815
+    },
+    {
+      "slug": "malibagh",
+      "lat": 23.74707,
+      "lng": 90.41377
+    },
+    {
+      "slug": "manda",
+      "lat": 23.72997,
+      "lng": 90.44004
+    },
+    {
+      "slug": "matuail",
+      "lat": 23.70527,
+      "lng": 90.46063
+    },
+    {
+      "slug": "merul-badda",
+      "lat": 23.77221,
+      "lng": 90.42608
+    },
+    {
+      "slug": "mirpur",
+      "lat": 23.82029,
+      "lng": 90.37104
+    },
+    {
+      "slug": "moghbazar",
+      "lat": 23.74772,
+      "lng": 90.40092
+    },
+    {
+      "slug": "mohakhali",
+      "lat": 23.77991,
+      "lng": 90.40832
+    },
+    {
+      "slug": "mohammadpur",
+      "lat": 23.75939,
+      "lng": 90.36633
+    },
+    {
+      "slug": "motijheel",
+      "lat": 23.72726,
+      "lng": 90.4212
+    },
+    {
+      "slug": "mugda",
+      "lat": 23.72912,
+      "lng": 90.43357
+    },
+    {
+      "slug": "narayanganj",
+      "lat": 23.62367,
+      "lng": 90.49881
+    },
+    {
+      "slug": "new-market",
+      "lat": 23.73324,
+      "lng": 90.38437,
+      "note": "looked up as \"New Market, Azimpur\""
+    },
+    {
+      "slug": "niketan",
+      "lat": 23.77332,
+      "lng": 90.40976
+    },
+    {
+      "slug": "nikunja",
+      "lat": 23.83026,
+      "lng": 90.41787,
+      "note": "looked up as \"Nikunja, Khilkhet\""
+    },
+    {
+      "slug": "old-dhaka-sadarghat",
+      "lat": 23.70589,
+      "lng": 90.40929,
+      "note": "looked up as \"Sadarghat, Dhaka\""
+    },
+    {
+      "slug": "pallabi",
+      "lat": 23.82464,
+      "lng": 90.36759
+    },
+    {
+      "slug": "paltan",
+      "lat": 23.73176,
+      "lng": 90.41142
+    },
+    {
+      "slug": "panthapath",
+      "lat": 23.75287,
+      "lng": 90.38275
+    },
+    {
+      "slug": "postogola",
+      "lat": 23.69178,
+      "lng": 90.4287
+    },
+    {
+      "slug": "purbachal",
+      "lat": 23.85342,
+      "lng": 90.50142
+    },
+    {
+      "slug": "rampura",
+      "lat": 23.76832,
+      "lng": 90.42196
+    },
+    {
+      "slug": "rayer-bazar",
+      "lat": 23.74484,
+      "lng": 90.36273
+    },
+    {
+      "slug": "rupganj",
+      "lat": 23.79237,
+      "lng": 90.52033
+    },
+    {
+      "slug": "sabujbag",
+      "lat": 23.73725,
+      "lng": 90.42936
+    },
+    {
+      "slug": "savar",
+      "lat": 23.8477,
+      "lng": 90.2587
+    },
+    {
+      "slug": "sayedabad",
+      "lat": 23.71123,
+      "lng": 90.42868
+    },
+    {
+      "slug": "segunbagicha",
+      "lat": 23.73403,
+      "lng": 90.40767
+    },
+    {
+      "slug": "shahbag",
+      "lat": 23.73734,
+      "lng": 90.39617
+    },
+    {
+      "slug": "shahjahanpur",
+      "lat": 23.74074,
+      "lng": 90.42401
+    },
+    {
+      "slug": "shantinagar",
+      "lat": 23.74157,
+      "lng": 90.41206
+    },
+    {
+      "slug": "sher-e-bangla-nagar",
+      "lat": 23.77793,
+      "lng": 90.37401
+    },
+    {
+      "slug": "shewrapara",
+      "lat": 23.79096,
+      "lng": 90.37551
+    },
+    {
+      "slug": "shyamoli",
+      "lat": 23.7744,
+      "lng": 90.36543
+    },
+    {
+      "slug": "shyampur",
+      "lat": 23.68619,
+      "lng": 90.43909
+    },
+    {
+      "slug": "siddhirganj",
+      "lat": 23.68497,
+      "lng": 90.516
+    },
+    {
+      "slug": "sutrapur",
+      "lat": 23.70645,
+      "lng": 90.41687
+    },
+    {
+      "slug": "tejgaon",
+      "lat": 23.76282,
+      "lng": 90.3913
+    },
+    {
+      "slug": "tejgaon-industrial-area",
+      "lat": 23.76488,
+      "lng": 90.4058
+    },
+    {
+      "slug": "tongi",
+      "lat": 23.90849,
+      "lng": 90.398
+    },
+    {
+      "slug": "uttara",
+      "lat": 23.86933,
+      "lng": 90.39269
+    },
+    {
+      "slug": "uttarkhan",
+      "lat": 23.89237,
+      "lng": 90.44171
+    },
+    {
+      "slug": "vatara",
+      "lat": 23.79856,
+      "lng": 90.42464
+    },
+    {
+      "slug": "wari",
+      "lat": 23.71866,
+      "lng": 90.4154,
+      "note": "looked up as \"ওয়ারী\""
+    }
+  ]
+}

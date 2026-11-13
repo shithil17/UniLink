@@ -16,6 +16,7 @@ import {
   FieldSet,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { TimeField } from "@/components/ui/time-field";
 import {
   Sheet,
   SheetContent,
@@ -24,6 +25,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { errorMessage } from "@/lib/api";
+import { toastFieldErrors } from "@/lib/formErrors";
 import type { CourseChoice } from "@/lib/courseSearch";
 import {
   clashesFor,
@@ -86,8 +88,22 @@ export function RoutineSheet({
 }
 
 /** A time field's own message for a blank, the schema's for anything else (like the end rule). */
+const timeMessage = (message: string | undefined, blank: string) =>
+  message?.startsWith("Use a time") ? blank : message;
 const timeError = (error: { message?: string } | undefined, blank: string) =>
-  error && { message: error.message?.startsWith("Use a time") ? blank : error.message };
+  error && { message: timeMessage(error.message, blank) };
+
+/** What each field says when invalid: shown to screen readers by `FieldError` and in the toast. */
+const COURSE_REQUIRED = "Pick the course for this class";
+const SECTION_REQUIRED = `Enter the section number, 1 to ${ROUTINE_SECTION_MAX}`;
+const DAYS_REQUIRED = "Pick at least one day";
+const FIELD_MESSAGES = {
+  courseCode: COURSE_REQUIRED,
+  section: SECTION_REQUIRED,
+  days: DAYS_REQUIRED,
+  start: (message: string | undefined) => timeMessage(message, "Pick a start time"),
+  end: (message: string | undefined) => timeMessage(message, "Pick an end time"),
+};
 
 function RoutineEditor({
   entry,
@@ -144,7 +160,7 @@ function RoutineEditor({
     };
     if (entry) edit.mutate(values, done);
     else add.mutate(values, done);
-  });
+  }, toastFieldErrors(FIELD_MESSAGES));
 
   const onDelete = () =>
     remove.mutate(undefined, {
@@ -186,9 +202,7 @@ function RoutineEditor({
                   Add your courses on the course map first, then pick them here.
                 </FieldDescription>
               ) : null}
-              <FieldError
-                errors={[errors.courseCode && { message: "Pick the course for this class" }]}
-              />
+              <FieldError errors={[errors.courseCode && { message: COURSE_REQUIRED }]} />
             </Field>
             <Field data-invalid={Boolean(errors.section)}>
               <FieldLabel htmlFor="routine-section">Section</FieldLabel>
@@ -201,13 +215,7 @@ function RoutineEditor({
                 aria-invalid={Boolean(errors.section)}
                 {...form.register("section", { valueAsNumber: true })}
               />
-              <FieldError
-                errors={[
-                  errors.section && {
-                    message: `Enter the section number, 1 to ${ROUTINE_SECTION_MAX}`,
-                  },
-                ]}
-              />
+              <FieldError errors={[errors.section && { message: SECTION_REQUIRED }]} />
             </Field>
             <FieldSet data-invalid={Boolean(errors.days)}>
               <FieldLegend variant="label">Days</FieldLegend>
@@ -223,26 +231,46 @@ function RoutineEditor({
                   ? days.map((d) => ROUTINE_DAY_NAMES[d]).join(", ")
                   : "The letters NSU prints: S is Sunday, R is Thursday, A is Saturday."}
               </FieldDescription>
-              <FieldError errors={[errors.days && { message: "Pick at least one day" }]} />
+              <FieldError errors={[errors.days && { message: DAYS_REQUIRED }]} />
             </FieldSet>
             <div className="grid grid-cols-2 gap-3">
               <Field data-invalid={Boolean(errors.start)}>
                 <FieldLabel htmlFor="routine-start">Starts</FieldLabel>
-                <Input
-                  id="routine-start"
-                  type="time"
-                  aria-invalid={Boolean(errors.start)}
-                  {...form.register("start")}
+                <Controller
+                  control={form.control}
+                  name="start"
+                  render={({ field }) => (
+                    <TimeField
+                      id="routine-start"
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      label="Starts"
+                      value={field.value ?? ""}
+                      aria-invalid={Boolean(errors.start)}
+                      onChange={field.onChange}
+                    />
+                  )}
                 />
                 <FieldError errors={[timeError(errors.start, "Pick a start time")]} />
               </Field>
               <Field data-invalid={Boolean(errors.end)}>
                 <FieldLabel htmlFor="routine-end">Ends</FieldLabel>
-                <Input
-                  id="routine-end"
-                  type="time"
-                  aria-invalid={Boolean(errors.end)}
-                  {...form.register("end")}
+                <Controller
+                  control={form.control}
+                  name="end"
+                  render={({ field }) => (
+                    <TimeField
+                      id="routine-end"
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      label="Ends"
+                      value={field.value ?? ""}
+                      aria-invalid={Boolean(errors.end)}
+                      onChange={field.onChange}
+                    />
+                  )}
                 />
                 <FieldError errors={[timeError(errors.end, "Pick an end time")]} />
               </Field>
@@ -274,8 +302,8 @@ function RoutineEditor({
                 <FieldError errors={[errors.initials]} />
               </Field>
             </div>
-            <Button type="submit" size="lg" className="w-full" disabled={pending}>
-              {pending ? "Saving..." : entry ? "Save changes" : "Add class"}
+            <Button type="submit" size="lg" className="w-full" loading={pending}>
+              {entry ? "Save changes" : "Add class"}
             </Button>
           </FieldGroup>
         </form>
@@ -285,8 +313,8 @@ function RoutineEditor({
               <>
                 <p className="text-[15px] text-ink">Delete this class from your routine?</p>
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button variant="destructive" disabled={remove.isPending} onClick={onDelete}>
-                    {remove.isPending ? "Deleting..." : "Delete class"}
+                  <Button variant="destructive" loading={remove.isPending} onClick={onDelete}>
+                    Delete class
                   </Button>
                   <Button variant="outline" onClick={() => setConfirming(false)}>
                     Keep it

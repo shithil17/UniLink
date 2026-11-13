@@ -12,7 +12,7 @@ export function LogoutButton() {
       loading={logout.isPending}
       onClick={() => logout.mutate()}
     >
-      {logout.isPending ? null : <LogOutIcon aria-hidden />}
+      <LogOutIcon aria-hidden />
       Log out
     </Button>
   );

@@ -172,7 +172,7 @@ export default defineConfig({
               globPatterns: ["**/*.{js,css,ico,png,svg,woff2}"],
               // The push handlers are loaded with importScripts, not precached, so the browser's own
               // service worker update check sees any change to them.
-              globIgnores: ["push-sw.js"],
+              globIgnores: ["push-sw.js", "**/maplibre*"],
               importScripts: ["push-sw.js"],
               navigateFallback: null,
               runtimeCaching: [
@@ -180,6 +180,20 @@ export default defineConfig({
                 {
                   urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
                   handler: "NetworkOnly",
+                },
+                {
+                  // The map library (chunk, worker and stylesheet) is left out of the precache above,
+                  // so a student who never opens a map never downloads it. The first map fetches it
+                  // and it is kept from then on. File names are hashed, so a cached copy never goes stale.
+                  // Map tiles are not cached here: the browser's HTTP cache is enough.
+                  urlPattern: ({ url }) => /\/assets\/maplibre[^/]*$/.test(url.pathname),
+                  handler: "CacheFirst",
+                  options: {
+                    cacheName: "map-lib",
+                    // ceiling: three files per release (chunk, worker, stylesheet), so this keeps the
+                    // current release and the one before it. Revisit if the library splits further.
+                    expiration: { maxEntries: 6 },
+                  },
                 },
                 {
                   // index.html: fresh when online, last copy when the network is slow or down.

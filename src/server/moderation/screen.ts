@@ -22,8 +22,11 @@ export type ScreenDeps = {
   timeoutMs?: number;
 };
 
-/** Which link in the chain decided. `fail_safe` means the model step could not answer. */
-export type ScreenSource = "rules" | "forced" | "model" | "fail_safe";
+/**
+ * Which link in the chain decided. `fail_safe` means the model step could not answer. `unpublished_edit`
+ * means the text passed but the post was not published before the edit, so it stays with the moderators.
+ */
+export type ScreenSource = "rules" | "forced" | "model" | "fail_safe" | "unpublished_edit";
 
 export type ScreenFailure = "error" | "timeout" | "cap";
 

@@ -9,7 +9,7 @@ import { useRemoveReported } from "@/lib/mod";
 import { removableName, removeReportedConfirm } from "@/lib/modConfirm";
 import { toast } from "@/lib/toast";
 import { useConfirm } from "@/lib/useConfirm";
-import type { ModReport } from "../../../shared/schemas/moderation";
+import { removalBody, type ModReport } from "../../../shared/schemas/moderation";
 import { ReasonForm } from "./ReasonForm";
 
 /**
@@ -60,6 +60,7 @@ function RemoveForm({
           id={`remove-reason-${report.id}`}
           submitLabel={`Remove ${name}`}
           variant="destructive"
+          schema={removalBody}
           onCancel={onClose}
           onSubmit={(reason) =>
             confirm.ask({

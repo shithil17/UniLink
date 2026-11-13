@@ -16,7 +16,9 @@ type ChipProps = Omit<React.ComponentProps<"button">, "aria-pressed"> & {
 
 /**
  * A toggle for filters and jump lists. `aria-pressed` carries the state; a pressed chip also shows
- * a check, so the state is never color alone. 40px tall with the touch area reaching 44px.
+ * a check, so the state is never color alone. 40px tall with the touch area reaching 44px. The
+ * unpressed chip carries the check's width (16px + 6px gap) as extra padding, so toggling never
+ * resizes it.
  */
 function Chip({
   className,
@@ -35,7 +37,7 @@ function Chip({
       type="button"
       data-slot="chip"
       aria-pressed={pressed}
-      className={cn(chipClass, className)}
+      className={cn(chipClass, "px-[27px] aria-pressed:px-4", className)}
       onClick={(event) => {
         onClick?.(event);
         if (event.defaultPrevented) return;

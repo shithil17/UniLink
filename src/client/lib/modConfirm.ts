@@ -1,5 +1,5 @@
 import { auditActionLabel, auditActions } from "../../shared/auditActions";
-import { removedName } from "../../shared/removedNames";
+import { removedName, type RemovedName } from "../../shared/removedNames";
 import { DEPARTMENTS } from "../../shared/departments";
 import type { Role } from "../../shared/modPolicy";
 import { notificationCopy } from "../../shared/notificationCopy";
@@ -174,6 +174,7 @@ const MISSING_TARGET: Record<ModReport["targetType"], string> = {
   user: "Removed account",
   resource_request: "A removed request",
   resource_submission: "A removed link",
+  ride: "A removed ride",
 };
 
 /** What a report row calls its target when the label is gone, by what kind of target it was. */
@@ -202,8 +203,8 @@ export function resolveReportConfirm(
   };
 }
 
-/** "request" or "link" for a report target a mod can remove, or null when Remove isn't offered. */
-export function removableName(targetType: ModReport["targetType"]): "request" | "link" | null {
+/** "request", "link" or "ride" for a report target a mod can remove, or null when Remove isn't offered. */
+export function removableName(targetType: ModReport["targetType"]): RemovedName | null {
   return removedName(targetType);
 }
 
@@ -291,6 +292,12 @@ const REVERSAL_EFFECT: Record<string, string> = {
     "The edited fields go back to their old values. It's refused if the old code or prerequisite no longer fits.",
   [auditActions.courseHide]: "The course shows on students' maps again.",
   [auditActions.courseUnhide]: "The course is hidden again.",
+  [auditActions.areaRename]:
+    "The area gets its old name back. It's refused if another area here has taken the name since.",
+  [auditActions.areaPoint]:
+    "The area's map point goes back to where it was, or to none if it had none.",
+  [auditActions.areaHide]: "The area shows in the ride pickers again.",
+  [auditActions.areaUnhide]: "The area is hidden again.",
 };
 
 /**
@@ -408,5 +415,62 @@ export function facultyHiddenConfirm(
         lead: `${who} will show to students again.`,
         facts: [{ label: "Faculty", value: who }, reasonFact(reason)],
         effects: ["They show in the attempt picker again."],
+      };
+}
+
+// ---- Areas ------------------------------------------------------------------------------------
+
+export function areaAddConfirm(name: string, parentName: string | null): ConfirmContent {
+  return {
+    title: "Add area",
+    confirmLabel: "Add area",
+    lead: parentName
+      ? `${name} will be added as a sub-area of ${parentName}.`
+      : `${name} will be added as a top-level area.`,
+    facts: [
+      { label: "Area", value: name },
+      { label: "Under", value: parentName ?? "Nothing, it is a top-level area" },
+    ],
+    effects: [
+      "Students can pick it in the ride form and filter by it right away.",
+      "Adding can't be reversed from the audit log. Hide the area instead.",
+    ],
+  };
+}
+
+export function areaRenameConfirm(before: string, after: string): ConfirmContent {
+  return {
+    title: "Rename area",
+    confirmLabel: "Rename",
+    lead: `${before} will be renamed.`,
+    facts: [],
+    changes: [{ label: "Name", before, after }],
+    effects: [
+      "Every ride that uses the area shows the new name.",
+      "An admin can reverse this from the audit log.",
+    ],
+  };
+}
+
+export function areaHiddenConfirm(name: string, hidden: boolean, reason: string): ConfirmContent {
+  return hidden
+    ? {
+        title: "Hide area",
+        confirmLabel: "Hide area",
+        destructive: true,
+        lead: `${name} will be hidden from students.`,
+        facts: [{ label: "Area", value: name }, reasonFact(reason)],
+        effects: [
+          "It no longer shows in the ride form or the feed filters, and its sub-areas go with it.",
+          "Rides that already use it keep it.",
+          "An admin can reverse this from the audit log.",
+        ],
+      }
+    : {
+        title: "Show area again",
+        confirmLabel: "Show again",
+        lead: `${name} will show to students again.`,
+        facts: [{ label: "Area", value: name }, reasonFact(reason)],
+        effects: ["It shows in the ride form and the feed filters again."],
       };
 }

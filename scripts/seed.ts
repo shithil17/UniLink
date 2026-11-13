@@ -1,5 +1,6 @@
 // Fixture data for local dev and API tests: the curricula in data/curricula/, the faculty lists in data/faculty/ and two fake students.
 // Run against local D1 with `vp run seed` (after `vp run db:migrate:local`); safe to run again.
+// Mock rides for looking at the maps are a separate step: `vp run seed:rides` (scripts/seed-rides.ts).
 // API tests call `seed(env.DB)`, optionally with curricula they loaded themselves (a worker cannot read files).
 //
 // Fake students, both with the password below (never use it outside local dev):

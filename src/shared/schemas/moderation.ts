@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AUTHOR_DELETE_REASON } from "../posts.ts";
 import { role } from "./auth.ts";
 import { id, instant, page, pageQuery, reasonCategory, reportTargetType } from "./common.ts";
 
@@ -44,6 +45,17 @@ export const reasonText = z
   .max(REASON_MAX_LENGTH, `Use at most ${REASON_MAX_LENGTH} characters`);
 
 export const reasonBody = z.object({ reason: reasonText });
+
+/**
+ * The reason of a mod removing a post. It can't be the author-delete reason, so the reason alone tells
+ * an author's own delete (never reversible) from a mod's removal.
+ */
+export const removalReason = reasonText.refine(
+  (reason) => reason.toLowerCase() !== AUTHOR_DELETE_REASON,
+  "Give a different reason",
+);
+
+export const removalBody = z.object({ reason: removalReason });
 
 // ---- Reports (any signed-in user) -----------------------------------------------------------
 

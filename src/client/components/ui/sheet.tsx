@@ -32,12 +32,24 @@ function SheetPortal({ ...props }: SheetPrimitive.Portal.Props) {
   return <SheetPrimitive.Portal data-slot="sheet-portal" {...props} />;
 }
 
-function SheetOverlay({ className, ...props }: SheetPrimitive.Backdrop.Props) {
+/**
+ * Whether sheets stack above a full-screen map (z-70, over the map's z-60). A sheet opened from a map
+ * sets it with `raised`; the sheets and pickers opened from inside it inherit it through here.
+ */
+const SheetLayer = React.createContext(false);
+
+function SheetOverlay({
+  className,
+  raised,
+  ...props
+}: SheetPrimitive.Backdrop.Props & { raised?: boolean }) {
   return (
     <SheetPrimitive.Backdrop
       data-slot="sheet-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-scrim transition-opacity duration-320 ease-drawer data-ending-style:opacity-0 data-starting-style:opacity-0 motion-reduce:duration-200 motion-reduce:ease-ui-out",
+        "fixed inset-0 bg-scrim",
+        raised ? "z-70" : "z-50",
+        "transition-opacity duration-320 ease-drawer data-ending-style:opacity-0 data-starting-style:opacity-0 motion-reduce:duration-200 motion-reduce:ease-ui-out",
         className,
       )}
       {...props}
@@ -194,11 +206,15 @@ function SheetContent({
   children,
   side = "right",
   showCloseButton = true,
+  raised: raisedProp,
   ...props
 }: SheetPrimitive.Popup.Props & {
   side?: "top" | "right" | "bottom" | "left";
   showCloseButton?: boolean;
+  /** Stack above a full-screen map. Sheets opened from inside this one are raised too. */
+  raised?: boolean;
 }) {
+  const raised = React.useContext(SheetLayer) || raisedProp === true;
   const popupRef = React.useRef<HTMLDivElement>(null);
   const overlayRef = React.useRef<HTMLDivElement>(null);
   const closeRef = React.useRef<HTMLButtonElement>(null);
@@ -207,13 +223,14 @@ function SheetContent({
 
   return (
     <SheetPortal>
-      <SheetOverlay ref={overlayRef} />
+      <SheetOverlay ref={overlayRef} raised={raised} />
       <SheetPrimitive.Popup
         ref={popupRef}
         data-slot="sheet-content"
         data-side={side}
         className={cn(
-          "group/sheet fixed z-50 flex flex-col gap-4 bg-popover bg-clip-padding text-sm text-popover-foreground",
+          "group/sheet fixed flex flex-col gap-4 bg-popover bg-clip-padding text-sm text-popover-foreground",
+          raised ? "z-70" : "z-50",
           // ceiling: bottom sheets only. Side and top sheets keep the plain border, shadow and fade
           // they had; they have no drag. A side sheet that needs the same would justify extending it.
           bottom
@@ -228,30 +245,32 @@ function SheetContent({
         )}
         {...props}
       >
-        {bottom ? <SheetHandle {...dragHandlers} /> : null}
-        {children}
-        {bottom ? (
-          // The drag dismisses through the real close path (onOpenChange, focus return), so it
-          // clicks this instead of reaching into the dialog's state. Never visible or focusable.
-          <SheetPrimitive.Close
-            ref={closeRef}
-            aria-hidden
-            tabIndex={-1}
-            className="hidden"
-            data-slot="sheet-drag-close"
-          />
-        ) : null}
-        {showCloseButton && (
-          <SheetPrimitive.Close
-            data-slot="sheet-close"
-            render={
-              <Button variant="ghost" className="absolute top-3 right-3 z-20" size="icon-sm" />
-            }
-          >
-            <XIcon />
-            <span className="sr-only">Close</span>
-          </SheetPrimitive.Close>
-        )}
+        <SheetLayer.Provider value={raised}>
+          {bottom ? <SheetHandle {...dragHandlers} /> : null}
+          {children}
+          {bottom ? (
+            // The drag dismisses through the real close path (onOpenChange, focus return), so it
+            // clicks this instead of reaching into the dialog's state. Never visible or focusable.
+            <SheetPrimitive.Close
+              ref={closeRef}
+              aria-hidden
+              tabIndex={-1}
+              className="hidden"
+              data-slot="sheet-drag-close"
+            />
+          ) : null}
+          {showCloseButton && (
+            <SheetPrimitive.Close
+              data-slot="sheet-close"
+              render={
+                <Button variant="ghost" className="absolute top-3 right-3 z-20" size="icon-sm" />
+              }
+            >
+              <XIcon />
+              <span className="sr-only">Close</span>
+            </SheetPrimitive.Close>
+          )}
+        </SheetLayer.Provider>
       </SheetPrimitive.Popup>
     </SheetPortal>
   );

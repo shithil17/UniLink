@@ -8,6 +8,7 @@ import {
   modUsersQuery,
   reasonBody,
   rejectPostRequest,
+  removalBody,
   releaseKeyRequest,
   resolveReportRequest,
   type idConflictResult,
@@ -23,6 +24,7 @@ import type { AppEnv } from "../../middleware/types";
 import { reportsRepo } from "../../repos/reports";
 import { usersRepo } from "../../repos/users";
 import { validateJson, validateQuery } from "../../validate";
+import { areaModRoutes } from "../areas/modRoutes";
 import { courseModRoutes } from "../courses/modRoutes";
 import { facultyModRoutes } from "../faculty/modRoutes";
 import {
@@ -58,6 +60,7 @@ const POST_FAILURES: Record<PostDecisionFailure, { status: 404 | 409; message: s
 export const modRoutes = new Hono<AppEnv>()
   .use(requireRole("mod"))
   .route("/faculty", facultyModRoutes)
+  .route("/areas", areaModRoutes)
   .route("/", courseModRoutes)
   .get("/users", validateQuery(modUsersQuery), async (c) => {
     const { q, cursor, limit } = c.req.valid("query");
@@ -181,7 +184,7 @@ export const modRoutes = new Hono<AppEnv>()
     const { status, message } = POST_FAILURES[result.reason];
     return c.json({ error: result.reason, message }, status);
   })
-  .post("/reports/:id/remove", validateJson(reasonBody), async (c) => {
+  .post("/reports/:id/remove", validateJson(removalBody), async (c) => {
     const id = paramId(c);
     if (id === null) return c.json(notFound, 404);
     const result = await removeReported(

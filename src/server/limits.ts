@@ -34,8 +34,28 @@ import {
   RESOURCE_EXPIRY_MIN_MS,
   RESOURCE_NOTE_MAX_LENGTH,
 } from "../shared/schemas/resources.ts";
+import { AREA_NAME_MAX_LENGTH } from "../shared/schemas/areas.ts";
+import {
+  RIDE_NOTES_MAX_LENGTH,
+  RIDE_LANDMARK_MAX_LENGTH,
+  RIDE_PRICE_MAX_TAKA,
+  RIDE_SEARCH_MAX_LENGTH,
+  RIDE_SEATS_MAX,
+} from "../shared/schemas/rides.ts";
+import {
+  AUTHOR_DELETE_PURGE_MS,
+  POST_DEFAULT_EXPIRY_DAYS,
+  POST_RENEW_EXTEND_DAYS,
+} from "../shared/posts.ts";
 import { STUDENT_ID_MAX_AGE_YEARS } from "../shared/studentId.ts";
 import { RESOURCE_URL_MAX_LENGTH } from "../shared/resourceUrl.ts";
+import { MAP_BOUNDS } from "../shared/geo.ts";
+import {
+  PLACE_AREA_MATCHES_MAX,
+  PLACE_QUERY_MAX_LENGTH,
+  PLACE_QUERY_MIN_LENGTH,
+  PLACE_SEARCH_DEBOUNCE_MS,
+} from "../shared/schemas/places.ts";
 
 // Every limit, cap, cooldown, expiry and threshold lives here. Feature code imports these, never inlines numbers.
 
@@ -44,6 +64,9 @@ const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 const D1_MAX_BOUND_PARAMS = 100;
+
+// ceiling: the greater-Dhaka box (about Savar to Gazipur to Narayanganj). Every map is held to it and every saved point must fall inside it. Defined in shared code so the client maps use the same box. Revisit if students post rides from beyond it.
+export { MAP_BOUNDS };
 
 export const limits = {
   /** Oldest admission year accepted at signup, in years before the current one. Defined in shared code for the client form. */
@@ -160,6 +183,45 @@ export const limits = {
   resourceHelpableMax: 50,
   // ceiling: three months: long enough to find the link again after the exam, short enough to keep shared links from piling up. The UI states it. Defined in shared code so the screens can state it. Revisit if students ask for longer.
   resourceFulfilledKeepMs: RESOURCE_FULFILLED_KEEP_MS,
+  // ceiling: a landmark, a note, a bus's seats and a fare are all short and bounded; the seat cap is also a CHECK on the rides table. Defined in shared code for the client form. Revisit if honest rides are refused.
+  rideField: {
+    landmarkMax: RIDE_LANDMARK_MAX_LENGTH,
+    notesMax: RIDE_NOTES_MAX_LENGTH,
+    seatsMax: RIDE_SEATS_MAX,
+    priceMaxTaka: RIDE_PRICE_MAX_TAKA,
+    searchMax: RIDE_SEARCH_MAX_LENGTH,
+  },
+  // ceiling: a student posts a ride or two a day (a commute plus a one-off); this stops a loop from filling the feed. Revisit if students report hitting it.
+  rideCreate: { limit: 10, windowMs: DAY },
+  // ceiling: edits, seat changes and renewals are a few taps per ride; generous, but it stops a loop. Revisit if posters report hitting it.
+  rideUpdate: { limit: 60, windowMs: HOUR },
+  // ceiling: the Map view fetches one small grouped count per filter change or Leaving from / Going to switch, a few a minute while browsing; this stops a loop from re-running the query. Revisit if students report hitting it.
+  rideAreaCounts: { limit: 120, windowMs: 10 * MINUTE },
+  // ceiling: a student runs a handful of rides at once (a commute each way, a weekend trip). Past this, a new ride is a 409 until one lapses or is deleted. Revisit if students report hitting it.
+  rideOpenMax: 10,
+  // ceiling: a phone screen shows about this many rows; more arrive through the cursor. Revisit if the feed feels short.
+  ridePage: { defaultSize: 20, maxSize: 50 },
+  // ceiling: an area is a neighbourhood or district name. Defined in shared code for the mod form. Revisit if a real name is refused.
+  areaField: { nameMax: AREA_NAME_MAX_LENGTH },
+  // ceiling: the Dhaka list is about 100 areas and mods add a few sub-areas; the picker loads them all in one small response, so this only stops a runaway list. Past it the extra areas are not listed. Revisit with a search box if the list ever nears it.
+  areaListMax: 500,
+  // ceiling: a mod adds, renames, hides or shows a handful of areas in a sitting; this stops a loop. Revisit if mods report hitting it.
+  areaModWrite: { limit: 60, windowMs: HOUR },
+  /** Place search in the pin picker (`GET /api/places/search`). */
+  placeSearch: {
+    // ceiling: query length and the typing pause are defined in shared code so the client box and the validator agree. Revisit if students cannot find short names, or if the geocoder throttles.
+    minQueryLength: PLACE_QUERY_MIN_LENGTH,
+    maxQueryLength: PLACE_QUERY_MAX_LENGTH,
+    debounceMs: PLACE_SEARCH_DEBOUNCE_MS,
+    /** How many of our own areas show above the places. Defined in shared code for the client list. */
+    areaMatchesMax: PLACE_AREA_MATCHES_MAX,
+    // ceiling: a phone list under the search box shows about this many rows beside the area matches. Revisit if students scroll for more.
+    maxResults: 6,
+    // ceiling: a student waits on this call while typing, so a slow geocoder must not hold the request open; a timeout is a 502 and the list falls back to areas. Revisit once the public Photon latency is measured.
+    timeoutMs: 4 * SECOND,
+    // ceiling: a student pins two spots per ride and types a few words for each, about 5 requests a minute while searching; this stops a loop from hammering the public Photon server (which asks for fair use). Revisit if students report hitting it or Photon throttles us.
+    rateLimit: { limit: 60, windowMs: 10 * MINUTE },
+  },
   /** The screening pipeline: what the rules accept and how long the model step may take. */
   screen: {
     // ceiling: the longest screened field (a description or note) is a few paragraphs; a wall of text is spam. Per-post-type schemas set tighter caps. Revisit if honest posts are rejected for length.
@@ -183,6 +245,22 @@ export const limits = {
   /** "Ask a moderator to look": an author sends a rejected post to the queue. */
   // ceiling: an honest author appeals the odd post; this stops a loop from flooding the queue. Revisit if mods say honest authors are blocked.
   appeal: { limit: 5, windowMs: HOUR },
+  /** Revealing a post's contacts (`GET /api/<type>/:id/contact`), counted per user across every post type. */
+  // ceiling: a student opens a handful of posts while looking for a ride or an item; this stops a loop from harvesting every contact. Revisit if students report hitting it.
+  contactReveal: { limit: 30, windowMs: HOUR },
+  /** When a post type's `expires_at` falls and how far a renewal can push it (see `src/server/posts/expiry.ts`). */
+  postExpiry: {
+    // ceiling: a post with no date of its own (a recurring ride's end date) lives about a term's half. Defined in shared code so the screens can state it. Revisit if posters keep renewing early.
+    defaultMs: POST_DEFAULT_EXPIRY_DAYS * DAY,
+    // ceiling: stops a date years away from pinning a row in the feed. Revisit if a type needs longer plans.
+    maxMs: 180 * DAY,
+    // ceiling: one renewal adds as much as the default, so renewing twice never outruns the maximum by much. Revisit with the default.
+    renewExtendMs: POST_RENEW_EXTEND_DAYS * DAY,
+    // ceiling: gives the poster a week to renew a lapsed post before the cron deletes it. Revisit if posters miss the window.
+    expiredPurgeMs: 7 * DAY,
+  },
+  // ceiling: long enough for a report to arrive on a deleted scam, short enough that an author's deleted post does not linger. Revisit if mods need longer to act. Defined in shared code for the confirm dialog.
+  authorDeletePurgeMs: AUTHOR_DELETE_PURGE_MS,
   /** Probing: someone resubmitting a post until the screen lets it through. */
   probing: {
     // ceiling: three rejections in an hour is more than an honest mistake or two. Revisit if mods see honest students flagged.

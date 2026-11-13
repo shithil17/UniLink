@@ -3,7 +3,8 @@ import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/field";
-import { reasonBody } from "../../../shared/schemas/moderation";
+import { toastFirstFieldError } from "@/lib/formErrors";
+import { reasonBody, type removalBody } from "../../../shared/schemas/moderation";
 import { ReasonField } from "./ReasonField";
 
 type Values = z.infer<typeof reasonBody>;
@@ -17,6 +18,7 @@ export function ReasonForm({
   submitLabel,
   variant = "default",
   hint,
+  schema = reasonBody,
   onSubmit,
   onCancel,
 }: {
@@ -24,14 +26,16 @@ export function ReasonForm({
   submitLabel: string;
   variant?: "default" | "destructive" | "outline";
   hint?: string;
+  /** The reason's rule when it is stricter than `reasonBody` (a post removal). */
+  schema?: typeof reasonBody | typeof removalBody;
   onSubmit: (reason: string) => void;
   onCancel?: () => void;
 }) {
   const form = useForm<Values>({
-    resolver: zodResolver(reasonBody),
+    resolver: zodResolver(schema),
     defaultValues: { reason: "" },
   });
-  const submit = form.handleSubmit((values) => onSubmit(values.reason));
+  const submit = form.handleSubmit((values) => onSubmit(values.reason), toastFirstFieldError);
 
   return (
     <form onSubmit={submit} noValidate>

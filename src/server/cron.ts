@@ -3,6 +3,8 @@ import { audit } from "./audit";
 import type { Db } from "./db/client";
 import { getDb } from "./db/client";
 import { limits } from "./limits";
+import { rides } from "./db/schema";
+import { postLifecycleRepo, type PurgeablePostTable } from "./repos/postLifecycle";
 import { resourceRequestsRepo } from "./repos/resources";
 
 /**
@@ -35,9 +37,27 @@ export const purgeFulfilledResourceRequests: CronJob = {
     resourceRequestsRepo(db).purgeFulfilledBefore(now - limits.resourceFulfilledKeepMs),
 };
 
+/**
+ * The cleanup job of a post table that follows the shared post kit: hard-deletes rows past their
+ * expiry window and author-deleted rows past the purge window, never one with an open report (see
+ * `postLifecycleRepo`). A post type adds its job to `cronJobs` with one line:
+ *
+ *   postPurgeJob("rides", "ride", rides)
+ *
+ * A type with photos wraps `postLifecycleRepo(...).purgeDue(now)` itself to delete files from the ids it returns.
+ */
+export function postPurgeJob(name: string, targetType: string, table: PurgeablePostTable): CronJob {
+  return {
+    name,
+    targetType,
+    run: async (db, now) => (await postLifecycleRepo(db, table, targetType).purgeDue(now)).length,
+  };
+}
+
 export const cronJobs: readonly CronJob[] = [
   purgeExpiredResourceRequests,
   purgeFulfilledResourceRequests,
+  postPurgeJob("rides", "ride", rides),
 ];
 
 /**

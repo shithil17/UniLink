@@ -58,7 +58,14 @@ function WaitingList() {
 
   return (
     <>
-      {total === undefined ? null : (
+      {total === undefined ? (
+        // Holds the line's height until the count arrives, so the list does not drop.
+        list.isPending ? (
+          <div className="flex min-h-[1.5em] items-center">
+            <Skeleton className="h-4 w-44" />
+          </div>
+        ) : null
+      ) : (
         <p className="text-soft tabular-nums" aria-live="polite">
           <span className="font-semibold text-ink">{total}</span> waiting for a moderator
         </p>

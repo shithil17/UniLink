@@ -8,9 +8,25 @@ import {
   sqliteTable,
   text,
   uniqueIndex,
+  type AnySQLiteColumn,
 } from "drizzle-orm/sqlite-core";
+import { MAP_BOUNDS } from "../../shared/geo";
 import type { PrereqRule } from "../../shared/prereq";
+import { RIDE_SEATS_MAX, vehicleType } from "../../shared/schemas/rides";
+import { contactColumns, contactConstraint } from "./contactColumns";
 import { moderationColumns, moderationConstraints } from "./moderationColumns";
+
+type Vehicle = (typeof vehicleType.options)[number];
+
+/**
+ * A map point held in two nullable columns: both set or both null, and a set point inside the
+ * greater-Dhaka box. The numbers come from `MAP_BOUNDS`, so the check and the schemas agree.
+ */
+const pointCheck = (name: string, lat: AnySQLiteColumn, lng: AnySQLiteColumn) =>
+  check(
+    name,
+    sql`(${lat} is null) = (${lng} is null) and (${lat} is null or (${lat} between ${sql.raw(String(MAP_BOUNDS.south))} and ${sql.raw(String(MAP_BOUNDS.north))} and ${lng} between ${sql.raw(String(MAP_BOUNDS.west))} and ${sql.raw(String(MAP_BOUNDS.east))}))`,
+  );
 
 // Key/value facts about the database itself (schema version and similar).
 export const appMeta = sqliteTable("app_meta", {
@@ -450,5 +466,133 @@ export const resourceSubmissions = sqliteTable(
     // The requester's list of links, and the per-request caps.
     index("resource_submissions_request_idx").on(t.requestId, t.id),
     index("resource_submissions_author_idx").on(t.authorId, t.requestId),
+  ],
+);
+
+// Places students pick from (rides now; lost and found may reuse them). A top-level area has no parent;
+// a sub-area has a top-level parent, one level only (the mod action checks it). Mods hide an area in place
+// of deleting it, so rows that point at it keep working. `sort_order` is a pin: lower sorts first
+// (Bashundhara 0, the rest 1, "Outside Dhaka" 2), then by name.
+export const areas = sqliteTable(
+  "areas",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    // Stable, kebab-case, set when the area is added and never changed by a rename.
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    parentId: integer("parent_id").references((): AnySQLiteColumn => areas.id),
+    sortOrder: integer("sort_order").notNull().default(1),
+    hidden: integer("hidden", { mode: "boolean" }).notNull().default(false),
+    hiddenReason: text("hidden_reason"),
+    // The area's centre (WGS84, 5 decimals), or null when it has none ("Outside Dhaka"). Centres the pin
+    // picker and stands in on a ride map for an end with no exact pin.
+    lat: real("lat"),
+    lng: real("lng"),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (t) => [
+    pointCheck("areas_point_check", t.lat, t.lng),
+    uniqueIndex("areas_slug_idx").on(t.slug),
+    // A name is unique among siblings, ignoring case: one index for the top level, one under each parent
+    // (NULLs never collide in a unique index, so the top level needs its own).
+    uniqueIndex("areas_top_name_idx")
+      .on(sql`lower(${t.name})`)
+      .where(sql`${t.parentId} is null`),
+    uniqueIndex("areas_sub_name_idx")
+      .on(t.parentId, sql`lower(${t.name})`)
+      .where(sql`${t.parentId} is not null`),
+    index("areas_parent_idx").on(t.parentId),
+  ],
+);
+
+// A ride a student offers: one-off (a departure instant) or recurring (weekdays, a time of day and an
+// end date). Contacts are only ever returned by `GET /api/rides/:id/contact`. A lapsed ride is
+// hard-deleted by cron (src/server/cron.ts). Whether it is full is not stored: it is `seats_remaining
+// = 0`, so it can never disagree with the seat count.
+export const rides = sqliteTable(
+  "rides",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    // The poster. Deleting the user deletes their rides.
+    authorId: integer("author_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // Where from and to, by area. The landmark is the fine detail ("north gate"), screened text.
+    pickupAreaId: integer("pickup_area_id")
+      .notNull()
+      .references(() => areas.id),
+    pickupLandmark: text("pickup_landmark"),
+    // The exact spot the poster pinned (WGS84, 5 decimals), optional. Only the ride detail returns it.
+    pickupLat: real("pickup_lat"),
+    pickupLng: real("pickup_lng"),
+    destinationAreaId: integer("destination_area_id")
+      .notNull()
+      .references(() => areas.id),
+    destinationLandmark: text("destination_landmark"),
+    destinationLat: real("destination_lat"),
+    destinationLng: real("destination_lng"),
+    vehicle: text("vehicle", {
+      enum: vehicleType.options as [Vehicle, ...Vehicle[]],
+    }).notNull(),
+    totalSeats: integer("total_seats").notNull(),
+    // Changed only by single guarded UPDATEs, never read-then-write.
+    seatsRemaining: integer("seats_remaining").notNull(),
+    pricePerSeatTaka: integer("price_per_seat_taka").notNull(),
+    notes: text("notes"),
+    ...contactColumns,
+    kind: text("kind", { enum: ["one_off", "recurring"] }).notNull(),
+    // One-off: the departure, UTC epoch ms.
+    departsAt: integer("departs_at"),
+    // Recurring: bit i is Asia/Dhaka weekday i (Sunday is bit 0), see src/shared/rides.ts.
+    days: integer("days"),
+    // Recurring: minutes after midnight in Asia/Dhaka.
+    departureMinutes: integer("departure_minutes"),
+    // Recurring: the last Asia/Dhaka day it runs, "YYYY-MM-DD". `expires_at` is the end of that day.
+    endsOn: text("ends_on"),
+    ...moderationColumns,
+    // One-off: the departure. Recurring: the end of `ends_on` in Asia/Dhaka. The feed hides a row past it.
+    expiresAt: integer("expires_at").notNull(),
+    createdAt: integer("created_at").notNull(),
+    updatedAt: integer("updated_at").notNull(),
+    deletedAt: integer("deleted_at"),
+    deletedBy: integer("deleted_by").references(() => users.id, { onDelete: "set null" }),
+  },
+  (t) => [
+    ...moderationConstraints("rides", t),
+    contactConstraint("rides", t),
+    check(
+      "rides_vehicle_check",
+      sql`${t.vehicle} in (${sql.raw(vehicleType.options.map((v) => `'${v}'`).join(", "))})`,
+    ),
+    check(
+      "rides_seats_check",
+      sql`${t.totalSeats} between 1 and ${sql.raw(String(RIDE_SEATS_MAX))} and ${t.seatsRemaining} between 0 and ${t.totalSeats}`,
+    ),
+    check("rides_price_check", sql`${t.pricePerSeatTaka} >= 0`),
+    pointCheck("rides_pickup_point_check", t.pickupLat, t.pickupLng),
+    pointCheck("rides_destination_point_check", t.destinationLat, t.destinationLng),
+    // Each kind has exactly its own fields.
+    check(
+      "rides_kind_check",
+      sql`(${t.kind} = 'one_off' and ${t.departsAt} is not null and ${t.days} is null and ${t.departureMinutes} is null and ${t.endsOn} is null)
+        or (${t.kind} = 'recurring' and ${t.departsAt} is null and ${t.days} is not null and ${t.days} between 1 and 127 and ${t.departureMinutes} is not null and ${t.departureMinutes} between 0 and 1439 and ${t.endsOn} is not null and ${t.endsOn} glob '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')`,
+    ),
+    // "My rides", newest first.
+    index("rides_author_idx").on(t.authorId, t.id),
+    // The feed: soonest to lapse first (a one-off's departure), paged by (expires_at, id), and the cron purge.
+    index("rides_expires_idx").on(t.expiresAt, t.id),
+    // The feed filtered by vehicle, and by kind with a departure day.
+    index("rides_vehicle_expires_idx").on(t.vehicle, t.expiresAt),
+    index("rides_kind_departs_idx").on(t.kind, t.departsAt),
+    // The Map view's counts: published rides still live, with no ordering to steer the planner to `rides_expires_idx`, so without this it would walk every published ride, lapsed ones too.
+    index("rides_status_expires_idx").on(t.status, t.expiresAt),
+    // The feed filtered by area.
+    index("rides_pickup_area_expires_idx").on(t.pickupAreaId, t.expiresAt),
+    index("rides_destination_area_expires_idx").on(t.destinationAreaId, t.expiresAt),
+    // The cron purge of author-deleted rides: only deleted rows are indexed, so it never scans the table.
+    index("rides_deleted_idx")
+      .on(t.deletedAt)
+      .where(sql`${t.deletedAt} is not null`),
   ],
 );

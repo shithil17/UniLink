@@ -1,5 +1,6 @@
 import {
   infiniteQueryOptions,
+  keepPreviousData,
   queryOptions,
   useMutation,
   useQueryClient,
@@ -29,6 +30,8 @@ export const modUsersList = (q: string) =>
       apiGet(`/api/mod/users${queryString({ q, cursor: pageParam })}`, modUserPage),
     initialPageParam: "",
     getNextPageParam: (last) => last.nextCursor ?? undefined,
+    // A new search keeps the previous results on screen until its own arrive.
+    placeholderData: keepPreviousData,
   });
 
 /** The report queue for one status. The open queue runs oldest first. */

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError, errorMessage } from "@/lib/api";
 import { formatCgpa } from "@/lib/attempts";
+import { toastFirstFieldError } from "@/lib/formErrors";
 import { useSaveTarget } from "@/lib/courses";
 import { targetCgpaQuery } from "@/lib/queries";
 import { targetReached } from "@/lib/plannerModel";
@@ -42,21 +43,22 @@ function TargetForm({ saved, reached }: { saved: number | null; reached: boolean
       ? "From 0.01 to 4.00, above your CGPA."
       : null;
 
-  const submit = form.handleSubmit((values) =>
-    save.mutate(values, {
-      onSuccess: (response) => {
-        toast.success("Target saved");
-        form.reset({ targetCgpa: response.targetCgpa ?? undefined });
-      },
-      onError: (err) => {
-        // A target at or below the real CGPA is a mistake in this field; anything else is a toast.
-        if (err instanceof ApiError && err.code === "target_not_above_current") {
-          form.setError("targetCgpa", { type: "server", message: errorMessage(err) });
-          return;
-        }
-        toast.error(errorMessage(err));
-      },
-    }),
+  const submit = form.handleSubmit(
+    (values) =>
+      save.mutate(values, {
+        onSuccess: (response) => {
+          toast.success("Target saved");
+          form.reset({ targetCgpa: response.targetCgpa ?? undefined });
+        },
+        onError: (err) => {
+          // A target at or below the real CGPA also marks the field; every error is a toast.
+          if (err instanceof ApiError && err.code === "target_not_above_current") {
+            form.setError("targetCgpa", { type: "server", message: errorMessage(err) });
+          }
+          toast.error(errorMessage(err));
+        },
+      }),
+    toastFirstFieldError,
   );
 
   return (
@@ -122,7 +124,7 @@ export function TargetPanel({
             value={projected}
             note={
               mockCount === 0
-                ? undefined
+                ? "No mock grades yet"
                 : `With ${mockCount} mock ${mockCount === 1 ? "grade" : "grades"}`
             }
           />
