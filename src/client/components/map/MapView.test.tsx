@@ -48,6 +48,20 @@ describe("MapView", () => {
     expect(liveMaps()[0]!.getCanvas().getAttribute("aria-label")).toBe("Test map");
   });
 
+  it("leaves the fade duration out unless motion is reduced, so MapLibre keeps its default and labels draw", async () => {
+    render(<MapView label="Test map" interactive />);
+    await ready();
+    // An explicit `fadeDuration: undefined` overrides MapLibre's default and hides every label.
+    expect("fadeDuration" in liveMaps()[0]!.options).toBe(false);
+    cleanup();
+    resetFakeMaps();
+
+    reduceMotion(true);
+    render(<MapView label="Test map" interactive />);
+    await ready();
+    expect(liveMaps()[0]!.options.fadeDuration).toBe(0);
+  });
+
   it("opens fitted to the points it is given", async () => {
     render(
       <MapView

@@ -92,7 +92,9 @@ export function MapView({
             pitchWithRotate: false,
             touchPitch: false,
             maxPitch: 0,
-            fadeDuration: prefersReducedMotion() ? 0 : undefined,
+            // Only set when reducing motion: MapLibre copies an explicit `undefined` over its 300 ms
+            // default, and a missing fade duration turns every label's opacity into NaN (nothing drawn).
+            ...(prefersReducedMotion() ? { fadeDuration: 0 } : {}),
           });
         } catch {
           // No WebGL (or it is blocked): the panel says so and the text facts stay.
