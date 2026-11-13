@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { Hono } from "hono";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { beforeAll, beforeEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { AUTHOR_DELETE_REASON } from "../../shared/posts";
 import { runCronJobs, postPurgeJob } from "../cron";
 import { contactColumns } from "../db/contactColumns";
@@ -322,6 +322,15 @@ describe("purge rule", () => {
 });
 
 describe("contact reveal and author delete handlers", () => {
+  // The handlers read the real clock, while the posts here expire relative to NOW: pin Date to NOW.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   // A router the way a post type mounts the kit: behind a session, one line per handler.
   function appFor(user: SessionUser | null) {
     return new Hono<AppEnv>()
