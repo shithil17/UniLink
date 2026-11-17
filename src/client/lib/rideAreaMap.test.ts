@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vite-plus/test";
 import type { AreaOption } from "../../shared/schemas/areas";
-import { areaCardLine, areaPills, offMapLabel } from "./rideAreaMap";
+import {
+  AREA_END_LABELS,
+  AREA_END_SHORT_LABELS,
+  areaCardLine,
+  areaPills,
+  offMapLabel,
+} from "./rideAreaMap";
 
 const area = (
   id: number,
@@ -45,5 +51,14 @@ describe("words", () => {
     expect(areaCardLine("Jatrabari", 6, "pickup")).toBe("Jatrabari: 6 rides leaving");
     expect(areaCardLine("Jatrabari", 1, "destination")).toBe("Jatrabari: 1 ride arriving");
     expect(offMapLabel(1)).toBe("Not on the map: 1 ride");
+  });
+});
+
+describe("area end switch labels", () => {
+  it("has a short label for every end, shorter than the full one and still starting it", () => {
+    for (const end of ["pickup", "destination"] as const) {
+      expect(AREA_END_SHORT_LABELS[end].length).toBeLessThan(AREA_END_LABELS[end].length);
+      expect(AREA_END_LABELS[end].startsWith(AREA_END_SHORT_LABELS[end])).toBe(true);
+    }
   });
 });

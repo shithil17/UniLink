@@ -7,12 +7,19 @@ import { errorMessage } from "./api";
 import { FIT_PADDING, type FitPadding } from "./map/camera";
 import { rideCount, type CountPill } from "./map/counts";
 import { rideAreaCountsQuery, type RideFilters } from "./rides";
+import { SHEET_PEEK_REM } from "./sheetDrag";
 import { toast } from "./toast";
 
 /** The Map view's two ways to count: where rides leave from, or where they go. */
 export const AREA_END_LABELS: Record<RideAreaEnd, string> = {
   pickup: "Leaving from",
   destination: "Going to",
+};
+
+/** The same two choices, short enough for the switch on a phone (below `sm`); the full label is still its accessible name. */
+export const AREA_END_SHORT_LABELS: Record<RideAreaEnd, string> = {
+  pickup: "Leaving",
+  destination: "Going",
 };
 
 /** "Jatrabari: 6 rides leaving", the line on the card a tapped pill opens. */
@@ -117,15 +124,42 @@ export function useRideAreaMap(
  */
 const SHEET_MAX_HEIGHT = 0.6;
 const DOCK_WIDTH_PX = 384 + 12;
+/** A minimised phone sheet leaves a strip this tall (the bottom inset is left out; the padding has room for it). */
+const SHEET_PEEK_PX = SHEET_PEEK_REM * 16;
 
-/** Padding for fitting the map to a ride, keeping it clear of the sheet or panel that covers part of the map. */
-export function layerPadding(wide: boolean): FitPadding {
+/**
+ * Padding for fitting the map to a ride, keeping it clear of the sheet or panel that covers part of
+ * the map. `peek` is a phone sheet minimised to its strip, which covers far less than an open one.
+ */
+export function layerPadding(wide: boolean, peek = false): FitPadding {
   return wide
     ? { top: FIT_PADDING, left: FIT_PADDING, bottom: FIT_PADDING, right: DOCK_WIDTH_PX + 24 }
     : {
         top: FIT_PADDING,
         left: FIT_PADDING,
         right: FIT_PADDING,
-        bottom: FIT_PADDING + Math.round(window.innerHeight * SHEET_MAX_HEIGHT),
+        bottom:
+          FIT_PADDING + (peek ? SHEET_PEEK_PX : Math.round(window.innerHeight * SHEET_MAX_HEIGHT)),
       };
+}
+
+/**
+ * Whether the phone sheets over the map are minimised to their peek strip, so the ride drawn behind
+ * them can be seen. One flag for both sheets, since the detail sits over the rides and only the top
+ * layer's strip shows. A new area or ride opens expanded again; a layer closing leaves it as it was,
+ * so a sheet sliding away does not jump first. Shared by the layers and the map (which frames the ride above
+ * the strip instead of above the open sheet).
+ */
+export function useLayerCollapse(
+  area: { by: RideAreaEnd; id: number } | null,
+  detailId: number | null,
+) {
+  const [collapsed, setCollapsed] = useState(false);
+  const key = `${area ? `${area.by}-${area.id}` : ""}|${detailId ?? ""}`;
+  const [lastKey, setLastKey] = useState(key);
+  if (key !== lastKey) {
+    setLastKey(key);
+    if (area || detailId !== null) setCollapsed(false);
+  }
+  return [collapsed, setCollapsed] as const;
 }

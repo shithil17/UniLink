@@ -96,6 +96,7 @@ export function RideDetail({
             variant="ghost"
             size="icon-sm"
             aria-label={back.label}
+            data-sheet-strip-action
             className="-ml-2 shrink-0"
             onClick={back.onBack}
           >

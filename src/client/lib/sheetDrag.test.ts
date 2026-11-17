@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
+  TAP_SLOP,
   UP_MAX,
   dragOffset,
+  expandedDragOffset,
   isSettled,
+  isTap,
+  openness,
+  peekDragOffset,
   releaseVelocity,
   scrimOpacity,
+  shouldCollapse,
   shouldDismiss,
+  shouldExpand,
   springStep,
   type SpringState,
 } from "./sheetDrag";
@@ -84,5 +91,57 @@ describe("springStep", () => {
   it("caps a stalled frame so it cannot blow up", () => {
     const next = springStep({ x: 100, v: 0 }, 5);
     expect(Math.abs(next.x)).toBeLessThan(200);
+  });
+});
+
+describe("collapsible drag", () => {
+  const TRAVEL = 400;
+
+  it("collapses past a third of the travel or on a down flick, otherwise settles", () => {
+    expect(shouldCollapse(TRAVEL * 0.35, TRAVEL, 0)).toBe(true);
+    expect(shouldCollapse(TRAVEL * 0.05, TRAVEL, 0.6)).toBe(true);
+    expect(shouldCollapse(TRAVEL * 0.2, TRAVEL, 0.1)).toBe(false);
+    expect(shouldCollapse(TRAVEL * 0.34, TRAVEL, 0.55)).toBe(false);
+  });
+
+  it("expands past a fifth of the lift or on an up flick, otherwise settles", () => {
+    expect(shouldExpand(-TRAVEL * 0.25, TRAVEL, 0)).toBe(true);
+    expect(shouldExpand(-TRAVEL * 0.02, TRAVEL, -0.5)).toBe(true);
+    expect(shouldExpand(-TRAVEL * 0.1, TRAVEL, -0.1)).toBe(false);
+    // Pushing down on a collapsed sheet never expands it.
+    expect(shouldExpand(20, TRAVEL, 0.9)).toBe(false);
+  });
+
+  it("tells a tap from a drag by the slop", () => {
+    expect(isTap(TAP_SLOP - 1)).toBe(true);
+    expect(isTap(TAP_SLOP)).toBe(false);
+  });
+
+  it("follows an open sheet down 1:1 to the peek, then gives way", () => {
+    expect(expandedDragOffset(120, TRAVEL)).toBe(120);
+    expect(expandedDragOffset(TRAVEL, TRAVEL)).toBe(TRAVEL);
+    const past = expandedDragOffset(TRAVEL + 500, TRAVEL);
+    expect(past).toBeGreaterThan(TRAVEL);
+    expect(past).toBeLessThanOrEqual(TRAVEL + UP_MAX);
+    // Upward is damped as on a plain sheet.
+    expect(expandedDragOffset(-300, TRAVEL)).toBe(dragOffset(-300));
+  });
+
+  it("follows a collapsed sheet up 1:1 to open, then gives way, and damps a pull down", () => {
+    expect(peekDragOffset(-120, TRAVEL)).toBe(-120);
+    const past = peekDragOffset(-TRAVEL - 500, TRAVEL);
+    expect(past).toBeLessThan(-TRAVEL);
+    expect(past).toBeGreaterThanOrEqual(-TRAVEL - UP_MAX);
+    expect(peekDragOffset(300, TRAVEL)).toBeLessThanOrEqual(UP_MAX);
+  });
+
+  it("fades the scrim to nothing at the peek and back to full when open", () => {
+    expect(openness(0, TRAVEL, false)).toBe(1);
+    expect(openness(TRAVEL, TRAVEL, false)).toBe(0);
+    expect(openness(TRAVEL / 2, TRAVEL, false)).toBe(0.5);
+    expect(openness(0, TRAVEL, true)).toBe(0);
+    expect(openness(-TRAVEL, TRAVEL, true)).toBe(1);
+    expect(openness(30, TRAVEL, true)).toBe(0);
+    expect(openness(10, 0, false)).toBe(1);
   });
 });

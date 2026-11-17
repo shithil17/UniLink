@@ -24,6 +24,22 @@ export const SETTLE_SPEED = 8;
 export const MAX_STEP_SECONDS = 0.032;
 /** Dragged a full sheet height, the scrim has lost this share of its opacity. */
 export const SCRIM_FADE = 0.8;
+/**
+ * A collapsible sheet can rest as a peek strip instead of closing. `travel` below is the distance
+ * from fully open to the peek, in px.
+ */
+/** Dragged past this share of the travel, an open sheet collapses on release. */
+export const COLLAPSE_FRACTION = 0.34;
+/** A downward release faster than this (px per ms) collapses it whatever the distance. */
+export const COLLAPSE_VELOCITY = 0.55;
+/** Lifted past this share of the travel, a collapsed sheet expands on release (easier than collapsing). */
+export const EXPAND_FRACTION = 0.2;
+/** An upward release faster than this (px per ms) expands it whatever the distance. */
+export const EXPAND_VELOCITY = 0.4;
+/** A press that moves less than this (px) is a tap, not a drag. */
+export const TAP_SLOP = 6;
+/** The height of a collapsed sheet's peek strip in rem (handle and title row), before the bottom inset. */
+export const SHEET_PEEK_REM = 5.5;
 /** How many recent pointer samples the release velocity is read from. */
 export const VELOCITY_SAMPLES = 6;
 
@@ -67,4 +83,53 @@ export function springStep(state: SpringState, dt: number): SpringState {
 /** True once the spring is close enough to rest that the sheet can snap to 0. */
 export function isSettled(state: SpringState): boolean {
   return Math.abs(state.x) < SETTLE_DISTANCE && Math.abs(state.v) < SETTLE_SPEED;
+}
+
+/** The give a drag has past its limit: damped like the upward drag, and capped. */
+function giveWay(excess: number): number {
+  return Math.min(UP_MAX, Math.pow(excess, UP_EXPONENT));
+}
+
+/**
+ * The offset of an open collapsible sheet for a raw finger delta: downward follows the finger 1:1
+ * until the peek (`travel`), then gives way; upward is damped and capped, as for a plain sheet.
+ */
+export function expandedDragOffset(rawDelta: number, travel: number): number {
+  if (rawDelta <= travel) return dragOffset(rawDelta);
+  return travel + giveWay(rawDelta - travel);
+}
+
+/**
+ * The offset of a collapsed sheet, measured from its resting place at the peek: lifting follows the
+ * finger 1:1 until it is fully open (`-travel`), then gives way; pulling further down is damped.
+ */
+export function peekDragOffset(rawDelta: number, travel: number): number {
+  if (rawDelta >= 0) return giveWay(rawDelta);
+  if (-rawDelta <= travel) return rawDelta;
+  return -(travel + giveWay(-rawDelta - travel));
+}
+
+/** Whether releasing an open sheet `offset` px down collapses it. `velocity` is px per ms, downward positive. */
+export function shouldCollapse(offset: number, travel: number, velocity: number): boolean {
+  return offset > travel * COLLAPSE_FRACTION || velocity > COLLAPSE_VELOCITY;
+}
+
+/** Whether releasing a collapsed sheet `offset` px from the peek (negative is up) expands it. */
+export function shouldExpand(offset: number, travel: number, velocity: number): boolean {
+  return -offset > travel * EXPAND_FRACTION || -velocity > EXPAND_VELOCITY;
+}
+
+/** Whether a press that travelled `movement` px was a tap. */
+export function isTap(movement: number): boolean {
+  return Math.abs(movement) < TAP_SLOP;
+}
+
+/**
+ * How open a collapsible sheet looks at `offset` px, from 0 (the peek) to 1 (fully open); the scrim
+ * follows it. `collapsed` says which rest the offset is measured from.
+ */
+export function openness(offset: number, travel: number, collapsed: boolean): number {
+  if (travel <= 0) return collapsed ? 0 : 1;
+  const open = collapsed ? -offset / travel : 1 - offset / travel;
+  return Math.max(0, Math.min(1, open));
 }

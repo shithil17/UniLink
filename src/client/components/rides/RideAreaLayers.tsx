@@ -165,13 +165,16 @@ function DockedPanel({
  * behind it draws the ride.
  *
  * Both are controlled by the route (`area`, `detailId`), and each remembers its last content so it
- * stays put while a sheet slides away.
+ * stays put while a sheet slides away. Below `lg` the sheets also minimise (`collapsed`): dragging one
+ * down leaves a peek strip over the map instead of closing the layer.
  */
 export function RideAreaLayers({
   wide,
   area,
   detailId,
   filters,
+  collapsed,
+  onCollapsedChange,
   onOpenRide,
   onCloseArea,
   onCloseDetail,
@@ -181,6 +184,9 @@ export function RideAreaLayers({
   area: AreaLayer | null;
   detailId: number | null;
   filters: RideFilters;
+  /** From `useLayerCollapse`. Phone sheets only. */
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
   onOpenRide: (id: number) => void;
   onCloseArea: () => void;
   onCloseDetail: () => void;
@@ -244,7 +250,12 @@ export function RideAreaLayers({
   // Inside the rides sheet when it is open, so Escape and focus treat it as the layer above; on its
   // own when only a ride's detail is open (a reload on a ride).
   const detailSheet = (
-    <Sheet open={detailId !== null} onOpenChange={(open) => !open && onCloseDetail()}>
+    <Sheet
+      open={detailId !== null}
+      onOpenChange={(open) => !open && onCloseDetail()}
+      collapsed={collapsed}
+      onCollapsedChange={onCollapsedChange}
+    >
       <SheetContent
         side="bottom"
         raised
@@ -267,8 +278,13 @@ export function RideAreaLayers({
 
   return (
     <>
-      <Sheet open={area !== null} onOpenChange={(open) => !open && onCloseArea()}>
-        <SheetContent side="bottom" raised className={SHEET_CLASS}>
+      <Sheet
+        open={area !== null}
+        onOpenChange={(open) => !open && onCloseArea()}
+        collapsed={collapsed}
+        onCollapsedChange={onCollapsedChange}
+      >
+        <SheetContent side="bottom" raised covered={detailId !== null} className={SHEET_CLASS}>
           {shownArea ? (
             <div className="px-5">
               <AreaRides

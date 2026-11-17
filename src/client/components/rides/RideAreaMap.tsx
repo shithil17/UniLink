@@ -19,8 +19,10 @@ import type { MapLibreModule } from "@/lib/map/load";
 import { drawTrip, tripPoints, type Trip } from "@/lib/map/trip";
 import {
   AREA_END_LABELS,
+  AREA_END_SHORT_LABELS,
   areaCardLine,
   layerPadding,
+  useLayerCollapse,
   nearbyLine,
   offMapLabel,
   type RideAreaMapModel,
@@ -47,6 +49,7 @@ function useAreaMapMarkers({
   detail,
   trip,
   wide,
+  peek,
 }: {
   pills: readonly CountPill[];
   selectedId: number | null;
@@ -54,15 +57,18 @@ function useAreaMapMarkers({
   detail: boolean;
   trip: Trip | null;
   wide: boolean;
+  /** The phone sheet over the ride is minimised to its strip, so the ride is framed above that. */
+  peek: boolean;
 }): (map: MapLibreMap, lib: MapLibreModule) => () => void {
   const at = useRef<{ map: MapLibreMap; lib: MapLibreModule } | null>(null);
   const pillsDrawn = useRef<CountPillsHandle | null>(null);
   const tripDrawn = useRef<(() => void) | null>(null);
-  const latest = useRef({ pills, selectedId, onSelect, detail, trip, wide });
+  const latest = useRef({ pills, selectedId, onSelect, detail, trip, wide, peek });
   // What the markers on the map were drawn for, so a change in the counts alone updates in place.
   const drawnFor = useRef<{ detail: boolean; trip: Trip | null } | null>(null);
   // The trip the camera was last fitted to, and where it was before that.
   const framed = useRef<Trip | null>(null);
+  const framedPeek = useRef(false);
   const before = useRef<{ center: GeoPoint; zoom: number } | null>(null);
 
   const clear = useCallback(() => {
@@ -92,11 +98,13 @@ function useAreaMapMarkers({
     if (!map) return;
     const now = latest.current;
     const target = now.detail ? now.trip : null;
-    if (target === framed.current) return;
+    const peek = target !== null && !now.wide && now.peek;
+    if (target === framed.current && peek === framedPeek.current) return;
     framed.current = target;
+    framedPeek.current = peek;
     if (target) {
       before.current ??= { center: map.getCenter(), zoom: map.getZoom() };
-      fitToPoints(map, tripPoints(target), layerPadding(now.wide));
+      fitToPoints(map, tripPoints(target), layerPadding(now.wide, peek));
     } else if (before.current) {
       flyToPoint(map, before.current.center, before.current.zoom);
       before.current = null;
@@ -104,12 +112,12 @@ function useAreaMapMarkers({
   }, []);
 
   useEffect(() => {
-    latest.current = { pills, selectedId, onSelect, detail, trip, wide };
+    latest.current = { pills, selectedId, onSelect, detail, trip, wide, peek };
     const same = drawnFor.current?.detail === detail && drawnFor.current.trip === trip;
     if (same) pillsDrawn.current?.update(pills, selectedId);
     else draw();
     frame();
-  }, [pills, selectedId, onSelect, detail, trip, wide, draw, frame]);
+  }, [pills, selectedId, onSelect, detail, trip, wide, peek, draw, frame]);
 
   return useCallback(
     (map, lib) => {
@@ -144,7 +152,9 @@ function AreaEndSwitch({
       role="group"
       aria-label="Count rides by"
       className={cn(
-        "inline-grid grid-cols-2 gap-1 rounded-full bg-surface p-1 shadow-float",
+        // `w-max`: the switch sits at left-1/2, where a shrink-to-fit width is capped at half the map
+        // and would squeeze its labels. Both columns are as wide as the wider label, so toggling never shifts it.
+        "inline-grid w-max grid-cols-2 gap-1 rounded-full bg-surface p-1 shadow-float",
         className,
       )}
     >
@@ -153,6 +163,7 @@ function AreaEndSwitch({
           key={end}
           type="button"
           aria-pressed={by === end}
+          aria-label={AREA_END_LABELS[end]}
           disabled={disabled}
           onClick={() => onChange(end)}
           className={cn(
@@ -160,7 +171,12 @@ function AreaEndSwitch({
             by === end ? "bg-brand-soft text-brand-ink" : "text-soft",
           )}
         >
-          {AREA_END_LABELS[end]}
+          <span aria-hidden className="sm:hidden">
+            {AREA_END_SHORT_LABELS[end]}
+          </span>
+          <span aria-hidden className="max-sm:hidden">
+            {AREA_END_LABELS[end]}
+          </span>
         </button>
       ))}
     </div>
@@ -294,6 +310,7 @@ export function RideAreaMap({
     [area, onCloseArea],
   );
   const trip = useRideIdTrip(detailId);
+  const [collapsed, setCollapsed] = useLayerCollapse(area, detailId);
   const onMap = useAreaMapMarkers({
     pills: model.pills,
     selectedId: cardId,
@@ -301,6 +318,7 @@ export function RideAreaMap({
     detail: detailId !== null,
     trip,
     wide,
+    peek: collapsed,
   });
   const card = model.pills.find((p) => p.areaId === cardId);
 
@@ -362,6 +380,8 @@ export function RideAreaMap({
         area={layer}
         detailId={detailId}
         filters={filters}
+        collapsed={collapsed}
+        onCollapsedChange={setCollapsed}
         onOpenRide={onOpenRide}
         onCloseArea={onCloseArea}
         onCloseDetail={onCloseDetail}
